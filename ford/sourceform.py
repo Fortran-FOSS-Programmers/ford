@@ -26,7 +26,7 @@
 
 import re
 import os.path
-import forte.reader
+import ford.reader
 from pygments import highlight
 from pygments.lexers import FortranLexer
 from pygments.formatters import HtmlFormatter
@@ -405,7 +405,7 @@ class FortranSourceFile(FortranContainer):
         self.doc = []
         self.hierarchy = []
         self.obj = 'sourcefile'
-        source = forte.reader.FortranReader(self.path)
+        source = ford.reader.FortranReader(self.path)
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
         self.src = readobj.read()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  md_processing.py
+#  ford.py
 #  
 #  Copyright 2014 Christopher MacMackin <cmacmackin@gmail.com>
 #  
@@ -27,10 +27,10 @@
 import argparse
 import markdown
 
-#~ import forte.mdx_mathjax
-import forte.fortran_project
-import forte.sourceform
-import forte.output
+#~ import ford.mdx_mathjax
+import ford.fortran_project
+import ford.sourceform
+import ford.output
 
 def main():    
     # Setup the command-line options and parse them.
@@ -48,7 +48,7 @@ def main():
     #TODO: Integrate the Pelican Mathjax plugin--it will work better.
     md = markdown.Markdown(extensions=['markdown.extensions.meta',
         'markdown.extensions.codehilite',#'markdown.extensions.smarty',
-        'markdown.extensions.extra','forte.mathjax'], output_format="html5")
+        'markdown.extensions.extra','ford.mathjax'], output_format="html5")
     
     # Read in the project-file. This will contain global documentation (which
     # will appear on the homepage) as well as any information about the project
@@ -95,7 +95,7 @@ def main():
     relative = (proj_data['project_url'] == '')
             
     # Parse the files in your project
-    project = forte.fortran_project.Project(proj_data['project'],
+    project = ford.fortran_project.Project(proj_data['project'],
                 proj_data['project_directory'], proj_data['extensions'])
     if len(project.files) < 1:
         print "Error: No source files with appropriate extension found in specified directory."
@@ -110,7 +110,7 @@ def main():
     # and copy any files that are needed (CSS, JS, images, fonts, source files,
     # etc.)
     print "Creating HTML documentation...\n"
-    forte.output.print_html(project,proj_data,proj_docs,relative)
+    ford.output.print_html(project,proj_data,proj_docs,relative)
     
     return 0
 

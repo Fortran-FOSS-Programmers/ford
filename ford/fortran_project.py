@@ -25,7 +25,7 @@
 #FIXME: Need to add .lower() to all equality tests between strings
 #TODO: Set up a list of the packages that this depends on--in particular, toposort
 
-import forte.sourceform
+import ford.sourceform
 import os
 import os.path
 import toposort
@@ -56,7 +56,7 @@ class Project(object):
                 if item.split('.')[-1] in self.extensions:
                     # Get contents of the file
                     print "Reading file {}".format(os.path.join(curdir,item))
-                    self.files.append(forte.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
                     for module in self.files[-1].modules:
                         self.modules.append(module)
                         for function in module.functions:

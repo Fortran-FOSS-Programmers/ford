@@ -27,7 +27,7 @@
 import jinja2
 import os
 import shutil
-import forte.sourceform
+import ford.sourceform
 
 def print_html(project,proj_data,proj_docs,relative):
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates")))
@@ -53,7 +53,7 @@ def print_html(project,proj_data,proj_docs,relative):
     shutil.copytree(os.path.join(loc,'js'),os.path.join(proj_data['output_dir'],'js'))
     
     if relative:
-        forte.sourceform.set_base_url('.')
+        ford.sourceform.set_base_url('.')
         proj_data['project_url'] = '.'
 
     template = env.get_template('index.html')
@@ -63,7 +63,7 @@ def print_html(project,proj_data,proj_docs,relative):
     out.close()
     
     if relative:
-        forte.sourceform.set_base_url('..')
+        ford.sourceform.set_base_url('..')
         proj_data['project_url'] = '..'
         
     if len(project.procedures) > 0:
