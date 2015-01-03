@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ dtype.name }} &ndash; {{ project }} {% endblock title %}
+{% block body %}
+  <div class="row">
+  {% import 'macros.html' as macros %}
+  </div>
+  <div class="row">
+    <h1>{{ dtype.name }}
+    {% if dtype.meta['deprecated'] %}
+	 <span class="label label-danger">Deprecated</span>
+    {% endif %}
+    <small>Derived Type</small>
+    </h1>
+	 {{ macros.info_bar(dtype.name,dtype.meta,project_url,dtype.hierarchy) }}    
+  </div>
+  
+  <div class="row">
+    <div class="col-lg-3">
+    {{ macros.sidebar(project,dtype) }}
+    </div>
+    
+    <div class="col-lg-9">
+    {{ dtype.doc }}
+    <br>
+    {% if dtype.variables|length > 0 %}
+    <section>
+    <h2>Variables</h2>
+    {{ macros.var_list(dtype.variables,permission=True) }}
+    </section>
+    <br>
+    {% endif %}
+    
+    {% if dtype.constructor %}
+	 <section>
+	 <h2>Constructor</h2>
+	   {% if dtype.constructor.obj == "interface" %}
+	   {{ macros.interface(dtype.constructor,display) }}
+	   {% elif dtype.constructor.obj == "subroutine" or dtype.constructor.obj == "function" %}
+		  {% set obj = dtype.constructor %}
+	     <div class="panel panel-default">
+  		  <div class="panel-heading codesum"><a name="con-{{ obj.name }}"></a><h3>{{ macros.proc_line(obj) }}</h3></div>
+	       <div class="panel-body">
+          {{ macros.proc_summary(obj,display,False) }}
+          </div>
+        </div>
+	   {% endif %}
+	 </section>
+	 <br>
+    {% endif %}
+    
+    {% if dtype.finalprocs|length > 0 %}
+    <section>
+    <h2>Finalization Procedures</h2>
+	   {{ macros.final(dtype.finalprocs,display) }}
+    </section>
+    <br>
+    {% endif %}
+    
+    {% if dtype.boundprocs|length > 0 %} 
+    <section>
+    <h2>Type-Bound Procedures</h2>
+    {% for bp in dtype.boundprocs %}
+	   {{ macros.bound_info(bp,display) }}
+    {% endfor %}
+    </section>
+    {% endif %}
+    </div>
+  </div>
+{% endblock body %}

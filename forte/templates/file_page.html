@@ -1,0 +1,23 @@
+{% extends "base.html" %}s
+{% block title %}{{ src.name }}{% endblock title %}
+{% block body %}
+  {% import 'macros.html' as macros %}
+  <div class="row">
+    <h1>{{ src.name }}
+    {% if src.meta['deprecated'] %}
+	 <span class="label label-danger">Deprecated</span>
+    {% endif %}
+    <small>Source File</small>
+    </h1>
+	 {{ macros.info_bar(src.name,src.meta,project_url,src.hierarchy) }}    
+  </div>
+  <div class="row">
+    <div class="col-lg-3">
+    {{ macros.sidebar(project,src) }}
+    </div>
+    <div class="col-lg-9">
+    {{ src.doc }}
+    {{ src.src }}
+    </div>
+  </div>
+{% endblock body %}

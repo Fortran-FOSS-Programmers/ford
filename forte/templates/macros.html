@@ -1,0 +1,379 @@
+{% macro info_bar(name,meta,base_url,hierarchy) %}
+<div class="row">
+<div class="col-lg-8">
+<div class="well well-sm">
+  <ul class="list-inline" style="margin-bottom:0px">
+  	 {% if meta['author'] %}
+    <li><i class="fa fa-pencil"></i> {{ meta['author'] }}</li>
+	 {% endif %}
+	 {% if meta['date'] %}
+    <li><i class="fa fa-calendar-o"></i> {{ meta['date'] }}</li>
+	 {% endif %}
+	 {% if meta['license'] %}
+    <li><i class="fa fa-legal"></i> {{ meta['license'] }}</li>
+	 {% endif %}
+	 {% if meta['version'] %}
+    <li><i class="fa fa-barcode"></i> {{ meta['version'] }}</li>
+    {% endif %}
+    {% if meta['category'] %}
+    <li><i class="fa fa-folder-open"></i>{{ meta['category'] }}</li>
+    {% endif %}
+    {% if hierarchy[0] %}
+    <li><i class="fa fa-code"></i><a href="{{ base_url }}/src/{{ hierarchy[0].name }}"> Source File</a></li>
+	 {% else %}
+    <li><i class="fa fa-code"></i><a href="{{ base_url }}/src/{{ name }}"> Source File</a></li>
+	 {% endif %}
+  </ul>
+  </div>
+  </div>
+  <div class="col-lg-4">
+  <ol class="breadcrumb hierarchy text-right">
+  {% for item in hierarchy %}
+	 <li>{{ item }}</li>
+  {% endfor %}
+	 <li class="active">{{ name }}</li>
+  </ol>
+  </div>
+</div>
+{% endmacro %}
+
+
+{% macro sidebar(project,self)%}
+  {% if self.variables %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Variables</h3></div>
+    <div class="list-group">
+      {% for var in self.variables %}
+      <a class="list-group-item" href="{{ self.get_url() }}#var-{{ var.name }}">{{ var.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if self.constructor %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Constructor</h3></div>
+    <div class="list-group">
+    	{% if self.constructor.obj == 'interface' %}{% set prefix = 'intr' %}{% else %}{% set prefix = 'proc' %}{% endif %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ prefix }}-{{ self.constructor.name }}">{{ self.constructor.name }}</a>
+    </div>
+  </div>
+  {% endif %}
+  {% if self.programs %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Programs</h3></div>
+    <div class="list-group">
+      {% for prog in self.programs %}
+      <a class="list-group-item" href="{{ self.get_url() }}#prog-{{ prog.name }}">{{ prog.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if self.modules %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Modules</h3></div>
+    <div class="list-group">
+      {% for mod in self.modules %}
+      <a class="list-group-item" href="{{ self.get_url() }}#mod-{{ mod.name }}">{{ mod.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if self.interfaces %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Interfaces</h3></div>
+    <div class="list-group">
+      {% for intr in self.interfaces %}
+      <a class="list-group-item" href="{{ self.get_url() }}#intr-{{ intr.name }}">{{ intr.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if self.types %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Derived Types</h3></div>
+    <div class="list-group">
+      {% for type in self.types %}
+      <a class="list-group-item" href="{{ self.get_url() }}#type-{{ type.name }}">{{ type.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if self.functions %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Functions</h3></div>
+    <div class="list-group">
+      {% for proc in self.functions %}
+      <a class="list-group-item" href="{{ self.get_url() }}#proc-{{ proc.name }}">{{ proc.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if self.subroutines %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Subroutine</h3></div>
+    <div class="list-group">
+      {% for proc in self.subroutines %}
+      <a class="list-group-item" href="{{ self.get_url() }}#proc-{{ proc.name }}">{{ proc.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if self.finalprocs %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Finalization Procedures</h3></div>
+    <div class="list-group">
+      {% for fp in self.finalprocs %}
+      <a class="list-group-item" href="{{ self.get_url() }}#fp-{{ fp.name }}">{{ fp.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if self.boundprocs %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Type-Bound Procedures</h3></div>
+    <div class="list-group">
+      {% for bp in self.boundprocs %}
+      <a class="list-group-item" href="{{ self.get_url() }}#bp-{{ bp.name }}">{{ bp.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if self.modprocs %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Module Procedures</h3></div>
+    <div class="list-group">
+      {% for mod in self.modprocs %}
+      <a class="list-group-item" href="{{ self.get_url() }}#proc-{{ mod.name }}">{{ mod.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  <hr>
+  {% if self.obj == 'program' %}
+  <div class="panel panel-default">
+    <div class="panel-heading text-left"><h3 class="panel-title">All Programs</h3></div>
+    <div class="list-group">
+      {% for prog in project.programs %}
+      <a class="list-group-item" href="{{ prog.get_url() }}">{{ prog.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% elif self.obj == 'module' %}
+  <div class="panel panel-default">
+    <div class="panel-heading text-left"><h3 class="panel-title">All Modules</h3></div>
+    <div class="list-group">
+      {% for mod in project.modules %}
+      <a class="list-group-item" href="{{ mod.get_url() }}">{{ mod.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% elif self.obj == 'proc' or self.obj == 'interface' %}
+  <div class="panel panel-default">
+    <div class="panel-heading text-left"><h3 class="panel-title">All Procedures</h3></div>
+    <div class="list-group">
+      {% for proc in project.procedures %}
+      <a class="list-group-item" href="{{ proc[1].get_url() }}">{{ proc[1].name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% elif self.obj == 'type' %}
+  <div class="panel panel-default">
+    <div class="panel-heading text-left"><h3 class="panel-title">All Derived Types</h3></div>
+    <div class="list-group">
+      {% for dtype in project.types %}
+      <a class="list-group-item" href="{{ dtype[1].get_url() }}">{{ dtype[1].name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% elif self.obj == 'sourcefile' %}
+  <div class="panel panel-default">
+    <div class="panel-heading text-left"><h3 class="panel-title">All Source Files</h3></div>
+    <div class="list-group">
+      {% for src in project.files %}
+      <a class="list-group-item" href="{{ src.get_url() }}">{{ src.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endmacro %}
+
+
+{% macro var_list(variables,intent=False,permission=False) %}
+<table class="table table-striped varlist">
+<thead><tr><th>Type</th>{% if permission %}<th>Visibility</th>{% endif %}
+{% if intent %}<th>Intent</th><th>Optional</th>{% endif %}
+<th>Attributes</th><th></th><th>Name</th>{% if not intent %}<th></th><th>Initial</th>{% endif %}<th></th></thead>
+<tbody>
+{% for var in variables %}
+  {% set args = 0 %}
+  {% if var.kind %}{% set args = args + 1 %}{% endif %}
+  {% if var.strlen %}{% set args = args + 1 %}{% endif %}
+  {% if var.proto %}{% set args = args + 1 %}{% endif %}
+<tr>
+  <td><a name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{{ var.proto }}{%- endif %}){%- endif %}{% if intent or permission or var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>
+  {% if intent -%}<td>intent({{ var.intent }}){% if var.optional or permission or var.parameter or var.attribs|length > 0 -%},{% endif %}</td>
+  <td>{% if var.optional -%}optional{% if permission or var.parameter or var.attributes|length > 0 -%},{%- endif %}{%- endif %}</td>{%- endif %}
+  {% if permission %}<td>{{ var.permission }}{% if var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>{% endif %}
+  <td>{% if var.parameter %}parameter{% if var.attribs|length > 0 %}, {% endif %}{% endif %}{% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}</td><td>::</td>
+  <td><strong>{{ var.name }}</strong></td>{% if not intent %}<td>{% if var.initial -%}{% if var.points -%} => {% else %} = {%- endif %}{% endif %}</td><td>{% if var.initial %}{{ var.initial }}{%- endif %}</td>{% endif %}<td>{{ var.doc }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endmacro %}
+
+
+{% macro proc_summary(proc,display=['public','protected'],title=True) %}
+	 {% if title %}
+    <h3>{{ proc_line(proc,display) }}</h3>
+    {% endif %}
+    <h4>Arguments</h4>
+    {% if proc.args|length > 0 %}
+      {{ var_list(proc.args,intent=True) }}
+    {% else %}
+      <em>None</em>
+    {% endif %}
+    {% if proc.retvar %}
+{% set var = proc.retvar %}
+  {% set args = 0 %}
+  {% if var.kind %}{% set args = args + 1 %}{% endif %}
+  {% if var.strlen %}{% set args = args + 1 %}{% endif %}
+  {% if var.proto %}{% set args = args + 1 %}{% endif %}
+	 <h4>Return Value <small><a name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{{ var.proto }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
+  {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %}</small></h4>
+  {{ var.doc }}
+    {% endif %}
+    {% if proc.doc %}
+    <h4>Description</h4>
+	   {{ proc.doc }}
+    {% endif %}    
+{% endmacro %}
+
+
+{% macro bound_info(tb,display=['public','protected']) %}
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><a name="bp-{{ tb.name }}"></a><h3>{% if tb.generic -%}generic,{% else %}procedure,{%- endif %} {{ tb.permission }}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or tb.name != tb.bindings[0].name %} => {% for bind in tb.bindings -%}{{ bind }}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}<h3></div>
+  {% if tb.doc %}
+  <div class="panel-body">
+    {{ tb.doc }}
+  </div>
+  {% endif %}
+  <ul class="list-group">
+    {% for bind in tb.bindings %}
+      <li class="list-group-item">
+      {{ proc_summary(bind,display) }}
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endmacro %}
+
+
+{% macro interface(intr,display=['public','protected']) %}
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><a name="intr-{{ intr.name }}"></a><h3>{{ intr.permission }} {% if intr.abstract %}abstract {% endif %} interface {% if intr.permission in display %}{{ intr }}{% else %}{{ intr.name }}{% endif %}</h3></div>
+  {% if intr.doc %}
+  <div class="panel-body">
+    {{ intr.doc }}
+  </div>
+  {% endif %}
+  <ul class="list-group">
+  {% for proc in intr.functions + intr.subroutines %}
+    <li class="list-group-item">
+    {{ proc_summary(proc,display) }}
+    </li>
+  {% endfor %}
+  {% for proc in intr.modprocs %}
+    <li class="list-group-item">
+    {{ proc_summary(proc.procedure,display) }}
+    </li>
+  {% endfor %}
+  </ul>
+</div>
+{% endmacro %}
+
+
+{% macro proc_line(proc,display=['public','protected']) %}
+{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} {% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}
+{% endmacro %}
+
+
+{% macro final(finals,display=['public','protected']) %}
+    {% for proc in finals %}
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><a name="fp-{{ proc.name }}"></a><h3>final :: {{ proc.name }}</h3></div>
+  <div class="panel-body">
+	 {{ proc_summary(proc,display,title=True) }}
+  </div>
+</div>
+    {% endfor %}
+{% endmacro %}
+
+
+{% macro type_summary(dtype,display=['public','protected']) %}
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><a name="type-{{ dtype.name }}"></a><h3>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% if dtype.sequence%}, sequence {% endif %}{% for attrib in dtype.attribs -%}, {{ attrib }}{%- endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {% if dtype.permission in display %}{{ dtype }}{% else %}{{ dtype.name }}{% endif %}</h3></div>
+  <div class="panel-body">
+	 {% if dtype.variables|length > 0 %}
+	 <h4>Components</h4>
+    {{ var_list(dtype.variables,permission=True) }}
+	 {% endif %}
+	 {% if dtype.constructor %}
+	 <h4>Constructor</h4>
+	   {% if dtype.constructor.obj == 'interface' %}
+	     {{ dtype.constructor.doc }}
+	   {% endif %}
+	   <table class="table table-striped varlist">
+      <tbody>
+        {% if dtype.constructor.obj == 'proc' %}
+        <tr><td>{{ proc_line(dtype.constructor,display) }}</td><td>{{ dtype.constructor.doc }}</td></tr>
+        {% elif dtype.constructor.obj == 'interface' %}
+			 {% for proc in dtype.constructor.functions + dtype.constructor.subroutines %}
+			 <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}</td><td>{{ proc.doc }}</td></tr>
+			 {% endfor %}
+			 {% for mproc in dtype.constructor.modprocs %}
+			 {% set proc = mproc.procedure %}
+			 <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}</td><td>{{ proc.doc }}</td></tr>
+			 {% endfor %}
+        {% endif %}
+	   </tbody>
+	   </table>
+	 {% endif %}
+	 {% if dtype.finalprocs|length > 0 %}
+	 <h4>Finalizations Procedures</h4>
+      <table class="table table-striped varlist">
+      <tbody>
+      {% for fin in dtype.finalprocs %}
+       <tr><td>final :: <strong>{{ fin.name }}</strong></h3></td><td>{{ fin.doc }}</td></tr>
+      {% endfor %}
+	   </tbody>
+	   </table>	 
+	 {% endif %}	 
+	 {% if dtype.boundprocs|length > 0 %}
+	 <h4>Type-Bound Procedures</h4>
+      <table class="table table-striped varlist">
+      <tbody>
+      {% for tb in dtype.boundprocs %}
+       <tr><td>{% if tb.generic -%}generic,{% else %}procedure,{%- endif %} {{ tb.permission }}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or tb.name != tb.bindings[0].name %} => {% for bind in tb.bindings -%}{{ bind }}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}</td>
+       <td>{{ tb.doc }}</td></tr>
+      {% endfor %}
+	   </tbody>
+	   </table>
+	 {% endif %}
+	 {% if dtype.doc %}
+	 <h4>Description</h4>
+	 {{ dtype.doc }}
+	 {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+
+{% macro proc_entry(proc,display=['public','protected']) %}
+  <div class="panel panel-default">
+  <div class="panel-heading codesum"><a name="proc-{{ proc.name }}"></a><h3>{{ proc_line(proc,display) }}</h3></div>
+  <div class="panel-body">
+	   {{ proc_summary(proc,display,False) }}
+  </div>
+  </div>
+{% endmacro %}

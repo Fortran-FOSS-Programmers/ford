@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}
+{{ super() }} &mdash; All Types
+{% endblock %}
+{% block body %}
+      <div class="row">
+        <div class="col-lg-12">
+			 <h1>Derived Types</h1>
+			 <table class="table table-striped nostretched">
+			 <thead>
+			 <tr><th>Type</th><th>Location</th><th>Extends</th><th>Description</th></tr>
+			 </thead><tbody>
+			 {% for dtype in project.types %}
+			   <tr><td>{{ dtype[1] }}</td><td>{{ dtype[1].parent }}</td><td>{{ dtype[1].extends }}</td><td>{{ dtype[1].meta['summary'] }}</td></tr>
+			 {% endfor %}
+			 </tbody></table>
+        </div>
+      </div>
+{% endblock %}

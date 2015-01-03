@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ procedure.name }} &ndash; {{ project }}{% endblock title %}
+{% block body %}
+  <div class="row">
+  {% import 'macros.html' as macros %}
+  </div>
+  <div class="row">
+    <h1>{{ procedure.name }}
+    <small>{{ procedure.proctype }}</small>
+    {% if procedure.meta['deprecated'] %}
+	 <span class="label label-danger">Deprecated</span>
+    {% endif %}
+    </h1>
+	 {{ macros.info_bar(procedure.name,procedure.meta,project_url,procedure.hierarchy) }}    
+  </div>
+  
+  <div class="row">
+    <div class="col-lg-3">
+    {{ macros.sidebar(project,procedure) }}
+    </div>
+    
+    <div class="col-lg-9">
+    <h2>{{ macros.proc_line(procedure,[]) }}</h2>
+    <h3>Arguments</h3>
+    {% if procedure.args|length > 0 %}
+      {{ macros.var_list(procedure.args,intent=True) }}
+    {% else %}
+      <em>None</em>
+    {% endif %}
+    {% if procedure.retvar %}
+    {% set var = procedure.retvar %}
+    {% set args = 0 %}
+    {% if var.kind %}{% set args = args + 1 %}{% endif %}
+    {% if var.strlen %}{% set args = args + 1 %}{% endif %}
+    {% if var.proto %}{% set args = args + 1 %}{% endif %}
+	 <h3>Return Value <small><a name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{{ var.proto }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
+    {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %}</small></h3>
+    {{ var.doc }}
+    {% endif %}
+    {% if procedure.doc %}
+    <h3>Description</h3>
+    {{ procedure.doc }}
+    {% endif %}
+    <br>
+    {% if procedure.variables|length > 0 %}
+    <section>
+    <h2>Variables</h2>
+    {{ macros.var_list(procedure.variables,permission=True) }}
+    </section>
+    <br>
+    {% endif %}
+    
+    {% if procedure.interfaces|length > 0 %}
+	 <h2>Interfaces</h2>
+	 {% for intr in procedure.interfaces %}
+	   {{ macros.interface(intr,display) }}
+    {% endfor %}
+    </section>
+	 <br>
+    {% endif %}
+    
+    {% if procedure.types|length > 0 %}
+	 <h2>Derived Types</h2>
+	 {% for type in procedure.types %}
+	   {{ macros.type_summary(type,display) }}
+    {% endfor %}
+    </section>
+	 <br>
+    {% endif %}
+    
+    {% if procedure.functions|length > 0 %} 
+    <section>
+    <h2>Functions</h2>
+    {% for proc in procedure.functions %}
+    {{ macros.proc_entry(proc,display) }}
+    {% endfor %}
+    </section>
+    {% endif %}
+
+
+    {% if procedure.subroutines|length > 0 %}
+    <section>
+    <h2>Subroutines</h2>
+    {% for proc in procedure.subroutines %}
+    {{ macros.proc_entry(proc,display) }}
+    {% endfor %}
+    </section>    
+    {% endif %}
+    
+    </div>
+  </div>
+{% endblock body %}

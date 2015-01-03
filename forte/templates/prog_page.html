@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ program.name }} &ndash; {{ project }}{% endblock title %}
+{% block body %}
+  <div class="row">
+  {% import 'macros.html' as macros %}
+  </div>
+  <div class="row">
+    <h1>{{ program.name }} 
+    <small>Program</small>
+    {% if program.meta['deprecated'] %}
+	 <span class="label label-danger">Deprecated</span>
+    {% endif %}
+    </h1>
+	 {{ macros.info_bar(program.name,program.meta,project_url,program.hierarchy) }}    
+  </div>
+  
+  <div class="row">
+    <div class="col-lg-3">
+    {{ macros.sidebar(project,program) }}
+    </div>
+    
+    <div class="col-lg-9">
+    {{ program.doc }}
+
+    <br>
+    {% if program.variables|length > 0 %}
+    <section>
+    <h2>Variables</h2>
+    {{ macros.var_list(program.variables) }}
+    </section>
+    <br>
+    {% endif %}
+    
+    {% if program.interfaces|length > 0 %}
+	 <h2>Interfaces</h2>
+	 {% for intr in program.interfaces %}
+	   {{ macros.interface(intr,display) }}
+    {% endfor %}
+    </section>
+	 <br>
+    {% endif %}
+    
+    {% if program.types|length > 0 %}
+	 <h2>Derived Types</h2>
+	 {% for type in program.types %}
+	   {{ macros.type_summary(type,display) }}
+    {% endfor %}
+    </section>
+	 <br>
+    {% endif %}
+    
+    {% if program.functions|length > 0 %} 
+    <section>
+    <h2>Functions</h2>
+    {% for proc in program.functions %}
+    {{ macros.proc_entry(proc,display) }}
+    {% endfor %}
+    </section>
+    <br>
+    {% endif %}
+
+
+    {% if program.subroutines|length > 0 %}
+    <section>
+    <h2>Subroutines</h2>
+    {% for proc in program.subroutines %}
+    {{ macros.proc_entry(proc,display) }}
+    {% endfor %}
+    </section>    
+    {% endif %}
+    
+    </div>
+  </div>
+{% endblock body %}

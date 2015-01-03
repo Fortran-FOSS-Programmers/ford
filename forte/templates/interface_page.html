@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ interface.name }} &ndash; {{ project }}{% endblock title %}
+{% block body %}
+  <div class="row">
+  {% import 'macros.html' as macros %}
+  </div>
+  <div class="row">
+    <h1>{{ interface.name }}
+	 <small>Interface</small>
+    {% if interface.meta['deprecated'] %}
+    <span class="label label-danger">Deprecated</span>
+    {% endif %}
+    </h1>
+	 {{ macros.info_bar(interface.name,interface.meta,project_url,interface.hierarchy) }}    
+  </div>
+  
+  <div class="row">
+    <div class="col-lg-3">
+    {{ macros.sidebar(project,interface) }}
+    </div>
+    
+    <div class="col-lg-9">
+    <h2>{{ interface.permission }} {% if interface.abstract %}abstract {% endif %} interface {{ interface.name }}</h2>
+	 {{ interface.doc }}
+	
+	{% if interface.functions|length > 0 %}
+	 <h2>Functions</h2>
+	 {% for proc in interface.functions %}
+    {{ macros.proc_entry(proc,display) }}
+ 	 {% endfor %}
+  	 {% endif %}
+
+	{% if interface.subroutines|length > 0 %}
+	 <h2>Subroutines</h2>
+	 {% for proc in interface.subroutines %}
+    {{ macros.proc_entry(proc,display) }}
+ 	 {% endfor %}
+  	 {% endif %}
+
+	{% if interface.modprocs|length > 0 %}
+	 <h2>Module Procedures</h2>
+	 {% for proc in interface.modprocs %}
+    {{ macros.proc_entry(proc.procedure,display) }}
+ 	 {% endfor %}
+  	 {% endif %}
+
+ </div>
+</div>
+{% endblock body %}

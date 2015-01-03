@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}
+{{ super() }} &mdash; All Files
+{% endblock %}
+{% block body %}
+      <div class="row">
+        <div class="col-lg-12">
+			 <h1>Source Files</h1>
+			 <table class="table table-striped">
+			 <thead><tr><th>File</th><th>Description</th></tr></thead>
+			 <tbody>
+			 {% for src in project.files %}
+			   <tr><td>{{ src }}</td><td>{{ src.meta['summary'] }}</td></tr>
+			 {% endfor %}
+			 </tbody></table>
+        </div>
+      </div>
+{% endblock %}
