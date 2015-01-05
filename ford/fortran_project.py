@@ -25,10 +25,10 @@
 #FIXME: Need to add .lower() to all equality tests between strings
 #TODO: Set up a list of the packages that this depends on--in particular, toposort
 
-import ford.sourceform
 import os
-import os.path
 import toposort
+
+import ford.sourceform
 
 class Project(object):
     """
