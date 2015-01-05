@@ -94,10 +94,11 @@ and what types of data FORD will look for can be found in the next section.
 In modern (post 1990) Fortran, comments are indicated by an exclamation mark
 (!). FORD will ignore a normal comment like this. However, comments with two
 exclamation marks (!!) are interpreted as documentation and will be captured
-for inclusion in the output. FORD documentation must come _after_ whatever it
-is that you are documenting, either at the end of the line or on a subsequent
-line. This was chosen because it was felt it is easier to make your
-documentation readable from within the source-code this way. This
+for inclusion in the output. If desired, the character(s) designating
+documentation can be changed (see below). FORD documentation must come
+_after_ whatever it is that you are documenting, either at the end of the line
+or on a subsequent line. This was chosen because it was felt it is easier to
+make your documentation readable from within the source-code this way. This
 
 ```fortran
 subroutine feed_pets(cats, dogs, food, angry)
