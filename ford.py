@@ -26,8 +26,8 @@
 
 import argparse
 import markdown
+from datetime import date
 
-#~ import ford.mdx_mathjax
 import ford.fortran_project
 import ford.sourceform
 import ford.output
@@ -47,8 +47,8 @@ def main():
 
     #TODO: Integrate the Pelican Mathjax plugin--it will work better.
     md = markdown.Markdown(extensions=['markdown.extensions.meta',
-        'markdown.extensions.codehilite',#'markdown.extensions.smarty',
-        'markdown.extensions.extra','ford.mathjax'], output_format="html5")
+        'markdown.extensions.codehilite','markdown.extensions.extra',
+        'ford.mathjax'], output_format="html5")
     
     # Read in the project-file. This will contain global documentation (which
     # will appear on the homepage) as well as any information about the project
@@ -63,15 +63,16 @@ def main():
                u'summary',u'github',u'bitbucket',u'facebook',u'twitter',
                u'google_plus',u'linkedin',u'email',u'website',u'project_github',
                u'project_bitbucket',u'project_website',u'project_download',
-               u'project_sourceforge',u'project_url',u'display']
+               u'project_sourceforge',u'project_url',u'display',u'version',
+               u'year']
     defaults = {u'project_directory': u'./src',
                 u'extensions':        [u"f90",u"f95",u"f03",u"f08"],
-                u'output_dir':        u'.',
+                u'output_dir':        u'./doc',
                 u'project':           u'Fortran Program',
-                u'project_url':        u'',
-                u'display':           [u'public',u'protected']
+                u'project_url':       u'',
+                u'display':           [u'public',u'protected'],
+                u'year':              date.today().year
                }
-    
     for option in options:
         if hasattr(args,option) and eval("args." + option):
             proj_data[option] = eval("args." + option)
@@ -82,6 +83,10 @@ def main():
                 proj_data[option] = proj_data[option][0]
         elif (not option in proj_data) and (option in defaults):
            proj_data[option] = defaults[option]
+
+    if proj_data['project_directory'] in proj_data['output_dir']:
+        print 'Error: output directory a subdirectory of directory containing source-code.'
+        quit()
 
     if 'summary' in proj_data:
         if type(proj_data['summary']) == list:
@@ -96,7 +101,8 @@ def main():
             
     # Parse the files in your project
     project = ford.fortran_project.Project(proj_data['project'],
-                proj_data['project_directory'], proj_data['extensions'])
+                proj_data['project_directory'], proj_data['extensions'], 
+                proj_data['display'])
     if len(project.files) < 1:
         print "Error: No source files with appropriate extension found in specified directory."
         quit()

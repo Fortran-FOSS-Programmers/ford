@@ -80,6 +80,7 @@ class FortranReader(object):
         linebuffer = ""
         while not done:
             line = self.reader.next()
+            if len(line.strip()) > 0 and line.strip()[0] == '#': continue
             # Capture any documentation comments
             match = self.doc_re.match(line)
             if match:

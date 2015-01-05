@@ -8,7 +8,7 @@
     <h1>{{ procedure.name }}
     <small>{{ procedure.proctype }}</small>
     {% if procedure.meta['deprecated'] %}
-	 <span class="label label-danger">Deprecated</span>
+	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
 	 {{ macros.info_bar(procedure.name,procedure.meta,project_url,procedure.hierarchy) }}    
@@ -21,6 +21,9 @@
     
     <div class="col-lg-9">
     <h2>{{ macros.proc_line(procedure,[]) }}</h2>
+    {{ macros.use_list(procedure) }}
+
+
     <h3>Arguments</h3>
     {% if procedure.args|length > 0 %}
       {{ macros.var_list(procedure.args,intent=True) }}
@@ -33,7 +36,7 @@
     {% if var.kind %}{% set args = args + 1 %}{% endif %}
     {% if var.strlen %}{% set args = args + 1 %}{% endif %}
     {% if var.proto %}{% set args = args + 1 %}{% endif %}
-	 <h3>Return Value <small><a name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{{ var.proto }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
+	 <h3>Return Value <small><a class="anchor" name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{{ var.proto }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
     {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %}</small></h3>
     {{ var.doc }}
     {% endif %}

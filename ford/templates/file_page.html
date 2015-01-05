@@ -4,10 +4,10 @@
   {% import 'macros.html' as macros %}
   <div class="row">
     <h1>{{ src.name }}
-    {% if src.meta['deprecated'] %}
-	 <span class="label label-danger">Deprecated</span>
-    {% endif %}
     <small>Source File</small>
+    {% if src.meta['deprecated'] %}
+	 <span class="label label-danger depwarn">Deprecated</span>
+    {% endif %}
     </h1>
 	 {{ macros.info_bar(src.name,src.meta,project_url,src.hierarchy) }}    
   </div>
@@ -17,6 +17,7 @@
     </div>
     <div class="col-lg-9">
     {{ src.doc }}
+    {% if src.doc %}<br>{% endif %}
     {{ src.src }}
     </div>
   </div>

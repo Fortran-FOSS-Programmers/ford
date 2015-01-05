@@ -8,7 +8,7 @@
     <h1>{{ interface.name }}
 	 <small>Interface</small>
     {% if interface.meta['deprecated'] %}
-    <span class="label label-danger">Deprecated</span>
+    <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
 	 {{ macros.info_bar(interface.name,interface.meta,project_url,interface.hierarchy) }}    
@@ -22,6 +22,7 @@
     <div class="col-lg-9">
     <h2>{{ interface.permission }} {% if interface.abstract %}abstract {% endif %} interface {{ interface.name }}</h2>
 	 {{ interface.doc }}
+    {% if interface.doc %}<br>{% endif %}
 	
 	{% if interface.functions|length > 0 %}
 	 <h2>Functions</h2>

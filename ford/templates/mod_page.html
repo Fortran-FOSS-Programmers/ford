@@ -8,7 +8,7 @@
     <h1>{{ module.name }} 
     <small>Module</small>
     {% if module.meta['deprecated'] %}
-	 <span class="label label-danger">Deprecated</span>
+	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
 	 {{ macros.info_bar(module.name,module.meta,project_url,module.hierarchy) }}    
@@ -20,9 +20,10 @@
     </div>
     
     <div class="col-lg-9">
+    {{ macros.use_list(module) }}
     {{ module.doc }}
+    {% if module.doc %}<br>{% endif %}
 
-    <br>
     {% if module.variables|length > 0 %}
     <section>
     <h2>Variables</h2>

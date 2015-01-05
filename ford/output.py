@@ -27,6 +27,8 @@
 import jinja2
 import os
 import shutil
+import urllib
+
 import ford.sourceform
 
 def print_html(project,proj_data,proj_docs,relative):
@@ -51,6 +53,8 @@ def print_html(project,proj_data,proj_docs,relative):
     shutil.copytree(os.path.join(loc,'css'), os.path.join(proj_data['output_dir'],'css'))
     shutil.copytree(os.path.join(loc,'fonts'), os.path.join(proj_data['output_dir'],'fonts'))
     shutil.copytree(os.path.join(loc,'js'),os.path.join(proj_data['output_dir'],'js'))
+    if 'css' in proj_data:
+        shutil.copy(proj_data['css'],os.path.join(proj_data['output_dir'],'css','user.css'))
     
     if relative:
         ford.sourceform.set_base_url('.')
@@ -59,53 +63,53 @@ def print_html(project,proj_data,proj_docs,relative):
     template = env.get_template('index.html')
     html = template.render(proj_data,proj_docs=proj_docs,project=project)
     out = open(proj_data['output_dir'] + '/index.html','w')
-    out.write(html)
+    out.write(html.encode('utf8'))
     out.close()
     
     if relative:
         ford.sourceform.set_base_url('..')
         proj_data['project_url'] = '..'
-        
+    
     if len(project.procedures) > 0:
         template = env.get_template('proc_list.html')
         html = template.render(proj_data,project=project)
         out = open(os.path.join(proj_data['output_dir'],'lists','procedures.html'),'w')
-        out.write(html)
+        out.write(html.encode('utf8'))
         out.close()
 
     if len(project.files) > 1:
         template = env.get_template('file_list.html')
         html = template.render(proj_data,project=project)
         out = open(os.path.join(proj_data['output_dir'],'lists','files.html'),'w')
-        out.write(html)
+        out.write(html.encode('utf8'))
         out.close()
         
     if len(project.modules) > 0:
         template = env.get_template('mod_list.html')
         html = template.render(proj_data,project=project)
         out = open(os.path.join(proj_data['output_dir'],'lists','modules.html'),'w')
-        out.write(html)
+        out.write(html.encode('utf8'))
         out.close()
 
     if len(project.programs) > 1:
         template = env.get_template('prog_list.html')
         html = template.render(proj_data,project=project)
         out = open(os.path.join(proj_data['output_dir'],'lists','programs.html'),'w')
-        out.write(html)
+        out.write(html.encode('utf8'))
         out.close()
     
     if len(project.types) > 0:
         template = env.get_template('types_list.html')
         html = template.render(proj_data,project=project)
         out = open(os.path.join(proj_data['output_dir'],'lists','types.html'),'w')
-        out.write(html)
+        out.write(html.encode('utf8'))
         out.close()
     
     for src in project.files:
         template = env.get_template('file_page.html')
         html = template.render(proj_data,src=src,project=project)
-        out = open(os.path.join(proj_data['output_dir'],'sourcefile',src.name+'.html'),'w')
-        out.write(html)
+        out = open(urllib.quote(os.path.join(proj_data['output_dir'],'sourcefile',src.name.lower().replace('/','\\')+'.html')),'w')
+        out.write(html.encode('utf8'))
         out.close()
         dstdir = os.path.join(proj_data['output_dir'],'src',src.name)
         shutil.copy(src.path,dstdir)
@@ -113,34 +117,34 @@ def print_html(project,proj_data,proj_docs,relative):
     for dtype in project.types:
         template = env.get_template('type_page.html')
         html = template.render(proj_data,dtype=dtype[1],project=project)
-        out = open(os.path.join(proj_data['output_dir'],'type',dtype[1].name) + '.html','w')
-        out.write(html)
+        out = open(urllib.quote(os.path.join(proj_data['output_dir'],'type',dtype[1].name.lower().replace('/','\\')+'.html')),'w')
+        out.write(html.encode('utf8'))
         out.close()
     
     for proc in project.procedures:
         if proc[1].obj == 'proc':
             template = env.get_template('proc_page.html')
-            out = open(os.path.join(proj_data['output_dir'],'proc',proc[1].name+'.html'),'w')
+            out = open(urllib.quote(os.path.join(proj_data['output_dir'],'proc',proc[1].name.lower().replace('/','\\')+'.html')),'w')
             html = template.render(proj_data,procedure=proc[1],project=project)
         else:
             template = env.get_template('interface_page.html')
-            out = open(os.path.join(proj_data['output_dir'],'interface',proc[1].name+'.html'),'w')
+            out = open(urllib.quote(os.path.join(proj_data['output_dir'],'interface',proc[1].name.lower().replace('/','\\')+'.html')),'w')
             html = template.render(proj_data,interface=proc[1],project=project)
-        out.write(html)
+        out.write(html.encode('utf8'))
         out.close()
     
     for mod in project.modules:
         template = env.get_template('mod_page.html')
         html = template.render(proj_data,module=mod,project=project)
-        out = open(os.path.join(proj_data['output_dir'],'module',mod.name+'.html'),'w')
-        out.write(html)
+        out = open(urllib.quote(os.path.join(proj_data['output_dir'],'module',mod.name.lower().replace('/','\\')+'.html')),'w')
+        out.write(html.encode('utf8'))
         out.close()
 
     for prog in project.programs:
         template = env.get_template('prog_page.html')
         html = template.render(proj_data,program=prog,project=project)
-        out = open(os.path.join(proj_data['output_dir'],'program',prog.name+'.html'),'w')
-        out.write(html)
+        out = open(urllib.quote(os.path.join(proj_data['output_dir'],'program',prog.name.lower().replace('/','\\')+'.html')),'w')
+        out.write(html.encode('utf8'))
         out.close()
 
 

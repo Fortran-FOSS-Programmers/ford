@@ -56,7 +56,12 @@ class Project(object):
                 if item.split('.')[-1] in self.extensions:
                     # Get contents of the file
                     print "Reading file {}".format(os.path.join(curdir,item))
-                    self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    try:
+                        self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    except Exception as e:
+                        print "Warning: Error parsing {}.\n\t{}".format(os.path.join(curdir,item),e.args[0])
+                        continue
+                        
                     for module in self.files[-1].modules:
                         self.modules.append(module)
                         for function in module.functions:
@@ -66,7 +71,7 @@ class Project(object):
                             if subroutine.permission in display:
                                 self.procedures.append((module.name, subroutine))
                         for interface in module.interfaces:
-                            if interface.permission in display and interface.name:
+                            if interface.permission in display and interface.hasname:
                                 self.procedures.append((module.name, interface))
                         for dtype in module.types:
                             if dtype.permission in display:
@@ -83,7 +88,7 @@ class Project(object):
                         for subroutine in program.subroutines:
                             self.procedures.append((program.name, subroutine))
                         for interface in program.interfaces:
-                            if interface.name:
+                            if interface.hasname:
                                 self.procedures.append((program.name, interfaces))
                         for dtype in program.types:
                             self.types.append((program.name, dtype))
@@ -116,9 +121,10 @@ class Project(object):
         
         # Perform remaining correlations for the project
         for container in ranklist:
-            container.correlate(self)
-        for proc in self.procedures:
-            if not proc[0]: container.correlate(self)
+            if type(container) != str:
+                container.correlate(self)
+        #~ for proc in self.procedures:
+            #~ if not proc[0]: container.correlate(self)
 
     def markdown(self,md):
         """

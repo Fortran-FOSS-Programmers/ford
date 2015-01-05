@@ -11,25 +11,12 @@ to any company or individual associated with cars.
 ##Documentation Syntax
 
 ##ToDo
-This software is still extremely young and much remains to be done. Immediate
-goals are:
+This software is still extremely young and much remains to be done. Various
+things which I'd like to do at some point include:
 
-- Fix the documentation for any procedures which are passed as arguments.
-  Currently they will show up in the header for a procedure, but not in the
-  detailed list of arguments.
-- Add try/except structures so that FORD will be able to exit gracefully
-  from any errors.
 - Write proper documentation.
-- Add a list of modules used to the output.
-- Place my custom CSS within its own file rather than just in the header of
-  my base HTML template.
 - Assemble a list of dependencies.
-- Add support for someone providing a custom CSS file.
-- Display meta-data for more types of objects.
-- Add a better footer for pages.
 
-The completion of (most of) these goals should be doable quite quickly. At this
-point FORD will have reached v0.2. Some longer-term goals include:
 
 - Support some of the old Fortran 77 ways of doing things, as these are often
   still used. This includes PARAMETER statements, EXTERNAL statements.
@@ -43,10 +30,28 @@ point FORD will have reached v0.2. Some longer-term goals include:
   coding styles.
 - Add the ability to identify function calls and use this to work out
   call-trees (subroutine calls are already captured).
+- Add the option for users to specify a Creative Commons license for their
+  documentation, which will be inserted into the page footer.
+- Make it possible to over-ride the display options within  a particular
+  part of the code and for an individual item within the code.
+- Provide an option to force all (non-string) text which is captured to be
+  lower case.
+- Add the ability to recognize the use of intrinsic modules
+- Improve the handling of parameterized derived types, particularly for
+  variables of that type.
+- Improve the sidebar for source files so that it will link to the items that it
+  lists.
+- Allow the user to provide a favicon.
+- Provide a directory in which the user can place any images and/or other
+  media they want available.
+- Use summaries of the description in some places
+- Improve the way procedures are handled as arguments. In particular, allow
+  any abstract interface which was used as a template to be visible somehow.
 
 Things which ideally I would do, but are not currently on the radar include:
-- Add the ability for people to customize the output more (this would require
-  drastic changes to the template system).
+
+- Add the ability for people to customize appearance of the output more (this
+  would require drastic changes to the template system).
 - Support fixed-form Fortran (doable, but low priority).
 - Add the ability to identify type-bound procedure calls and use these to
   construct call-trees. This would be extremely difficult, as it would

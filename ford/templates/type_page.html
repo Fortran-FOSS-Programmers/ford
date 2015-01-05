@@ -6,10 +6,10 @@
   </div>
   <div class="row">
     <h1>{{ dtype.name }}
-    {% if dtype.meta['deprecated'] %}
-	 <span class="label label-danger">Deprecated</span>
-    {% endif %}
     <small>Derived Type</small>
+    {% if dtype.meta['deprecated'] %}
+	 <span class="label label-danger depwarn">Deprecated</span>
+    {% endif %}
     </h1>
 	 {{ macros.info_bar(dtype.name,dtype.meta,project_url,dtype.hierarchy) }}    
   </div>
@@ -21,10 +21,10 @@
     
     <div class="col-lg-9">
     {{ dtype.doc }}
-    <br>
+    {% if dtype.doc %}<br>{% endif %}
     {% if dtype.variables|length > 0 %}
     <section>
-    <h2>Variables</h2>
+    <h2>Components</h2>
     {{ macros.var_list(dtype.variables,permission=True) }}
     </section>
     <br>
@@ -38,7 +38,7 @@
 	   {% elif dtype.constructor.obj == "subroutine" or dtype.constructor.obj == "function" %}
 		  {% set obj = dtype.constructor %}
 	     <div class="panel panel-default">
-  		  <div class="panel-heading codesum"><a name="con-{{ obj.name }}"></a><h3>{{ macros.proc_line(obj) }}</h3></div>
+  		  <div class="panel-heading codesum"><a class="anchor" name="con-{{ obj.name }}"></a><h3>{{ macros.proc_line(obj) }}</h3></div>
 	       <div class="panel-body">
           {{ macros.proc_summary(obj,display,False) }}
           </div>
