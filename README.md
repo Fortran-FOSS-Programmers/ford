@@ -354,8 +354,6 @@ things which I'd like to do at some point include:
 - Add the ability to produce dependency diagrams and inheritance diagrams for
   modules and types, respectively.
 - Make more options configurable from the command-line.
-- Integrate the Pelican MathJax plugin.
-- Add MathJax support. __Priority Task__
 - Add a search feature.
 - Test on some more code, including that of other people, who may have different
   coding styles.
