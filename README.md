@@ -4,6 +4,24 @@ FORD stands for FORtran Documenter. As you may know, "to ford" refers to
 crossing a river (or other body of water). It does not, in this context, refer
 to any company or individual associated with cars.
 
+Ford was written due to [Doxygen](http://www.stack.nl/~dimitri/doxygen/)'s
+poor handling of Fortran and the lack of comparable alternatives.
+[ROBODoc](http://rfsber.home.xs4all.nl/Robo/index.html) can't actually extract
+any information from the source code and just about any other automatic
+documentation software I found was either proprietary, didn't work very well
+for Fortran, or was limited in terms of how it produced its output.
+[f90doc](http://erikdemaine.org/software/f90doc/) is quite good and I managed
+to modify it so that it could handle most of Fortran 2003, but it produces
+rather ugly documentation, can't provide as many links between different parts
+of the documentation as I'd like, and is written in Perl (which I'm not that
+familiar with and which lacks the sort of libraries found in Python for
+producing HTML content).
+
+The goal of FORD is to be able to reliably produce documentation for modern
+Fortran software which is informative and nice to look at. The documentation
+should be easy to write and non-obtrusive within the code. While it will never
+be as feature-rich as Doxygen, hopefully FORD will be able to provide an
+alternative for documenting Fortran projects.
 
 ##Disclaimer
 This is a young project. While it has bee tested somewhat, the testing has been
@@ -313,7 +331,7 @@ things which I'd like to do at some point include:
   modules and types, respectively.
 - Make more options configurable from the command-line.
 - Integrate the Pelican MathJax plugin.
-- Add MathJax support.
+- Add MathJax support. __Priority Task__
 - Add a search feature.
 - Test on some more code, including that of other people, who may have different
   coding styles.
@@ -329,8 +347,6 @@ things which I'd like to do at some point include:
 - Add the ability to recognize the use of intrinsic modules
 - Add the ability to allow for ``only`` statements when loading modules and for
   renaming module procedures when loading them.
-- Improve the handling of parameterized derived types, particularly for
-  variables of that type.
 - Improve the sidebar for source files so that it will link to the items that it
   lists.
 - Allow the user to provide a favicon.
@@ -339,7 +355,6 @@ things which I'd like to do at some point include:
 - Use summaries of the description in some places.
 - Improve the way procedures are handled as arguments. In particular, allow
   any abstract interface which was used as a template to be visible somehow.
-- Add the ability to search documentation.
 
 Things which ideally I would do, but are not currently on the radar include:
 
