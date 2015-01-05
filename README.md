@@ -62,7 +62,9 @@ project will have its own
 contains a description of the project. Various options (see below for a
 description) can be specified in this file, such as where to look for your
 projects source files, where to output the documentation, and information about
-the author.
+the author. See
+[./example-project-file.md](https://github.com/cmacmackin/ford/blob/master/example-project-file.md)
+for a sample project file.
 
 ###Running Ford
 Once you have written a project file which you're satisfied with, it is time to
@@ -282,6 +284,9 @@ left blank then relative URLs will be used for links. (<em>default:</em> blank,
 <dt>website</dt><dd>The author's website.</dd>
 </dl>
 
+See
+[./example-project-file.md](https://github.com/cmacmackin/ford/blob/master/example-project-file.md)
+for a sample project file.
 
 ###Meta-Data in Documentation
 When documenting your source files you can provide meta-data at the top of an
