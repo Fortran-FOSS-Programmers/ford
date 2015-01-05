@@ -697,7 +697,7 @@ class FortranType(FortranContainer):
                     self.attributes.append(attrib.strip())
         if line.group(3):
             paramstr = line.group(3).strip()
-            self.parameters = self._split_re(paramstr)
+            self.parameters = self._split_re.split(paramstr)
         else:
             self.parameters = []
         self.sequence = False

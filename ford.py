@@ -31,6 +31,7 @@ from datetime import date
 import ford.fortran_project
 import ford.sourceform
 import ford.output
+from ford.mdx_mathjax import MathJaxExtension
 
 def main():    
     # Setup the command-line options and parse them.
@@ -48,7 +49,7 @@ def main():
     #TODO: Integrate the Pelican Mathjax plugin--it will work better.
     md = markdown.Markdown(extensions=['markdown.extensions.meta',
         'markdown.extensions.codehilite','markdown.extensions.extra',
-        'ford.mathjax'], output_format="html5")
+        MathJaxExtension()], output_format="html5")
     
     # Read in the project-file. This will contain global documentation (which
     # will appear on the homepage) as well as any information about the project
