@@ -208,18 +208,28 @@ are included in the description, if they exist.
 <dt>summary</dt><dd>A summary of the description of your project. If present
   it will be printed in a "Jumbotron" element at the top of the documentation
   index page. This will be processed by Markdown before being used.</dd>
+<dt>project_url</dt><dd>The URL at which the documentation will be available. If
+left blank then relative URLs will be used for links. (<em>default:</em> blank,
+  i.e. relative links)</dd>
 <dt>project_directory</dt><dd>The directory where the source-files are to be
   found for this project. This must not be a subdirectory of the output_dir (see
-  below).</dd>
+  below). (<em>default:</em> ./src)</dd>
 <dt>output_dir</dt><dd>The directory where the project output will be placed.
   <strong>Any content already present there will be deleted.</strong></dd>
 <dt>css</dt><dd>The path to a custom style-sheet which can be used to modify the
-  appearance of the output.</dd>
+  appearance of the output. (<em>default:</em> ./doc)</dd>
 <dt>extensions</dt><dd>File extensions which will be read by FORD for
   documentation. Each extension must be on its own line.
   (<em>default:</em> f90, f95, f03, f08)</dd>
 <dt>exclude</dt><dd>A source file which should not be read. Each excluded file
   must be on its own line. Provide only the file name, not the full path.</dd>
+<dt>display</dt><dd>How much documentation should be printed. Options are
+  'public', 'private', 'protected', or any combination of those three. Each
+  choice must be on its own line. (<em>default:</em> 'public' and 'protected')
+  </dd>
+<dt>version</dt><dd>The version name/number of your project.</dd>
+<dt>year</dt><dd>The year to display in the copyright notice. (<em>default:</em>
+  the current year)</dd>
 <dt>project_github</dt><dd>The URL of the Github repository for this project.
   </dd>
 <dt>project_bitbucket</dt><dd>The URL of the BitBucket repository for this
@@ -229,13 +239,6 @@ are included in the description, if they exist.
 <dt>project_download</dt><dd>A URL from which to download the source or
   binaries for this project.</dd>
 <dt>project_website</dt><dd>The homepage for this project.</dd>
-<dt>display</dt><dd>How much documentation should be printed. Options are
-  'public', 'private', 'protected', or any combination of those three. Each
-  choice must be on its own line. (<em>default:</em> 'public' and 'protected')
-  </dd>
-<dt>version</dt><dd>The version name/number of your project.</dd>
-<dt>year</dt><dd>The year to display in the copyright notice. (<em>default:</em>
-  the current year)</dd>
 <dt>author</dt><dd>The name of the person(s) or organization who wrote this
   project.</dd>
 <dt>author_description</dt><dd>A brief description of the author. You could

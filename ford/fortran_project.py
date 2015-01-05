@@ -36,7 +36,7 @@ class Project(object):
     project which is to be documented.
     """
     def __init__(self,name,topdir=".",extensions=["f90","f95","f03","f08"],
-                 display=['public','protected']):
+                 display=['public','protected'], exclude=[]):
         # TODO: Add the ability to ignore certain certain files.
         self.name = name
         self.topdir = topdir
@@ -53,7 +53,7 @@ class Project(object):
         for srcdir in srctree:
             curdir = srcdir[0]
             for item in srcdir[2]:
-                if item.split('.')[-1] in self.extensions:
+                if item.split('.')[-1] in self.extensions and not item in exclude:
                     # Get contents of the file
                     print "Reading file {}".format(os.path.join(curdir,item))
                     try:

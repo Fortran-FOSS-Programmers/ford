@@ -71,7 +71,8 @@ def main():
                 u'project':           u'Fortran Program',
                 u'project_url':       u'',
                 u'display':           [u'public',u'protected'],
-                u'year':              date.today().year
+                u'year':              date.today().year,
+                u'exclude':           []
                }
     for option in options:
         if hasattr(args,option) and eval("args." + option):
@@ -102,7 +103,7 @@ def main():
     # Parse the files in your project
     project = ford.fortran_project.Project(proj_data['project'],
                 proj_data['project_directory'], proj_data['extensions'], 
-                proj_data['display'])
+                proj_data['display'], proj_data['exclude'])
     if len(project.files) < 1:
         print "Error: No source files with appropriate extension found in specified directory."
         quit()
