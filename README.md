@@ -191,13 +191,7 @@ page:
 
 > Meta-data consists of a series of keywords and values defined at the beginning of a markdown document like this:
 >
->    Title:   My Document
->    Summary: A brief description of my document.
->    Authors: Waylan Limberg
->             John Doe
->    Date:    October 2, 2007
->    blank-value: 
->    base_url: http://example.com
+> <pre>Title:   My Document<br>Summary: A brief description of my document.<br>Authors: Waylan Limberg<br>         John Doe<br>Date:    October 2, 2007<br>blank-value: <br>base_url: http://example.com</pre>
 >
 >This is the first paragraph of the document.
 >The keywords are case-insensitive and may consist of letters, numbers, underscores and dashes and must end with a colon. The values consist of anything following the colon on the line and may even be blank.
@@ -269,17 +263,17 @@ type :: cat
   !! author: C. MacMackin
   !! version: v0.2
   !!
-  !! This data type represents a cat.
+  !! This data-type represents a cat.
 ```
 but this won't
 ```fortran
-! Good
+! Bad
 type :: cat
   !!
   !! author: C. MacMackin
   !! version: v0.2
   !!
-  !! This data type represents a cat.
+  !! This data-type represents a cat.
 ```
 The meta-data will be displayed for procedures, derived types,
 files, programs, modules, type-bound procedures, and interfaces. It may be
@@ -309,8 +303,6 @@ displayed in more cases in future. Recognized types of meta-data are:
 This software is still extremely young and much remains to be done. Various
 things which I'd like to do at some point include:
 
-- Write proper documentation.
-- Assemble a list of dependencies.
 - Support some of the old Fortran 77 ways of doing things, as these are often
   still used. This includes PARAMETER statements and EXTERNAL statements.
   Support for fixed-form code is less of a priority.
