@@ -36,8 +36,7 @@ class Project(object):
     project which is to be documented.
     """
     def __init__(self,name,topdir=".",extensions=["f90","f95","f03","f08"],
-                 display=['public','protected'], exclude=[]):
-        # TODO: Add the ability to ignore certain certain files.
+                 display=['public','protected'], exclude=[],docmark='!'):
         self.name = name
         self.topdir = topdir
         self.extensions = extensions
@@ -47,6 +46,8 @@ class Project(object):
         self.procedures = []
         self.types = []
         self.display = display
+        
+        ford.sourceform.set_doc_mark(docmark)
         
         # Get all files within topdir, recursively
         srctree = os.walk(topdir)

@@ -47,6 +47,7 @@ _quotes_re = re.compile("\"([^\"]|\"\")*\"|'([^']|'')*'",re.IGNORECASE)
 _para_capture_re = re.compile("<p>.*?</p>",re.IGNORECASE|re.DOTALL)
 
 base_url = ''
+docmark = '!'
 
 #TODO: Add ability to note EXTERNAL procedures, PARAMETER statements, and DATA statements.
 class FortranBase(object):
@@ -75,7 +76,7 @@ class FortranBase(object):
         del self.strings
         self.doc = []
         line = source.next()
-        while line[0:2] == "!!":
+        while line[0:2] == "!" + docmark:
             self.doc.append(line[2:])
             line = source.next()
         source.pass_back(line)
@@ -190,7 +191,7 @@ class FortranContainer(FortranBase):
         permission = "public"
       
         for line in source:
-            if line[0:2] == "!!": 
+            if line[0:2] == "!" + docmark: 
                 self.doc.append(line[2:])
                 continue
 
@@ -419,7 +420,7 @@ class FortranSourceFile(FortranContainer):
         self.doc = []
         self.hierarchy = []
         self.obj = 'sourcefile'
-        source = ford.reader.FortranReader(self.path)
+        source = ford.reader.FortranReader(self.path,docmark)
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
         self.src = readobj.read()
@@ -982,7 +983,7 @@ def line_to_variables(source, line, inherit_permission, parent):
         
     doc = []
     docline = source.next()
-    while docline[0:2] == "!!":
+    while docline[0:2] == "!" + docmark:
         doc.append(docline[2:])
         docline = source.next()
     source.pass_back(docline)
@@ -1102,6 +1103,10 @@ def paren_split(sep,string):
 def set_base_url(url):
     FortranBase.base_url = url
 
+def set_doc_mark(mark):
+    global docmark
+    docmark = mark
+
 def get_mod_procs(source,line,parent):
     inherit_permission = parent.permission
     retlist = []
@@ -1115,7 +1120,7 @@ def get_mod_procs(source,line,parent):
     
     doc = []
     docline = source.next()
-    while docline[0:2] == "!!":
+    while docline[0:2] == "!" + docmark:
         doc.append(docline[2:])
         docline = source.next()
     source.pass_back(docline)

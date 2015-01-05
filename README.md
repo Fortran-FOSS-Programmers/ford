@@ -233,14 +233,22 @@ left blank then relative URLs will be used for links. (<em>default:</em> blank,
   found for this project. This must not be a subdirectory of the output_dir (see
   below). (<em>default:</em> ./src)</dd>
 <dt>output_dir</dt><dd>The directory where the project output will be placed.
-  <strong>Any content already present there will be deleted.</strong></dd>
+  <strong>Any content already present there will be deleted.
+  (<em>default:</em> ./doc)</strong></dd>
 <dt>css</dt><dd>The path to a custom style-sheet which can be used to modify the
-  appearance of the output. (<em>default:</em> ./doc)</dd>
+  appearance of the output.</dd>
 <dt>extensions</dt><dd>File extensions which will be read by FORD for
   documentation. Each extension must be on its own line.
   (<em>default:</em> f90, f95, f03, f08)</dd>
 <dt>exclude</dt><dd>A source file which should not be read. Each excluded file
   must be on its own line. Provide only the file name, not the full path.</dd>
+<dt>docmark</dt><dd>The symbol(s) following an exclaimation mark which
+  designates that a comment contains documentation. For excample, if the docmark
+  was ``>``, comments would then be designated by ``!>``. The docmark can be
+  anything you like, as long as it does not contain something which (ordinarily)
+  has special meaning for regular expressions. Thus, '*', '+', and '?'
+  would not be valid and would yield incorrect results. (<em>default:</em>
+  '!')</dd>
 <dt>display</dt><dd>How much documentation should be printed. Options are
   'public', 'private', 'protected', or any combination of those three. Each
   choice must be on its own line. (<em>default:</em> 'public' and 'protected')

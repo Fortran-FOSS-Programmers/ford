@@ -43,16 +43,16 @@ class FortranReader(object):
     """
 
     # Regexes
-    doc_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!!.*)$")
     com_re = re.compile("^([^\"'!]|(\'[^']*')|(\"[^\"]*\"))*(!.*)$")
     sc_re = re.compile("^([^;]*);(.*)$")
 
-    def __init__(self,filename):
+    def __init__(self,filename,docmark='!'):
         self.name = filename
         self.reader = open(filename,'r')
         self.docbuffer = ""
         self.pending = []
         self.prevdoc = False
+        self.doc_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(docmark))
         
     def __iter__(self):
         return self

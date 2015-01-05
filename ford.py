@@ -64,7 +64,7 @@ def main():
                u'google_plus',u'linkedin',u'email',u'website',u'project_github',
                u'project_bitbucket',u'project_website',u'project_download',
                u'project_sourceforge',u'project_url',u'display',u'version',
-               u'year']
+               u'year',u'docmark']
     defaults = {u'project_directory': u'./src',
                 u'extensions':        [u"f90",u"f95",u"f03",u"f08"],
                 u'output_dir':        u'./doc',
@@ -72,7 +72,8 @@ def main():
                 u'project_url':       u'',
                 u'display':           [u'public',u'protected'],
                 u'year':              date.today().year,
-                u'exclude':           []
+                u'exclude':           [],
+                u'docmark':           '!'
                }
     for option in options:
         if hasattr(args,option) and eval("args." + option):
@@ -103,7 +104,7 @@ def main():
     # Parse the files in your project
     project = ford.fortran_project.Project(proj_data['project'],
                 proj_data['project_directory'], proj_data['extensions'], 
-                proj_data['display'], proj_data['exclude'])
+                proj_data['display'], proj_data['exclude'], proj_data['docmark'])
     if len(project.files) < 1:
         print "Error: No source files with appropriate extension found in specified directory."
         quit()
