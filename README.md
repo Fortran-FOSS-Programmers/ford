@@ -4,6 +4,7 @@ FORD stands for FORtran Documenter. As you may know, "to ford" refers to
 crossing a river (or other body of water). It does not, in this context, refer
 to any company or individual associated with cars.
 
+
 ##Disclaimer
 This is a young project. While it has bee tested somewhat, the testing has been
 far from comprehensive. Various options have not been tested and obscure uses
@@ -20,6 +21,7 @@ a proper Python backtrace. Submit a bug report on this Github page, including
 the backtrace and, if possible, the file which FORD crashed while processing.
 If an error occurs elsewhere, you will most likely get a backtrace by default.
 Once again, please include this backtrace in your bug report.
+
 
 ##Dependencies
 In addition to the standard Python libraries, the following modules are needed:
@@ -143,10 +145,164 @@ my project [Futility](https://github.com/cmacmackin/futility) is shown below.
 
 ![Some example output.](output-example.png)
 
+
 ##Options
+While not nearly as configurable as the likes of
+[Doxygen](http://www.stack.nl/~dimitri/doxygen/), FORD's output can still be
+customized to some extent by users.
+
 ###Command-Line Options
+The command-line interface is given below:
+```
+ford.py [-h] [-d PROJECT_DIRECTORY] [-o OUTPUT_DIR] [-s CSS]
+             [--exclude EXCLUDE] [-e [EXTENSIONS [EXTENSIONS ...]]]
+             project_file
+```
+<dl>
+  <dt>PROJECT_DIRECTORY</dt>
+  <dd>The directory where the source-files are to be found for
+  this project. This must not be a subdirectory of the OUTPUT_DIR (see
+  below).</dd>
+  <dt>OUTPUT_DIR</dt>
+  <dd>The directory where the project output will be placed.
+  <strong>Any content already present there will be deleted.</strong></dd>
+  <dt>CSS</dt>
+  <dd>The path to a custom style-sheet which can be used to modify the
+  appearance of the output.<dd>
+  <dt>EXCLUDE</dt>
+  <dd>A source file which should not be read. If you want to specify more than
+  one then you will need to do it in the project file.<dd>
+  <dt>EXTENSIONS</dt>
+  <dd>File extensions which will be read by FORD for documentation.
+  (<em>default:</em> f90, f95, f03, f08)</dd>
+  <dt>project_file</dt>
+  <dd>The file containing a description of your project and various settings
+  for FORD.</dd>
+</dl>
+
+Settings specified at the command-line will override those specified in the
+project file.
+
 ###Project File Options
+You can specify various options and information for your project in the
+meta-data of your project file. Quoting from the
+[Markdown Meta-Data](https://pythonhosted.org/Markdown/extensions/meta_data.html)
+page:
+
+> Meta-data consists of a series of keywords and values defined at the beginning of a markdown document like this:
+>
+>    Title:   My Document
+>    Summary: A brief description of my document.
+>    Authors: Waylan Limberg
+>             John Doe
+>    Date:    October 2, 2007
+>    blank-value: 
+>    base_url: http://example.com
+>
+>This is the first paragraph of the document.
+>The keywords are case-insensitive and may consist of letters, numbers, underscores and dashes and must end with a colon. The values consist of anything following the colon on the line and may even be blank.
+>
+>If a line is indented by 4 or more spaces, that line is assumed to be an additional line of the value for the previous keyword. A keyword may have as many lines as desired.
+>
+>The first blank line ends all meta-data for the document. Therefore, the first line of a document must not be blank. All meta-data is stripped from the document prior to any further processing by Markdown.
+
+The options which can be specified in the meta-data are listed below. Defaults
+are included in the description, if they exist.
+<dl>
+<dt>project</dt><dd>The name of this project.
+  (<em>default:</em> Fortran Project)</dd>
+<dt>summary</dt><dd>A summary of the description of your project. If present
+  it will be printed in a "Jumbotron" element at the top of the documentation
+  index page. This will be processed by Markdown before being used.</dd>
+<dt>project_directory</dt><dd>The directory where the source-files are to be
+  found for this project. This must not be a subdirectory of the output_dir (see
+  below).</dd>
+<dt>output_dir</dt><dd>The directory where the project output will be placed.
+  <strong>Any content already present there will be deleted.</strong></dd>
+<dt>css</dt><dd>The path to a custom style-sheet which can be used to modify the
+  appearance of the output.</dd>
+<dt>extensions</dt><dd>File extensions which will be read by FORD for
+  documentation. Each extension must be on its own line.
+  (<em>default:</em> f90, f95, f03, f08)</dd>
+<dt>exclude</dt><dd>A source file which should not be read. Each excluded file
+  must be on its own line. Provide only the file name, not the full path.</dd>
+<dt>project_github</dt><dd>The URL of the Github repository for this project.
+  </dd>
+<dt>project_bitbucket</dt><dd>The URL of the BitBucket repository for this
+  project.</dd>
+<dt>project_sourceforge</dt><dd>The Sourceforge repository for this project.
+  </dd>
+<dt>project_download</dt><dd>A URL from which to download the source or
+  binaries for this project.</dd>
+<dt>project_website</dt><dd>The homepage for this project.</dd>
+<dt>display</dt><dd>How much documentation should be printed. Options are
+  'public', 'private', 'protected', or any combination of those three. Each
+  choice must be on its own line. (<em>default:</em> 'public' and 'protected')
+  </dd>
+<dt>version</dt><dd>The version name/number of your project.</dd>
+<dt>year</dt><dd>The year to display in the copyright notice. (<em>default:</em>
+  the current year)</dd>
+<dt>author</dt><dd>The name of the person(s) or organization who wrote this
+  project.</dd>
+<dt>author_description</dt><dd>A brief description of the author. You could
+  provide biographical details or links to other work, for example. This will
+  be processed by Markdown before being used.</dd>
+<dt>author_pic</dt><dd>A picture of or avatar for the author.</dd>
+<dt>github</dt><dd>The author's Github page.</dd>
+<dt>bitbucket</dt><dd>The author's BitBucket page.</dd>
+<dt>facebook</dt><dd>The author's Facebook profile.</dd>
+<dt>twitter</dt><dd>The author's Twitter.</dd>
+<dt>google_plus</dt><dd>The author's Google+</dd>
+<dt>linkedin</dt><dd>The author's LinkedIn profile.</dd>
+<dt>email</dt><dd>The author's email address.</dd>
+<dt>website</dt><dd>The author's website.</dd>
+</dl>
+
+
 ###Meta-Data in Documentation
+When documenting your source files you can provide meta-data at the top of an
+item's documentation. There can not be any other documentation before it; not
+even a blank line of documentation. This will work
+```fortran
+! Good
+type :: cat
+  !! author: C. MacMackin
+  !! version: v0.2
+  !!
+  !! This data type represents a cat.
+```
+but this won't
+```fortran
+! Good
+type :: cat
+  !!
+  !! author: C. MacMackin
+  !! version: v0.2
+  !!
+  !! This data type represents a cat.
+```
+The meta-data will be displayed for procedures, derived types,
+files, programs, modules, type-bound procedures, and interfaces. It may be
+displayed in more cases in future. Recognized types of meta-data are:
+
+<dl>
+  <dt>author</dt><dd>The author of this part of the code</dd>
+  <dt>date</dt><dd>The date that this part of the code was written (or that the
+  documentation was written; whichever makes more sense to you).</dd>
+  <dt>license</dt><dd>The license for this part of your code. If you want
+  to provide a link then it will have to be in HTML, as it won't be processed
+  by Markdown.</dd>
+  <dt>version</dt><dd>The version number (or name) of this part of the
+  code.</dd>
+  <dt>category</dt><dd>A category for this part of the code. Currently this is
+  fairly useless, just being printed in the documentation. In future, FORD may
+  provide lists of things in each category.</dd>
+  <dt>summary</dt><dd>A brief description of this part of the code. If not
+  specified then FORD will use the first paragraph of the body of your
+  documentation.</dd>
+  <dt>deprecated</dt><dd>If this is present and not ``False`` then a
+  label saying "Deprecated" will be placed in the documentation.</dd>
+</dl>
 
 
 ##ToDo
