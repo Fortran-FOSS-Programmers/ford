@@ -398,6 +398,8 @@ things which I'd like to do at some point include:
   lists.
 - Improve the way procedures are handled as arguments. In particular, allow
   any abstract interface which was used as a template to be visible somehow.
+- Give the ability to import other markdown files into documentation.
+- Add some sort of @note environment similar to that of Doxygen.
 
 Things which ideally I would do, but are not currently on the radar include:
 
