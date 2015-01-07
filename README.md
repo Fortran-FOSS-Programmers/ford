@@ -176,10 +176,10 @@ priority for me at this time (since I regard fixed-form Fortran as an
 abomination which should be wiped from the face of this Earth).
 
 You can insert LaTeX into your documentation, which will be rendered by
-[MathJax](http://docs.mathjax.org). Inline math is designated by \( &hellip; \),
-math displayed on its own line is indicated by $$ &hellip; $$ or \[ &hellip; ],
-and a numbered equation is designated by \begin{equation} &hellip;
-\end{equation}. Inline math will not be displayed with the traditional
+[MathJax](http://docs.mathjax.org). Inline math is designated by \\( &hellip; \\),
+math displayed on its own line is indicated by $$ &hellip; $$ or \\[ &hellip; \\],
+and a numbered equation is designated by \\begin{equation} &hellip;
+\\end{equation}. Inline math will not be displayed with the traditional
 $ &hellip; $, as there is too much risk that dollar signs used elsewhere will be
 misinterpreted. You can refer back to number equations as you would in a LaTeX
 document. For more details on that feature, see the
