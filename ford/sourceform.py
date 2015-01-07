@@ -751,6 +751,11 @@ class FortranType(FortranContainer):
                 self.constructor = proc
                 break
         
+        # Prune anything which we don't want to be displayed
+        self.boundprocs = [ obj for obj in self.boundprocs if obj.permission in project.display ]
+        self.variables = [ obj for obj in self.variables if obj.permission in project.display ]
+
+        
     
 class FortranInterface(FortranContainer):
     """

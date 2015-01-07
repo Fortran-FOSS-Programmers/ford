@@ -69,7 +69,7 @@
 				{% if project.programs|length > 1 %}
             <li><a href="{{ project_url }}/lists/programs.html">Programs</a></li>
 				{% elif project.programs|length == 1 %}
-            <li><a href="{{ project_url }}/program/{{project.programs[0].name}}.html">Program</a></li>
+            <li><a href="{{ project.programs[0].get_url() }}">Program</a></li>
 				{% endif %}				
           </ul>
         <form action="{{ project_url }}/search.html" class="navbar-form navbar-right" role="search">

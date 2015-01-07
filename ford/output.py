@@ -41,7 +41,7 @@ def print_html(project,proj_data,proj_docs,relative):
     elif os.path.isdir(proj_data['output_dir']):
         shutil.rmtree(proj_data['output_dir'])
 
-    os.mkdir(proj_data['output_dir'], 0755)
+    os.makedirs(proj_data['output_dir'], 0755)
     os.mkdir(os.path.join(proj_data['output_dir'],'lists'), 0755)
     os.mkdir(os.path.join(proj_data['output_dir'],'sourcefile'), 0755)
     os.mkdir(os.path.join(proj_data['output_dir'],'type'), 0755)
