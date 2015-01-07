@@ -268,7 +268,10 @@ left blank then relative URLs will be used for links. (<em>default:</em> blank,
   (<em>default:</em> ./doc)</strong></dd>
 <dt>media_dir</dt><dd>A directory containing any images or other content which
   you will use or link to in your documentation. This will be placed at the root
-  of your documentation file-tree, with the name "media".</dd>
+  of your documentation file-tree, with the name "media". To link to this
+  content from the index (i.e. from the description and summary provided in the
+  project file) you would use ``./media/<file-name>``, while it would be
+  ``../media/<file-name>`` from anywhere else.</dd>
 <dt>css</dt><dd>The path to a custom style-sheet which can be used to modify the
   appearance of the output.</dd>
 <dt>extensions</dt><dd>File extensions which will be read by FORD for
@@ -360,7 +363,7 @@ displayed in more cases in future. Recognized types of meta-data are:
   fairly useless, just being printed in the documentation. In future, FORD may
   provide lists of things in each category.</dd>
   <dt>summary</dt><dd>A brief description of this part of the code. If not
-  specified then FORD will use the first paragraph of the body of your
+  specified, then FORD will use the first paragraph of the body of your
   documentation.</dd>
   <dt>deprecated</dt><dd>If this is present and not ``False`` then a
   label saying "Deprecated" will be placed in the documentation.</dd>
@@ -377,7 +380,6 @@ things which I'd like to do at some point include:
 - Add the ability to produce dependency diagrams and inheritance diagrams for
   modules and types, respectively.
 - Make more options configurable from the command-line.
-- Add a search feature.
 - Test on some more code, including that of other people, who may have different
   coding styles.
 - Add the ability to identify function calls and use this to work out
@@ -394,10 +396,6 @@ things which I'd like to do at some point include:
   renaming module procedures when loading them.
 - Improve the sidebar for source files so that it will link to the items that it
   lists.
-- Allow the user to provide a favicon.
-- Provide a directory in which the user can place any images and/or other
-  media they want available.
-- Use summaries of the description in some places.
 - Improve the way procedures are handled as arguments. In particular, allow
   any abstract interface which was used as a template to be visible somehow.
 
