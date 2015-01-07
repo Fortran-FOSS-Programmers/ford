@@ -240,9 +240,9 @@ page:
 
 > Meta-data consists of a series of keywords and values defined at the beginning of a markdown document like this:
 >
-> <pre>Title:   My Document<br>Summary: A brief description of my document.<br>Authors: Waylan Limberg<br>         John Doe<br>Date:    October 2, 2007<br>blank-value: <br>base_url: http://example.com</pre>
+> <pre>Title:   My Document<br>Summary: A brief description of my document.<br>Authors: Waylan Limberg<br>         John Doe<br>Date:    October 2, 2007<br>blank-value: <br>base_url: http://example.com
 >
->This is the first paragraph of the document.
+>This is the first paragraph of the document.</pre>
 >The keywords are case-insensitive and may consist of letters, numbers, underscores and dashes and must end with a colon. The values consist of anything following the colon on the line and may even be blank.
 >
 >If a line is indented by 4 or more spaces, that line is assumed to be an additional line of the value for the previous keyword. A keyword may have as many lines as desired.
