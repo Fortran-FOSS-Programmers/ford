@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}
+Search Results &ndash; {{ project }}
+{% endblock %}
+{% block body %}
+      <div class="row">
+        <div class="col-lg-12">
+			 <h1>Search Results</h1>
+             <div id="tipue_search_content"><div id="tipue_search_loading"></div></div>
+        </div>
+      </div>
+<!--
+    <script>
+      $(document).ready(function() {
+           $('#tipue_search_input').tipuesearch({
+             'mode' : 'static',
+             'show': 10,
+             'newWindow': false,
+             'descriptiveWords': 35,
+         });
+      });
+    </script>
+-->
+<script>
+$(document).ready(function() {
+     $('#tipue_search_input').tipuesearch();
+});
+</script>
+{% endblock %}
+

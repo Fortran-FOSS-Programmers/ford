@@ -153,7 +153,7 @@
   <div class="panel panel-default">
     <div class="panel-heading text-left"><h3 class="panel-title">All Programs</h3></div>
     <div class="list-group">
-      {% for prog in project.programs %}
+      {% for prog in project.programs|sort(attribute='name') %}
       <a class="list-group-item" href="{{ prog.get_url() }}">{{ prog.name }}</a>
       {% endfor %}
     </div>
@@ -162,7 +162,7 @@
   <div class="panel panel-default">
     <div class="panel-heading text-left"><h3 class="panel-title">All Modules</h3></div>
     <div class="list-group">
-      {% for mod in project.modules %}
+      {% for mod in project.modules|sort(attribute='name') %}
       <a class="list-group-item" href="{{ mod.get_url() }}">{{ mod.name }}</a>
       {% endfor %}
     </div>
@@ -171,8 +171,8 @@
   <div class="panel panel-default">
     <div class="panel-heading text-left"><h3 class="panel-title">All Procedures</h3></div>
     <div class="list-group">
-      {% for proc in project.procedures %}
-      <a class="list-group-item" href="{{ proc[1].get_url() }}">{{ proc[1].name }}</a>
+      {% for proc in project.procedures|sort(attribute='name') %}
+      <a class="list-group-item" href="{{ proc.get_url() }}">{{ proc.name }}</a>
       {% endfor %}
     </div>
   </div>
@@ -180,8 +180,8 @@
   <div class="panel panel-default">
     <div class="panel-heading text-left"><h3 class="panel-title">All Derived Types</h3></div>
     <div class="list-group">
-      {% for dtype in project.types %}
-      <a class="list-group-item" href="{{ dtype[1].get_url() }}">{{ dtype[1].name }}</a>
+      {% for dtype in project.types|sort(attribute='name') %}
+      <a class="list-group-item" href="{{ dtype.get_url() }}">{{ dtype.name }}</a>
       {% endfor %}
     </div>
   </div>
@@ -189,7 +189,7 @@
   <div class="panel panel-default">
     <div class="panel-heading text-left"><h3 class="panel-title">All Source Files</h3></div>
     <div class="list-group">
-      {% for src in project.files %}
+      {% for src in project.files|sort(attribute='name') %}
       <a class="list-group-item" href="{{ src.get_url() }}">{{ src.name }}</a>
       {% endfor %}
     </div>
@@ -198,7 +198,7 @@
   {% endmacro %}
 
 
-{% macro var_list(variables,intent=False,permission=False) %}
+{% macro var_list(variables,intent=False,permission=False,summary=False) %}
 <table class="table table-striped varlist">
 <thead><tr><th>Type</th>{% if permission %}<th>Visibility</th>{% endif %}
 {% if intent %}<th>Intent</th><th>Optional</th>{% endif %}
@@ -219,7 +219,7 @@
   <td>{% if var.optional -%}optional{% if permission or var.parameter or var.attributes|length > 0 -%},{%- endif %}{%- endif %}</td>{%- endif %}
   {% if permission %}<td>{{ var.permission }}{% if var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>{% endif %}
   <td>{% if var.parameter %}parameter{% if var.attribs|length > 0 %}, {% endif %}{% endif %}{% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}</td><td>::</td>
-  <td><strong>{{ var.name }}</strong>{{ var.dimension }}</td>{% if not intent %}<td>{% if var.initial -%}{% if var.points -%} => {% else %} = {%- endif %}{% endif %}</td><td>{% if var.initial %}{{ var.initial }}{%- endif %}</td>{% endif %}<td>{{ var.doc }}</td>
+  <td><strong>{{ var.name }}</strong>{{ var.dimension }}</td>{% if not intent %}<td>{% if var.initial -%}{% if var.points -%} => {% else %} = {%- endif %}{% endif %}</td><td>{% if var.initial %}{{ var.initial }}{%- endif %}</td>{% endif %}<td>{% if summary -%}{{ var.meta['summary'] }}{% else %}{{ var.doc }}{% endif %}</td>
   {% elif var.obj == 'proc' %}
   <td colspan="{{ colnum }}">
       <small>{{ proc_summary(var,display,title=True,small=True) }}</small>
@@ -238,7 +238,11 @@
     {% endif %}
     {% if small %}<h6>{% else %}<h4>{% endif %}Arguments{% if small %}</h6>{% else %}</h4>{% endif %}
     {% if proc.args|length > 0 %}
+      {% if proc.permission in display %}
+      {{ var_list(proc.args,intent=True,summary=True) }}
+      {% else %}
       {{ var_list(proc.args,intent=True) }}
+      {% endif %}
     {% else %}
       <em>None</em>
     {% endif %}
@@ -250,12 +254,12 @@
   {% if var.proto %}{% set args = args + 1 %}{% endif %}
      {% if small %}<h6>{% else %}<h4>{% endif %}Return Value <small><a class="anchor" name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{{ var.proto[0] }}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
   {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {%- endif %}{%- endfor %}{{ var.dimension }}</small>{% if small %}</h6>{% else %}</h4>{% endif %}
-  {{ var.doc }}
+  {{ var.meta['summary'] }}
     {% endif %}
     {% if proc.doc or proc.meta %}
     {% if small %}<h6>{% else %}<h4>{% endif %}Description{% if small %}</h6>{% else %}</h4>{% endif %}
        {{ meta_list(proc.meta) }}
-       {{ proc.doc }}
+       {{ proc.meta['summary'] }}
     {% endif %}    
 {% endmacro %}
 
@@ -270,7 +274,7 @@
   {% if tb.doc or tb.meta %}
   <div class="panel-body">
     {{ meta_list(tb.meta) }}
-    {{ tb.doc }}
+    {{ tb.meta['summary'] }}
   </div>
   {% endif %}
   <ul class="list-group">
@@ -294,7 +298,7 @@
   {% if intr.doc or intr.meta %}
   <div class="panel-body">
     {{ meta_list(intr.meta) }}
-    {{ intr.doc }}
+    {{ intr.meta['summary'] }}
   </div>
   {% endif %}
   <ul class="list-group">
@@ -344,24 +348,24 @@
   <div class="panel-body">
      {% if dtype.variables|length > 0 %}
      <h4>Components</h4>
-    {{ var_list(dtype.variables,permission=True) }}
+    {{ var_list(dtype.variables,permission=True,summary=True) }}
      {% endif %}
      {% if dtype.constructor %}
      <h4>Constructor</h4>
        {% if dtype.constructor.obj == 'interface' %}
-         {{ dtype.constructor.doc }}
+         {{ dtype.constructor.meta['summary'] }}
        {% endif %}
        <table class="table table-striped varlist">
       <tbody>
         {% if dtype.constructor.obj == 'proc' %}
-        <tr><td>{{ proc_line(dtype.constructor,display) }}</td><td>{{ dtype.constructor.doc }}</td></tr>
+        <tr><td>{{ proc_line(dtype.constructor,display) }}</td><td>{{ dtype.constructor.meta['summary'] }}</td></tr>
         {% elif dtype.constructor.obj == 'interface' %}
              {% for proc in dtype.constructor.functions + dtype.constructor.subroutines %}
-             <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}</td><td>{{ proc.doc }}</td></tr>
+             <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}</td><td>{{ proc.meta['summary'] }}</td></tr>
              {% endfor %}
              {% for mproc in dtype.constructor.modprocs %}
              {% set proc = mproc.procedure %}
-             <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}</td><td>{{ proc.doc }}</td></tr>
+             <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}</td><td>{{ proc.meta['summary'] }}</td></tr>
              {% endfor %}
         {% endif %}
        </tbody>
@@ -372,7 +376,7 @@
       <table class="table table-striped varlist">
       <tbody>
       {% for fin in dtype.finalprocs %}
-       <tr><td>final :: <strong>{{ fin.name }}</strong></h3></td><td>{{ fin.doc }}</td></tr>
+       <tr><td>final :: <strong>{{ fin.name }}</strong></h3></td><td>{{ fin.meta['summary'] }}</td></tr>
       {% endfor %}
        </tbody>
        </table>  
@@ -383,7 +387,7 @@
       <tbody>
       {% for tb in dtype.boundprocs %}
        <tr><td>{% if tb.generic -%}generic,{% else %}procedure,{%- endif %} {{ tb.permission }}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or tb.name != tb.bindings[0].name %} => {% for bind in tb.bindings -%}{{ bind.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}</td>
-       <td>{{ tb.doc }}</td></tr>
+       <td>{{ tb.meta['summary'] }}</td></tr>
       {% endfor %}
        </tbody>
        </table>
@@ -391,7 +395,7 @@
      {% if dtype.doc or dtype.meta %}
      <h4>Description</h4>
        {{ meta_list(dtype.meta) }}
-       {{ dtype.doc }}
+       {{ dtype.meta['summary'] }}
      {% endif %}
   </div>
 </div>

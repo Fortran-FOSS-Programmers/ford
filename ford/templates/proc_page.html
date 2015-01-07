@@ -1,9 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ procedure.name }} &ndash; {{ project }}{% endblock title %}
 {% block body %}
-  <div class="row">
   {% import 'macros.html' as macros %}
-  </div>
   <div class="row">
     <h1>{{ procedure.name }}
     <small>{{ procedure.proctype }}</small>
@@ -19,7 +17,7 @@
     {{ macros.sidebar(project,procedure) }}
     </div>
     
-    <div class="col-lg-9">
+    <div class="col-lg-9" id='text'>
     <h2>{{ macros.proc_line(procedure,[]) }}</h2>
     {{ macros.use_list(procedure) }}
 

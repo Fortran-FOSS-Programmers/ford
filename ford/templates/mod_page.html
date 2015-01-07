@@ -1,9 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ module.name }} &ndash; {{ project }}{% endblock title %}
 {% block body %}
-  <div class="row">
   {% import 'macros.html' as macros %}
-  </div>
   <div class="row">
     <h1>{{ module.name }} 
     <small>Module</small>
@@ -19,7 +17,7 @@
     {{ macros.sidebar(project,module) }}
     </div>
     
-    <div class="col-lg-9">
+    <div class="col-lg-9" id='text'>
     {{ macros.use_list(module) }}
     {{ module.doc }}
     {% if module.doc %}<br>{% endif %}

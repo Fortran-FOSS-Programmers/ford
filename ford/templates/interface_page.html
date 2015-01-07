@@ -1,9 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ interface.name }} &ndash; {{ project }}{% endblock title %}
 {% block body %}
-  <div class="row">
   {% import 'macros.html' as macros %}
-  </div>
   <div class="row">
     <h1>{{ interface.name }}
 	 <small>Interface</small>
@@ -19,7 +17,7 @@
     {{ macros.sidebar(project,interface) }}
     </div>
     
-    <div class="col-lg-9">
+    <div class="col-lg-9" id='text'>
     <h2>{{ interface.permission }} {% if interface.abstract %}abstract {% endif %} interface {{ interface.name }}</h2>
 	 {{ interface.doc }}
     {% if interface.doc %}<br>{% endif %}

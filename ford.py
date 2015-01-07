@@ -65,7 +65,7 @@ def main():
                u'google_plus',u'linkedin',u'email',u'website',u'project_github',
                u'project_bitbucket',u'project_website',u'project_download',
                u'project_sourceforge',u'project_url',u'display',u'version',
-               u'year',u'docmark']
+               u'year',u'docmark',u'media_dir',u'favicon']
     defaults = {u'project_directory': u'./src',
                 u'extensions':        [u"f90",u"f95",u"f03",u"f08"],
                 u'output_dir':        u'./doc',
@@ -74,7 +74,8 @@ def main():
                 u'display':           [u'public',u'protected'],
                 u'year':              date.today().year,
                 u'exclude':           [],
-                u'docmark':           '!'
+                u'docmark':           '!',
+                u'favicon':           'default-icon'
                }
     for option in options:
         if hasattr(args,option) and eval("args." + option):
@@ -118,8 +119,9 @@ def main():
     # Produce the documentation using Jinja2. Output it to the desired location
     # and copy any files that are needed (CSS, JS, images, fonts, source files,
     # etc.)
-    print "Creating HTML documentation...\n"
+    print "Creating HTML documentation..."
     ford.output.print_html(project,proj_data,proj_docs,relative)
+    print
     
     return 0
 

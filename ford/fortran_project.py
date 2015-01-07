@@ -67,32 +67,32 @@ class Project(object):
                         self.modules.append(module)
                         for function in module.functions:
                             if function.permission in display:
-                                self.procedures.append((module.name, function))
+                                self.procedures.append(function)
                         for subroutine in module.subroutines:
                             if subroutine.permission in display:
-                                self.procedures.append((module.name, subroutine))
+                                self.procedures.append(subroutine)
                         for interface in module.interfaces:
                             if interface.permission in display and interface.hasname:
-                                self.procedures.append((module.name, interface))
+                                self.procedures.append(interface)
                         for dtype in module.types:
                             if dtype.permission in display:
-                                self.types.append((module.name, dtype))
+                                self.types.append(dtype)
                     
                     for function in self.files[-1].functions:
-                        self.procedures.append((None,function))
+                        self.procedures.append(function)
                     for subroutine in self.files[-1].subroutines:
-                        self.procedures.append((None,subroutine))
+                        self.procedures.append(subroutine)
                     for program in self.files[-1].programs:
                         self.programs.append(program)
                         for function in program.functions:
-                            self.procedures.append((program.name, function))
+                            self.procedures.append(function)
                         for subroutine in program.subroutines:
-                            self.procedures.append((program.name, subroutine))
+                            self.procedures.append(subroutine)
                         for interface in program.interfaces:
                             if interface.hasname:
-                                self.procedures.append((program.name, interfaces))
+                                self.procedures.append(interfaces)
                         for dtype in program.types:
-                            self.types.append((program.name, dtype))
+                            self.types.append(dtype)
 
 
     def __str__(self):
@@ -117,15 +117,13 @@ class Project(object):
             deplist[mod] = set(mod.uses)
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:
-            if not proc[0]: ranklist.append(proc[1])
+            if proc.parobj == 'sourcefile': ranklist.append(proc[1])
         ranklist.extend(self.programs)
         
         # Perform remaining correlations for the project
         for container in ranklist:
             if type(container) != str:
                 container.correlate(self)
-        #~ for proc in self.procedures:
-            #~ if not proc[0]: container.correlate(self)
 
     def markdown(self,md):
         """

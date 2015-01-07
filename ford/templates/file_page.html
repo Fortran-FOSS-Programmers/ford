@@ -1,5 +1,5 @@
 {% extends "base.html" %}s
-{% block title %}{{ src.name }}{% endblock title %}
+{% block title %}{{ src.name }} &ndash; {{ project }}{% endblock title %}
 {% block body %}
   {% import 'macros.html' as macros %}
   <div class="row">
@@ -15,7 +15,7 @@
     <div class="col-lg-3">
     {{ macros.sidebar(project,src) }}
     </div>
-    <div class="col-lg-9">
+    <div class="col-lg-9" id='text'>
     {{ src.doc }}
     {% if src.doc %}<br>{% endif %}
     {{ src.src }}

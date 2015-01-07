@@ -25,13 +25,13 @@
         </p>
       </div>
 
-      <div class="row">
+      <div class="row" id='text'>
 		  {% if author %}
         <div class="col-lg-8">
 		  {% else %}
         <div class="col-lg-12">
 		  {% endif %}
-          <h1>{{ Project }}</h1>
+          <h1>{{ project }}</h1>
           {{ proj_docs }}
         </div>
 		  {% if author %}
@@ -84,8 +84,12 @@
           <div class="col-lg-{{ width }}">
               <h3>Source Files</h3>
               <ul>
-                {% for src in project.files %}
-                  <li>{{ src }}</li>
+                {% for src in project.files|sort(attribute='name') %}
+                  {% if loop.index0 < 10 %}
+                    <li>{{ src }}</li>
+                  {% elif loop.index0 == 10 %}
+                    <li><a href="{{ project_url }}/lists/files.html"><em>All source files&hellip;</em></a></li>
+                  {% endif %}
                 {% endfor %}
               </ul>
           </div>
@@ -93,9 +97,13 @@
           <div class="col-lg-{{ width }}">
               <h3>Modules</h3>
               <ul>
-                {% for mod in project.modules %}
-                  <li>{{ mod }}</li>
-					 {% endfor %}
+                {% for mod in project.modules|sort(attribute='name') %}
+                  {% if loop.index0 < 10 %}
+                    <li>{{ mod }}</li>
+                  {% elif loop.index0 == 10 %}
+                    <li><a href="{{ project_url }}/lists/modules.html"><em>All modules&hellip;</em></a></li>
+                  {% endif %}
+                {% endfor %}
               </ul>
           </div>
           {% endif %}
@@ -103,8 +111,12 @@
           <div class="col-lg-{{ width }}">
               <h3>Procedures</h3>
               <ul>
-                {% for proc in project.procedures %}
-                  <li>{{ proc[1] }}</li>
+                {% for proc in project.procedures|sort(attribute='name') %}
+                  {% if loop.index0 < 10 %}
+                    <li>{{ proc }}</li>
+                  {% elif loop.index0 == 10 %}
+                    <li><a href="{{ project_url }}/lists/procedures.html"><em>All procedures&hellip;</em></a></li>
+                  {% endif %}
                 {% endfor %}
               </ul>
           </div>
@@ -113,8 +125,12 @@
           <div class="col-lg-{{ width }}">
               <h3>Derived Types</h3>
               <ul>
-                {% for dtype in project.types %}
-                  <li>{{ dtype[1] }}</li>
+                {% for dtype in project.types|sort(attribute='name') %}
+                  {% if loop.index0 < 10 %}
+                    <li>{{ dtype }}</li>
+                  {% elif loop.index0 == 0 %}
+                    <li><a href="{{ project_url }}/lists/types.html"><em>All derived types&hellip;</em></a></li>
+                  {% endif %}
                 {% endfor %}
               </ul>
           </div>

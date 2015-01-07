@@ -1,12 +1,10 @@
 {% extends "base.html" %}
 {% block title %}{{ dtype.name }} &ndash; {{ project }} {% endblock title %}
 {% block body %}
-  <div class="row">
   {% import 'macros.html' as macros %}
-  </div>
   <div class="row">
     <h1>{{ dtype.name }}
-    <small>Derived Type</small>
+    <small>Derived Type{% if dtype.extends %}, Extends({{ dtype.extends }}){% endif %}</small>
     {% if dtype.meta['deprecated'] %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
@@ -19,7 +17,7 @@
     {{ macros.sidebar(project,dtype) }}
     </div>
     
-    <div class="col-lg-9">
+    <div class="col-lg-9" id='text'>
     {{ dtype.doc }}
     {% if dtype.doc %}<br>{% endif %}
     {% if dtype.variables|length > 0 %}
