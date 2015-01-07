@@ -23,6 +23,23 @@ should be easy to write and non-obtrusive within the code. While it will never
 be as feature-rich as Doxygen, hopefully FORD will be able to provide an
 alternative for documenting Fortran projects.
 
+##Capabilities
+Current features include:
+
+- the ability to extract information about variables, procedures, procedure
+  arguments, derived types, programs, and modules from the source code.
+- the ability to extract documentation from comments in the source code.
+- LaTeX support in documentation using [MathJax](http://www.mathjax.org/).
+- searchable documentation, using [Tipue Search](http://www.tipue.com/search/).
+- author description and social media (including Github!) links.
+- links to download the source code.
+- links to individual files, both in their raw form or in HTML with syntax
+  highlighting.
+- use of Markdown to type-set documentation.
+- links between related parts of the software.
+- Bootstrap CSS for the documentation, making it both functional and pretty.
+- configurable settings.
+
 ##Disclaimer
 This is a young project. While it has bee tested somewhat, the testing has been
 far from comprehensive. Various options have not been tested and obscure uses
@@ -48,6 +65,7 @@ In addition to the standard Python libraries, the following modules are needed:
 - [Pygments](http://pygments.org/)
 - [toposort](https://pypi.python.org/pypi/toposort/1.0)
 - [Markdown](https://pythonhosted.org/Markdown/)
+- [Beautiful Soup](http://www.crummy.com/software/BeautifulSoup/bs4/doc/)
 
 A near-term goal will be to write a setup script which will check for
 these dependencies and install those which are missing. I'd also like to
@@ -171,8 +189,8 @@ document. For more details on that feature, see the
 Output is in HTML. By default, all links will be relative, meaning that the
 output can be placed and viewed anywhere. The
 [Bootstrap](http://getbootstrap.com/) framework was used to make it easy to
-quickly design professional looking pages. An example of some output from
-my project [Futility](https://github.com/cmacmackin/futility) is shown below.
+quickly design professional looking pages. An example of some output, generated
+from the code fragment above, is shown below.
 
 ![Some example output.](output-example.png)
 
@@ -248,6 +266,9 @@ left blank then relative URLs will be used for links. (<em>default:</em> blank,
 <dt>output_dir</dt><dd>The directory where the project output will be placed.
   <strong>Any content already present there will be deleted.
   (<em>default:</em> ./doc)</strong></dd>
+<dt>media_dir</dt><dd>A directory containing any images or other content which
+  you will use or link to in your documentation. This will be placed at the root
+  of your documentation file-tree, with the name "media".</dd>
 <dt>css</dt><dd>The path to a custom style-sheet which can be used to modify the
   appearance of the output.</dd>
 <dt>extensions</dt><dd>File extensions which will be read by FORD for
@@ -273,6 +294,8 @@ left blank then relative URLs will be used for links. (<em>default:</em> blank,
   </dd>
 <dt>project_bitbucket</dt><dd>The URL of the BitBucket repository for this
   project.</dd>
+<dt>favicon</dt><dd>The path to a custom favicon which will be used by the HTML
+  documentation. If left blank, it will default to an icon for FORD.</dd>
 <dt>project_sourceforge</dt><dd>The Sourceforge repository for this project.
   </dd>
 <dt>project_download</dt><dd>A URL from which to download the source or
