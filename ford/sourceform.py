@@ -32,6 +32,7 @@ from pygments.lexers import FortranLexer
 from pygments.formatters import HtmlFormatter
 
 import ford.reader
+import ford.utils
 
 _var_type_re = re.compile("^integer|real|double\s*precision|character|complex|logical|type|class|procedure",re.IGNORECASE)
 _var_kind_re = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
@@ -57,8 +58,9 @@ class FortranBase(object):
     """
     _point_to_re = re.compile("\s*=>\s*",re.IGNORECASE)
     _split_re = re.compile("\s*,\s*",re.IGNORECASE)
+    
     base_url = ''
-
+    
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
         if inherited_permission:
@@ -132,12 +134,14 @@ class FortranBase(object):
                 self.meta[key] = self.meta[key][0]
             elif key == 'summary':
                 self.meta[key] = '\n'.join(self.meta[key])
+           
+        self.doc = ford.utils.sub_notes(self.doc)
     
         if 'summary' in self.meta:
             self.meta['summary'] = md.convert(self.meta['summary'])
         elif _para_capture_re.search(self.doc):
             self.meta['summary'] = _para_capture_re.search(self.doc).group()
-            
+
         md_list = []
         if hasattr(self,'variables'): md_list.extend(self.variables)
         if hasattr(self,'types'): md_list.extend(self.types)
@@ -859,7 +863,7 @@ class FortranBoundProcedure(FortranBase):
         attribstr = line.group(3)
         self.attribs = []
         if attribstr:
-            tmp_attribs = paren_split(",",attribstr[1:])
+            tmp_attribs = ford.utils.paren_split(",",attribstr[1:])
             for i in range(len(tmp_attribs)):
                 tmp_attribs[i] = tmp_attribs[i].strip()
                 if tmp_attribs[i].lower() == "public": self.permission = "public"
@@ -934,7 +938,7 @@ def line_to_variables(source, line, inherit_permission, parent):
     if attribmatch:
         attribstr = attribmatch.group(1).strip()
         declarestr = attribmatch.group(2).strip()
-        tmp_attribs = paren_split(",",attribstr)
+        tmp_attribs = ford.utils.paren_split(",",attribstr)
         for i in range(len(tmp_attribs)):
             tmp_attribs[i] = tmp_attribs[i].strip()
             if tmp_attribs[i].lower() == "public": permission = "public"
@@ -951,12 +955,12 @@ def line_to_variables(source, line, inherit_permission, parent):
             else: attribs.append(tmp_attribs[i])
     else:
         declarestr = _attribsplit2_re.match(rest).group(2)
-    declarations = paren_split(",",declarestr)
+    declarations = ford.utils.paren_split(",",declarestr)
 
     varlist = []
     for dec in declarations:
         dec = re.sub(" ","",dec)
-        split = paren_split('=',dec)
+        split = ford.utils.paren_split('=',dec)
         if len(split) > 1:
             if split[1][0] == '>':
                 name = split[0]
@@ -1008,7 +1012,7 @@ def parse_type(string,capture_strings):
     vartype = match.group().lower()
     if _double_prec_re.match(vartype): vartype = "double precision"
     rest = string[match.end():].strip()
-    kindstr = get_parens(rest)
+    kindstr = ford.utils.get_parens(rest)
     rest = rest[len(kindstr):].strip()
 
     # FIXME: This won't work for old-fashioned REAL*8 type notations
@@ -1056,53 +1060,6 @@ def parse_type(string,capture_strings):
             return (vartype, kind, None, None, rest)
 
     raise Exception("Bad declaration of variable type {}: {}".format(vartype,string))
-    
-    
-    
-def get_parens(line):
-    """
-    Takes a string starting with an open parenthesis and returns the portion
-    of the string going to the corresponding close parenthesis.
-    """
-    if len(line) == 0: return line
-    parenstr = ''
-    level = 0
-    blevel = 0
-    for char in line:
-        if char == '(':
-            level += 1
-        elif char == ')':
-            level -= 1
-        elif char == '[':
-            blevel += 1
-        elif char == ']':
-            blevel -= 1
-        elif (char.isalpha() or char == '_' or char == ':' or char == ',' 
-          or char == ' ') and level == 0 and blevel == 0:
-            return parenstr
-        parenstr = parenstr + char
-    
-    if level == 0 and blevel == 0: return parenstr    
-    raise Exception("Couldn't parse parentheses: {}".format(line))
-
-
-
-def paren_split(sep,string):
-    """
-    Splits the string into pieces divided by sep, when sep is outside of parentheses.
-    """
-    if len(sep) != 1: raise Exception("Separation string must be one character long")
-    retlist = []
-    level = 0
-    left = 0
-    for i in range(len(string)):
-        if string[i] == "(": level += 1
-        elif string[i] == ")": level -= 1
-        elif string[i] == sep and level == 0:
-            retlist.append(string[left:i])
-            left = i+1
-    retlist.append(string[left:])
-    return retlist
 
 
 def set_base_url(url):

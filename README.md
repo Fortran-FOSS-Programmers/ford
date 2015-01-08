@@ -67,6 +67,12 @@ In addition to the standard Python libraries, the following modules are needed:
 - [Markdown](https://pythonhosted.org/Markdown/)
 - [Beautiful Soup](http://www.crummy.com/software/BeautifulSoup/bs4/doc/)
 
+All of these can be installed via [pip](https://pip.pypa.io/en/latest/). If
+you do not have administrative rights on the computer where you want to produce
+documentation, then you can install FORD and its dependencies in a
+[virtualenv](https://virtualenv.pypa.io/en/latest/) located somewhere in
+your home directory.
+
 A near-term goal will be to write a setup script which will check for
 these dependencies and install those which are missing. I'd also like to
 make FORD available on PyPI so that all dependencies will be installed
@@ -172,7 +178,7 @@ time. If anyone would like to contribute the necessary modifications to
 ./ford/reader.py to convert fixed-form syntax into free-form, it should not be
 difficult (see the approach taken by
 [f90doc](http://erikdemaine.org/software/f90doc/)). However, it is not a
-priority for me at this time (since I regard fixed-form Fortran as an
+priority for me right now (since I regard fixed-form Fortran as an
 abomination which should be wiped from the face of this Earth).
 
 You can insert LaTeX into your documentation, which will be rendered by
@@ -184,6 +190,13 @@ $ &hellip; $, as there is too much risk that dollar signs used elsewhere will be
 misinterpreted. You can refer back to number equations as you would in a LaTeX
 document. For more details on that feature, see the
 [MathJax Documentation](http://docs.mathjax.org/en/latest/tex.html#automatic-equation-numbering).
+
+Much like in Doxygen, you can use a ``@note`` environment to place the succeeding
+documentation into a special boxed paragraph. This syntax may be used at any location
+in the documentation comment and it will include as the note's contents anything until
+the end of the paragraph. Other environments which behave the same way are ``@warning``,
+``@todo``, and ``@bug``. Note that these designations are case-insensitive (which, as
+Fortran programmers, we're all used to).
 
 ###Output
 Output is in HTML. By default, all links will be relative, meaning that the
@@ -202,13 +215,15 @@ customized to some extent by users.
 
 ###Command-Line Options
 The command-line interface is given below:
+
 ```
-ford.py [-h] [-d PROJECT_DIRECTORY] [-o OUTPUT_DIR] [-s CSS]
+ford.py [-h] [-d PROJECT_DIR] [-o OUTPUT_DIR] [-s CSS]
              [--exclude EXCLUDE] [-e [EXTENSIONS [EXTENSIONS ...]]]
              project_file
 ```
+
 <dl>
-  <dt>PROJECT_DIRECTORY</dt>
+  <dt>PROJECT_DIR</dt>
   <dd>The directory where the source-files are to be found for
   this project. This must not be a subdirectory of the OUTPUT_DIR (see
   below).</dd>
@@ -245,7 +260,7 @@ page:
 >This is the first paragraph of the document.</pre>
 >The keywords are case-insensitive and may consist of letters, numbers, underscores and dashes and must end with a colon. The values consist of anything following the colon on the line and may even be blank.
 >
->If a line is indented by 4 or more spaces, that line is assumed to be an additional line of the value for the previous keyword. A keyword may have as many lines as desired.
+>If a line is indented by 4 or more spaces, that line is assumed to be an additional line of the value for the previous keyword. A keyword may have as many lines as desired. \[Note that these **must** be spaces and not tabs.\]
 >
 >The first blank line ends all meta-data for the document. Therefore, the first line of a document must not be blank. All meta-data is stripped from the document prior to any further processing by Markdown.
 
@@ -260,18 +275,18 @@ are included in the description, if they exist.
 <dt>project_url</dt><dd>The URL at which the documentation will be available. If
 left blank then relative URLs will be used for links. (<em>default:</em> blank,
   i.e. relative links)</dd>
-<dt>project_directory</dt><dd>The directory where the source-files are to be
+<dt>project_dir</dt><dd>The directory where the source-files are to be
   found for this project. This must not be a subdirectory of the output_dir (see
   below). (<em>default:</em> ./src)</dd>
 <dt>output_dir</dt><dd>The directory where the project output will be placed.
-  <strong>Any content already present there will be deleted.
-  (<em>default:</em> ./doc)</strong></dd>
+  <strong>Any content already present there will be deleted.</strong>
+  (<em>default:</em> ./doc)</dd>
 <dt>media_dir</dt><dd>A directory containing any images or other content which
   you will use or link to in your documentation. This will be placed at the root
   of your documentation file-tree, with the name "media". To link to this
   content from the index (i.e. from the description and summary provided in the
-  project file) you would use ``./media/<file-name>``, while it would be
-  ``../media/<file-name>`` from anywhere else.</dd>
+  project file) you would use <code>./media/<file-name></code>, while it would be
+  <code>../media/<file-name></code> from anywhere else.</dd>
 <dt>css</dt><dd>The path to a custom style-sheet which can be used to modify the
   appearance of the output.</dd>
 <dt>extensions</dt><dd>File extensions which will be read by FORD for
@@ -281,7 +296,8 @@ left blank then relative URLs will be used for links. (<em>default:</em> blank,
   must be on its own line. Provide only the file name, not the full path.</dd>
 <dt>docmark</dt><dd>The symbol(s) following an exclaimation mark which
   designates that a comment contains documentation. For excample, if the docmark
-  was ``>``, comments would then be designated by ``!>``. The docmark can be
+  was <code>></code>, comments would then be designated by <code>!></code>. The docmark
+  can be
   anything you like, as long as it does not contain something which (ordinarily)
   has special meaning for regular expressions. Thus, '*', '+', and '?'
   would not be valid and would yield incorrect results. (<em>default:</em>
@@ -365,7 +381,7 @@ displayed in more cases in future. Recognized types of meta-data are:
   <dt>summary</dt><dd>A brief description of this part of the code. If not
   specified, then FORD will use the first paragraph of the body of your
   documentation.</dd>
-  <dt>deprecated</dt><dd>If this is present and not ``False`` then a
+  <dt>deprecated</dt><dd>If this is present and not <code>False</code> then a
   label saying "Deprecated" will be placed in the documentation.</dd>
 </dl>
 
@@ -399,7 +415,6 @@ things which I'd like to do at some point include:
 - Improve the way procedures are handled as arguments. In particular, allow
   any abstract interface which was used as a template to be visible somehow.
 - Give the ability to import other markdown files into documentation.
-- Add some sort of @note environment similar to that of Doxygen.
 
 Things which ideally I would do, but are not currently on the radar include:
 

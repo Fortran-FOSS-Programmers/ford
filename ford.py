@@ -32,13 +32,14 @@ import ford.fortran_project
 import ford.sourceform
 import ford.output
 from ford.mdx_mathjax import MathJaxExtension
+import ford.utils
 
 def main():    
     # Setup the command-line options and parse them.
     parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
     parser.add_argument("project_file",help="file containing the description and settings for the project",
                         type=argparse.FileType('r'))
-    parser.add_argument("-d","--project_directory",help='top directory containing containing all source files for the project')
+    parser.add_argument("-d","--project_dir",help='top directory containing containing all source files for the project')
     parser.add_argument("-o","--output_dir",help="directory in which to place output files")
     parser.add_argument("-s","--css",help="custom style-sheet for the output")
     parser.add_argument("--exclude",action="append",help="any files which should not be included in the documentation")
@@ -58,15 +59,17 @@ def main():
     proj_docs = md.convert(proj_docs)
     proj_data = md.Meta
     
+    proj_docs = ford.utils.sub_notes(proj_docs)
+
     # Get the default options, and any over-rides, straightened out
-    options = [u'project_directory',u'extensions',u'output_dir',u'css',u'exclude',
+    options = [u'project_dir',u'extensions',u'output_dir',u'css',u'exclude',
                u'project',u'author',u'author_description',u'author_pic',
                u'summary',u'github',u'bitbucket',u'facebook',u'twitter',
                u'google_plus',u'linkedin',u'email',u'website',u'project_github',
                u'project_bitbucket',u'project_website',u'project_download',
                u'project_sourceforge',u'project_url',u'display',u'version',
                u'year',u'docmark',u'media_dir',u'favicon']
-    defaults = {u'project_directory': u'./src',
+    defaults = {u'project_dir':       u'./src',
                 u'extensions':        [u"f90",u"f95",u"f03",u"f08"],
                 u'output_dir':        u'./doc',
                 u'project':           u'Fortran Program',
@@ -77,6 +80,7 @@ def main():
                 u'docmark':           '!',
                 u'favicon':           'default-icon'
                }
+    
     for option in options:
         if hasattr(args,option) and eval("args." + option):
             proj_data[option] = eval("args." + option)
@@ -88,7 +92,7 @@ def main():
         elif (not option in proj_data) and (option in defaults):
            proj_data[option] = defaults[option]
 
-    if proj_data['project_directory'] in proj_data['output_dir']:
+    if proj_data['project_dir'] in proj_data['output_dir']:
         print 'Error: output directory a subdirectory of directory containing source-code.'
         quit()
 
@@ -96,6 +100,7 @@ def main():
         if type(proj_data['summary']) == list:
             proj_data['summary'] = '\n'.join(proj_dat['summary'])
         proj_data['summary'] = md.convert(proj_data['summary'])
+        proj_data['summary'] = ford.utils.sub_notes(proj_data['summary'])
     if 'author_description' in proj_data:
         if type(proj_data['author_description']) == list:
             proj_data['author_description'] = '\n'.join(proj_data['author_description'])
@@ -105,7 +110,7 @@ def main():
             
     # Parse the files in your project
     project = ford.fortran_project.Project(proj_data['project'],
-                proj_data['project_directory'], proj_data['extensions'], 
+                proj_data['project_dir'], proj_data['extensions'], 
                 proj_data['display'], proj_data['exclude'], proj_data['docmark'])
     if len(project.files) < 1:
         print "Error: No source files with appropriate extension found in specified directory."

@@ -64,3 +64,9 @@
       position: absolute;
       margin: -4.5em
     }
+
+    .alert {
+      margin-left: 5px;
+      margin-right: 5px;
+      margin-top: 5px;
+    }
