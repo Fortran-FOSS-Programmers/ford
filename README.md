@@ -359,9 +359,9 @@ displayed in more cases in future. Recognized types of meta-data are:
   by Markdown.</dd>
   <dt>version</dt><dd>The version number (or name) of this part of the
   code.</dd>
-  <dt>category</dt><dd>A category for this part of the code. Currently this is
-  fairly useless, just being printed in the documentation. In future, FORD may
-  provide lists of things in each category.</dd>
+  <dt>category</dt><dd>A category for this part of the code. In future, FORD may
+  provide lists of things in each category. Currently it is primarily
+  decorative, although it is used when the documentation is being searched.</dd>
   <dt>summary</dt><dd>A brief description of this part of the code. If not
   specified, then FORD will use the first paragraph of the body of your
   documentation.</dd>

@@ -110,7 +110,7 @@
   {% endif %}
   {% if self.subroutines %}
   <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title">Subroutine</h3></div>
+    <div class="panel-heading text-left"><h3 class="panel-title">Subroutines</h3></div>
     <div class="list-group">
       {% for proc in self.subroutines %}
       <a class="list-group-item" href="{{ self.get_url() }}#proc-{{ proc.name }}">{{ proc.name }}</a>
@@ -425,6 +425,7 @@
 
 
 {% macro meta_list(meta) %}
+{% if meta['author'] or meta['date'] or meta['license'] or meta['version'] or meta['category'] %}
 <dl class="dl-horizontal">
     {% if meta['author'] %}
     <dt>Author</dt><dd>{{ meta['author'] }}</dd>
@@ -442,4 +443,5 @@
     <dt>Category</dt><dd>{{ meta['category'] }}</dd>
     {% endif %}
   </dl>
+{% endif %}
 {% endmacro %}
