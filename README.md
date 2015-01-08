@@ -20,7 +20,7 @@ producing HTML content).
 The goal of FORD is to be able to reliably produce documentation for modern
 Fortran software which is informative and nice to look at. The documentation
 should be easy to write and non-obtrusive within the code. While it will never
-be as feature-rich as Doxygen, hopefully FORD will be able to provide an
+be as feature-rich as Doxygen, hopefully FORD will be able to provide a good
 alternative for documenting Fortran projects.
 
 ##Capabilities
@@ -100,7 +100,9 @@ ford project-file.md
 ```
 
 Assuming that there are no errors, your documentation will now be available
-in the path you indicated for output.
+in the path you indicated for output. Please be aware that FORD will delete
+anything already present in the specified project-path. Use caution with this,
+lest you accidentally end up deleting something important.
 
 ###Writing Documentation
 All documentation, both that provided within the source files and that given
@@ -196,7 +198,11 @@ documentation into a special boxed paragraph. This syntax may be used at any loc
 in the documentation comment and it will include as the note's contents anything until
 the end of the paragraph. Other environments which behave the same way are ``@warning``,
 ``@todo``, and ``@bug``. Note that these designations are case-insensitive (which, as
-Fortran programmers, we're all used to).
+Fortran programmers, we're all used to). If these environments are used within
+the first paragraph of something's documentation and you do not manually specify
+a summary, then the environment will be included in the summary of your
+documentation. If you do not want this to occur, just place the environment
+in a paragraph of its own.
 
 ###Output
 Output is in HTML. By default, all links will be relative, meaning that the
