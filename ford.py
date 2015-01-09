@@ -63,8 +63,6 @@ def main():
     # Remake the Markdown object with settings parsed from the project_file
     if 'md_base_dir' in md.Meta: md_base = md.Meta['md_base_dir'][0] 
     else: md_base = os.path.dirname(args.project_file.name)
-    print md_base
-    #~ md_ext.append(MarkdownInclude())
     md_ext.append('ford.mdx_include')
     if 'md_extensions' in md.Meta: md_ext.extend(md.Meta['md_extensions'])
     md = markdown.Markdown(extensions=md_ext, output_format="html5",

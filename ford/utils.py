@@ -88,11 +88,14 @@ def paren_split(sep,string):
     if len(sep) != 1: raise Exception("Separation string must be one character long")
     retlist = []
     level = 0
+    blevel = 0
     left = 0
     for i in range(len(string)):
         if string[i] == "(": level += 1
         elif string[i] == ")": level -= 1
-        elif string[i] == sep and level == 0:
+        elif string[i] == "[": blevel += 1
+        elif string[i] == "]": blevel -= 1
+        elif string[i] == sep and level == 0 and blevel == 0:
             retlist.append(string[left:i])
             left = i+1
     retlist.append(string[left:])
