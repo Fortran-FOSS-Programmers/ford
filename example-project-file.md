@@ -28,3 +28,4 @@ So you can get numbered equations like this:
 \end{equation}
 So let your imagination run wild. As you can tell, I'm more or less just
 filling in space now. This will be the last sentence.
+

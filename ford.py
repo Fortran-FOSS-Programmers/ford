@@ -26,12 +26,14 @@
 
 import argparse
 import markdown
+import os.path
 from datetime import date
 
 import ford.fortran_project
 import ford.sourceform
 import ford.output
 from ford.mdx_mathjax import MathJaxExtension
+from ford.mdx_include import MarkdownInclude
 import ford.utils
 
 def main():    
@@ -47,18 +49,32 @@ def main():
 
     args = parser.parse_args()
 
-    #TODO: Integrate the Pelican Mathjax plugin--it will work better.
-    md = markdown.Markdown(extensions=['markdown.extensions.meta',
-        'markdown.extensions.codehilite','markdown.extensions.extra',
-        MathJaxExtension()], output_format="html5")
+    md_ext = ['markdown.extensions.meta','markdown.extensions.codehilite',
+              'markdown.extensions.extra',MathJaxExtension()]
+    md = markdown.Markdown(extensions=md_ext, output_format="html5",
+    extension_configs={'markdown.extensions.codehilite':{'linenums':True}})
     
     # Read in the project-file. This will contain global documentation (which
     # will appear on the homepage) as well as any information about the project
     # and settings for generating the documentation.
     proj_docs = args.project_file.read()
+    md.convert(proj_docs)
+
+    # Remake the Markdown object with settings parsed from the project_file
+    if 'md_base_dir' in md.Meta: md_base = md.Meta['md_base_dir'][0] 
+    else: md_base = os.path.dirname(args.project_file.name)
+    print md_base
+    #~ md_ext.append(MarkdownInclude())
+    md_ext.append('ford.mdx_include')
+    if 'md_extensions' in md.Meta: md_ext.extend(md.Meta['md_extensions'])
+    md = markdown.Markdown(extensions=md_ext, output_format="html5",
+                           extension_configs={'ford.mdx_include': {'base_path': md_base,},})
+
+    md.reset()
     proj_docs = md.convert(proj_docs)
     proj_data = md.Meta
-    
+    md.reset()
+
     proj_docs = ford.utils.sub_notes(proj_docs)
 
     # Get the default options, and any over-rides, straightened out
@@ -78,7 +94,7 @@ def main():
                 u'year':              date.today().year,
                 u'exclude':           [],
                 u'docmark':           '!',
-                u'favicon':           'default-icon'
+                u'favicon':           'default-icon',
                }
     
     for option in options:

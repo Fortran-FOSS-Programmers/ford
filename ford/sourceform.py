@@ -125,6 +125,7 @@ class FortranBase(object):
             self.doc = '\n'.join(self.doc)
             self.doc = md.convert(self.doc)
             self.meta = md.Meta
+            md.reset()
         else:
             self.doc = ""
             self.meta = {}
@@ -134,7 +135,7 @@ class FortranBase(object):
                 self.meta[key] = self.meta[key][0]
             elif key == 'summary':
                 self.meta[key] = '\n'.join(self.meta[key])
-           
+            
         self.doc = ford.utils.sub_notes(self.doc)
     
         if 'summary' in self.meta:

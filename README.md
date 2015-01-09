@@ -113,7 +113,7 @@ to the standard Markdown syntax, you can use all of the features in Python's
 Markdown extensions automatically loaded are
 [CodeHilite](https://pythonhosted.org/Markdown/extensions/code_hilite.html)
 which will provide syntax highlighting for any code fragments you place in your
-documentation, [SmartyPants](https://pythonhosted.org/Markdown/extensions/smarty.html) which gives the typographically correct version of various characters,
+documentation
 and [Meta-Data](https://pythonhosted.org/Markdown/extensions/meta_data.html).
 The latter is used internally as a way for the user to provide extra information
 to and/or customize the behaviour of FORD. Information on providing meta-data
@@ -204,6 +204,14 @@ a summary, then the environment will be included in the summary of your
 documentation. If you do not want this to occur, just place the environment
 in a paragraph of its own.
 
+Finally, FORD uses my [Markdown-Include](https://github.com/cmacmackin/markdown-include)
+extension. The syntax ``{{file-name.md}}`` in any of your documentation will be replaced
+by the contents of file-name.md. This will be the first thing done when processing
+Markdown, and thus all Markdown syntax within file-name.md will be processed correctly.
+You can nest these include statments as many times as you like. All file paths are
+evaluated relative to the directory containing the project file, unless set to do
+otherwise.
+
 ###Output
 Output is in HTML. By default, all links will be relative, meaning that the
 output can be placed and viewed anywhere. The
@@ -293,8 +301,14 @@ left blank then relative URLs will be used for links. (<em>default:</em> blank,
   content from the index (i.e. from the description and summary provided in the
   project file) you would use <code>./media/<file-name></code>, while it would be
   <code>../media/<file-name></code> from anywhere else.</dd>
+<dt>md_base_dir</dt><dd>The directory relative to which any "included" Markdown
+  files' paths are specified. (<em>default:</em> directory containing the project
+  file.)</dd>
 <dt>css</dt><dd>The path to a custom style-sheet which can be used to modify the
   appearance of the output.</dd>
+<dt>md_extension</dt><dd>The name of any Markdown extensions which you wish to be used
+  when parsing your documentation. For example, 'markdown.etensions.toc'. Note that
+  Markdown-Extra, CodeHilite, and Meta-Data are loaded by default.</dd>
 <dt>extensions</dt><dd>File extensions which will be read by FORD for
   documentation. Each extension must be on its own line.
   (<em>default:</em> f90, f95, f03, f08)</dd>
@@ -420,7 +434,6 @@ things which I'd like to do at some point include:
   lists.
 - Improve the way procedures are handled as arguments. In particular, allow
   any abstract interface which was used as a template to be visible somehow.
-- Give the ability to import other markdown files into documentation.
 
 Things which ideally I would do, but are not currently on the radar include:
 
