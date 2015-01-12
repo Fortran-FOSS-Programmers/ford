@@ -26,10 +26,10 @@
 
 import re
 
-_note_re = re.compile("@note\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
-_warning_re = re.compile("@warning\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
-_todo_re = re.compile("@todo\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
-_bug_re = re.compile("@bug\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
+NOTE_RE = re.compile("@note\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
+WARNING_RE = re.compile("@warning\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
+TODO_RE = re.compile("@todo\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
+BUG_RE = re.compile("@bug\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
 
 
 def sub_notes(docs):
@@ -37,17 +37,17 @@ def sub_notes(docs):
     Substitutes the special controls for notes, warnings, todos, and bugs with
     the corresponding div.
     """
-    while _note_re.search(docs):
-        docs = _note_re.sub("<div class=\"alert alert-info\" role=\"alert\"><h4>Note</h4>\g<1></div></p>",docs)
+    while NOTE_RE.search(docs):
+        docs = NOTE_RE.sub("<div class=\"alert alert-info\" role=\"alert\"><h4>Note</h4>\g<1></div></p>",docs)
         
-    while _warning_re.search(docs):
-        docs = _warning_re.sub("<div class=\"alert alert-warning\" role=\"alert\"><h4>Warning</h4>\g<1></div></p>",docs)
+    while WARNING_RE.search(docs):
+        docs = WARNING_RE.sub("<div class=\"alert alert-warning\" role=\"alert\"><h4>Warning</h4>\g<1></div></p>",docs)
     
-    while _todo_re.search(docs):
-        docs = _todo_re.sub("<div class=\"alert alert-success\" role=\"alert\"><h4>ToDo</h4>\g<1></div></p>",docs)
+    while TODO_RE.search(docs):
+        docs = TODO_RE.sub("<div class=\"alert alert-success\" role=\"alert\"><h4>ToDo</h4>\g<1></div></p>",docs)
     
-    while _bug_re.search(docs):
-        docs = _bug_re.sub("<div class=\"alert alert-danger\" role=\"alert\"><h4>Bug</h4>\g<1></div></p>",docs)
+    while BUG_RE.search(docs):
+        docs = BUG_RE.sub("<div class=\"alert alert-danger\" role=\"alert\"><h4>Bug</h4>\g<1></div></p>",docs)
 
     return docs
 

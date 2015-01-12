@@ -34,18 +34,18 @@ from pygments.formatters import HtmlFormatter
 import ford.reader
 import ford.utils
 
-_var_type_re = re.compile("^integer|real|double\s*precision|character|complex|logical|type|class|procedure",re.IGNORECASE)
-_var_kind_re = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
-_kind_re = re.compile("kind\s*=\s*",re.IGNORECASE)
-_len_re = re.compile("len\s*=\s*",re.IGNORECASE)
-_attribsplit_re = re.compile(",\s*(\w.*?)::\s*(.*)\s*")
-_attribsplit2_re = re.compile("\s*(::)?\s*(.*)\s*")
-_assign_re = re.compile("(\w+\s*(?:\([^=]*\)))\s*=(?!>)(?:\s*([^\s]+))?")
-_point_re = re.compile("(\w+\s*(?:\([^=>]*\)))\s*=>(?:\s*([^\s]+))?")
-_extends_re = re.compile("extends\s*\(\s*([^()\s]+)\s*\)")
-_double_prec_re = re.compile("double\s+precision",re.IGNORECASE)
-_quotes_re = re.compile("\"([^\"]|\"\")*\"|'([^']|'')*'",re.IGNORECASE)
-_para_capture_re = re.compile("<p>.*?</p>",re.IGNORECASE|re.DOTALL)
+VAR_TYPE_RE = re.compile("^integer|real|double\s*precision|character|complex|logical|type|class|procedure",re.IGNORECASE)
+VARKIND_RE = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
+KIND_RE = re.compile("kind\s*=\s*",re.IGNORECASE)
+LEN_RE = re.compile("len\s*=\s*",re.IGNORECASE)
+ATTRIBSPLIT_RE = re.compile(",\s*(\w.*?)::\s*(.*)\s*")
+ATTRIBSPLIT2_RE = re.compile("\s*(::)?\s*(.*)\s*")
+ASSIGN_RE = re.compile("(\w+\s*(?:\([^=]*\)))\s*=(?!>)(?:\s*([^\s]+))?")
+POINT_RE = re.compile("(\w+\s*(?:\([^=>]*\)))\s*=>(?:\s*([^\s]+))?")
+EXTENDS_RE = re.compile("extends\s*\(\s*([^()\s]+)\s*\)")
+DOUBLE_PREC_RE = re.compile("double\s+precision",re.IGNORECASE)
+QUOTES_RE = re.compile("\"([^\"]|\"\")*\"|'([^']|'')*'",re.IGNORECASE)
+PARA_CAPTURE_RE = re.compile("<p>.*?</p>",re.IGNORECASE|re.DOTALL)
 
 base_url = ''
 docmark = '!'
@@ -56,8 +56,8 @@ class FortranBase(object):
     An object containing the data common to all of the classes used to represent
     Fortran data.
     """
-    _point_to_re = re.compile("\s*=>\s*",re.IGNORECASE)
-    _split_re = re.compile("\s*,\s*",re.IGNORECASE)
+    POINTS_TO_RE = re.compile("\s*=>\s*",re.IGNORECASE)
+    SPLIT_RE = re.compile("\s*,\s*",re.IGNORECASE)
     
     base_url = ''
     
@@ -140,8 +140,8 @@ class FortranBase(object):
     
         if 'summary' in self.meta:
             self.meta['summary'] = md.convert(self.meta['summary'])
-        elif _para_capture_re.search(self.doc):
-            self.meta['summary'] = _para_capture_re.search(self.doc).group()
+        elif PARA_CAPTURE_RE.search(self.doc):
+            self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
 
         md_list = []
         if hasattr(self,'variables'): md_list.extend(self.variables)
@@ -168,23 +168,23 @@ class FortranContainer(FortranBase):
     """
     A class on which any classes requiring further parsing are based.
     """
-    _public_re = re.compile("^public(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
-    _private_re = re.compile("^private(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
-    _protected_re = re.compile("^protected(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
-    _optional_re = re.compile("^optional(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
-    _end_re = re.compile("^end\s*(?:(module|subroutine|function|program|type|interface)(?:\s+(\w+))?)?$",re.IGNORECASE)
-    _modproc_re = re.compile("^module\s+procedure\s*(?:::|\s)?\s*(\w.*)$",re.IGNORECASE)
-    _module_re = re.compile("^module(?:\s+(\w+))?$",re.IGNORECASE)
-    _program_re = re.compile("^program(?:\s+(\w+))?$",re.IGNORECASE)
-    _subroutine_re = re.compile("^\s*(?:(.+?)\s+)?subroutine\s+(\w+)\s*(\([^()]*\))?(\s*bind\s*\(\s*c.*\))?$",re.IGNORECASE)
-    _function_re = re.compile("^(?:(.+?)\s+)?function\s+(\w+)\s*(\([^()]*\))?(?:\s*result\s*\(\s*(\w+)\s*\))?(\s*bind\s*\(\s*c.*\))?$",re.IGNORECASE)
-    _type_re = re.compile("^type(?:\s+|\s*(,.*)?::\s*)((?!(?:is))\w+)\s*(\([^()]*\))?\s*$",re.IGNORECASE)
-    _interface_re = re.compile("^(abstract\s+)?interface(?:\s+(\S.+))?$",re.IGNORECASE)
-    _boundproc_re = re.compile("^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)",re.IGNORECASE)
-    _final_re = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
-    _variable_re = re.compile("^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is)|procedure)\s*((?:\(|\s\w|[:,*]).*)$",re.IGNORECASE)
-    _use_re = re.compile("^use\s+(\w+)($|,\s*)",re.IGNORECASE)
-    _call_re = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
+    PUBLIC_RE = re.compile("^public(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
+    PRIVATE_RE = re.compile("^private(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
+    PROTECTED_RE = re.compile("^protected(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
+    OPTIONAL_RE = re.compile("^optional(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
+    END_RE = re.compile("^end\s*(?:(module|subroutine|function|program|type|interface)(?:\s+(\w+))?)?$",re.IGNORECASE)
+    MODPROC_RE = re.compile("^module\s+procedure\s*(?:::|\s)?\s*(\w.*)$",re.IGNORECASE)
+    MODULE_RE = re.compile("^module(?:\s+(\w+))?$",re.IGNORECASE)
+    PROGRAM_RE = re.compile("^program(?:\s+(\w+))?$",re.IGNORECASE)
+    SUBROUTINE_RE = re.compile("^\s*(?:(.+?)\s+)?subroutine\s+(\w+)\s*(\([^()]*\))?(\s*bind\s*\(\s*c.*\))?$",re.IGNORECASE)
+    FUNCTION_RE = re.compile("^(?:(.+?)\s+)?function\s+(\w+)\s*(\([^()]*\))?(?:\s*result\s*\(\s*(\w+)\s*\))?(\s*bind\s*\(\s*c.*\))?$",re.IGNORECASE)
+    TYPE_RE = re.compile("^type(?:\s+|\s*(,.*)?::\s*)((?!(?:is))\w+)\s*(\([^()]*\))?\s*$",re.IGNORECASE)
+    INTERFACE_RE = re.compile("^(abstract\s+)?interface(?:\s+(\S.+))?$",re.IGNORECASE)
+    BOUNDPROC_RE = re.compile("^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)",re.IGNORECASE)
+    FINAL_RE = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
+    VARIABLE_RE = re.compile("^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is)|procedure)\s*((?:\(|\s\w|[:,*]).*)$",re.IGNORECASE)
+    USE_RE = re.compile("^use\s+(\w+)($|,\s*)",re.IGNORECASE)
+    CALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
     #TODO: Add the ability to recognize function calls
         
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
@@ -203,10 +203,10 @@ class FortranContainer(FortranBase):
             # Temporarily replace all strings to make the parsing simpler
             self.strings = []
             search_from = 0
-            while _quotes_re.search(line[search_from:]):
-                self.strings.append(_quotes_re.search(line[search_from:]).group())
-                line = line[0:search_from] + _quotes_re.sub("\"{}\"".format(len(self.strings)-1),line[search_from:],count=1)
-                search_from += _quotes_re.search(line[search_from:]).end(0)
+            while QUOTES_RE.search(line[search_from:]):
+                self.strings.append(QUOTES_RE.search(line[search_from:]).group())
+                line = line[0:search_from] + QUOTES_RE.sub("\"{}\"".format(len(self.strings)-1),line[search_from:],count=1)
+                search_from += QUOTES_RE.search(line[search_from:]).end(0)
 
             # Check the various possibilities for what is on this line
             if line.lower() == "contains":
@@ -218,24 +218,24 @@ class FortranContainer(FortranBase):
                 else:
                     raise Exception("CONTAINS statement in {}".format(type(self).__name__[7:].upper()))
             elif line.lower() == "public": permission = "public"
-            elif self._public_re.match(line):
-                varlist = self._split_re.split(self._public_re.match(line).group(2))
+            elif self.PUBLIC_RE.match(line):
+                varlist = self.SPLIT_RE.split(self.PUBLIC_RE.match(line).group(2))
                 varlist[-1] = varlist[-1].strip()
                 if hasattr(self,'public_list'): 
                     self.public_list.extend(varlist)
                 else:
                     raise Exception("PUBLIC declaration in {}".format(type(self).__name__[7:].upper()))
             elif line.lower() == "private": permission = "private"
-            elif self._private_re.match(line):
-                varlist = self._split_re.split(self._private_re.match(line).group(2))
+            elif self.PRIVATE_RE.match(line):
+                varlist = self.SPLIT_RE.split(self.PRIVATE_RE.match(line).group(2))
                 varlist[-1] = varlist[-1].strip()
                 if hasattr(self,'private_list'): 
                     self.private_list.extend(varlist)
                 else:
                     raise Exception("PRIVATE declaration in {}".format(type(self).__name__[7:].upper()))
             elif line.lower() == "protected": permission = "protected"
-            elif self._protected_re.match(line):
-                varlist = self._split_re.split(self._protected_re.match(line).group(2))
+            elif self.PROTECTED_RE.match(line):
+                varlist = self.SPLIT_RE.split(self.PROTECTED_RE.match(line).group(2))
                 varlist[-1] = varlist[-1].strip()
                 if hasattr(self,'protected_list'): 
                     self._protected_list.extend(varlist)
@@ -243,95 +243,95 @@ class FortranContainer(FortranBase):
                     raise Exception("PROTECTED declaration in {}".format(type(self).__name__[7:].upper()))
             elif line.lower() == "sequence":
                 if type(self) == FortranType: self.sequence = True
-            elif self._optional_re.match(line):
-                varlist = self._split_re.split(self._optional_re.match(line).group(2))
+            elif self.OPTIONAL_RE.match(line):
+                varlist = self.SPLIT_RE.split(self.OPTIONAL_RE.match(line).group(2))
                 varlist[-1] = varlist[-1].strip()
                 if hasattr(self,'optional_list'): 
                     self._optional_list.extend(varlist)
                 else:
                     raise Exception("OPTIONAL declaration in {}".format(type(self).__name__[7:].upper()))
-            elif self._end_re.match(line):
+            elif self.END_RE.match(line):
                 if isinstance(self,FortranSourceFile):
                     raise Exception("END statement outside of any nesting")
                 self._cleanup()
                 return
-            elif self._modproc_re.match(line):
+            elif self.MODPROC_RE.match(line):
                 if hasattr(self,'modprocs'):
                     self.modprocs.extend(get_mod_procs(source,
-                                         self._modproc_re.match(line),self))
+                                         self.MODPROC_RE.match(line),self))
                 else:
                     raise Exception("Found module procedure in {}".format(type(self).__name__[7:].upper()))
-            elif self._module_re.match(line):
+            elif self.MODULE_RE.match(line):
                 if hasattr(self,'modules'):
                     self.modules.append(FortranModule(source,
-                                        self._module_re.match(line),self))
+                                        self.MODULE_RE.match(line),self))
                 else:
                     raise Exception("Found MODULE in {}".format(type(self).__name__[7:].upper()))
-            elif self._program_re.match(line):
+            elif self.PROGRAM_RE.match(line):
                 if hasattr(self,'programs'):
                     self.programs.append(FortranProgram(source,
-                                         self._program_re.match(line),self))
+                                         self.PROGRAM_RE.match(line),self))
                 else:
                     raise Exception("Found PROGRAM in {}".format(type(self).__name__[7:].upper()))
                 if len(self.programs) > 1:
                     raise Exception("Multiple PROGRAM units in same source file.")
-            elif self._subroutine_re.match(line):
+            elif self.SUBROUTINE_RE.match(line):
                 if isinstance(self,FortranCodeUnit) and not incontains: continue
                 if hasattr(self,'subroutines'):
                     self.subroutines.append(FortranSubroutine(source,
-                                            self._subroutine_re.match(line),self,
+                                            self.SUBROUTINE_RE.match(line),self,
                                             permission))
                 else:
                     raise Exception("Found SUBROUTINE in {}".format(type(self).__name__[7:].upper()))
-            elif self._function_re.match(line):
+            elif self.FUNCTION_RE.match(line):
                 if isinstance(self,FortranCodeUnit) and not incontains: continue
                 if hasattr(self,'functions'):
                     self.functions.append(FortranFunction(source,
-                                          self._function_re.match(line),self,
+                                          self.FUNCTION_RE.match(line),self,
                                           permission))
                 else:
                     raise Exception("Found FUNCTION in {}".format(type(self).__name__[7:].upper()))
-            elif self._type_re.match(line):
+            elif self.TYPE_RE.match(line):
                 if hasattr(self,'types'):
-                    self.types.append(FortranType(source,self._type_re.match(line),
+                    self.types.append(FortranType(source,self.TYPE_RE.match(line),
                                       self,permission))
                 else:
                     raise Exception("Found derived TYPE in {}".format(type(self).__name__[7:].upper()))
-            elif self._interface_re.match(line):
+            elif self.INTERFACE_RE.match(line):
                 if hasattr(self,'interfaces'):
                     self.interfaces.append(FortranInterface(source,
-                                           self._interface_re.match(line),self,
+                                           self.INTERFACE_RE.match(line),self,
                                            permission))
                 else:
                     raise Exception("Found INTERFACE in {}".format(type(self).__name__[7:].upper()))
-            elif self._boundproc_re.match(line) and incontains:
+            elif self.BOUNDPROC_RE.match(line) and incontains:
                 if hasattr(self,'boundprocs'):
                     self.boundprocs.append(FortranBoundProcedure(source,
-                                           self._boundproc_re.match(line),self,
+                                           self.BOUNDPROC_RE.match(line),self,
                                            permission))
                 else:
                     raise Exception("Found type-bound procedure in {}".format(type(self).__name__[7:].upper()))
-            elif self._final_re.match(line) and incontains:
+            elif self.FINAL_RE.match(line) and incontains:
                 if hasattr(self,'finalprocs'):
-                    procedures = self._final_re.match(line).group(1).strip()
-                    self.finalprocs.extend(self._split_re.split(procedures))
+                    procedures = self.FINAL_RE.match(line).group(1).strip()
+                    self.finalprocs.extend(self.SPLIT_RE.split(procedures))
                 else:
                     raise Exception("Found finalization procedure in {}".format(type(self).__name__[7:].upper()))
-            elif self._variable_re.match(line):
+            elif self.VARIABLE_RE.match(line):
                 if hasattr(self,'variables'):
                     self.variables.extend(line_to_variables(source,line,
                                           permission,self))
                 else:
                     raise Exception("Found variable in {}".format(type(self).__name__[7:].upper()))
-            elif self._use_re.match(line):
+            elif self.USE_RE.match(line):
                 if hasattr(self,'uses'): 
-                    self.uses.append(self._use_re.match(line).group(1))
+                    self.uses.append(self.USE_RE.match(line).group(1))
                 else:
                     raise Exception("Found USE statemnt in {}".format(type(self).__name__[7:].upper()))
-            elif self._call_re.match(line):
+            elif self.CALL_RE.match(line):
                 if hasattr(self,'calls'):
-                    callval = self._call_re.match(line).group()
-                    if self._call_re.match(line).group() not in self.calls: 
+                    callval = self.CALL_RE.match(line).group()
+                    if self.CALL_RE.match(line).group() not in self.calls: 
                         self.calls.append(callval)
                 else:
                     raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
@@ -513,8 +513,8 @@ class FortranSubroutine(FortranCodeUnit):
         self.name = line.group(2)
         self.args = []
         if line.group(3):
-            if self._split_re.split(line.group(3)[1:-1]):
-                for arg in self._split_re.split(line.group(3)[1:-1]):
+            if self.SPLIT_RE.split(line.group(3)[1:-1]):
+                for arg in self.SPLIT_RE.split(line.group(3)[1:-1]):
                     if arg != '': self.args.append(arg.strip())
         self.bindC = bool(line.group(4))
         self.variables = []
@@ -588,14 +588,14 @@ class FortranFunction(FortranCodeUnit):
             self.retvar = line.group(4)
         else:
             self.retvar = self.name
-        if _var_type_re.search(attribstr):
+        if VAR_TYPE_RE.search(attribstr):
             rettype, retkind, retlen, retproto, rest =  parse_type(attribstr,self.strings)
             self.retvar = FortranVariable(self.retvar,rettype,self.parent,
                                           kind=retkind,strlen=retlen,
                                           proto=retproto)
         self.args = [] # Set this in the correlation step
         
-        for arg in self._split_re.split(line.group(3)[1:-1]):
+        for arg in self.SPLIT_RE.split(line.group(3)[1:-1]):
             # FIXME: This is to avoid a problem whereby sometimes an empty argument list will appear to contain the argument ''. I didn't know why it would do this (especially since sometimes it works fine) and just put this in as a quick fix. However, at some point I should try to figure out the actual root of the problem.
             if arg != '': self.args.append(arg.strip())
         self.bindC = bool(line.group(5))
@@ -690,10 +690,10 @@ class FortranType(FortranContainer):
         self.attributes = []
         if line.group(1):
             attribstr = line.group(1)[1:].strip()
-            attriblist = self._split_re.split(attribstr.strip())
+            attriblist = self.SPLIT_RE.split(attribstr.strip())
             for attrib in attriblist:
-                if _extends_re.search(attrib):
-                    self.extends = _extends_re.search(attrib).group(1)
+                if EXTENDS_RE.search(attrib):
+                    self.extends = EXTENDS_RE.search(attrib).group(1)
                 elif attrib.strip().lower() == "public":
                     self.permission = "public"
                 elif attrib.strip().lower() == "private":
@@ -702,7 +702,7 @@ class FortranType(FortranContainer):
                     self.attributes.append(attrib.strip())
         if line.group(3):
             paramstr = line.group(3).strip()
-            self.parameters = self._split_re.split(paramstr)
+            self.parameters = self.SPLIT_RE.split(paramstr)
         else:
             self.parameters = []
         self.sequence = False
@@ -871,12 +871,12 @@ class FortranBoundProcedure(FortranBase):
                 elif tmp_attribs[i].lower() == "private": self.permission = "private"
                 else: self.attribs.append(tmp_attribs[i])
         rest = line.group(4)
-        split = self._point_to_re.split(rest)
+        split = self.POINTS_TO_RE.split(rest)
         self.name = split[0]
         self.generic = (line.group(1).lower() == "generic")
         self.bindings = []
         if len(split) > 1:
-            binds = self._split_re.split(split[1])
+            binds = self.SPLIT_RE.split(split[1])
             for bind in binds:
                 self.bindings.append(bind.strip())
         else:
@@ -935,7 +935,7 @@ def line_to_variables(source, line, inherit_permission, parent):
     permission = inherit_permission
     parameter = False
     
-    attribmatch = _attribsplit_re.match(rest)
+    attribmatch = ATTRIBSPLIT_RE.match(rest)
     if attribmatch:
         attribstr = attribmatch.group(1).strip()
         declarestr = attribmatch.group(2).strip()
@@ -955,7 +955,7 @@ def line_to_variables(source, line, inherit_permission, parent):
                 pass
             else: attribs.append(tmp_attribs[i])
     else:
-        declarestr = _attribsplit2_re.match(rest).group(2)
+        declarestr = ATTRIBSPLIT2_RE.match(rest).group(2)
     declarations = ford.utils.paren_split(",",declarestr)
 
     varlist = []
@@ -977,10 +977,14 @@ def line_to_variables(source, line, inherit_permission, parent):
             points = False
             
         if initial and vartype == "character":
-            match = _quotes_re.search(initial)
+            match = QUOTES_RE.search(initial)
             if match:
                 num = int(match.group()[1:-1])
-                initial = _quotes_re.sub(parent.strings[num],initial)
+                initial = QUOTES_RE.sub(parent.strings[num],initial)
+            # FIXME: add some code that will replace any spaces at the edges of a string with &nbsp;
+            # What I have below is just a stop-gap measure. And it doesn't even seem to work...
+            initial.replace("' '","'&nbsp;'")
+            initial.replace('" "','"&nbsp;"')
             
         if proto:
             varlist.append(FortranVariable(name,vartype,parent,attribs,intent,
@@ -1007,11 +1011,11 @@ def parse_type(string,capture_strings):
     Gets variable type, kind, length, and/or derived-type attributes from a 
     variable declaration.
     """
-    match = _var_type_re.match(string)
+    match = VAR_TYPE_RE.match(string)
     if not match: raise Exception("Invalid variable declaration: {}".format(string))
     
     vartype = match.group().lower()
-    if _double_prec_re.match(vartype): vartype = "double precision"
+    if DOUBLE_PREC_RE.match(vartype): vartype = "double precision"
     rest = string[match.end():].strip()
     kindstr = ford.utils.get_parens(rest)
     rest = rest[len(kindstr):].strip()
@@ -1019,7 +1023,7 @@ def parse_type(string,capture_strings):
     # FIXME: This won't work for old-fashioned REAL*8 type notations
     if len(kindstr) < 3 and vartype != "type" and vartype != "class":
         return (vartype, None, None, None, rest)
-    match = _var_kind_re.search(kindstr)
+    match = VARKIND_RE.search(kindstr)
     if match:
         if match.group(1):
             star = False
@@ -1030,9 +1034,9 @@ def parse_type(string,capture_strings):
 
         args = re.sub("\s","",args)
         if vartype == "type" or vartype == "class" or vartype == "procedure":
-            _proto_re = re.compile("(\*|\w+)\s*(?:\((.*)\))?")
+            PROTO_RE = re.compile("(\*|\w+)\s*(?:\((.*)\))?")
             try:
-                proto = list(_proto_re.match(args).groups())
+                proto = list(PROTO_RE.match(args).groups())
                 if not proto[1]: proto[1] = ''
             except:
                 raise Exception("Bad type, class, or procedure prototype specification: {}".format(args))
@@ -1043,21 +1047,21 @@ def parse_type(string,capture_strings):
             else:
                 kind = None
                 length = None
-                if _kind_re.search(args):
-                    kind = _kind_re.sub("",args)
+                if KIND_RE.search(args):
+                    kind = KIND_RE.sub("",args)
                     try:
-                        match = _quotes_re.search(kind)
+                        match = QUOTES_RE.search(kind)
                         num = int(match.group()[1:-1])
-                        kind = _quotes_re.sub(captured_strings[num],kind)
+                        kind = QUOTES_RE.sub(captured_strings[num],kind)
                     except:
                         pass
-                elif _len_re.search(args):
-                    length = _len_re.sub("",args)
+                elif LEN_RE.search(args):
+                    length = LEN_RE.sub("",args)
                 else:
                     length = args
                 return (vartype, kind, length, None, rest)
         else: 
-            kind = _kind_re.sub("",args)
+            kind = KIND_RE.sub("",args)
             return (vartype, kind, None, None, rest)
 
     raise Exception("Bad declaration of variable type {}: {}".format(vartype,string))
@@ -1073,8 +1077,8 @@ def set_doc_mark(mark):
 def get_mod_procs(source,line,parent):
     inherit_permission = parent.permission
     retlist = []
-    _split_re = re.compile("\s*,\s*",re.IGNORECASE)
-    splitlist = _split_re.split(line.group(1))
+    SPLIT_RE = re.compile("\s*,\s*",re.IGNORECASE)
+    splitlist = SPLIT_RE.split(line.group(1))
     if splitlist and len(splitlist) > 0:
         for item in splitlist:
             retlist.append(FortranModuleProcedure(item,parent,inherit_permission))

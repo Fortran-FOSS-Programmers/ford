@@ -43,8 +43,8 @@ class FortranReader(object):
     """
 
     # Regexes
-    com_re = re.compile("^([^\"'!]|(\'[^']*')|(\"[^\"]*\"))*(!.*)$")
-    sc_re = re.compile("^([^;]*);(.*)$")
+    COM_RE = re.compile("^([^\"'!]|(\'[^']*')|(\"[^\"]*\"))*(!.*)$")
+    SC_RE = re.compile("^([^;]*);(.*)$")
 
     def __init__(self,filename,docmark='!'):
         self.name = filename
@@ -87,7 +87,7 @@ class FortranReader(object):
                 self.docbuffer = match.group(4)
                 line = line[0:match.start(4)]
             # Remove any regular comments
-            match = self.com_re.match(line)
+            match = self.COM_RE.match(line)
             if match:
                 line = line[0:match.start(4)]
             line = line.strip()
@@ -119,12 +119,12 @@ class FortranReader(object):
                    (len(linebuffer) > 0))
 
         # Split buffer with semicolons
-        match = self.sc_re.match(linebuffer)
+        match = self.SC_RE.match(linebuffer)
         while match:
             portion = match.group(1).strip()
             if len(portion) > 0: self.pending.append(portion)
             leftover = match.group(2).strip()
-            match = FortranReader.sc_re.match(leftover)
+            match = FortranReader.SC_RE.match(leftover)
             if not match:
                 if len(leftover) > 0: self.pending.append(leftover)
         

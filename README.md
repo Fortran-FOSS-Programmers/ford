@@ -57,6 +57,20 @@ the backtrace and, if possible, the file which FORD crashed while processing.
 If an error occurs elsewhere, you will most likely get a backtrace by default.
 Once again, please include this backtrace in your bug report.
 
+##Installation
+The simplest way to install FORD is using [pip](https://pip.pypa.io/en/latest/).
+This can be done with the command
+
+    sudo pip install ford
+
+Pip will automatically handle all dependencies for you. If
+you do not have administrative rights on the computer where you want to produce
+documentation, pip will allow you to install FORD and its dependencies in a
+[virtualenv](https://virtualenv.pypa.io/en/latest/) located somewhere in
+your home directory.
+
+If you prefer, you can install all of those dependencies manually and clone
+FORD from Github. Then place FORD somewhere in your PYTHONPATH.
 
 ##Dependencies
 In addition to the standard Python libraries, the following modules are needed:
@@ -66,16 +80,10 @@ In addition to the standard Python libraries, the following modules are needed:
 - [toposort](https://pypi.python.org/pypi/toposort/1.0)
 - [Markdown](https://pythonhosted.org/Markdown/)
 - [Beautiful Soup](http://www.crummy.com/software/BeautifulSoup/bs4/doc/)
+- [Markdown-Include](https://pypi.python.org/pypi/markdown-include/0.1)
 
-All of these can be installed via [pip](https://pip.pypa.io/en/latest/). If
-you do not have administrative rights on the computer where you want to produce
-documentation, then you can install FORD and its dependencies in a
-[virtualenv](https://virtualenv.pypa.io/en/latest/) located somewhere in
-your home directory.
-
-A near-term goal will be to write a setup script which will check for
-these dependencies and install those which are missing. I'd also like to
-make FORD available on PyPI so that all dependencies will be installed
+All of these can be installed via pip. If
+you install FORD itself via pip then the dependencies will be handled
 automatically.
 
 ##Basic Usage
@@ -445,6 +453,7 @@ Things which ideally I would do, but are not currently on the radar include:
   require keeping track of names and types of variables throughout the code.
 
 
+<!--
 ##Approach
 The basic algorithm for generating the documentation is as follows:
 
@@ -464,4 +473,4 @@ The basic algorithm for generating the documentation is as follows:
 - Convert comments into HTML. Assume that they have been written in Markdown.
   Also make sure to process LaTeX (not yet implemented).
 - Produce the documentation. This will be done using Jinja2 templates.
-
+-->

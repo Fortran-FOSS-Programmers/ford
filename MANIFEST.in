@@ -1,0 +1,2 @@
+include README.md
+recursive-include ford *.css *.js *.html *.svg *.png *.eot *.ttf *.woff *.gif

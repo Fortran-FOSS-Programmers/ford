@@ -133,6 +133,23 @@ class Project(object):
             src.markdown(md)
         return
 
+
+
+def id_mods(obj,modlist):
+    """
+    Match USE statements up with the right modules
+    """
+    for i in range(len(obj.uses)):
+        for candidate in modlist:
+            if obj.uses[i].lower() == candidate.name.lower():
+                obj.uses[i] = candidate
+                break
+    for func in obj.functions:
+        id_mods(func,modlist)
+    for subroutine in obj.subroutines:
+        id_mods(subroutine,modlist)
+    return
+
 #~ def place_mod(mod,ranklist,usedlist,allmods):
     #~ """
     #~ Places mod within ranklist in the appropriate order.
@@ -168,28 +185,3 @@ class Project(object):
 
     #~ return mod_rank + 1
     
-
-def id_mods(obj,modlist):
-    """
-    Match USE statements up with the right modules
-    """
-    for i in range(len(obj.uses)):
-        for candidate in modlist:
-            if obj.uses[i].lower() == candidate.name.lower():
-                obj.uses[i] = candidate
-                break
-    for func in obj.functions:
-        id_mods(func,modlist)
-    for subroutine in obj.subroutines:
-        id_mods(subroutine,modlist)
-    return
-
-
-if __name__ == '__main__':
-    import pickle
-    import sys
-    test = Project('test',sys.argv[1])
-    test.correlate()
-    pfile = open('test.pkl', 'w')
-    pickle.dump(test,pfile)
-    pfile.close()
