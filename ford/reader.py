@@ -25,8 +25,8 @@
 
 
 import re
+import ford.utils
 
-#FIXME: Can get rid of the blank line that is inserted after any documentation.
 #FIXME: Do I need the docbuffer variable? Could I just put that contents into the pending list?
 
 class FortranReader(object):
@@ -119,29 +119,13 @@ class FortranReader(object):
                    (len(linebuffer) > 0))
 
         # Split buffer with semicolons
-        match = self.SC_RE.match(linebuffer)
-        while match:
-            portion = match.group(1).strip()
-            if len(portion) > 0: self.pending.append(portion)
-            leftover = match.group(2).strip()
-            match = FortranReader.SC_RE.match(leftover)
-            if not match:
-                if len(leftover) > 0: self.pending.append(leftover)
+        frags = ford.utils.quote_split(';',linebuffer)
+        self.pending.extend([ s.strip() for s in frags if len(s) > 0])
         
         # Return the line
         if len(self.pending) > 0:
-            if self.prevdoc: 
-                self.prevdoc = False
-                return ""
-            else:
-                return self.pending.pop(0)
-        elif len(linebuffer) > 0:
-            if self.prevdoc:
-                self.prevdoc = False
-                self.pending.append(linebuffer)
-                return ""
-            else:
-                return linebuffer
+            self.prevdoc = False
+            return self.pending.pop(0)
         else:
             tmp = self.docbuffer
             self.docbuffer = ""

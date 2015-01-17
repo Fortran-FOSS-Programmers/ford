@@ -122,6 +122,11 @@ class FortranBase(object):
         Process the documentation with Markdown to produce HTML.
         """
         if len(self.doc) > 0:
+            if len(self.doc) == 1 and ':' in self.doc[0]:
+                words = self.doc[0].split(':')[0].strip()
+                if words.lower() not in ['author','date','license','version','category','summary','deprecated']:
+                    self.doc.insert(0,'')
+                self.doc.append('')
             self.doc = '\n'.join(self.doc)
             self.doc = md.convert(self.doc)
             self.meta = md.Meta
@@ -391,7 +396,6 @@ class FortranCodeUnit(FortranContainer):
             var.correlate(project)
         if hasattr(self,'args'):
             for arg in self.args:
-                #~ print arg, self.name
                 arg.correlate(project)
         if hasattr(self,'retvar'):
             #~ print self.name, self.retvar, self.parent.parent.name
