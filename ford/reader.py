@@ -36,8 +36,9 @@ class FortranReader(object):
         - combine line continuations into one
         - remove any normal comments and any comments following an ampersand
           (line continuation)
-        - if there are anticipated documentation comments, buffer them
-          and return them before the posticipated ones
+        - if there are documentation comments preceding a piece of code, buffer
+          them and return them after the code, but before and documentation
+          following it
         - keep any documentation comments and, if they are at the end of a line
           of actual code, place them on a new line
         - removes blank lines and trailing white-space
@@ -73,14 +74,14 @@ class FortranReader(object):
         if len(self.pending) != 0:
             self.prevdoc = False
             return self.pending.pop(0)
-        # If there are any documentation lines waiting to be returned, return them
-        # this can happen for online and anticipated docs
+        # If there are any documentation lines waiting to be returned, return them.
+        # This can happen for inline and preceding docs
         elif len(self.docbuffer) != 0:
             self.prevdoc = True
             return self.docbuffer.pop(0)
             
         # Loop through the source code until you have a complete line (including
-        # all line continuations), or a complete anticipated doc block
+        # all line continuations), or a complete preceding doc block
         done = False
         continued = False
         reading_predoc = False
@@ -89,38 +90,33 @@ class FortranReader(object):
             line = self.reader.next()
             if len(line.strip()) > 0 and line.strip()[0] == '#': continue
 
-            # Capture any anticipated documenation comments
+            # Capture any preceding documenation comments
             if self.predoc_re:
                 match = self.predoc_re.match(line)
             else:
                 match = False
             if match:
-                # switch to predoc: following comment lines are predoc until the end of the block
+                # Switch to predoc: following comment lines are predoc until the end of the block
                 reading_predoc = True
-                # substitute predocmark with docmark
+                # Substitute predocmark with docmark
                 tmp = match.group(4)
                 tmp = tmp[:1] + self.docmark + tmp[1+len(self.predocmark):]
                 self.docbuffer.append(tmp)
                 if len(line[0:match.start(4)].strip()) > 0:
-                    raise Exception("Anticipated documentation lines can not be online")
-                continue
+                    raise Exception("Preceding documentation lines can not be inline")
 
             # Capture any documentation comments
             match = self.doc_re.match(line)
             if match:
                 self.docbuffer.append(match.group(4))
                 line = line[0:match.start(4)]
-                if len(line.strip()) == 0 and reading_predoc:
-                    # complete doc comment lines belong to the predoc block
-                    continue
-
-            already_reading_postdoc = True
 
             # Remove any regular comments
             match = self.COM_RE.match(line)
             if match:
                 line = line[0:match.start(4)]
             line = line.strip()
+
             # If this is a blank line following previous documentation, return
             # a line of empty documentation.
             if len(line) == 0:
@@ -128,6 +124,7 @@ class FortranReader(object):
                     #~ self.prevdoc = False
                     self.docbuffer.append("!"+self.docmark)
             else:
+                reading_predoc = False
                 # Check if line is immediate continuation of previous
                 if line[0] == '&':
                     if continued:
@@ -142,13 +139,11 @@ class FortranReader(object):
                     line = line[0:-1]
                 else:
                     continued = False
+
             # Add this line to the buffer then check whether we're done here
             linebuffer += line
-            # Note: if we are here, the predoc block is completed
-            done = (not continued) and \
-                   ( (len(self.docbuffer) > 0) or (len(linebuffer) > 0) )
-            #done = (len(self.docbuffer) > 0) or ((not continued) and 
-            #       (len(linebuffer) > 0))
+            done = ( ((len(self.docbuffer) > 0) or (len(linebuffer) > 0)) and
+                     not continued and not reading_predoc )
 
         # Split buffer with semicolons
         frags = ford.utils.quote_split(';',linebuffer)
