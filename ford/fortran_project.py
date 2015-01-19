@@ -36,7 +36,8 @@ class Project(object):
     project which is to be documented.
     """
     def __init__(self,name,topdir=".",extensions=["f90","f95","f03","f08"],
-                 display=['public','protected'], exclude=[],docmark='!'):
+                 display=['public','protected'], exclude=[], 
+                 docmark='!', predocmark=''):
         self.name = name
         self.topdir = topdir
         self.extensions = extensions
@@ -47,7 +48,7 @@ class Project(object):
         self.types = []
         self.display = display
         
-        ford.sourceform.set_doc_mark(docmark)
+        ford.sourceform.set_doc_mark(docmark,predocmark)
         
         # Get all files within topdir, recursively
         srctree = os.walk(topdir)
