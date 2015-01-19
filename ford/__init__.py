@@ -109,6 +109,10 @@ def main():
     if proj_data['project_dir'] in proj_data['output_dir']:
         print 'Error: output directory a subdirectory of directory containing source-code.'
         quit()
+    
+    if proj_data['docmark'] == proj_data['predocmark']:
+        print 'Error: docmark and predocmark are the same.'
+        quit()
 
     if 'summary' in proj_data:
         if type(proj_data['summary']) == list:
