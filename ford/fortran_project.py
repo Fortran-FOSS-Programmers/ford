@@ -25,6 +25,8 @@
 #FIXME: Need to add .lower() to all equality tests between strings
 #TODO: Set up a list of the packages that this depends on--in particular, toposort
 
+from __future__ import print_function
+
 import os
 import toposort
 
@@ -57,12 +59,13 @@ class Project(object):
             for item in srcdir[2]:
                 if item.split('.')[-1] in self.extensions and not item in exclude:
                     # Get contents of the file
-                    print "Reading file {}".format(os.path.join(curdir,item))
-                    try:
-                        self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
-                    except Exception as e:
-                        print "Warning: Error parsing {}.\n\t{}".format(os.path.join(curdir,item),e.args[0])
-                        continue
+                    print("Reading file {}".format(os.path.join(curdir,item)))
+                    #JW : removed this try/except so can see the error backtraces
+                    #try:
+                    self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    #except Exception as e:
+                    #    print("Warning: Error parsing {}.\n\t{}".format(os.path.join(curdir,item),e.args[0]))
+                    #    continue
                         
                     for module in self.files[-1].modules:
                         self.modules.append(module)
@@ -104,7 +107,7 @@ class Project(object):
         Associates various constructs with each other.
         """
 
-        print "\nCorrelating information from different parts of your project...\n"
+        print("\nCorrelating information from different parts of your project...\n")
         
         # Match USE statements up with the right modules
         for srcfile in self.files:

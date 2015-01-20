@@ -22,7 +22,7 @@
 #  
 #  
 
-
+from __future__ import print_function
 
 import argparse
 import markdown
@@ -107,8 +107,7 @@ def main():
            proj_data[option] = defaults[option]
 
     if proj_data['project_dir'] in proj_data['output_dir']:
-        print 'Error: output directory a subdirectory of directory containing source-code.'
-        quit()
+        raise Exception('Error: output directory a subdirectory of directory containing source-code.')
 
     if 'summary' in proj_data:
         if type(proj_data['summary']) == list:
@@ -128,8 +127,7 @@ def main():
                 proj_data['display'], proj_data['exclude'], 
                 proj_data['docmark'], proj_data['predocmark'])
     if len(project.files) < 1:
-        print "Error: No source files with appropriate extension found in specified directory."
-        quit()
+        raise Exception("Error: No source files with appropriate extension found in specified directory.")
     
     # Convert the documentation from Markdown to HTML. Make sure to properly
     # handle LateX and metadata.
@@ -139,9 +137,9 @@ def main():
     # Produce the documentation using Jinja2. Output it to the desired location
     # and copy any files that are needed (CSS, JS, images, fonts, source files,
     # etc.)
-    print "Creating HTML documentation..."
+    print("Creating HTML documentation...")
     ford.output.print_html(project,proj_data,proj_docs,relative)
-    print
+    print('')
     
     return 0
 
