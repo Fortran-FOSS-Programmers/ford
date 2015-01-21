@@ -24,13 +24,19 @@
 
 from __future__ import print_function
 
+import sys
 import jinja2
 import os
 import shutil
-import urllib
 
 import ford.sourceform
 import ford.tipue_search
+
+#Python 2 or 3:
+if (sys.version_info[0]>2):
+    from urllib.parse import quote
+else:
+    from urllib import quote
 
 def print_html(project,proj_data,proj_docs,relative):
     loc = os.path.dirname(__file__)
@@ -136,7 +142,7 @@ def print_html(project,proj_data,proj_docs,relative):
     for src in project.files:
         template = env.get_template('file_page.html')
         html = template.render(proj_data,src=src,project=project)
-        out = open(urllib.parse.quote(os.path.join(proj_data['output_dir'],'sourcefile',src.name.lower().replace('/','\\')+'.html')),'wb')
+        out = open(quote(os.path.join(proj_data['output_dir'],'sourcefile',src.name.lower().replace('/','\\')+'.html')),'wb')
         out.write(html.encode('utf8'))
         out.close()
         dstdir = os.path.join(proj_data['output_dir'],'src',src.name)
@@ -146,7 +152,7 @@ def print_html(project,proj_data,proj_docs,relative):
     for dtype in project.types:
         template = env.get_template('type_page.html')
         html = template.render(proj_data,dtype=dtype,project=project)
-        out = open(urllib.parse.quote(os.path.join(proj_data['output_dir'],'type',dtype.name.lower().replace('/','\\')+'.html')),'wb')
+        out = open(quote(os.path.join(proj_data['output_dir'],'type',dtype.name.lower().replace('/','\\')+'.html')),'wb')
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'type/'+dtype.name.lower().replace('/','\\')+'.html', dtype.meta)
@@ -154,12 +160,12 @@ def print_html(project,proj_data,proj_docs,relative):
     for proc in project.procedures:
         if proc.obj == 'proc':
             template = env.get_template('proc_page.html')
-            out = open(urllib.parse.quote(os.path.join(proj_data['output_dir'],'proc',proc.name.lower().replace('/','\\')+'.html')),'wb')
+            out = open(quote(os.path.join(proj_data['output_dir'],'proc',proc.name.lower().replace('/','\\')+'.html')),'wb')
             html = template.render(proj_data,procedure=proc,project=project)
             tipue.create_node(html,'proc/'+proc.name.lower().replace('/','\\')+'.html', proc.meta)
         else:
             template = env.get_template('interface_page.html')
-            out = open(urllib.parse.quote(os.path.join(proj_data['output_dir'],'interface',proc.name.lower().replace('/','\\')+'.html')),'wb')
+            out = open(quote(os.path.join(proj_data['output_dir'],'interface',proc.name.lower().replace('/','\\')+'.html')),'wb')
             html = template.render(proj_data,interface=proc,project=project)
             tipue.create_node(html,'interface/'+proc.name.lower().replace('/','\\')+'.html', proc.meta)
         out.write(html.encode('utf8'))
@@ -168,7 +174,7 @@ def print_html(project,proj_data,proj_docs,relative):
     for mod in project.modules:
         template = env.get_template('mod_page.html')
         html = template.render(proj_data,module=mod,project=project)
-        out = open(urllib.parse.quote(os.path.join(proj_data['output_dir'],'module',mod.name.lower().replace('/','\\')+'.html')),'wb')
+        out = open(quote(os.path.join(proj_data['output_dir'],'module',mod.name.lower().replace('/','\\')+'.html')),'wb')
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'module/'+mod.name.lower().replace('/','\\')+'.html', mod.meta)
@@ -176,7 +182,7 @@ def print_html(project,proj_data,proj_docs,relative):
     for prog in project.programs:
         template = env.get_template('prog_page.html')
         html = template.render(proj_data,program=prog,project=project)
-        out = open(urllib.parse.quote(os.path.join(proj_data['output_dir'],'program',prog.name.lower().replace('/','\\')+'.html')),'wb')
+        out = open(quote(os.path.join(proj_data['output_dir'],'program',prog.name.lower().replace('/','\\')+'.html')),'wb')
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'program/'+prog.name.lower().replace('/','\\')+'.html', prog.meta)

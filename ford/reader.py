@@ -24,6 +24,7 @@
 
 from __future__ import print_function
 
+import sys
 import re
 import ford.utils
 
@@ -69,8 +70,11 @@ class FortranReader(object):
     def pass_back(self,line):
         self.pending.insert(0,line)
     
-    #def next(self):      # original
-    def __next__(self):   # JW  - python 3
+    #for Python 2:
+    def next(self):
+        return self.__next__()
+    
+    def __next__(self):   # Python 3
         # If there are any lines waiting to be returned, return them
         if len(self.pending) != 0:
             self.prevdoc = False
@@ -88,7 +92,12 @@ class FortranReader(object):
         reading_predoc = False
         linebuffer = ""
         while not done:
-            line = self.reader.__next__()
+            
+            if (sys.version_info[0]>2):
+                line = self.reader.__next__()
+            else:   #Python 2
+                line = self.reader.next()
+
             if len(line.strip()) > 0 and line.strip()[0] == '#': continue
 
             # Capture any preceding documenation comments
@@ -162,7 +171,6 @@ class FortranReader(object):
 
 
 if __name__ == '__main__':
-    import sys
     filename = sys.argv[1]
     for line in FortranReader(filename):
         print(line)

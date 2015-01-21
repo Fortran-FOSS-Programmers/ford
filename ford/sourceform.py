@@ -23,16 +23,21 @@
 #  
 
 
-
+import sys
 import re
 import os.path
-import urllib
 from pygments import highlight
 from pygments.lexers import FortranLexer
 from pygments.formatters import HtmlFormatter
 
 import ford.reader
 import ford.utils
+
+#Python 2 or 3:
+if (sys.version_info[0]>2):
+    from urllib.parse import quote
+else:
+    from urllib import quote
 
 VAR_TYPE_RE = re.compile("^integer|real|double\s*precision|character|complex|logical|type|class|procedure",re.IGNORECASE)
 VARKIND_RE = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
@@ -96,10 +101,10 @@ class FortranBase(object):
         if ( (type(self) == FortranInterface and self.name) or
              (type(self) in [FortranType,FortranSourceFile,FortranProgram,FortranProgram,FortranModule]) or 
              (type(self) in [FortranFunction,FortranSubroutine]) ):
-            outstr = urllib.parse.quote(outstr.format(self.base_url,self.obj,self.name.lower().replace('/','\\'),''))
+            outstr = quote(outstr.format(self.base_url,self.obj,self.name.lower().replace('/','\\'),''))
         elif ( (type(self) in [FortranFunction,FortranSubroutine]) or
                (type(self) == FortranBoundProcedure) ):
-            outstr = urllib.parse.quote(outstr.format(self.base_url,self.parobj,self.parent.name.lower().replace('/','\\'),self.name.lower().replace('/','\\')))
+            outstr = quote(outstr.format(self.base_url,self.parobj,self.parent.name.lower().replace('/','\\'),self.name.lower().replace('/','\\')))
         else:
             outstr = None
         return outstr
