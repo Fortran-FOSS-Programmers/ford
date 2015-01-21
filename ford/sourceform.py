@@ -23,16 +23,21 @@
 #  
 
 
-
+import sys
 import re
 import os.path
-import urllib
 from pygments import highlight
 from pygments.lexers import FortranLexer
 from pygments.formatters import HtmlFormatter
 
 import ford.reader
 import ford.utils
+
+#Python 2 or 3:
+if (sys.version_info[0]>2):
+    from urllib.parse import quote
+else:
+    from urllib import quote
 
 VAR_TYPE_RE = re.compile("^integer|real|double\s*precision|character|complex|logical|type|class|procedure",re.IGNORECASE)
 VARKIND_RE = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
@@ -64,7 +69,7 @@ class FortranBase(object):
     
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
-        if inherited_permission:
+        if (inherited_permission!=None):
             self.permission = inherited_permission.lower()
         else:
             self.permission = None
@@ -78,10 +83,10 @@ class FortranBase(object):
         self._initialize(first_line)
         del self.strings
         self.doc = []
-        line = source.next()
+        line = source.__next__()
         while line[0:2] == "!" + docmark:
             self.doc.append(line[2:])
-            line = source.next()
+            line = source.__next__()
         source.pass_back(line)
         self.hierarchy = []
         cur = self.parent
@@ -96,10 +101,10 @@ class FortranBase(object):
         if ( (type(self) == FortranInterface and self.name) or
              (type(self) in [FortranType,FortranSourceFile,FortranProgram,FortranProgram,FortranModule]) or 
              (type(self) in [FortranFunction,FortranSubroutine]) ):
-            outstr = urllib.quote(outstr.format(self.base_url,self.obj,self.name.lower().replace('/','\\'),''))
+            outstr = quote(outstr.format(self.base_url,self.obj,self.name.lower().replace('/','\\'),''))
         elif ( (type(self) in [FortranFunction,FortranSubroutine]) or
                (type(self) == FortranBoundProcedure) ):
-            outstr = urllib.quote(outstr.format(self.base_url,self.parobj,self.parent.name.lower().replace('/','\\'),self.name.lower().replace('/','\\')))
+            outstr = quote(outstr.format(self.base_url,self.parobj,self.parent.name.lower().replace('/','\\'),self.name.lower().replace('/','\\')))
         else:
             outstr = None
         return outstr
@@ -195,13 +200,15 @@ class FortranContainer(FortranBase):
         
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
+        
         if type(self) != FortranSourceFile:
             FortranBase.__init__(self,source,first_line,parent,inherited_permission,
                              strings)
         incontains = False
         permission = "public"
-      
+              
         for line in source:
+        
             if line[0:2] == "!" + docmark: 
                 self.doc.append(line[2:])
                 continue
@@ -430,7 +437,9 @@ class FortranSourceFile(FortranContainer):
         self.doc = []
         self.hierarchy = []
         self.obj = 'sourcefile'
+                
         source = ford.reader.FortranReader(self.path,docmark,predocmark)
+        
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
         self.src = readobj.read()
@@ -473,8 +482,10 @@ class FortranModule(FortranCodeUnit):
 
         for name in self.public_list:
             for var in self.variables + self.procs + self.types + self.interfaces:
-                if name.lower() == var.name.lower():
-                    var.permission = "public"
+                if (var.name != None):    #JW
+                    if name.lower() == var.name.lower():
+                        var.permission = "public"
+																				
         for name in self.private_list:
             for var in self.variables + self.procs + self.types + self.interfaces:
                 if name.lower() == var.name.lower():
@@ -850,7 +861,7 @@ class FortranVariable(FortranBase):
                     break
         elif self.vartype == "procedure" and self.proto:
             for proc in self.parent.procs:
-                if proc.name.lower() == self.proto.lower():
+                if proc.name.lower() == str(self.proto).lower():     #JW
                     self.proto = proc
                     break
             if type(self.proto) == str:
@@ -908,7 +919,7 @@ class FortranModuleProcedure(FortranBase):
     An object representing a module procedure procedure.
     """
     def __init__(self,name,parent=None,inherited_permission=None):
-        if inherited_permission:
+        if (inherited_permission!=None):
             self.permission = inherited_permission.lower()
         else:
             self.permission = None
@@ -1003,10 +1014,10 @@ def line_to_variables(source, line, inherit_permission, parent):
                            [],points,initial))
         
     doc = []
-    docline = source.next()
+    docline = source.__next__()
     while docline[0:2] == "!" + docmark:
         doc.append(docline[2:])
-        docline = source.next()
+        docline = source.__next__()
     source.pass_back(docline)
     varlist[-1].doc = doc
     return varlist
@@ -1095,10 +1106,10 @@ def get_mod_procs(source,line,parent):
         retlist.append(FortranModuleProcedure(line.group(1),parent,inherit_permission))
     
     doc = []
-    docline = source.next()
+    docline = source.__next__()
     while docline[0:2] == "!" + docmark:
         doc.append(docline[2:])
-        docline = source.next()
+        docline = source.__next__()
     source.pass_back(docline)
     retlist[-1].doc = doc
     
