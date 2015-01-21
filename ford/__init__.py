@@ -65,7 +65,7 @@ def main():
     md_ext.append('markdown_include.include')
     if 'md_extensions' in md.Meta: md_ext.extend(md.Meta['md_extensions'])
     md = markdown.Markdown(extensions=md_ext, output_format="html5",
-                           extension_configs={'ford.mdx_include': {'base_path': md_base,},})
+            extension_configs={'markdown_include.include': {'base_path': md_base}})
 
     md.reset()
     proj_docs = md.convert(proj_docs)

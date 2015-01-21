@@ -12,13 +12,13 @@ setup(
   name = 'FORD',
   packages = ['ford'],
   include_package_data = True,
-  version = '1.0.0',
+  version = '1.1.0',
   description = 'FORD, standing for FORtran Documenter, is an automatic documentation generator for modern Fortran programs.',
   long_description = long_description,
   author = 'Chris MacMackin',
   author_email = 'cmacmackin@gmail.com',
   url = 'https://github.com/cmacmackin/ford/', 
-  download_url = 'https://github.com/cmacmackin/ford/tarball/v1.0.0',
+  download_url = 'https://github.com/cmacmackin/ford/tarball/v1.1.0',
   keywords = ['Markdown', 'Fortran', 'documentation', 'comments'],
   classifiers=[
         # How mature is this project? Common values are
@@ -42,7 +42,7 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
     ],
-  install_requires = ['markdown','markdown-include >= 0.2','toposort','jinja2',
+  install_requires = ['markdown','markdown-include >= 0.4.1','toposort','jinja2',
                       'pygments','beautifulsoup4'],
   entry_points = {
     'console_scripts': [
