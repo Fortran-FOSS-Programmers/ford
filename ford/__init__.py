@@ -36,6 +36,14 @@ import ford.output
 from ford.mdx_mathjax import MathJaxExtension
 import ford.utils
 
+__appname__ = "FORD"
+__author__ = "Chris MacMackin, Jacob Williams, Marco Restelli"
+__credits__ = ["Stefano Zhagi", "Z. Beekman", "Gavin Huttley"]
+__license__ = "GPLv3"
+__version__ = "1.1.0"
+__maintainer__ = "Chris MacMackin"
+__status__ = "Production"
+
 def main():    
     # Setup the command-line options and parse them.
     parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
@@ -46,6 +54,8 @@ def main():
     parser.add_argument("-s","--css",help="custom style-sheet for the output")
     parser.add_argument("--exclude",action="append",help="any files which should not be included in the documentation")
     parser.add_argument("-e","--extensions",nargs="*",help="extensions which should be scanned for documentation (default: f90, f95, f03, f08)")
+    parser.add_argument('-V', '--version', action='version',
+                        version="{}, version {}".format(__appname__,__version__))
 
     args = parser.parse_args()
 
