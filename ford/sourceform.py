@@ -780,14 +780,16 @@ class FortranInterface(FortranContainer):
         self.functions = []
         self.modprocs = []
 
+    def _cleanup(self):
+        if not self.hasname:
+            contents = self.subroutines + self.functions
+            self.name = contents[0].name
+    
     def correlate(self,project):
         if self.abstract: return
         self.all_interfaces = self.parent.all_interfaces
         self.all_types = self.parent.all_types
         self.procs = self.parent.procs
-        if not self.hasname:
-            contents = self.subroutines + self.functions
-            self.name = contents[0].name
         for modproc in self.modprocs:
             for proc in self.procs:
                 if modproc.name.lower() == proc.name.lower():
