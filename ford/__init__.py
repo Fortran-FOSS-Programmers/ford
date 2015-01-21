@@ -22,8 +22,9 @@
 #  
 #  
 
+from __future__ import print_function
 
-
+import sys
 import argparse
 import markdown
 import os.path
@@ -35,6 +36,14 @@ import ford.output
 from ford.mdx_mathjax import MathJaxExtension
 import ford.utils
 
+__appname__ = "FORD"
+__author__ = "Chris MacMackin, Jacob Williams, Marco Restelli"
+__credits__ = ["Stefano Zhagi", "Z. Beekman", "Gavin Huttley"]
+__license__ = "GPLv3"
+__version__ = "1.1.0"
+__maintainer__ = "Chris MacMackin"
+__status__ = "Production"
+
 def main():    
     # Setup the command-line options and parse them.
     parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
@@ -45,6 +54,8 @@ def main():
     parser.add_argument("-s","--css",help="custom style-sheet for the output")
     parser.add_argument("--exclude",action="append",help="any files which should not be included in the documentation")
     parser.add_argument("-e","--extensions",nargs="*",help="extensions which should be scanned for documentation (default: f90, f95, f03, f08)")
+    parser.add_argument('-V', '--version', action='version',
+                        version="{}, version {}".format(__appname__,__version__))
 
     args = parser.parse_args()
 
@@ -65,7 +76,7 @@ def main():
     md_ext.append('markdown_include.include')
     if 'md_extensions' in md.Meta: md_ext.extend(md.Meta['md_extensions'])
     md = markdown.Markdown(extensions=md_ext, output_format="html5",
-                           extension_configs={'ford.mdx_include': {'base_path': md_base,},})
+            extension_configs={'markdown_include.include': {'base_path': md_base}})
 
     md.reset()
     proj_docs = md.convert(proj_docs)
@@ -107,12 +118,12 @@ def main():
            proj_data[option] = defaults[option]
 
     if proj_data['project_dir'] in proj_data['output_dir']:
-        print 'Error: output directory a subdirectory of directory containing source-code.'
-        quit()
+        print('Error: output directory a subdirectory of directory containing source-code.')
+        sys.exit(1)
     
     if proj_data['docmark'] == proj_data['predocmark']:
-        print 'Error: docmark and predocmark are the same.'
-        quit()
+        print('Error: docmark and predocmark are the same.')
+        sys.exit(1)
 
     if 'summary' in proj_data:
         if type(proj_data['summary']) == list:
@@ -132,8 +143,8 @@ def main():
                 proj_data['display'], proj_data['exclude'], 
                 proj_data['docmark'], proj_data['predocmark'])
     if len(project.files) < 1:
-        print "Error: No source files with appropriate extension found in specified directory."
-        quit()
+        print("Error: No source files with appropriate extension found in specified directory.")
+        sys.exit(1)
     
     # Convert the documentation from Markdown to HTML. Make sure to properly
     # handle LateX and metadata.
@@ -143,9 +154,9 @@ def main():
     # Produce the documentation using Jinja2. Output it to the desired location
     # and copy any files that are needed (CSS, JS, images, fonts, source files,
     # etc.)
-    print "Creating HTML documentation..."
+    print("Creating HTML documentation...")
     ford.output.print_html(project,proj_data,proj_docs,relative)
-    print
+    print('')
     
     return 0
 
