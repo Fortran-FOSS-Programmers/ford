@@ -54,6 +54,11 @@ def main():
     parser.add_argument("-s","--css",help="custom style-sheet for the output")
     parser.add_argument("--exclude",action="append",help="any files which should not be included in the documentation")
     parser.add_argument("-e","--extensions",nargs="*",help="extensions which should be scanned for documentation (default: f90, f95, f03, f08)")
+    parser.add_argument("-w","--warn",dest='warn',action='store_true',
+                        help="display warnings for undocumented items")
+    parser.add_argument("--no-warn",dest='warn',action='store_false',
+                        help="don't display warnings for undocumented items (default)")
+    parser.set_defaults(warn=False)
     parser.add_argument('-V', '--version', action='version',
                         version="{}, version {}".format(__appname__,__version__))
 
@@ -92,7 +97,7 @@ def main():
                u'google_plus',u'linkedin',u'email',u'website',u'project_github',
                u'project_bitbucket',u'project_website',u'project_download',
                u'project_sourceforge',u'project_url',u'display',u'version',
-               u'year',u'docmark',u'predocmark',u'media_dir',u'favicon']
+               u'year',u'docmark',u'predocmark',u'media_dir',u'favicon',u'warn']
     defaults = {u'project_dir':       u'./src',
                 u'extensions':        [u"f90",u"f95",u"f03",u"f08"],
                 u'output_dir':        u'./doc',
@@ -138,10 +143,11 @@ def main():
     relative = (proj_data['project_url'] == '')
             
     # Parse the files in your project
+    warn = ('warn' in proj_data)
     project = ford.fortran_project.Project(proj_data['project'],
                 proj_data['project_dir'], proj_data['extensions'], 
-                proj_data['display'], proj_data['exclude'], 
-                proj_data['docmark'], proj_data['predocmark'])
+                proj_data['display'], proj_data['exclude'], proj_data['docmark'],
+                proj_data['predocmark'], warn)
     if len(project.files) < 1:
         print("Error: No source files with appropriate extension found in specified directory.")
         sys.exit(1)

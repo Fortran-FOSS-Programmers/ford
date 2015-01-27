@@ -55,6 +55,7 @@ PARA_CAPTURE_RE = re.compile("<p>.*?</p>",re.IGNORECASE|re.DOTALL)
 base_url = ''
 docmark = '!'
 predocmark = ''
+warn = False
 
 #TODO: Add ability to note EXTERNAL procedures, PARAMETER statements, and DATA statements.
 class FortranBase(object):
@@ -138,6 +139,8 @@ class FortranBase(object):
             self.meta = md.Meta
             md.reset()
         else:
+            if warn and self.obj != 'sourcefile':
+                print 'Warning: Undocumented {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name)
             self.doc = ""
             self.meta = {}
     
@@ -851,6 +854,14 @@ class FortranVariable(FortranBase):
         if index > 0 :
             self.dimension = self.name[index:]
             self.name = self.name[0:index]
+        
+        self.hierarchy = []
+        cur = self.parent
+        while cur:
+            self.hierarchy.append(cur)
+            cur = cur.parent
+        self.hierarchy.reverse()
+
 
     def correlate(self,project):
         if self.proto and self.proto[0] == '*': self.proto[0] = '*'
@@ -1093,6 +1104,10 @@ def set_doc_mark(mark,premark):
     docmark = mark
     global predocmark
     predocmark = premark
+
+def set_warn(val):
+    global warn
+    warn = bool(val)
 
 def get_mod_procs(source,line,parent):
     inherit_permission = parent.permission

@@ -39,7 +39,7 @@ class Project(object):
     """
     def __init__(self,name,topdir=".",extensions=["f90","f95","f03","f08"],
                  display=['public','protected'], exclude=[], 
-                 docmark='!', predocmark=''):
+                 docmark='!', predocmark='',warn=False):
         self.name = name
         self.topdir = topdir
         self.extensions = extensions
@@ -49,7 +49,9 @@ class Project(object):
         self.procedures = []
         self.types = []
         self.display = display
+        self.warn = warn
         
+        ford.sourceform.set_warn(warn)
         ford.sourceform.set_doc_mark(docmark,predocmark)
         
         # Get all files within topdir, recursively
@@ -132,6 +134,7 @@ class Project(object):
         """
         Process the documentation with Markdown to produce HTML.
         """
+        if self.warn: print()
         for src in self.files:
             src.markdown(md)
         return
