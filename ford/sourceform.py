@@ -140,6 +140,7 @@ class FortranBase(object):
             md.reset()
         else:
             if warn and self.obj != 'sourcefile':
+                #TODO: Add ability to print line number where this item is in file
                 print 'Warning: Undocumented {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name)
             self.doc = ""
             self.meta = {}
@@ -522,7 +523,7 @@ class FortranSubroutine(FortranCodeUnit):
         if attribstr.find("pure") >= 0:
             self.attribs.append("pure")
             attribstr = attribstr.replace("pure","",1)
-        if attribstr.find("elemntal") >= 0:
+        if attribstr.find("elemental") >= 0:
             self.attribs.append("elemental")
             attribstr = attribstr.replace("elemental","",1)
         if attribstr.find("recursive") >= 0:
@@ -596,7 +597,7 @@ class FortranFunction(FortranCodeUnit):
         if attribstr.find("pure") >= 0:
             self.attribs.append("pure")
             attribstr = attribstr.replace("pure","",1)
-        if attribstr.find("elemntal") >= 0:
+        if attribstr.find("elemental") >= 0:
             self.attribs.append("elemental")
             attribstr = attribstr.replace("elemental","",1)
         if attribstr.find("recursive") >= 0:

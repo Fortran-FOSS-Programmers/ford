@@ -67,7 +67,7 @@ def main():
     md_ext = ['markdown.extensions.meta','markdown.extensions.codehilite',
               'markdown.extensions.extra',MathJaxExtension()]
     md = markdown.Markdown(extensions=md_ext, output_format="html5",
-    extension_configs={'markdown.extensions.codehilite':{'linenums':True}})
+    extension_configs={})
     
     # Read in the project-file. This will contain global documentation (which
     # will appear on the homepage) as well as any information about the project
