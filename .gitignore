@@ -7,3 +7,5 @@ src/
 FORD.egg-info/
 dist/
 wiki/
+*.mod
+*.o

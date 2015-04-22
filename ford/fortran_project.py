@@ -119,7 +119,12 @@ class Project(object):
         # Get the order to process other correlations with
         deplist = {}
         for mod in self.modules:
-            deplist[mod] = set(mod.uses)
+            uselist = mod.uses
+            for proc in mod.subroutines:
+                uselist.extend(proc.uses)
+            for proc in mod.functions:
+                uselist.extend(proc.uses)
+            deplist[mod] = set(uselist)
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:
             if proc.parobj == 'sourcefile': ranklist.append(proc[1])
