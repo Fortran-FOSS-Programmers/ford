@@ -3,7 +3,7 @@ structure.ods
 *~
 doc/
 src/
-README.rst
+#README.rst
 FORD.egg-info/
 dist/
 wiki/
