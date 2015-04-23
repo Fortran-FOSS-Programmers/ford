@@ -381,8 +381,8 @@ class FortranCodeUnit(FortranContainer):
         # Add procedures, interfaces and types from parent to our lists
         if hasattr(self.parent,'pub_procs'): self.pub_procs.extend(self.parent.pub_procs)
         if hasattr(self.parent,'all_procs'): self.all_procs.extend(self.parent.all_procs)
-        if hasattr(self.parent,'absinterfaces'):
-            self.all_absinterfaces = self.absinterfaces + self.parent.absinterfaces
+        if hasattr(self.parent,'all_absinterfaces'): 
+            self.all_absinterfaces = self.absinterfaces + self.parent.all_absinterfaces
         else:
             self.all_absinterfaces = self.absinterfaces + []
         if hasattr(self.parent,'all_types'):
@@ -415,6 +415,8 @@ class FortranCodeUnit(FortranContainer):
             dtype.correlate(project)
         for interface in self.interfaces:
             interface.correlate(project)
+        for absint in self.absinterfaces:
+            absint.correlate(project)
         for var in self.variables:
             var.correlate(project)
         if hasattr(self,'args'):
@@ -478,8 +480,8 @@ class FortranModule(FortranCodeUnit):
         self.subroutines = []
         self.functions = []
         self.interfaces = []
-        self.types = []
         self.absinterfaces = []
+        self.types = []
 
     def _cleanup(self):
         # Create list of all local procedures. Ones coming from other modules
@@ -601,7 +603,6 @@ class FortranSubroutine(FortranCodeUnit):
                             self.args[i].parent = self
                             break
             if type(self.args[i]) == str:
-                print(self.args[i])
                 if self.args[i][0].lower() in 'ijklmn':
                     vartype = 'integer'
                 else:
@@ -702,7 +703,6 @@ class FortranFunction(FortranCodeUnit):
                             self.args[i].parent = self
                             break
             if type(self.args[i]) == str:
-                print(self.args[i])
                 if self.args[i][0].lower() in 'ijklmn':
                     vartype = 'integer'
                 else:
@@ -870,6 +870,7 @@ class FortranInterface(FortranContainer):
             for proc in (self.subroutines + self.functions):
                 item = copy.copy(self)
                 item.procedure = proc
+                item.procedure.parent = item
                 del item.functions
                 del item.modprocs
                 del item.subroutines
@@ -882,6 +883,7 @@ class FortranInterface(FortranContainer):
             for proc in (self.functions + self.subroutines):
                 item = copy.copy(self)
                 item.procedure = proc
+                item.procedure.parent = item
                 del item.functions
                 del item.modprocs
                 del item.subroutines
