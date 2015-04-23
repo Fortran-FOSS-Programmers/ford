@@ -381,8 +381,7 @@ class FortranCodeUnit(FortranContainer):
         # Add procedures, interfaces and types from parent to our lists
         if hasattr(self.parent,'pub_procs'): self.pub_procs.extend(self.parent.pub_procs)
         if hasattr(self.parent,'all_procs'): self.all_procs.extend(self.parent.all_procs)
-        #FIXME: It would be better to make the all_interfaces list contain only abstract interfaces, and to start building it during cleanup, as was done for procs
-        if hasattr(self.parent,'interfaces'):
+        if hasattr(self.parent,'absinterfaces'):
             self.all_absinterfaces = self.absinterfaces + self.parent.absinterfaces
         else:
             self.all_absinterfaces = self.absinterfaces + []
@@ -936,16 +935,9 @@ class FortranVariable(FortranBase):
                     break
         elif self.vartype == "procedure" and self.proto:
             for proc in self.parent.all_procs + self.parent.all_absinterfaces:
-                if proc.name.lower() == str(self.proto).lower():     #JW
-                    self.proto = proc
+                if proc.name.lower() == self.proto[0].lower():     #JW
+                    self.proto[0] = proc
                     break
-            if type(self.proto) == str:
-                for interface in self.parent.all_absinterfaces:
-                    if interface.name.lower() == self.proto.lower():
-                        self.proto = interface
-                        break
-            
-
 
 class FortranBoundProcedure(FortranBase):
     """
@@ -1076,7 +1068,7 @@ def line_to_variables(source, line, inherit_permission, parent):
             # What I have below is just a stop-gap measure. And it doesn't even seem to work...
             initial.replace("' '","'&nbsp;'")
             initial.replace('" "','"&nbsp;"')
-            
+        
         if proto:
             varlist.append(FortranVariable(name,vartype,parent,attribs,intent,
                            optional,permission,parameter,kind,strlen,list(proto),

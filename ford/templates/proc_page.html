@@ -24,7 +24,7 @@
 
     <h3>Arguments</h3>
     {% if procedure.args|length > 0 %}
-      {{ macros.var_list(procedure.args,intent=True) }}
+      {{ macros.var_list(procedure.args,intent=True,display=display) }}
     {% else %}
       <em>None</em>
     {% endif %}
@@ -46,7 +46,7 @@
     {% if procedure.variables|length > 0 %}
     <section>
     <h2>Variables</h2>
-    {{ macros.var_list(procedure.variables,permission=True) }}
+    {{ macros.var_list(procedure.variables,permission=True,display=display) }}
     </section>
     <br>
     {% endif %}

@@ -38,7 +38,7 @@
 {% endmacro %}
 
 
-{% macro sidebar(project,self)%}
+{% macro sidebar(project,self) %}
   {% set count = 0 %}
   {% if self.variables %}
   {% set count = count + 1 %}
@@ -89,6 +89,17 @@
     <div class="panel-heading text-left"><h3 class="panel-title">Interfaces</h3></div>
     <div class="list-group">
       {% for intr in self.interfaces %}
+      <a class="list-group-item" href="{{ self.get_url() }}#intr-{{ intr.name }}">{{ intr.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% if self.absinterfaces %}
+  {% set count = count + 1 %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Abstract Interfaces</h3></div>
+    <div class="list-group">
+      {% for intr in self.absinterfaces %}
       <a class="list-group-item" href="{{ self.get_url() }}#intr-{{ intr.name }}">{{ intr.name }}</a>
       {% endfor %}
     </div>
@@ -219,7 +230,7 @@
   {% endmacro %}
 
 
-{% macro var_list(variables,intent=False,permission=False,summary=False) %}
+{% macro var_list(variables,intent=False,permission=False,summary=False,display=['public','protected']) %}
 <table class="table table-striped varlist">
 <thead><tr><th>Type</th>{% if permission %}<th>Visibility</th>{% endif %}
 {% if intent %}<th>Intent</th><th>Optional</th>{% endif %}
@@ -235,7 +246,7 @@
   {% if var.proto %}{% set args = args + 1 %}{% endif %}
 <tr>
   {% if var.obj == 'variable' %}
-  <td><a class="anchor" name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if var.proto[0].permission in display -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if intent or permission or var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>
+  <td><a class="anchor" name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if var.proto[0].permission in display or not var.proto[0].permission -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if intent or permission or var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>
   {% if intent -%}<td>intent({{ var.intent }}){% if var.optional or permission or var.parameter or var.attribs|length > 0 -%},{% endif %}</td>
   <td>{% if var.optional -%}optional{% if permission or var.parameter or var.attributes|length > 0 -%},{%- endif %}{%- endif %}</td>{%- endif %}
   {% if permission %}<td>{{ var.permission }}{% if var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>{% endif %}
@@ -260,9 +271,9 @@
     {% if small %}<h6>{% else %}<h4>{% endif %}Arguments{% if small %}</h6>{% else %}</h4>{% endif %}
     {% if proc.args|length > 0 %}
       {% if proc.permission in display %}
-      {{ var_list(proc.args,intent=True,summary=True) }}
+      {{ var_list(proc.args,intent=True,summary=True,display=display) }}
       {% else %}
-      {{ var_list(proc.args,intent=True) }}
+      {{ var_list(proc.args,intent=True,display=display) }}
       {% endif %}
     {% else %}
       <em>None</em>
@@ -395,7 +406,7 @@
   <div class="panel-body">
      {% if dtype.variables|length > 0 %}
      <h4>Components</h4>
-    {{ var_list(dtype.variables,permission=True,summary=True) }}
+    {{ var_list(dtype.variables,permission=True,summary=True,display=display) }}
      {% endif %}
      {% if dtype.constructor %}
      <h4>Constructor</h4>

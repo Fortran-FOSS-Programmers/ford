@@ -23,7 +23,7 @@
     {% if dtype.variables|length > 0 %}
     <section>
     <h2>Components</h2>
-    {{ macros.var_list(dtype.variables,permission=True) }}
+    {{ macros.var_list(dtype.variables,permission=True,display=display) }}
     </section>
     <br>
     {% endif %}
