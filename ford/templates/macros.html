@@ -39,7 +39,9 @@
 
 
 {% macro sidebar(project,self)%}
+  {% set count = 0 %}
   {% if self.variables %}
+  {% set count = count + 1 %}
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Variables</h3></div>
     <div class="list-group">
@@ -50,6 +52,7 @@
   </div>
   {% endif %}
   {% if self.constructor %}
+  {% set count = count + 1 %}
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Constructor</h3></div>
     <div class="list-group">
@@ -59,6 +62,7 @@
   </div>
   {% endif %}
   {% if self.programs %}
+  {% set count = count + 1 %}
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Programs</h3></div>
     <div class="list-group">
@@ -69,6 +73,7 @@
   </div>
   {% endif %}
   {% if self.modules %}
+  {% set count = count + 1 %}
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Modules</h3></div>
     <div class="list-group">
@@ -79,6 +84,7 @@
   </div>
   {% endif %}
   {% if self.interfaces %}
+  {% set count = count + 1 %}
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Interfaces</h3></div>
     <div class="list-group">
@@ -89,6 +95,7 @@
   </div>
   {% endif %}
   {% if self.types %}
+  {% set count = count + 1 %}
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Derived Types</h3></div>
     <div class="list-group">
@@ -99,6 +106,7 @@
   </div>
   {% endif %}
   {% if self.functions %}
+  {% set count = count + 1 %}
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Functions</h3></div>
     <div class="list-group">
@@ -109,6 +117,7 @@
   </div>
   {% endif %}
   {% if self.subroutines %}
+  {% set count = count + 1 %}
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Subroutines</h3></div>
     <div class="list-group">
@@ -119,6 +128,7 @@
   </div>
   {% endif %}
   {% if self.finalprocs %}
+  {% set count = count + 1 %}
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Finalization Procedures</h3></div>
     <div class="list-group">
@@ -129,6 +139,7 @@
   </div>
   {% endif %}
   {% if self.boundprocs %}
+  {% set count = count + 1 %}
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Type-Bound Procedures</h3></div>
     <div class="list-group">
@@ -139,6 +150,7 @@
   </div>
   {% endif %}
   {% if self.modprocs %}
+  {% set count = count + 1 %}
   <div class="panel panel-primary">
     <div class="panel-heading text-left"><h3 class="panel-title">Module Procedures</h3></div>
     <div class="list-group">
@@ -148,7 +160,7 @@
     </div>
   </div>
   {% endif %}
-  <hr>
+  {% if count > 0 %}<hr>{% endif %}
   {% if self.obj == 'program' %}
   <div class="panel panel-default">
     <div class="panel-heading text-left"><h3 class="panel-title">All Programs</h3></div>
@@ -167,7 +179,7 @@
       {% endfor %}
     </div>
   </div>
-  {% elif self.obj == 'proc' or self.obj == 'interface' %}
+  {% elif self.obj == 'proc' or (self.obj == 'interface' and (not self.abstract)) %}
   <div class="panel panel-default">
     <div class="panel-heading text-left"><h3 class="panel-title">All Procedures</h3></div>
     <div class="list-group">
@@ -176,6 +188,15 @@
       {% endfor %}
     </div>
   </div>
+  {% elif self.obj == 'interface' %}
+  <div class="panel panel-default">
+    <div class="panel-heading text-left"><h3 class="panel-title">All Abstract Interfaces</h3></div>
+    <div class="list-group">
+      {% for absint in project.absinterfaces|sort(attribute='name') %}
+      <a class="list-group-item" href="{{ absint.get_url() }}">{{ absint.name }}</a>
+      {% endfor %}
+    </div>
+  </div> 
   {% elif self.obj == 'type' %}
   <div class="panel panel-default">
     <div class="panel-heading text-left"><h3 class="panel-title">All Derived Types</h3></div>
@@ -290,7 +311,7 @@
 
 {% macro interface(intr,display=['public','protected']) %}
 <div class="panel panel-default">
-  <div class="panel-heading codesum"><a class="anchor" name="intr-{{ intr.name }}"></a><h3>{% if intr.parobj == 'module' %}{{ intr.permission }} {% endif %}{% if intr.abstract %}abstract {% endif %} interface {% if intr.hasname %}{% if intr.permission in display %}{{ intr }}{% else %}{{ intr.name }}{% endif %}{% endif %}
+  <div class="panel-heading codesum"><a class="anchor" name="intr-{{ intr.name }}"></a><h3>{% if intr.parobj == 'module' and intr.generic %}{{ intr.permission }} {% endif %}interface {% if intr.generic %}{% if intr.permission in display %}{{ intr }}{% else %}{{ intr.name }}{% endif %}{% endif %}
     {% if intr.meta['deprecated'] %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
@@ -302,6 +323,7 @@
   </div>
   {% endif %}
   <ul class="list-group">
+  {% if intr.generic %}
   {% for proc in intr.functions + intr.subroutines %}
     <li class="list-group-item">
     {{ proc_summary(proc,display) }}
@@ -312,13 +334,38 @@
     {{ proc_summary(proc.procedure,display) }}
     </li>
   {% endfor %}
+  {% else %}
+    <li class="list-group-item">
+    {{ proc_summary(intr.procedure,display) }}
+    </li>
+  {% endif %}
   </ul>
 </div>
 {% endmacro %}
 
+{% macro absinterface(intr,display=['public','protected']) %}
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><a class="anchor" name="intr-{{ intr.name }}"></a><h3>abstract interface
+    {% if intr.meta['deprecated'] %}
+	 <span class="label label-danger depwarn">Deprecated</span>
+    {% endif %}
+  </h3></div>
+  {% if intr.doc or intr.meta %}
+  <div class="panel-body">
+    {{ meta_list(intr.meta) }}
+    {{ intr.meta['summary'] }}
+  </div>
+  {% endif %}
+  <ul class="list-group">
+    <li class="list-group-item">
+    {{ proc_summary(intr.procedure,display) }}
+    </li>
+  </ul>
+</div>
+{% endmacro %}
 
 {% macro proc_line(proc,display=['public','protected']) %}
-{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} {% if proc.permission in display and proc.parobj != 'interface' %}{{ proc }}{% else %}{{ proc.name }}{% endif %}({% for arg in proc.args -%}{{ arg.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c)
+{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} {% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}({% for arg in proc.args -%}{{ arg.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c)
     {% if proc.meta['deprecated'] %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}

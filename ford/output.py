@@ -138,7 +138,15 @@ def print_html(project,proj_data,proj_docs,relative):
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'lists/types.html', {'category': 'list derived types'})
-    
+
+    if len(project.absinterfaces) > 0:
+        template = env.get_template('absint_list.html')
+        html = template.render(proj_data,project=project)
+        out = open(os.path.join(proj_data['output_dir'],'lists','absint.html'),'wb')
+        out.write(html.encode('utf8'))
+        out.close()
+        tipue.create_node(html,'lists/absint.html', {'category': 'list abstract interfaces'})
+
     for src in project.files:
         template = env.get_template('file_page.html')
         html = template.render(proj_data,src=src,project=project)
@@ -148,7 +156,7 @@ def print_html(project,proj_data,proj_docs,relative):
         dstdir = os.path.join(proj_data['output_dir'],'src',src.name)
         shutil.copy(src.path,dstdir)
         tipue.create_node(html,'sourcefile/'+src.name.lower().replace('/','\\')+'.html', src.meta)
-    
+
     for dtype in project.types:
         template = env.get_template('type_page.html')
         html = template.render(proj_data,dtype=dtype,project=project)
@@ -156,7 +164,15 @@ def print_html(project,proj_data,proj_docs,relative):
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'type/'+dtype.name.lower().replace('/','\\')+'.html', dtype.meta)
-    
+
+    for absint in project.absinterfaces:
+        template = env.get_template('nongenint_page.html')
+        out = open(quote(os.path.join(proj_data['output_dir'],'interface',absint.name.lower().replace('/','\\')+'.html')),'wb')
+        html = template.render(proj_data,interface=absint,project=project)
+        out.write(html.encode('utf8'))
+        out.close()
+        tipue.create_node(html,'interface/'+absint.name.lower().replace('/','\\')+'.html',absint.meta)
+
     for proc in project.procedures:
         if proc.obj == 'proc':
             template = env.get_template('proc_page.html')
@@ -164,13 +180,17 @@ def print_html(project,proj_data,proj_docs,relative):
             html = template.render(proj_data,procedure=proc,project=project)
             tipue.create_node(html,'proc/'+proc.name.lower().replace('/','\\')+'.html', proc.meta)
         else:
-            template = env.get_template('interface_page.html')
+            if proc.generic:
+                template = env.get_template('genint_page.html')
+            else:
+                template = env.get_template('nongenint_page.html')
             out = open(quote(os.path.join(proj_data['output_dir'],'interface',proc.name.lower().replace('/','\\')+'.html')),'wb')
             html = template.render(proj_data,interface=proc,project=project)
             tipue.create_node(html,'interface/'+proc.name.lower().replace('/','\\')+'.html', proc.meta)
+        
         out.write(html.encode('utf8'))
         out.close()
-    
+
     for mod in project.modules:
         template = env.get_template('mod_page.html')
         html = template.render(proj_data,module=mod,project=project)

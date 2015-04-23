@@ -23,7 +23,6 @@
 #  
 
 #FIXME: Need to add .lower() to all equality tests between strings
-#TODO: Set up a list of the packages that this depends on--in particular, toposort
 
 from __future__ import print_function
 
@@ -47,6 +46,7 @@ class Project(object):
         self.modules = []
         self.programs = []
         self.procedures = []
+        self.absinterfaces = []
         self.types = []
         self.display = display
         self.warn = warn
@@ -62,12 +62,13 @@ class Project(object):
                 if item.split('.')[-1] in self.extensions and not item in exclude:
                     # Get contents of the file
                     print("Reading file {}".format(os.path.join(curdir,item)))
-                    try:
-                        self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
-                    except Exception as e:
-                        print("Warning: Error parsing {}.\n\t{}".format(os.path.join(curdir,item),e.args[0]))
-                        continue
-                        
+                    self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    #~ try:
+                        #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    #~ except Exception as e:
+                        #~ print("Warning: Error parsing {}.\n\t{}".format(os.path.join(curdir,item),e.args[0]))
+                        #~ continue
+                    
                     for module in self.files[-1].modules:
                         self.modules.append(module)
                         for function in module.functions:
@@ -77,8 +78,11 @@ class Project(object):
                             if subroutine.permission in display:
                                 self.procedures.append(subroutine)
                         for interface in module.interfaces:
-                            if interface.permission in display and interface.hasname:
+                            if interface.permission in display:
                                 self.procedures.append(interface)
+                        for absint in module.absinterfaces:
+                            if absint.permission in display:
+                                self.absinterfaces.append(absint)
                         for dtype in module.types:
                             if dtype.permission in display:
                                 self.types.append(dtype)
@@ -94,8 +98,9 @@ class Project(object):
                         for subroutine in program.subroutines:
                             self.procedures.append(subroutine)
                         for interface in program.interfaces:
-                            if interface.hasname:
-                                self.procedures.append(interfaces)
+                            self.procedures.append(interfaces)
+                        for absint in program.absinterfaces:
+                            self.absinterfaces.append(absint)
                         for dtype in program.types:
                             self.types.append(dtype)
 
@@ -127,13 +132,12 @@ class Project(object):
             deplist[mod] = set(uselist)
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:
-            if proc.parobj == 'sourcefile': ranklist.append(proc[1])
+            if proc.parobj == 'sourcefile': ranklist.append(proc)
         ranklist.extend(self.programs)
         
         # Perform remaining correlations for the project
         for container in ranklist:
-            if type(container) != str:
-                container.correlate(self)
+            if type(container) != str: container.correlate(self)
 
     def markdown(self,md):
         """

@@ -22,10 +22,12 @@
 #  
 #  
 
+from __future__ import print_function
 
 import sys
 import re
 import os.path
+import copy
 from pygments import highlight
 from pygments.lexers import FortranLexer
 from pygments.formatters import HtmlFormatter
@@ -99,12 +101,15 @@ class FortranBase(object):
     def get_url(self):
         outstr = "{0}/{1}/{2}.html{3}"
         #~ and self.permission == 'public' and type(self.parent) == FortranSourceFile
-        if ( (type(self) == FortranInterface and self.name) or
-             (type(self) in [FortranType,FortranSourceFile,FortranProgram,FortranProgram,FortranModule]) or 
-             (type(self) in [FortranFunction,FortranSubroutine]) ):
+        if ( type(self) in [FortranSubroutine,FortranFunction] and 
+             type(self.parent) == FortranInterface and 
+             not self.parent.generic ):
+            outstr = quote(outstr.format(self.base_url,'interface',self.name.lower().replace('/','\\'),''))
+        elif ( type(self) in [FortranType,FortranSourceFile,FortranProgram,
+                              FortranModule,FortranInterface,FortranFunction,
+                              FortranSubroutine] ):
             outstr = quote(outstr.format(self.base_url,self.obj,self.name.lower().replace('/','\\'),''))
-        elif ( (type(self) in [FortranFunction,FortranSubroutine]) or
-               (type(self) == FortranBoundProcedure) ):
+        elif ( (type(self) == FortranBoundProcedure) ):
             outstr = quote(outstr.format(self.base_url,self.parobj,self.parent.name.lower().replace('/','\\'),self.name.lower().replace('/','\\')))
         else:
             outstr = None
@@ -141,7 +146,7 @@ class FortranBase(object):
         else:
             if warn and self.obj != 'sourcefile':
                 #TODO: Add ability to print line number where this item is in file
-                print 'Warning: Undocumented {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name)
+                print('Warning: Undocumented {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
             self.doc = ""
             self.meta = {}
     
@@ -165,12 +170,14 @@ class FortranBase(object):
         if hasattr(self,'subroutines'): md_list.extend(self.subroutines)
         if hasattr(self,'functions'): md_list.extend(self.functions)
         if hasattr(self,'interfaces'): md_list.extend(self.interfaces)
+        if hasattr(self,'absinterfaces'): md_list.extend(self.absinterfaces)
         if hasattr(self,'programs'): md_list.extend(self.programs)
         if hasattr(self,'boundprocs'): md_list.extend(self.boundprocs)
         # if hasattr(self,'finalprocs'): md_list.extend(self.finalprocs)
         # if hasattr(self,'constructor') and self.constructor: md_list.append(self.constructor)
         if hasattr(self,'args'): md_list.extend(self.args)
         if hasattr(self,'retvar') and self.retvar: md_list.append(self.retvar)
+        if hasattr(self,'procedure'): md_list.append(self.procedure)
         
         for item in md_list:
             if isinstance(item, FortranBase): item.markdown(md)
@@ -195,6 +202,7 @@ class FortranContainer(FortranBase):
     FUNCTION_RE = re.compile("^(?:(.+?)\s+)?function\s+(\w+)\s*(\([^()]*\))?(?:\s*result\s*\(\s*(\w+)\s*\))?(\s*bind\s*\(\s*c.*\))?$",re.IGNORECASE)
     TYPE_RE = re.compile("^type(?:\s+|\s*(,.*)?::\s*)((?!(?:is))\w+)\s*(\([^()]*\))?\s*$",re.IGNORECASE)
     INTERFACE_RE = re.compile("^(abstract\s+)?interface(?:\s+(\S.+))?$",re.IGNORECASE)
+    #~ ABS_INTERFACE_RE = re.compile("^abstract\s+interface(?:\s+(\S.+))?$",re.IGNORECASE)
     BOUNDPROC_RE = re.compile("^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)",re.IGNORECASE)
     FINAL_RE = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
     VARIABLE_RE = re.compile("^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is)|procedure)\s*((?:\(|\s\w|[:,*]).*)$",re.IGNORECASE)
@@ -212,7 +220,6 @@ class FortranContainer(FortranBase):
         permission = "public"
               
         for line in source:
-        
             if line[0:2] == "!" + docmark: 
                 self.doc.append(line[2:])
                 continue
@@ -316,9 +323,14 @@ class FortranContainer(FortranBase):
                     raise Exception("Found derived TYPE in {}".format(type(self).__name__[7:].upper()))
             elif self.INTERFACE_RE.match(line):
                 if hasattr(self,'interfaces'):
-                    self.interfaces.append(FortranInterface(source,
-                                           self.INTERFACE_RE.match(line),self,
-                                           permission))
+                    intr = FortranInterface(source,self.INTERFACE_RE.match(line),
+                                            self,permission)
+                    if intr.abstract:
+                        self.absinterfaces.extend(intr.contents)
+                    elif intr.generic:
+                        self.interfaces.append(intr)
+                    else:
+                        self.interfaces.extend(intr.contents)
                 else:
                     raise Exception("Found INTERFACE in {}".format(type(self).__name__[7:].upper()))
             elif self.BOUNDPROC_RE.match(line) and incontains:
@@ -368,12 +380,12 @@ class FortranCodeUnit(FortranContainer):
     def correlate(self,project):
         # Add procedures, interfaces and types from parent to our lists
         if hasattr(self.parent,'pub_procs'): self.pub_procs.extend(self.parent.pub_procs)
-        if hasattr(self.parent,'procs'): self.procs.extend(self.parent.procs)
+        if hasattr(self.parent,'all_procs'): self.all_procs.extend(self.parent.all_procs)
         #FIXME: It would be better to make the all_interfaces list contain only abstract interfaces, and to start building it during cleanup, as was done for procs
         if hasattr(self.parent,'interfaces'):
-            self.all_interfaces = self.interfaces + self.parent.interfaces
+            self.all_absinterfaces = self.absinterfaces + self.parent.absinterfaces
         else:
-            self.all_interfaces = self.interfaces + []
+            self.all_absinterfaces = self.absinterfaces + []
         if hasattr(self.parent,'all_types'):
             self.all_types = self.types + self.parent.all_types
         else:
@@ -383,14 +395,14 @@ class FortranCodeUnit(FortranContainer):
         for mod in self.uses:
             if type(mod) == str: continue
             self.pub_procs.extend(mod.pub_procs)
-            self.procs.extend(mod.pub_procs)
-            self.all_interfaces.extend(mod.all_interfaces)
+            self.all_procs.extend(mod.pub_procs)
+            self.all_absinterfaces.extend(mod.all_absinterfaces)
             self.all_types.extend(mod.all_types) 
         
         # Match up called procedures
         if hasattr(self,'calls'):
             for i in range(len(self.calls)):
-                for proc in self.procs:
+                for proc in self.all_procs:
                     if self.calls[i] == proc.name:
                         self.calls[i] = proc
                         break
@@ -410,9 +422,6 @@ class FortranCodeUnit(FortranContainer):
             for arg in self.args:
                 arg.correlate(project)
         if hasattr(self,'retvar'):
-            #~ print self.name, self.retvar, self.parent.parent.name
-            #~ for var in self.variables:
-                #~ print var.name
             self.retvar.correlate(project)
 
         # Prune anything which we don't want to be displayed
@@ -471,27 +480,28 @@ class FortranModule(FortranCodeUnit):
         self.functions = []
         self.interfaces = []
         self.types = []
+        self.absinterfaces = []
 
     def _cleanup(self):
         # Create list of all local procedures. Ones coming from other modules
         # will be added later, during correlation.
-        self.procs = self.functions + self.subroutines
+        self.all_procs = self.functions + self.subroutines
         self.pub_procs = []
         for interface in self.interfaces:
             if interface.name:
-                self.procs.append(interface)
-            elif not interface.abstract:
-                self.procs.extend(interface.functions)
-                self.procs.extend(interface.subroutines)
+                self.all_procs.append(interface)
+            else:
+                self.all_procs.extend(interface.functions)
+                self.all_procs.extend(interface.subroutines)
 
         for name in self.public_list:
-            for var in self.variables + self.procs + self.types + self.interfaces:
+            for var in self.variables + self.all_procs + self.types + self.interfaces + self.absinterfaces:
                 if (var.name != None):    #JW
                     if name.lower() == var.name.lower():
                         var.permission = "public"
 																				
         for name in self.private_list:
-            for var in self.variables + self.procs + self.types + self.interfaces:
+            for var in self.variables + self.all_procs + self.types + self.interfaces + self.absinterfaces:
                 if name.lower() == var.name.lower():
                     var.permission = "private"
         for varname in self.protected_list:
@@ -499,7 +509,7 @@ class FortranModule(FortranCodeUnit):
                 if varname.lower() == var.name.lower():
                     var.permission = "protected"
 
-        for proc in self.procs:
+        for proc in self.all_procs:
             if proc.permission == "public": self.pub_procs.append(proc)
 
         del self.public_list
@@ -544,17 +554,29 @@ class FortranSubroutine(FortranCodeUnit):
         self.subroutines = []
         self.functions = []
         self.interfaces = []
+        self.absinterfaces = []
         self.types = []
 
+    def set_permission(self, value):
+        self._permission = value
+
+    def get_permission(self):
+        if type(self.parent) == FortranInterface and not self.parent.generic:
+            return self.parent.permission
+        else:
+            return self._permission
+
+    permission = property(get_permission, set_permission)
+    
     def _cleanup(self):
-        self.procs = self.functions + self.subroutines
+        self.all_procs = self.functions + self.subroutines
         self.pub_procs = []
         for interface in self.interfaces:
             if interface.name:
-                self.procs.append(interface)
-            elif not interface.abstract:
-                self.procs.extend(interface.functions)
-                self.procs.extend(interface.subroutines)
+                self.all_procs.append(interface)
+            else:
+                self.all_procs.extend(interface.functions)
+                self.all_procs.extend(interface.subroutines)
 
         for varname in self.optional_list:
             for var in self.variables:
@@ -626,15 +648,27 @@ class FortranFunction(FortranCodeUnit):
         self.subroutines = []
         self.functions = []
         self.interfaces = []
+        self.absinterfaces = []
         self.types = []
 
+    def set_permission(self, value):
+        self._permission = value
+
+    def get_permission(self):
+        if type(self.parent) == FortranInterface and not self.parent.generic:
+            return self.parent.permission
+        else:
+            return self._permission
+
+    permission = property(get_permission, set_permission)
+    
     def _cleanup(self):
-        self.procs = self.functions + self.subroutines
+        self.all_procs = self.functions + self.subroutines
         self.pub_procs = []
         for interface in self.interfaces:
             if interface.name:
                 procs.append(interface)
-            elif not interface.abstract:
+            else:
                 procs.extend(interface.functions)
                 procs.extend(interface.subroutines)
 
@@ -685,14 +719,15 @@ class FortranProgram(FortranCodeUnit):
         self.types = []
         self.uses = []
         self.calls = []
+        self.absinterfaces = []
     
     def _cleanup(self):
-        self.procs = self.functions + self.subroutines
+        self.all_procs = self.functions + self.subroutines
         self.pub_procs = []
         for interface in self.interfaces:
             if interface.name:
                 procs.append(interface)
-            elif not interface.abstract:
+            else:
                 procs.extend(interface.functions)
                 procs.extend(interface.subroutines)
 
@@ -743,9 +778,9 @@ class FortranType(FortranContainer):
 
         
     def correlate(self,project):
-        self.all_interfaces = self.parent.all_interfaces
+        self.all_absinterfaces = self.parent.all_absinterfaces
         self.all_types = self.parent.all_types
-        self.procs = self.parent.procs
+        self.all_procs = self.parent.all_procs
         # Get type of extension
         if self.extends:
             for dtype in self.all_types:
@@ -766,12 +801,12 @@ class FortranType(FortranContainer):
                 self.boundprocs.remove(proc)
         # Match finalprocs
         for i in range(len(self.finalprocs)):
-            for proc in self.procs:
+            for proc in self.all_procs:
                 if proc.name.lower() == self.finalprocs[i].lower():
                     self.finalprocs[i] = proc
                     break
         # Find a constructor, if one exists
-        for proc in self.procs:
+        for proc in self.all_procs:
             if proc.name.lower() == self.name.lower():
                 self.constructor = proc
                 break
@@ -788,42 +823,61 @@ class FortranInterface(FortranContainer):
     """
     def _initialize(self,line):
         self.proctype = 'Interface'
-        self.abstract = bool(line.group(1))
         self.name = line.group(2)
-        self.hasname = bool(self.name)
         self.subroutines = []
         self.functions = []
         self.modprocs = []
+        self.generic = bool(self.name)
+        self.abstract = bool(line.group(1))
+        if self.generic and self.abstract:
+            raise Exception("Generic interface {} can not be abstract".format(self.name))
+
+    def correlate(self,project):
+        self.all_absinterfaces = self.parent.all_absinterfaces
+        self.all_types = self.parent.all_types
+        self.all_procs = self.parent.all_procs
+        if self.generic:
+            for modproc in self.modprocs:
+                for proc in self.all_procs:
+                    if modproc.name.lower() == proc.name.lower():
+                        modproc.procedure = proc
+                        break
+            for subrtn in self.subroutines:
+                subrtn.correlate(project)
+            for func in self.functions:
+                func.correlate(project)
+        else:
+            self.procedure.correlate(project)
 
     def _cleanup(self):
-        if not self.hasname:
-            contents = self.subroutines + self.functions
-            self.name = contents[0].name
-    
-    def correlate(self,project):
-        if self.abstract: return
-        self.all_interfaces = self.parent.all_interfaces
-        self.all_types = self.parent.all_types
-        self.procs = self.parent.procs
-        for modproc in self.modprocs:
-            for proc in self.procs:
-                if modproc.name.lower() == proc.name.lower():
-                    modproc.procedure = proc
-                    break
-        for subrtn in self.subroutines:
-            subrtn.correlate(project)
-            #~ for proc in self.parent.procs:
-                #~ if subrtn.name.lower() == proc.name.lower():
-                    #~ subrtn.procedure = proc
-                    #~ break
-        for func in self.functions:
-            func.correlate(project)
-            #~ for proc in self.parent.procs:
-                #~ if func.name.lower() == proc.name.lower():
-                    #~ func.procedure = proc
-                    #~ break
-                    
-    
+        if len(self.subroutines + self.functions + self.modprocs) < 1 and self.generic:
+            raise Exception("Generic interface block found with no contents: {}".format(self.name))
+        if self.abstract:
+            contents = []
+            for proc in (self.subroutines + self.functions):
+                item = copy.copy(self)
+                item.procedure = proc
+                del item.functions
+                del item.modprocs
+                del item.subroutines
+                item.name = proc.name
+                item.permission = proc.permission
+                contents.append(item)
+            self.contents = contents
+        elif not self.generic:
+            contents = []
+            for proc in (self.functions + self.subroutines):
+                item = copy.copy(self)
+                item.procedure = proc
+                del item.functions
+                del item.modprocs
+                del item.subroutines
+                item.name = proc.name
+                item.permission = proc.permission
+                contents.append(item)
+            self.contents = contents
+
+
     
 class FortranVariable(FortranBase):
     """
@@ -851,10 +905,19 @@ class FortranVariable(FortranBase):
         self.doc = []
         self.initial = initial
         self.dimension = ''
-        index = self.name.find('(')
-        if index > 0 :
-            self.dimension = self.name[index:]
-            self.name = self.name[0:index]
+        
+        indexparen = self.name.find('(')
+        indexstar = self.name.find('*')
+        if indexparen > 0:
+            if indexparen < indexstar or indexstar < 0:
+                self.dimension = self.name[indexparen:]
+                self.name = self.name[0:indexparen]
+            else:
+                self.dimension = self.name[indexstar:]
+                self.name = self.name[0:indexstar]
+        elif indexstar > 0:
+            self.dimension = self.name[indexstar:]
+            self.name = self.name[0:indexstar]
         
         self.hierarchy = []
         cur = self.parent
@@ -865,24 +928,22 @@ class FortranVariable(FortranBase):
 
 
     def correlate(self,project):
-        if self.proto and self.proto[0] == '*': self.proto[0] = '*'
+        if self.proto and self.proto[0] == '*': self.proto[0] = '*' #FIXME: Is this line necessary?
         if (self.vartype == "type" or self.vartype == "class") and self.proto and self.proto[0] != '*':
             for dtype in self.parent.all_types:
                 if dtype.name.lower() == self.proto[0].lower(): 
                     self.proto[0] = dtype
                     break
         elif self.vartype == "procedure" and self.proto:
-            for proc in self.parent.procs:
+            for proc in self.parent.all_procs + self.parent.all_absinterfaces:
                 if proc.name.lower() == str(self.proto).lower():     #JW
                     self.proto = proc
                     break
             if type(self.proto) == str:
-                for interface in self.parent.all_interfaces:
-                    if interface.abstract:
-                        for proc in interface.subroutines + interface.functions:
-                            if proc.name.lower() == self.proto.lower():
-                                self.proto = interface
-                                break
+                for interface in self.parent.all_absinterfaces:
+                    if interface.name.lower() == self.proto.lower():
+                        self.proto = interface
+                        break
             
 
 
@@ -917,9 +978,9 @@ class FortranBoundProcedure(FortranBase):
             self.prototype = None
 
     def correlate(self,project):
-        self.procs = self.parent.procs
+        self.all_procs = self.parent.all_procs
         for i in range(len(self.bindings)):
-            for proc in self.procs:
+            for proc in self.all_procs:
                 if proc.name.lower() == self.bindings[i].lower():
                     self.bindings[i] = proc
                     break

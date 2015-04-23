@@ -39,6 +39,15 @@
 	 <br>
     {% endif %}
     
+    {% if program.absinterfaces|length > 0 %}
+	 <h2>Abstract Interfaces</h2>
+	 {% for intr in program.absinterfaces %}
+	   {{ macros.absinterface(intr,display) }}
+    {% endfor %}
+    </section>
+	 <br>
+    {% endif %}
+
     {% if program.types|length > 0 %}
 	 <h2>Derived Types</h2>
 	 {% for type in program.types %}
