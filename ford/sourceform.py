@@ -600,6 +600,13 @@ class FortranSubroutine(FortranCodeUnit):
                                 self.interfaces.remove(intr)
                             self.args[i].parent = self
                             break
+            if type(self.args[i]) == str:
+                print(self.args[i])
+                if self.args[i][0].lower() in 'ijklmn':
+                    vartype = 'integer'
+                else:
+                    vartype = 'real'
+                self.args[i] = FortranVariable(self.args[i],vartype,self)
 
         return
     
@@ -694,6 +701,13 @@ class FortranFunction(FortranCodeUnit):
                                 self.interfaces.remove(intr)
                             self.args[i].parent = self
                             break
+            if type(self.args[i]) == str:
+                print(self.args[i])
+                if self.args[i][0].lower() in 'ijklmn':
+                    vartype = 'integer'
+                else:
+                    vartype = 'real'
+                self.args[i] = FortranVariable(self.args[i],vartype,self)
         if type(self.retvar) != FortranVariable:
             for var in self.variables:
                 if var.name.lower() == self.retvar.lower():
