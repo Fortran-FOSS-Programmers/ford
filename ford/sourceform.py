@@ -595,15 +595,13 @@ class FortranSubroutine(FortranCodeUnit):
                     break
             if type(self.args[i]) == str:
                 for intr in self.interfaces:
-                    for proc in intr.subroutines + intr.functions:
-                        if proc.name.lower() == self.args[i].lower():
-                            self.args[i] = proc
-                            if proc.proctype == 'Subroutine': intr.subroutines.remove(proc)
-                            else: intr.functions.remove(proc)
-                            if len(intr.subroutines + intr.functions) < 1:
-                                self.interfaces.remove(intr)
-                            self.args[i].parent = self
-                            break
+                    if not intr.generic and intr.procedure.name.lower() == self.args[i].lower():
+                        self.args[i] = intr.procedure
+                        self.args[i].parent = self
+                        self.args[i].parobj = self.obj
+                        self.args[i].permission = None
+                        self.interfaces.remove(intr)
+                        break
             if type(self.args[i]) == str:
                 if self.args[i][0].lower() in 'ijklmn':
                     vartype = 'integer'

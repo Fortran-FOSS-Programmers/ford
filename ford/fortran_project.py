@@ -36,11 +36,11 @@ class Project(object):
     An object which collects and contains all of the information about the
     project which is to be documented.
     """
-    def __init__(self, name,topdir=".", extensions=["f90","f95","f03","f08"],
+    def __init__(self, name,topdirs=["."], extensions=["f90","f95","f03","f08"],
                  display=['public','protected'], exclude=[], docmark='!',
                  predocmark='', warn=False, exvartypes=[]):
         self.name = name
-        self.topdir = topdir
+        self.topdirs = topdirs
         self.extensions = extensions
         self.files = []
         self.modules = []
@@ -56,19 +56,21 @@ class Project(object):
         ford.sourceform.set_vartypes(exvartypes)
         
         # Get all files within topdir, recursively
-        srctree = os.walk(topdir)
+        srctree = []
+        for topdir in topdirs:
+            srctree = os.walk(topdir)
         for srcdir in srctree:
             curdir = srcdir[0]
             for item in srcdir[2]:
                 if item.split('.')[-1] in self.extensions and not item in exclude:
                     # Get contents of the file
                     print("Reading file {}".format(os.path.join(curdir,item)))
-                    #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
-                    try:
-                        self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
-                    except Exception as e:
-                        print("Warning: Error parsing {}.\n\t{}".format(os.path.join(curdir,item),e.args[0]))
-                        continue
+                    self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    #~ try:
+                        #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    #~ except Exception as e:
+                        #~ print("Warning: Error parsing {}.\n\t{}".format(os.path.join(curdir,item),e.args[0]))
+                        #~ continue
                     
                     for module in self.files[-1].modules:
                         self.modules.append(module)

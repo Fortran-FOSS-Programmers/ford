@@ -49,7 +49,7 @@ def main():
     parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
     parser.add_argument("project_file",help="file containing the description and settings for the project",
                         type=argparse.FileType('r'))
-    parser.add_argument("-d","--project_dir",help='top directory containing containing all source files for the project')
+    parser.add_argument("-d","--project_dir",nargs="*",help='directories containing all source files for the project')
     parser.add_argument("-o","--output_dir",help="directory in which to place output files")
     parser.add_argument("-s","--css",help="custom style-sheet for the output")
     parser.add_argument("--exclude",action="append",help="any files which should not be included in the documentation")
@@ -100,7 +100,8 @@ def main():
                u'year',u'docmark',u'predocmark',u'media_dir',u'favicon',u'warn',
                u'extra_vartypes']
     defaults = {u'project_dir':       u'./src',
-                u'extensions':        [u"f90",u"f95",u"f03",u"f08"],
+                u'extensions':        [u"f90",u"f95",u"f03",u"f08",u"F90",
+                                       u"F95",u"F03",u"F08"],
                 u'output_dir':        u'./doc',
                 u'project':           u'Fortran Program',
                 u'project_url':       u'',
@@ -112,7 +113,7 @@ def main():
                 u'favicon':           'default-icon',
                 u'extra_vartypes':    [],
                }
-    listopts = [u'extensions',u'display',u'extra_vartypes']
+    listopts = [u'extensions',u'display',u'extra_vartypes','project_dir']
     
     
     for option in options:
@@ -125,11 +126,25 @@ def main():
                 proj_data[option] = '\n'.join(proj_data[option])
         elif option in defaults:
            proj_data[option] = defaults[option]
-
-    if proj_data['project_dir'] in proj_data['output_dir']:
-        print('Error: output directory a subdirectory of directory containing source-code.')
-        sys.exit(1)
     
+    for projdir in proj_data['project_dir']:
+        proj_path = ford.utils.split_path(projdir)
+        out_path  = ford.utils.split_path(proj_data['output_dir'])
+        if len(proj_path) > len(out_path):
+            lpath = proj_path
+            spath = out_path
+        else:
+            lpath = out_path
+            spath = proj_path
+        for directory in spath:
+            if directory == lpath[0]:
+                lpath.remove(directory)
+            else:
+                break
+        else:
+            print('Error: output directory {} a subdirectory of directory containing source-code {}.'.format(proj_data['output_dir'],projdir))
+            sys.exit(1)
+        
     if proj_data['docmark'] == proj_data['predocmark']:
         print('Error: docmark and predocmark are the same.')
         sys.exit(1)
