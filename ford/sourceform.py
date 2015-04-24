@@ -41,7 +41,8 @@ if (sys.version_info[0]>2):
 else:
     from urllib import quote
 
-VAR_TYPE_RE = re.compile("^integer|real|double\s*precision|character|complex|logical|type|class|procedure",re.IGNORECASE)
+VAR_TYPE_STRING = "^integer|real|double\s*precision|character|complex|logical|type|class|procedure"
+VAR_TYPE_RE = re.compile(VAR_TYPE_STRING,re.IGNORECASE)
 VARKIND_RE = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
 KIND_RE = re.compile("kind\s*=\s*",re.IGNORECASE)
 LEN_RE = re.compile("len\s*=\s*",re.IGNORECASE)
@@ -205,7 +206,8 @@ class FortranContainer(FortranBase):
     #~ ABS_INTERFACE_RE = re.compile("^abstract\s+interface(?:\s+(\S.+))?$",re.IGNORECASE)
     BOUNDPROC_RE = re.compile("^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)",re.IGNORECASE)
     FINAL_RE = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
-    VARIABLE_RE = re.compile("^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is)|procedure)\s*((?:\(|\s\w|[:,*]).*)$",re.IGNORECASE)
+    VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is)|procedure{})\s*((?:\(|\s\w|[:,*]).*)$"
+    VARIABLE_RE = re.compile(VARIABLE_STRING.format(''),re.IGNORECASE)
     USE_RE = re.compile("^use\s+(\w+)($|,\s*)",re.IGNORECASE)
     CALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
     #TODO: Add the ability to recognize function calls
@@ -1178,6 +1180,15 @@ def set_doc_mark(mark,premark):
 def set_warn(val):
     global warn
     warn = bool(val)
+
+def set_vartypes(exvartypes):
+    typestr = ''
+    for vtype in exvartypes:
+        typestr = typestr + '|' + vtype
+
+    global VAR_TYPE_RE
+    VAR_TYPE_RE = re.compile(VAR_TYPE_STRING + typestr,re.IGNORECASE)
+    FortranContainer.VARIABLE_RE = re.compile(FortranContainer.VARIABLE_STRING.format(typestr),re.IGNORECASE)
 
 def get_mod_procs(source,line,parent):
     inherit_permission = parent.permission

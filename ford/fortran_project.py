@@ -36,9 +36,9 @@ class Project(object):
     An object which collects and contains all of the information about the
     project which is to be documented.
     """
-    def __init__(self,name,topdir=".",extensions=["f90","f95","f03","f08"],
-                 display=['public','protected'], exclude=[], 
-                 docmark='!', predocmark='',warn=False):
+    def __init__(self, name,topdir=".", extensions=["f90","f95","f03","f08"],
+                 display=['public','protected'], exclude=[], docmark='!',
+                 predocmark='', warn=False, exvartypes=[]):
         self.name = name
         self.topdir = topdir
         self.extensions = extensions
@@ -50,9 +50,11 @@ class Project(object):
         self.types = []
         self.display = display
         self.warn = warn
+        self.exvartypes = exvartypes
         
         ford.sourceform.set_warn(warn)
         ford.sourceform.set_doc_mark(docmark,predocmark)
+        ford.sourceform.set_vartypes(exvartypes)
         
         # Get all files within topdir, recursively
         srctree = os.walk(topdir)
