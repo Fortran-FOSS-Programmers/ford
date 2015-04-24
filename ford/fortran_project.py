@@ -50,7 +50,6 @@ class Project(object):
         self.types = []
         self.display = display
         self.warn = warn
-        self.exvartypes = exvartypes
         
         ford.sourceform.set_warn(warn)
         ford.sourceform.set_doc_mark(docmark,predocmark)
@@ -64,12 +63,12 @@ class Project(object):
                 if item.split('.')[-1] in self.extensions and not item in exclude:
                     # Get contents of the file
                     print("Reading file {}".format(os.path.join(curdir,item)))
-                    self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
-                    #~ try:
-                        #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
-                    #~ except Exception as e:
-                        #~ print("Warning: Error parsing {}.\n\t{}".format(os.path.join(curdir,item),e.args[0]))
-                        #~ continue
+                    #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    try:
+                        self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    except Exception as e:
+                        print("Warning: Error parsing {}.\n\t{}".format(os.path.join(curdir,item),e.args[0]))
+                        continue
                     
                     for module in self.files[-1].modules:
                         self.modules.append(module)

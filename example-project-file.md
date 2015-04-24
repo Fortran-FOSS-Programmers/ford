@@ -7,7 +7,6 @@ author: John Doe
 author_description: I program stuff in Fortran.
 github: https://github.com/cmacmackin
 email: john.doe@address.com
-extra_vartypes: Vec
 predocmark: >
 
 This is a project which I wrote. This file will provide the documents. I'm

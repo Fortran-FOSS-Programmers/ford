@@ -122,7 +122,7 @@ def main():
             # Think if there is a safe  way to evaluate any expressions found in this list
             #proj_data[option] = proj_data[option]
             if option not in listopts:
-                proj_data[option] = ''.join(proj_data[option])
+                proj_data[option] = '\n'.join(proj_data[option])
         elif option in defaults:
            proj_data[option] = defaults[option]
 
@@ -135,13 +135,9 @@ def main():
         sys.exit(1)
 
     if 'summary' in proj_data:
-        if type(proj_data['summary']) == list:
-            proj_data['summary'] = '\n'.join(proj_dat['summary'])
         proj_data['summary'] = md.convert(proj_data['summary'])
         proj_data['summary'] = ford.utils.sub_notes(proj_data['summary'])
     if 'author_description' in proj_data:
-        if type(proj_data['author_description']) == list:
-            proj_data['author_description'] = '\n'.join(proj_data['author_description'])
         proj_data['author_description'] = md.convert(proj_data['author_description'])
     
     relative = (proj_data['project_url'] == '')
