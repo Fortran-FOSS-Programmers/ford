@@ -127,22 +127,18 @@ def main():
         elif option in defaults:
            proj_data[option] = defaults[option]
     
+    # Make sure no project_dir is contained within output_dir
     for projdir in proj_data['project_dir']:
         proj_path = ford.utils.split_path(projdir)
         out_path  = ford.utils.split_path(proj_data['output_dir'])
-        if len(proj_path) > len(out_path):
-            lpath = proj_path
-            spath = out_path
-        else:
-            lpath = out_path
-            spath = proj_path
-        for directory in spath:
-            if directory == lpath[0]:
-                lpath.remove(directory)
+        for directory in out_path:
+            if len(proj_path) == 0: break
+            if directory == proj_path[0]:
+                proj_path.remove(directory)
             else:
                 break
         else:
-            print('Error: output directory {} a subdirectory of directory containing source-code {}.'.format(proj_data['output_dir'],projdir))
+            print('Error: directory containing source-code {} a subdirectory of output directory {}.'.format(proj_data['output_dir'],projdir))
             sys.exit(1)
         
     if proj_data['docmark'] == proj_data['predocmark']:
