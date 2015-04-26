@@ -35,6 +35,7 @@ import ford.sourceform
 import ford.output
 from ford.mdx_mathjax import MathJaxExtension
 import ford.utils
+import ford.pagetree
 
 __appname__ = "FORD"
 __author__ = "Chris MacMackin, Jacob Williams, Marco Restelli"
@@ -49,11 +50,11 @@ def main():
     parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
     parser.add_argument("project_file",help="file containing the description and settings for the project",
                         type=argparse.FileType('r'))
-    parser.add_argument("-d","--project_dir",nargs="*",help='directories containing all source files for the project')
+    parser.add_argument("-d","--project_dir",action="append",help='directories containing all source files for the project')
     parser.add_argument("-o","--output_dir",help="directory in which to place output files")
     parser.add_argument("-s","--css",help="custom style-sheet for the output")
     parser.add_argument("--exclude",action="append",help="any files which should not be included in the documentation")
-    parser.add_argument("-e","--extensions",nargs="*",help="extensions which should be scanned for documentation (default: f90, f95, f03, f08)")
+    parser.add_argument("-e","--extensions",action="append",help="extensions which should be scanned for documentation (default: f90, f95, f03, f08)")
     parser.add_argument("-w","--warn",dest='warn',action='store_true',
                         help="display warnings for undocumented items")
     parser.add_argument("--no-warn",dest='warn',action='store_false',
@@ -88,8 +89,6 @@ def main():
     proj_data = md.Meta
     md.reset()
 
-    proj_docs = ford.utils.sub_notes(proj_docs)
-
     # Get the default options, and any over-rides, straightened out
     options = [u'project_dir',u'extensions',u'output_dir',u'css',u'exclude',
                u'project',u'author',u'author_description',u'author_pic',
@@ -98,7 +97,7 @@ def main():
                u'project_bitbucket',u'project_website',u'project_download',
                u'project_sourceforge',u'project_url',u'display',u'version',
                u'year',u'docmark',u'predocmark',u'media_dir',u'favicon',u'warn',
-               u'extra_vartypes']
+               u'extra_vartypes',u'page_dir']
     defaults = {u'project_dir':       u'./src',
                 u'extensions':        [u"f90",u"f95",u"f03",u"f08",u"F90",
                                        u"F95",u"F03",u"F08"],
@@ -114,7 +113,6 @@ def main():
                 u'extra_vartypes':    [],
                }
     listopts = [u'extensions',u'display',u'extra_vartypes','project_dir']
-    
     
     for option in options:
         if hasattr(args,option) and eval("args." + option):
@@ -147,12 +145,16 @@ def main():
 
     if 'summary' in proj_data:
         proj_data['summary'] = md.convert(proj_data['summary'])
-        proj_data['summary'] = ford.utils.sub_notes(proj_data['summary'])
+        proj_data['summary'] = utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url'])
     if 'author_description' in proj_data:
         proj_data['author_description'] = md.convert(proj_data['author_description'])
+        proj_data['author_description'] = utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url'])
     
     relative = (proj_data['project_url'] == '')
-            
+    if relative: proj_data['project_url'] = '.'            
+
+    proj_docs = ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url'])
+
     # Parse the files in your project
     warn = ('warn' in proj_data)
     project = ford.fortran_project.Project(proj_data['project'],
@@ -168,11 +170,19 @@ def main():
     project.markdown(md)
     project.correlate()
     
+    # Process any pages
+    if 'page_dir' in proj_data:
+        page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md)
+        print()
+    else:
+        page_tree = None
+    proj_data['pages'] = page_tree
+    
     # Produce the documentation using Jinja2. Output it to the desired location
     # and copy any files that are needed (CSS, JS, images, fonts, source files,
     # etc.)
     print("Creating HTML documentation...")
-    ford.output.print_html(project,proj_data,proj_docs,relative)
+    ford.output.print_html(project,proj_data,proj_docs,page_tree,relative)
     print('')
     
     return 0

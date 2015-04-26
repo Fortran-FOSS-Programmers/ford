@@ -31,6 +31,7 @@ import shutil
 
 import ford.sourceform
 import ford.tipue_search
+import ford.utils
 
 #Python 2 or 3:
 if (sys.version_info[0]>2):
@@ -38,16 +39,55 @@ if (sys.version_info[0]>2):
 else:
     from urllib import quote
 
-def print_html(project,proj_data,proj_docs,relative):
+def print_html(project,proj_data,proj_docs,page_tree,relative):
+    def set_base_url(url):
+        ford.sourceform.set_base_url(url)
+        ford.pagetree.set_base_url(url)
+        proj_data['project_url'] = url
+
+    def print_pages(node):
+        base_url = ''
+        if relative:
+            base_url = ('../'*len(node.hierarchy))[:-1]
+            if node.filename == 'index':
+                if len(node.hierarchy) > 0:
+                    base_url = base_url + '/..'
+                else:
+                    base_url = '..'
+            set_base_url(base_url)
+
+        if node.filename == 'index':
+            os.mkdir(os.path.join(proj_data['output_dir'],'page',node.location), 0o755)
+        template = env.get_template('info_page.html')
+        node.contents = ford.utils.sub_macros(ford.utils.sub_notes(node.contents),base_url)
+        html = template.render(proj_data,page=node,project=project,topnode=page_tree)
+        out = open(quote(os.path.join(proj_data['output_dir'],'page',node.location,node.filename+'.html')),'wb')
+        out.write(html.encode('utf8'))
+        out.close()
+        tipue.create_node(html,'page'+node.location+'/'+node.filename+'.html')
+        for item in node.files:
+            try:
+                shutil.copy(os.path.join(proj_data['page_dir'],node.location,item),
+                            os.path.join(proj_data['output_dir'],'page',node.location))
+            except Exception as e:
+                print('Warning: could not copy file {}. Error: {}'.format(
+                  os.path.join(proj_data['page_dir'],node.location,item),e.args[0]))
+        for sub in node.subpages: 
+            print_pages(sub)
+            if relative: set_base_url(base_url)
+
+
     loc = os.path.dirname(__file__)
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
 
-    if os.path.isfile(proj_data['output_dir']):
-        os.remove(proj_data['output_dir'])
-    elif os.path.isdir(proj_data['output_dir']):
-        shutil.rmtree(proj_data['output_dir'])
-
-    os.makedirs(proj_data['output_dir'], 0o755)
+    try:
+        if os.path.isfile(proj_data['output_dir']):
+            os.remove(proj_data['output_dir'])
+        elif os.path.isdir(proj_data['output_dir']):
+            shutil.rmtree(proj_data['output_dir'])
+        os.makedirs(proj_data['output_dir'], 0o755)
+    except Exception as e:
+        print('Error: Could not create output directory. {}'.format(e.args[0]))
     os.mkdir(os.path.join(proj_data['output_dir'],'lists'), 0o755)
     os.mkdir(os.path.join(proj_data['output_dir'],'sourcefile'), 0o755)
     os.mkdir(os.path.join(proj_data['output_dir'],'type'), 0o755)
@@ -66,7 +106,7 @@ def print_html(project,proj_data,proj_docs,relative):
         try:
             shutil.copytree(proj_data['media_dir'],os.path.join(proj_data['output_dir'],'media'))
         except:
-            print('Warning: error copying image directory {}'.format(proj_data['media_dir']))
+            print('Warning: error copying media directory {}'.format(proj_data['media_dir']))
 
     
     if 'css' in proj_data:
@@ -76,9 +116,8 @@ def print_html(project,proj_data,proj_docs,relative):
     else:
         shutil.copy(proj_data['favicon'],os.path.join(proj_data['output_dir'],'favicon.png'))
     
-    if relative:
-        ford.sourceform.set_base_url('.')
-        proj_data['project_url'] = '.'
+    if relative: set_base_url('.')
+    else: set_base_url(proj_data['project_url'])        
 
     tipue = ford.tipue_search.Tipue_Search_JSON_Generator(proj_data['output_dir'],proj_data['project_url'])
 
@@ -95,9 +134,7 @@ def print_html(project,proj_data,proj_docs,relative):
     out.write(html.encode('utf8'))
     out.close()
     
-    if relative:
-        ford.sourceform.set_base_url('..')
-        proj_data['project_url'] = '..'
+    if relative: set_base_url('..')
     
     if len(project.procedures) > 0:
         template = env.get_template('proc_list.html')
@@ -206,6 +243,9 @@ def print_html(project,proj_data,proj_docs,relative):
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'program/'+prog.name.lower().replace('/','\\')+'.html', prog.meta)
+    
+    if page_tree: 
+        print_pages(page_tree)
     
     tipue.print_output()
 

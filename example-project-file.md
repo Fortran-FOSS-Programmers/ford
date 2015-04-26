@@ -8,6 +8,7 @@ author_description: I program stuff in Fortran.
 github: https://github.com/cmacmackin
 email: john.doe@address.com
 predocmark: >
+page_dir: ./pages
 
 This is a project which I wrote. This file will provide the documents. I'm
 writing the body of the text here. It contains an overall description of the

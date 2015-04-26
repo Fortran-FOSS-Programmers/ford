@@ -129,6 +129,11 @@ class FortranBase(object):
                 outstr = ''
         return outstr
 
+    def __lt__(self,other):
+        '''
+        Compare two Fortran objects. Needed to make toposort work.
+        '''
+        return (self.name < other.name)
     
     def markdown(self,md):
         """
@@ -157,10 +162,11 @@ class FortranBase(object):
             elif key == 'summary':
                 self.meta[key] = '\n'.join(self.meta[key])
             
-        self.doc = ford.utils.sub_notes(self.doc)
+        self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url)
     
         if 'summary' in self.meta:
             self.meta['summary'] = md.convert(self.meta['summary'])
+            self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url)
         elif PARA_CAPTURE_RE.search(self.doc):
             self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
 

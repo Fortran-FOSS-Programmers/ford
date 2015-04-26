@@ -1,8 +1,8 @@
 {% macro info_bar(name,meta,base_url,hierarchy) %}
 <div class="row">
-<div class="col-lg-7">
+<div class="col-lg-12">
 <div class="well well-sm">
-  <ul class="list-inline" style="margin-bottom:0px">
+  <ul class="list-inline" style="margin-bottom:0px;display:inline">
      {% if meta['author'] %}
     <li><i class="fa fa-pencil"></i> {{ meta['author'] }}</li>
      {% endif %}
@@ -24,10 +24,7 @@
     <li><i class="fa fa-code"></i><a href="{{ base_url }}/src/{{ name }}"> Source File</a></li>
      {% endif %}
   </ul>
-  </div>
-  </div>
-  <div class="col-lg-5">
-  <ol class="breadcrumb hierarchy text-right">
+  <ol class="breadcrumb in-well text-right">
   {% for item in hierarchy %}
      <li>{{ item }}</li>
   {% endfor %}

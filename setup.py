@@ -46,7 +46,7 @@ setup(
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
     ],
-  install_requires = ['markdown','markdown-include >= 0.4.1','toposort',
+  install_requires = ['markdown','markdown-include >= 0.5.1','toposort',
                       'jinja2','pygments','beautifulsoup4'],
   entry_points = {
     'console_scripts': [

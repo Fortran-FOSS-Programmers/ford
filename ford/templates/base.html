@@ -52,7 +52,10 @@
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
-            {% if project.files|length > 1 %}
+				{% if pages %}
+            <li>{{ pages }}</li>
+				{% endif %}
+                {% if project.files|length > 1 %}
             <li><a href="{{ project_url }}/lists/files.html">Source Files</a></li>
 				{% else %}
             <li><a href="{{ project_url }}/files/{{project.files[0].name}}.html">Source File</a></li>
@@ -72,7 +75,7 @@
             <li><a href="{{ project_url }}/lists/programs.html">Programs</a></li>
 				{% elif project.programs|length == 1 %}
             <li><a href="{{ project.programs[0].get_url() }}">Program</a></li>
-				{% endif %}				
+				{% endif %}
           </ul>
         <form action="{{ project_url }}/search.html" class="navbar-form navbar-right" role="search">
         <div class="form-group">

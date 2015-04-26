@@ -70,3 +70,37 @@
       margin-right: 5px;
       margin-top: 5px;
     }
+    
+    div.toc {
+      font-size: 14.73px;
+      padding-left: 0px;
+      padding-right: 0px;
+    }
+    
+    div.toc a {
+      padding-left: 20px;
+      padding-right: 20px;
+      margin-right: 15px;
+      padding-top: 5px;
+      padding-bottom: 5px;
+    }
+    
+    div.toc li {
+      font-size: 0.95em;
+      padding-left: 15px;
+    }
+    
+    div.toc li.title {
+      font-size: 1em;
+    }
+
+    div.toc hr {
+      margin-top: 12px;
+      margin-bottom: 10px;
+    }
+
+    .in-well {
+      padding: 0px 0px;
+      margin-bottom: 0px;
+      float:right;
+    }

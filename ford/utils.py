@@ -160,3 +160,14 @@ def split_path(path):
     recurse_path(path,retlist)
     return retlist
         
+
+def sub_macros(string,base_url):
+    '''
+    Replaces macros in documentation with their appropriate values. These macros
+    are used for things like providing URLs.
+    '''
+    macros = { '|url|': base_url,
+               '|media|': os.path.join(base_url,'media') }
+    for key, val in macros.items():
+        string = string.replace(key,val)
+    return string
