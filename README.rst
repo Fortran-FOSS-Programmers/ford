@@ -50,6 +50,8 @@ Current features include:
 -  Bootstrap CSS for the documentation, making it both functional and
    pretty.
 -  configurable settings.
+-  ability to create a hiearchical set of pages containing general information,
+   not associated with any particular part of the source code.
 
 
 Installation

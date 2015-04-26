@@ -39,6 +39,8 @@ Current features include:
 - links between related parts of the software.
 - Bootstrap CSS for the documentation, making it both functional and pretty.
 - configurable settings.
+- ability to create a hiearchical set of pages containing general information,
+  not associated with any particular part of the source code.
 
 ##Installation
 The simplest way to install FORD is using [pip](https://pip.pypa.io/en/latest/).
