@@ -52,7 +52,7 @@ class PageNode(object):
         if 'date' in md.Meta:
             self.date   = '\n'.join(md.Meta['date'])
         else:
-            self.author = None
+            self.date = None
         
         self.parent    = parent
         self.contents  = text
@@ -64,7 +64,6 @@ class PageNode(object):
             self.hierarchy = []
 
         self.filename = os.path.split(path)[1][:-3]
-        if self.filename == '_page_': self.filename = 'index'
         if parent:
             self.topdir   = parent.topdir
             self.location = os.path.relpath(os.path.split(path)[0],self.topdir)
@@ -82,16 +81,16 @@ class PageNode(object):
 def get_page_tree(topdir,md,parent=None):
     # look for files within topdir
     filelist = os.listdir(topdir)
-    if '_page_.md' in filelist:
-        # process _page_.md
+    if 'index.md' in filelist:
+        # process index.md
         try:
-            node = PageNode(md,os.path.join(topdir,'_page_.md'),parent)
+            node = PageNode(md,os.path.join(topdir,'index.md'),parent)
         except Exception as e:
-            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(topdir,'_page_.md')),e.args[0]))
+            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(topdir,'index.md')),e.args[0]))
             return None
-        filelist.remove('_page_.md')
+        filelist.remove('index.md')
     else:
-        print('Warning: No _page_.md file in directory {}'.format(topdir))
+        print('Warning: No index.md file in directory {}'.format(topdir))
         return None
     for name in filelist:
         if name[0] != '.':
