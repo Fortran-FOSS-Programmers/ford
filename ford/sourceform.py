@@ -106,9 +106,11 @@ class FortranBase(object):
              type(self.parent) == FortranInterface and 
              not self.parent.generic ):
             outstr = quote(outstr.format(self.base_url,'interface',self.name.lower().replace('/','\\'),''))
-        elif ( type(self) in [FortranType,FortranSourceFile,FortranProgram,
-                              FortranModule,FortranInterface,FortranFunction,
-                              FortranSubroutine] ):
+        elif ( type(self) in [FortranSourceFile,FortranProgram,FortranModule]
+               or ( type(self) in [FortranType,FortranInterface,FortranFunction,
+                                   FortranSubroutine]
+                    and type(self.parent) in [FortranSourceFile,FortranProgram,
+                                              FortranModule] ) ):
             outstr = quote(outstr.format(self.base_url,self.obj,self.name.lower().replace('/','\\'),''))
         elif ( (type(self) == FortranBoundProcedure) ):
             outstr = quote(outstr.format(self.base_url,self.parobj,self.parent.name.lower().replace('/','\\'),self.name.lower().replace('/','\\')))

@@ -58,7 +58,7 @@
                 {% if project.files|length > 1 %}
             <li><a href="{{ project_url }}/lists/files.html">Source Files</a></li>
 				{% else %}
-            <li><a href="{{ project_url }}/files/{{project.files[0].name}}.html">Source File</a></li>
+            <li><a href="{{ project_url }}/sourcefile/{{project.files[0].name}}.html">Source File</a></li>
 				{% endif %}
 				{% if project.modules|length > 0 %}
             <li><a href="{{ project_url }}/lists/modules.html">Modules</a></li>

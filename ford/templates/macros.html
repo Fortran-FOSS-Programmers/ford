@@ -372,7 +372,7 @@
 </div>
 {% endmacro %}
 
-{% macro proc_line(proc,display=['public','protected']) %}
+{% macro proc_line(proc,display=['public','protected'],link=True) %}
 {% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} {% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}({% for arg in proc.args -%}{{ arg.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c)
     {% if proc.meta['deprecated'] %}
 	 <span class="label label-danger depwarn">Deprecated</span>
