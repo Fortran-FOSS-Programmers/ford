@@ -9,12 +9,15 @@ github: https://github.com/cmacmackin
 email: john.doe@address.com
 predocmark: >
 page_dir: ./pages
+media_dir: ./media
 
 This is a project which I wrote. This file will provide the documents. I'm
 writing the body of the text here. It contains an overall description of the
 project. It might explain how to go about installing/compiling it. It might
 provide a change-log for the code. Maybe it will talk about the history and/or
 motivation for this software.
+
+![test](|media|/output-example.png)
 
 @Note
 You can include any notes (or bugs, warnings, or todos) like so.

@@ -142,10 +142,12 @@ class Project(object):
         for container in ranklist:
             if type(container) != str: container.correlate(self)
 
-    def markdown(self,md):
+    def markdown(self,md,base_url='..'):
         """
         Process the documentation with Markdown to produce HTML.
         """
+        
+        ford.sourceform.set_base_url(base_url)        
         if self.warn: print()
         for src in self.files:
             src.markdown(md)

@@ -143,16 +143,15 @@ def main():
         print('Error: docmark and predocmark are the same.')
         sys.exit(1)
 
+    relative = (proj_data['project_url'] == '')
+    if relative: proj_data['project_url'] = '.'            
+
     if 'summary' in proj_data:
         proj_data['summary'] = md.convert(proj_data['summary'])
         proj_data['summary'] = utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url'])
     if 'author_description' in proj_data:
         proj_data['author_description'] = md.convert(proj_data['author_description'])
         proj_data['author_description'] = utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url'])
-    
-    relative = (proj_data['project_url'] == '')
-    if relative: proj_data['project_url'] = '.'            
-
     proj_docs = ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url'])
 
     # Parse the files in your project
@@ -167,7 +166,10 @@ def main():
     
     # Convert the documentation from Markdown to HTML. Make sure to properly
     # handle LateX and metadata.
-    project.markdown(md)
+    if relative:
+        project.markdown(md,'..')
+    else:
+        project.markdown(md,proj_data['project_url'])
     project.correlate()
     
     # Process any pages
