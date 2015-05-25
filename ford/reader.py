@@ -38,24 +38,25 @@ class FortranReader(object):
         - remove any normal comments and any comments following an ampersand
           (line continuation)
         - if there are documentation comments preceding a piece of code, buffer
-          them and return them after the code, but before and documentation
+          them and return them after the code, but before any documentation
           following it
         - keep any documentation comments and, if they are at the end of a line
           of actual code, place them on a new line
         - removes blank lines and trailing white-space
-        - splits lines along semicolons
+        - split lines along semicolons
     """
 
     # Regexes
     COM_RE = re.compile("^([^\"'!]|(\'[^']*')|(\"[^\"]*\"))*(!.*)$")
     SC_RE = re.compile("^([^;]*);(.*)$")
 
-    def __init__(self,filename,docmark='!',predocmark=''):
+    def __init__(self,filename,docmark='!',predocmark='',docmark_alt='',predocmark_alt=''):
         self.name = filename
         self.reader = open(filename,'r')
         self.docbuffer = []
         self.pending = []
         self.prevdoc = False
+        self.reading_alt = 0
         self.docmark = docmark
         self.doc_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(docmark))
         self.predocmark = predocmark
@@ -63,6 +64,16 @@ class FortranReader(object):
             self.predoc_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(predocmark))
         else:
             self.predoc_re = None
+        self.docmark_alt = docmark_alt
+        if len(self.docmark_alt) != 0:
+            self.doc_alt_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(docmark_alt))
+        else:
+            self.doc_alt_re = None
+        self.predocmark_alt = predocmark_alt
+        if len(self.predocmark_alt) != 0:
+            self.predoc_alt_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(predocmark_alt))
+        else:
+            self.predoc_alt_re = None
         
     def __iter__(self):
         return self
@@ -90,6 +101,7 @@ class FortranReader(object):
         done = False
         continued = False
         reading_predoc = False
+        reading_predoc_alt = 0
         linebuffer = ""
         while not done:
             
@@ -115,15 +127,56 @@ class FortranReader(object):
                 if len(line[0:match.start(4)].strip()) > 0:
                     raise Exception("Preceding documentation lines can not be inline")
 
+            # Check for alternate preceding documentation
+            if self.predoc_alt_re:
+                match = self.predoc_alt_re.match(line)
+            else:
+                match = False
+            if match:
+                # Switch to doc_alt: following comment lines are documentation until end of the block
+                reading_predoc_alt = 1
+                # Substitute predocmark_alt with docmark
+                tmp = match.group(4)
+                tmp = tmp[:1] + self.docmark + tmp[1+len(self.predocmark_alt):]
+                self.docbuffer.append(tmp)
+                if len(line[0:match.start(4)].strip()) > 0:
+                    raise Exception("Alternate documentation lines can not be inline")
+
+            # Check for alternate succeeding documentation
+            if self.doc_alt_re:
+                match = self.doc_alt_re.match(line)
+            else:
+                match = False
+            if match:
+                # Switch to doc_alt: following comment lines are documentation until end of the block
+                self.reading_alt = 1
+                # Substitute predocmark_alt with docmark
+                tmp = match.group(4)
+                tmp = tmp[:1] + self.docmark + tmp[1+len(self.docmark_alt):]
+                self.docbuffer.append(tmp)
+                if len(line[0:match.start(4)].strip()) > 0:
+                    raise Exception("Alternate documentation lines can not be inline")
+
             # Capture any documentation comments
             match = self.doc_re.match(line)
             if match:
+                self.reading_alt = 0
+                reading_predoc_alt = 0
                 self.docbuffer.append(match.group(4))
                 line = line[0:match.start(4)]
 
-            # Remove any regular comments
+            if len(line.strip()) == 0 or line.strip()[0] != '!':
+                self.reading_alt = 0
+                reading_predoc_alt = 0
+
+            # Remove any regular comments, unless following an alternative (pre)docmark
             match = self.COM_RE.match(line)
             if match:
+                #~ print(line, len(line[0:match.start(4)].strip()))
+                if (reading_predoc_alt > 1 or self.reading_alt > 1) and len(line[0:match.start(4)].strip()) == 0:
+                    tmp = match.group(4)
+                    tmp = tmp[:1] + self.docmark + tmp[1:]
+                    self.docbuffer.append(tmp)
                 line = line[0:match.start(4)]
             line = line.strip()
 
@@ -133,8 +186,12 @@ class FortranReader(object):
                 if self.prevdoc and len(self.docbuffer) == 0:
                     #~ self.prevdoc = False
                     self.docbuffer.append("!"+self.docmark)
+                    #~ self.reading_alt = 0
+                    #~ reading_predoc_alt = 0
             else:
                 reading_predoc = False
+                #~ self.reading_alt = 0
+                #~ reading_predoc_alt = 0
                 # Check if line is immediate continuation of previous
                 if line[0] == '&':
                     if continued:
@@ -150,10 +207,16 @@ class FortranReader(object):
                 else:
                     continued = False
 
+            if self.reading_alt > 0:
+                self.reading_alt += 1
+            
+            if reading_predoc_alt > 0:
+                reading_predoc_alt += 1
+
             # Add this line to the buffer then check whether we're done here
             linebuffer += line
             done = ( ((len(self.docbuffer) > 0) or (len(linebuffer) > 0)) and
-                     not continued and not reading_predoc )
+                     not continued and not reading_predoc and (reading_predoc_alt == 0) )
 
         # Split buffer with semicolons
         frags = ford.utils.quote_split(';',linebuffer)
@@ -172,7 +235,7 @@ class FortranReader(object):
 
 if __name__ == '__main__':
     filename = sys.argv[1]
-    for line in FortranReader(filename):
+    for line in FortranReader(filename,docmark='!',predocmark='<',docmark_alt='#',predocmark_alt='%'):
         print(line)
         continue
 
