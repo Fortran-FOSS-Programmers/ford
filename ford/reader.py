@@ -172,7 +172,6 @@ class FortranReader(object):
             # Remove any regular comments, unless following an alternative (pre)docmark
             match = self.COM_RE.match(line)
             if match:
-                #~ print(line, len(line[0:match.start(4)].strip()))
                 if (reading_predoc_alt > 1 or self.reading_alt > 1) and len(line[0:match.start(4)].strip()) == 0:
                     tmp = match.group(4)
                     tmp = tmp[:1] + self.docmark + tmp[1:]
@@ -186,12 +185,8 @@ class FortranReader(object):
                 if self.prevdoc and len(self.docbuffer) == 0:
                     #~ self.prevdoc = False
                     self.docbuffer.append("!"+self.docmark)
-                    #~ self.reading_alt = 0
-                    #~ reading_predoc_alt = 0
             else:
                 reading_predoc = False
-                #~ self.reading_alt = 0
-                #~ reading_predoc_alt = 0
                 # Check if line is immediate continuation of previous
                 if line[0] == '&':
                     if continued:
