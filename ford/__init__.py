@@ -96,8 +96,8 @@ def main():
                u'google_plus',u'linkedin',u'email',u'website',u'project_github',
                u'project_bitbucket',u'project_website',u'project_download',
                u'project_sourceforge',u'project_url',u'display',u'version',
-               u'year',u'docmark',u'predocmark',u'media_dir',u'favicon',u'warn',
-               u'extra_vartypes',u'page_dir']
+               u'year',u'docmark',u'predocmark',u'docmark_alt',u'predocmark_alt',
+               u'media_dir',u'favicon',u'warn',u'extra_vartypes',u'page_dir']
     defaults = {u'project_dir':       u'./src',
                 u'extensions':        [u"f90",u"f95",u"f03",u"f08",u"F90",
                                        u"F95",u"F03",u"F08"],
@@ -108,6 +108,8 @@ def main():
                 u'year':              date.today().year,
                 u'exclude':           [],
                 u'docmark':           '!',
+                u'docmark_alt':       '',
+                u'predocmark_alt':    '',
                 u'predocmark':        '',
                 u'favicon':           'default-icon',
                 u'extra_vartypes':    [],
@@ -159,7 +161,8 @@ def main():
     project = ford.fortran_project.Project(proj_data['project'],
                 proj_data['project_dir'], proj_data['extensions'], 
                 proj_data['display'], proj_data['exclude'], proj_data['docmark'],
-                proj_data['predocmark'], warn, proj_data['extra_vartypes'])
+                proj_data['predocmark'], proj_data['docmark_alt'],
+                proj_data['predocmark_alt'], warn, proj_data['extra_vartypes'])
     if len(project.files) < 1:
         print("Error: No source files with appropriate extension found in specified directory.")
         sys.exit(1)

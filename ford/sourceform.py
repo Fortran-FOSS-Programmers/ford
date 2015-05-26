@@ -58,6 +58,8 @@ PARA_CAPTURE_RE = re.compile("<p>.*?</p>",re.IGNORECASE|re.DOTALL)
 base_url = ''
 docmark = '!'
 predocmark = ''
+docmark_alt = ''
+predocmark_alt = ''
 warn = False
 
 #TODO: Add ability to note EXTERNAL procedures, PARAMETER statements, and DATA statements.
@@ -462,7 +464,8 @@ class FortranSourceFile(FortranContainer):
         self.hierarchy = []
         self.obj = 'sourcefile'
                 
-        source = ford.reader.FortranReader(self.path,docmark,predocmark)
+        source = ford.reader.FortranReader(self.path,docmark,predocmark,
+                                           docmark_alt,predocmark_alt)
         
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
@@ -1177,11 +1180,15 @@ def parse_type(string,capture_strings):
 def set_base_url(url):
     FortranBase.base_url = url
 
-def set_doc_mark(mark,premark):
+def set_doc_mark(mark,premark,mark_alt,premark_alt):
     global docmark
     docmark = mark
     global predocmark
     predocmark = premark
+    global docmark_alt
+    docmark_alt = mark_alt
+    global predocmark_alt
+    predocmark_alt = premark_alt
 
 def set_warn(val):
     global warn

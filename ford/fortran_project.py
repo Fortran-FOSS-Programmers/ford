@@ -38,7 +38,8 @@ class Project(object):
     """
     def __init__(self, name,topdirs=["."], extensions=["f90","f95","f03","f08"],
                  display=['public','protected'], exclude=[], docmark='!',
-                 predocmark='', warn=False, exvartypes=[]):
+                 predocmark='', docmark_alt='', predocmark_alt='', warn=False,
+                 exvartypes=[]):
         self.name = name
         self.topdirs = topdirs
         self.extensions = extensions
@@ -52,7 +53,7 @@ class Project(object):
         self.warn = warn
         
         ford.sourceform.set_warn(warn)
-        ford.sourceform.set_doc_mark(docmark,predocmark)
+        ford.sourceform.set_doc_mark(docmark,predocmark,docmark_alt,predocmark_alt)
         ford.sourceform.set_vartypes(exvartypes)
         
         # Get all files within topdir, recursively
@@ -65,12 +66,12 @@ class Project(object):
                 if item.split('.')[-1] in self.extensions and not item in exclude:
                     # Get contents of the file
                     print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
-                    #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
-                    try:
-                        self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
-                    except Exception as e:
-                        print("Warning: Error parsing {}.\n\t{}".format(os.relpath(os.path.join(curdir,item)),e.args[0]))
-                        continue
+                    self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    #~ try:
+                        #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
+                    #~ except Exception as e:
+                        #~ print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
+                        #~ continue
                     
                     for module in self.files[-1].modules:
                         self.modules.append(module)

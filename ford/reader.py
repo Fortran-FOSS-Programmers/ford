@@ -74,7 +74,7 @@ class FortranReader(object):
             self.predoc_alt_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(predocmark_alt))
         else:
             self.predoc_alt_re = None
-        
+
     def __iter__(self):
         return self
         
@@ -230,7 +230,7 @@ class FortranReader(object):
 
 if __name__ == '__main__':
     filename = sys.argv[1]
-    for line in FortranReader(filename,docmark='!',predocmark='<',docmark_alt='#',predocmark_alt='%'):
+    for line in FortranReader(filename,docmark='!',predocmark='>',docmark_alt='#',predocmark_alt='<'):
         print(line)
         continue
 
