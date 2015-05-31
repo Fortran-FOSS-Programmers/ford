@@ -133,6 +133,7 @@ class Project(object):
                 uselist.extend(proc.uses)
             for proc in mod.functions:
                 uselist.extend(proc.uses)
+            uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
             deplist[mod] = set(uselist)
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:

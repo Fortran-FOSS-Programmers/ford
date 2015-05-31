@@ -50,6 +50,7 @@ class FortranReader(object):
     COM_RE = re.compile("^([^\"'!]|(\'[^']*')|(\"[^\"]*\"))*(!.*)$")
     SC_RE = re.compile("^([^;]*);(.*)$")
 
+    #TODO: Add checks that there are no conflicts between docmark, predocmark, alt marks etc.
     def __init__(self,filename,docmark='!',predocmark='',docmark_alt='',predocmark_alt=''):
         self.name = filename
         self.reader = open(filename,'r')
