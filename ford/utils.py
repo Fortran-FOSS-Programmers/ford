@@ -172,20 +172,20 @@ def sub_links(string,project):
     '''
     LINK_TYPES    = { 'module': 'modules',
                       'procedure': 'procedures',
+                      'type': 'types',
                       'subroutine': 'procedures',
                       'function': 'procedures',
                       'proc': 'procedures',
-                      'type': 'types',
                       'file': 'files',
                       'interface': 'absinterfaces',
                       'absinterface': 'absinterfaces',
                       'program': 'programs' }
         
     SUBLINK_TYPES = { 'variable': 'variables',
+                      'type': 'types',
                       'constructor': 'constructor',
                       'interface': 'interfaces',
                       'absinterface': 'absinterfaces',
-                      'type': 'types',
                       'subroutine': 'subroutines',
                       'function': 'functions',
                       'final': 'finalprocs',
@@ -199,7 +199,7 @@ def sub_links(string,project):
                       'subroutine': 'proc',
                       'function': 'proc',
                       'final': 'fp',
-                      'bound': 'pb',
+                      'bound': 'bp',
                       'modproc': 'proc' }
     
     
