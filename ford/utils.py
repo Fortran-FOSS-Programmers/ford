@@ -31,6 +31,7 @@ NOTE_RE = re.compile("@note\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
 WARNING_RE = re.compile("@warning\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
 TODO_RE = re.compile("@todo\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
 BUG_RE = re.compile("@bug\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
+LINK_RE = re.compile("\[\[(\w+)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)?\]\]")
 
 
 def sub_notes(docs):
@@ -159,7 +160,134 @@ def split_path(path):
     if len(drive) > 0: retlist.append(drive)
     recurse_path(path,retlist)
     return retlist
+
+
+def sub_links(string,project):
+    '''
+    Replace links to different parts of the program, formatted as
+    [[name]] or [[name(object-type)]] with the appropriate URL. Can also
+    link to an item's entry in another's page with the syntax
+    [[parent-name:name]]. The object type can be placed in parentheses
+    for either or both of these parts.
+    '''
+    LINK_TYPES    = { 'module': 'modules',
+                      'procedure': 'procedures',
+                      'subroutine': 'procedures',
+                      'function': 'procedures',
+                      'proc': 'procedures',
+                      'type': 'types',
+                      'file': 'files',
+                      'interface': 'absinterfaces',
+                      'absinterface': 'absinterfaces',
+                      'program': 'programs' }
         
+    SUBLINK_TYPES = { 'variable': 'variables',
+                      'constructor': 'constructor',
+                      'interface': 'interfaces',
+                      'absinterface': 'absinterfaces',
+                      'type': 'types',
+                      'subroutine': 'subroutines',
+                      'function': 'functions',
+                      'final': 'finalprocs',
+                      'bound': 'boundprocs',
+                      'modproc': 'modprocs' }
+    SUBLINK_ABBR  = { 'variable': 'var',
+                      'constructor': 'intr',
+                      'interface': 'intr',
+                      'absinterface': 'intr',
+                      'type': 'type',
+                      'subroutine': 'proc',
+                      'function': 'proc',
+                      'final': 'fp',
+                      'bound': 'pb',
+                      'modproc': 'proc' }
+    
+    
+    def get_abbr(obj,parobj):
+        if obj == getattr(parobj,'constructor',None):
+            return SUBLINK_ABBR['constructor']
+        for key, val in SUBLINK_TYPES.items():
+            if val != 'constructor' and obj in getattr(parobj,val,[]):
+                return SUBLINK_ABBR[key]
+        
+    
+    def convert_link(match):
+        ERR = 'Warning: Could not substitute link {}. {}'
+        url = ''
+        name = ''
+        found = False
+        searchlist = []
+        item = None
+        
+        #[name,obj,subname,subobj]
+        if not match.group(2):
+            for key, val in LINK_TYPES.items():
+                searchlist.extend(getattr(project,val))
+        else:
+            if match.group(2).lower() in LINK_TYPES:
+                searchlist.extend(getattr(project,LINK_TYPES[match.group(2).lower()]))
+            else:
+                print(ERR.format(match.group(),'Unrecognized classification "{}".'.format(match.group(2))))
+                return match.group()
+        
+        for obj in searchlist:
+            if match.group(1).lower() == obj.name.lower():
+                url = obj.get_url()
+                name = obj.name
+                found = True
+                item = obj
+                break
+        else:
+            print(ERR.format(match.group(),'"{}" not found.'.format(match.group(1))))
+        
+        if found and match.group(3):
+            searchlist = []
+            # TODO: Need to add code to check that item actually has these attributes. In particular, the default behaviour WILL NOT be safe.
+            if not match.group(4):
+                for key, val in SUBLINK_TYPES.items():
+                    if val == 'constructor':
+                        if hasattr(item,'constructor'):
+                            searchlist.append(item.constructor)
+                        else:
+                            continue
+                    else:
+                        searchlist.extend(getattr(item,val,[]))
+            else:
+                if match.group(4).lower() in SUBLINK_TYPES:
+                    if hasattr(item,SUBLINK_TYPES[match.group(4).lower()]):
+                        if match.group(4).lower == 'constructor':
+                            searchlist.append(item.constructor)
+                        else:
+                            searchlist.extend(getattr(item,SUBLINK_TYPES[match.group(4).lower()]))
+                    else:
+                        print(ERR.format(match.group(),'"{}" can not be contained in "{}"'.format(match.group(4),item.obj)))
+                        return match.group()
+                else:
+                    print(ERR.format(match.group(),'Unrecognized classification "{}".'.format(match.group(2))))
+                    return match.group()
+        
+            
+            for obj in searchlist:
+                if match.group(3).lower() == obj.name.lower():
+                    # TODO: add ABBR attributes to all sourceform types, as a way to contain the internal linking data
+                    url = url + '#' + get_abbr(obj,item) + '-' + obj.name
+                    name = obj.name
+                    item = obj
+                    break
+            else:
+                print(ERR.format(match.group(),'"{0}" not found in "{1}", linking to page for "{1}" instead.'.format(match.group(3),name)))
+        
+        if found:
+            print 'hey'
+            return '<a href="{}">{}</a>'.format(url,name)
+        else:
+            print 'hi'
+            return match.group()
+
+    # Get information from links (need to build an RE)
+    string = LINK_RE.sub(convert_link,string)
+    return string
+
 
 def sub_macros(string,base_url):
     '''
@@ -167,7 +295,9 @@ def sub_macros(string,base_url):
     are used for things like providing URLs.
     '''
     macros = { '|url|': base_url,
-               '|media|': os.path.join(base_url,'media') }
+               '|media|': os.path.join(base_url,'media'),
+               '|page|': os.path.join(base_url,'page')
+             }
     for key, val in macros.items():
         string = string.replace(key,val)
     return string

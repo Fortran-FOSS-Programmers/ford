@@ -59,7 +59,7 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
         if node.filename == 'index':
             os.mkdir(os.path.join(proj_data['output_dir'],'page',node.location), 0o755)
         template = env.get_template('info_page.html')
-        node.contents = ford.utils.sub_macros(ford.utils.sub_notes(node.contents),base_url)
+        node.contents = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(node.contents),base_url),project)
         html = template.render(proj_data,page=node,project=project,topnode=page_tree)
         out = open(quote(os.path.join(proj_data['output_dir'],'page',node.location,node.filename+'.html')),'wb')
         out.write(html.encode('utf8'))

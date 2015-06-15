@@ -152,7 +152,7 @@ class Project(object):
         ford.sourceform.set_base_url(base_url)        
         if self.warn: print()
         for src in self.files:
-            src.markdown(md)
+            src.markdown(md,self)
         return
 
 

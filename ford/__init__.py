@@ -148,14 +148,6 @@ def main():
     relative = (proj_data['project_url'] == '')
     if relative: proj_data['project_url'] = '.'            
 
-    if 'summary' in proj_data:
-        proj_data['summary'] = md.convert(proj_data['summary'])
-        proj_data['summary'] = utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url'])
-    if 'author_description' in proj_data:
-        proj_data['author_description'] = md.convert(proj_data['author_description'])
-        proj_data['author_description'] = utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url'])
-    proj_docs = ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url'])
-
     # Parse the files in your project
     warn = ('warn' in proj_data)
     project = ford.fortran_project.Project(proj_data['project'],
@@ -169,11 +161,21 @@ def main():
     
     # Convert the documentation from Markdown to HTML. Make sure to properly
     # handle LateX and metadata.
+    project.correlate()
     if relative:
         project.markdown(md,'..')
     else:
         project.markdown(md,proj_data['project_url'])
-    project.correlate()
+    
+    if relative: ford.sourceform.set_base_url('.')        
+    if 'summary' in proj_data:
+        proj_data['summary'] = md.convert(proj_data['summary'])
+        proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url']),project)
+    if 'author_description' in proj_data:
+        proj_data['author_description'] = md.convert(proj_data['author_description'])
+        proj_data['author_description'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url']),project)
+    proj_docs = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url']),project)
+    if relative: ford.sourceform.set_base_url('..')        
     
     # Process any pages
     if 'page_dir' in proj_data:

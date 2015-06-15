@@ -139,7 +139,7 @@ class FortranBase(object):
         '''
         return (self.name < other.name)
     
-    def markdown(self,md):
+    def markdown(self,md,project):
         """
         Process the documentation with Markdown to produce HTML.
         """
@@ -159,18 +159,18 @@ class FortranBase(object):
                 print('Warning: Undocumented {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
             self.doc = ""
             self.meta = {}
-    
+        #~ print(self.obj,self.name)
         for key in self.meta:
             if len(self.meta[key]) == 1:
                 self.meta[key] = self.meta[key][0]
             elif key == 'summary':
                 self.meta[key] = '\n'.join(self.meta[key])
             
-        self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url)
+        self.doc = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url),project)
     
         if 'summary' in self.meta:
             self.meta['summary'] = md.convert(self.meta['summary'])
-            self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url)
+            self.meta['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url),project)
         elif PARA_CAPTURE_RE.search(self.doc):
             self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
 
@@ -191,8 +191,16 @@ class FortranBase(object):
         if hasattr(self,'procedure'): md_list.append(self.procedure)
         
         for item in md_list:
-            if isinstance(item, FortranBase): item.markdown(md)
-        
+            if isinstance(item, FortranBase): item.markdown(md,project)
+
+        # Prune anything which we don't want to be displayed
+        if self.obj == 'module':
+            self.functions = [ obj for obj in self.functions if obj.permission in project.display]
+            self.subroutines = [ obj for obj in self.subroutines if obj.permission in project.display]
+            self.types = [ obj for obj in self.types if obj.permission in project.display]
+            self.interfaces = [ obj for obj in self.interfaces if obj.permission in project.display]
+            self.variables = [ obj for obj in self.variables if obj.permission in project.display]
+
         return
     
 
@@ -436,14 +444,6 @@ class FortranCodeUnit(FortranContainer):
                 arg.correlate(project)
         if hasattr(self,'retvar'):
             self.retvar.correlate(project)
-
-        # Prune anything which we don't want to be displayed
-        if self.obj == 'module':
-            self.functions = [ obj for obj in self.functions if obj.permission in project.display]
-            self.subroutines = [ obj for obj in self.subroutines if obj.permission in project.display]
-            self.types = [ obj for obj in self.types if obj.permission in project.display]
-            self.interfaces = [ obj for obj in self.interfaces if obj.permission in project.display]
-            self.variables = [ obj for obj in self.variables if obj.permission in project.display]
        
         
 class FortranSourceFile(FortranContainer):
@@ -931,6 +931,7 @@ class FortranVariable(FortranBase):
         self.doc = []
         self.initial = initial
         self.dimension = ''
+        self.meta = {}
         
         indexparen = self.name.find('(')
         indexstar = self.name.find('*')
