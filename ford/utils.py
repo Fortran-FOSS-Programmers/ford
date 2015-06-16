@@ -171,8 +171,8 @@ def sub_links(string,project):
     for either or both of these parts.
     '''
     LINK_TYPES    = { 'module': 'modules',
-                      'procedure': 'procedures',
                       'type': 'types',
+                      'procedure': 'procedures',
                       'subroutine': 'procedures',
                       'function': 'procedures',
                       'proc': 'procedures',

@@ -59,20 +59,20 @@ class FortranReader(object):
         self.prevdoc = False
         self.reading_alt = 0
         self.docmark = docmark
-        self.doc_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(docmark))
+        self.doc_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(re.escape(docmark)))
         self.predocmark = predocmark
         if len(self.predocmark) != 0:
-            self.predoc_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(predocmark))
+            self.predoc_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(re.escape(predocmark)))
         else:
             self.predoc_re = None
         self.docmark_alt = docmark_alt
         if len(self.docmark_alt) != 0:
-            self.doc_alt_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(docmark_alt))
+            self.doc_alt_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(re.escape(docmark_alt)))
         else:
             self.doc_alt_re = None
         self.predocmark_alt = predocmark_alt
         if len(self.predocmark_alt) != 0:
-            self.predoc_alt_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(predocmark_alt))
+            self.predoc_alt_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(re.escape(predocmark_alt)))
         else:
             self.predoc_alt_re = None
 
@@ -104,7 +104,9 @@ class FortranReader(object):
         reading_predoc = False
         reading_predoc_alt = 0
         linebuffer = ""
+        count = 0
         while not done:
+            count += 1
             
             if (sys.version_info[0]>2):
                 line = self.reader.__next__()
@@ -168,6 +170,8 @@ class FortranReader(object):
 
             if len(line.strip()) == 0 or line.strip()[0] != '!':
                 self.reading_alt = 0
+
+            if len(line.strip()) !=0 and line.strip()[0] != '!':
                 reading_predoc_alt = 0
 
             # Remove any regular comments, unless following an alternative (pre)docmark
@@ -188,6 +192,8 @@ class FortranReader(object):
                     self.docbuffer.append("!"+self.docmark)
             else:
                 reading_predoc = False
+                reading_predoc_alt = 0
+                self.reading_alt = 0
                 # Check if line is immediate continuation of previous
                 if line[0] == '&':
                     if continued:
@@ -211,10 +217,12 @@ class FortranReader(object):
 
             # Add this line to the buffer then check whether we're done here
             linebuffer += line
+            #~ print(((len(self.docbuffer) > 0) or (len(linebuffer) > 0)), not continued, not reading_predoc, (reading_predoc_alt == 0))
             done = ( ((len(self.docbuffer) > 0) or (len(linebuffer) > 0)) and
                      not continued and not reading_predoc and (reading_predoc_alt == 0) )
 
         # Split buffer with semicolons
+        #~ print(count,linebuffer,len(linebuffer))
         frags = ford.utils.quote_split(';',linebuffer)
         self.pending.extend([ s.strip() for s in frags if len(s) > 0])
         
