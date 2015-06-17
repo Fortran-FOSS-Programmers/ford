@@ -165,7 +165,7 @@ class FortranBase(object):
         #~ print(self.obj,self.name)
         for key in self.meta:
             if key == 'display':
-                self.display = self.meta[key]
+                self.display = [ item.lower() for item in self.meta[key] ]
                 if 'none' in self.display: self.display = []
             elif len(self.meta[key]) == 1:
                 self.meta[key] = self.meta[key][0]

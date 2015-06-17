@@ -75,21 +75,6 @@ class Project(object):
                     
                     for module in self.files[-1].modules:
                         self.modules.append(module)
-                        #~ for function in module.functions:
-                            #~ if function.permission in module.display:
-                                #~ self.procedures.append(function)
-                        #~ for subroutine in module.subroutines:
-                            #~ if subroutine.permission in module.display:
-                                #~ self.procedures.append(subroutine)
-                        #~ for interface in module.interfaces:
-                            #~ if interface.permission in module.display:
-                                #~ self.procedures.append(interface)
-                        #~ for absint in module.absinterfaces:
-                            #~ if absint.permission in module.display:
-                                #~ self.absinterfaces.append(absint)
-                        #~ for dtype in module.types:
-                            #~ if dtype.permission in module.display:
-                                #~ self.types.append(dtype)
                     
                     for function in self.files[-1].functions:
                         self.procedures.append(function)
@@ -97,16 +82,6 @@ class Project(object):
                         self.procedures.append(subroutine)
                     for program in self.files[-1].programs:
                         self.programs.append(program)
-                        #~ for function in program.functions:
-                            #~ self.procedures.append(function)
-                        #~ for subroutine in program.subroutines:
-                            #~ self.procedures.append(subroutine)
-                        #~ for interface in program.interfaces:
-                            #~ self.procedures.append(interfaces)
-                        #~ for absint in program.absinterfaces:
-                            #~ self.absinterfaces.append(absint)
-                        #~ for dtype in program.types:
-                            #~ self.types.append(dtype)
 
 
     def __str__(self):
@@ -146,7 +121,6 @@ class Project(object):
         
         for sfile in self.files:
             for module in sfile.modules:
-                #~ self.modules.append(module)
                 for function in module.functions:
                     self.procedures.append(function)
                 for subroutine in module.subroutines:
@@ -157,13 +131,8 @@ class Project(object):
                     self.absinterfaces.append(absint)
                 for dtype in module.types:
                     self.types.append(dtype)
-            #~ 
-            #~ for function in sfile.functions:
-                #~ self.procedures.append(function)
-            #~ for subroutine in sfile.subroutines:
-                #~ self.procedures.append(subroutine)
+
             for program in sfile.programs:
-                #~ self.programs.append(program)
                 for function in program.functions:
                     self.procedures.append(function)
                 for subroutine in program.subroutines:

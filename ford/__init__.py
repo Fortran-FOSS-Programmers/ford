@@ -127,6 +127,8 @@ def main():
         elif option in defaults:
            proj_data[option] = defaults[option]
     
+    proj_data['display'] = [ item.lower() for item in proj_data['display'] ]
+    
     # Make sure no project_dir is contained within output_dir
     for projdir in proj_data['project_dir']:
         proj_path = ford.utils.split_path(projdir)
