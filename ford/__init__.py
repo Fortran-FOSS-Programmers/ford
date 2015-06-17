@@ -161,11 +161,15 @@ def main():
     
     # Convert the documentation from Markdown to HTML. Make sure to properly
     # handle LateX and metadata.
-    project.correlate()
     if relative:
         project.markdown(md,'..')
     else:
         project.markdown(md,proj_data['project_url'])
+    project.correlate()
+    if relative:
+        project.make_links('..')
+    else:
+        project.make_links(proj_data['project_url'])
     
     if relative: ford.sourceform.set_base_url('.')        
     if 'summary' in proj_data:

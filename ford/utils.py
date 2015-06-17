@@ -269,7 +269,6 @@ def sub_links(string,project):
             
             for obj in searchlist:
                 if match.group(3).lower() == obj.name.lower():
-                    # TODO: add ABBR attributes to all sourceform types, as a way to contain the internal linking data
                     url = url + '#' + get_abbr(obj,item) + '-' + obj.name
                     name = obj.name
                     item = obj
@@ -278,10 +277,8 @@ def sub_links(string,project):
                 print(ERR.format(match.group(),'"{0}" not found in "{1}", linking to page for "{1}" instead.'.format(match.group(3),name)))
         
         if found:
-            print 'hey'
             return '<a href="{}">{}</a>'.format(url,name)
         else:
-            print 'hi'
             return match.group()
 
     # Get information from links (need to build an RE)

@@ -83,6 +83,9 @@ class FortranBase(object):
         self.parent = parent
         if self.parent:
             self.parobj = self.parent.obj
+            self.display = self.parent.display
+        else:
+            self.display = None
         self.obj = type(self).__name__[7:].lower()
         if self.obj == 'subroutine' or self.obj == 'function':
             self.obj = 'proc'
@@ -146,7 +149,7 @@ class FortranBase(object):
         if len(self.doc) > 0:
             if len(self.doc) == 1 and ':' in self.doc[0]:
                 words = self.doc[0].split(':')[0].strip()
-                if words.lower() not in ['author','date','license','version','category','summary','deprecated']:
+                if words.lower() not in ['author','date','license','version','category','summary','deprecated','display']:
                     self.doc.insert(0,'')
                 self.doc.append('')
             self.doc = '\n'.join(self.doc)
@@ -161,16 +164,19 @@ class FortranBase(object):
             self.meta = {}
         #~ print(self.obj,self.name)
         for key in self.meta:
-            if len(self.meta[key]) == 1:
+            if key == 'display':
+                self.display = self.meta[key]
+                if 'none' in self.display: self.display = []
+            elif len(self.meta[key]) == 1:
                 self.meta[key] = self.meta[key][0]
             elif key == 'summary':
                 self.meta[key] = '\n'.join(self.meta[key])
             
-        self.doc = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url),project)
+        self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url)
     
         if 'summary' in self.meta:
             self.meta['summary'] = md.convert(self.meta['summary'])
-            self.meta['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url),project)
+            self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url)
         elif PARA_CAPTURE_RE.search(self.doc):
             self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
 
@@ -193,16 +199,36 @@ class FortranBase(object):
         for item in md_list:
             if isinstance(item, FortranBase): item.markdown(md,project)
 
-        # Prune anything which we don't want to be displayed
-        if self.obj == 'module':
-            self.functions = [ obj for obj in self.functions if obj.permission in project.display]
-            self.subroutines = [ obj for obj in self.subroutines if obj.permission in project.display]
-            self.types = [ obj for obj in self.types if obj.permission in project.display]
-            self.interfaces = [ obj for obj in self.interfaces if obj.permission in project.display]
-            self.variables = [ obj for obj in self.variables if obj.permission in project.display]
-
         return
     
+    
+    def make_links(self,project):
+        """
+        Process intra-site links to documentation of other parts of the program.
+        """
+        self.doc = ford.utils.sub_links(self.doc,project)
+        if 'summary' in self.meta:
+            self.meta['summary'] = ford.utils.sub_links(self.meta['summary'],project)
+        recurse_list = []
+        
+        if hasattr(self,'variables'): recurse_list.extend(self.variables)
+        if hasattr(self,'types'): recurse_list.extend(self.types)
+        if hasattr(self,'modules'): recurse_list.extend(self.modules)
+        if hasattr(self,'subroutines'): recurse_list.extend(self.subroutines)
+        if hasattr(self,'functions'): recurse_list.extend(self.functions)
+        if hasattr(self,'interfaces'): recurse_list.extend(self.interfaces)
+        if hasattr(self,'absinterfaces'): recurse_list.extend(self.absinterfaces)
+        if hasattr(self,'programs'): recurse_list.extend(self.programs)
+        if hasattr(self,'boundprocs'): recurse_list.extend(self.boundprocs)
+        # if hasattr(self,'finalprocs'): recurse_list.extend(self.finalprocs)
+        # if hasattr(self,'constructor') and self.constructor: recurse_list.append(self.constructor)
+        if hasattr(self,'args'): recurse_list.extend(self.args)
+        if hasattr(self,'retvar') and self.retvar: recurse_list.append(self.retvar)
+        if hasattr(self,'procedure'): recurse_list.append(self.procedure)
+        
+        for item in recurse_list:
+            if isinstance(item, FortranBase): item.make_links(project)
+
 
 
 class FortranContainer(FortranBase):
@@ -444,7 +470,15 @@ class FortranCodeUnit(FortranContainer):
                 arg.correlate(project)
         if hasattr(self,'retvar'):
             self.retvar.correlate(project)
-       
+        
+        # Prune anything which we don't want to be displayed
+        self.functions = [ obj for obj in self.functions if obj.permission in self.display]
+        self.subroutines = [ obj for obj in self.subroutines if obj.permission in self.display]
+        self.types = [ obj for obj in self.types if obj.permission in self.display]
+        self.interfaces = [ obj for obj in self.interfaces if obj.permission in self.display]
+        self.absinterfaces = [ obj for obj in self.absinterfaces if obj.permission in self.display]
+        self.variables = [ obj for obj in self.variables if obj.permission in self.display]
+
         
 class FortranSourceFile(FortranContainer):
     """
@@ -452,7 +486,7 @@ class FortranSourceFile(FortranContainer):
     will consist of a list of these objects. In tern, SourceFile objects will
     contains lists of all of that file's contents
     """
-    def __init__(self,filepath):
+    def __init__(self,filepath,display):
         self.path = filepath.strip()
         self.name = os.path.basename(self.path)
         self.parent = None
@@ -463,6 +497,7 @@ class FortranSourceFile(FortranContainer):
         self.doc = []
         self.hierarchy = []
         self.obj = 'sourcefile'
+        self.display = display
                 
         source = ford.reader.FortranReader(self.path,docmark,predocmark,
                                            docmark_alt,predocmark_alt)
@@ -813,16 +848,13 @@ class FortranType(FortranContainer):
                     break
         # Match variables as needed (recurse)
         for i in range(len(self.variables)-1,-1,-1):
-            if self.variables[i].permission in project.display:
-                self.variables[i].correlate(project)
-            else:
-                del self.variables[i]
+            self.variables[i].correlate(project)
         # Match boundprocs with procedures
+        # FIXME: This is not at all modular because must process non-generic bound procs first--could there be a better way to do it
         for proc in self.boundprocs:
-            if proc.permission in project.display:
-                proc.correlate(project)
-            else:
-                self.boundprocs.remove(proc)
+            if not proc.generic: proc.correlate(project)
+        for proc in self.boundprocs:
+            if proc.generic: proc.correlate(project)
         # Match finalprocs
         for i in range(len(self.finalprocs)):
             for proc in self.all_procs:
@@ -836,8 +868,8 @@ class FortranType(FortranContainer):
                 break
         
         # Prune anything which we don't want to be displayed
-        self.boundprocs = [ obj for obj in self.boundprocs if obj.permission in project.display ]
-        self.variables = [ obj for obj in self.variables if obj.permission in project.display ]
+        self.boundprocs = [ obj for obj in self.boundprocs if obj.permission in self.display ]
+        self.variables = [ obj for obj in self.variables if obj.permission in self.display ]
 
         
     
@@ -967,6 +999,8 @@ class FortranVariable(FortranBase):
                     self.proto[0] = proc
                     break
 
+
+
 class FortranBoundProcedure(FortranBase):
     """
     An object representing a type-bound procedure, possibly overloaded.
@@ -999,13 +1033,20 @@ class FortranBoundProcedure(FortranBase):
 
     def correlate(self,project):
         self.all_procs = self.parent.all_procs
-        for i in range(len(self.bindings)):
-            for proc in self.all_procs:
-                if proc.name.lower() == self.bindings[i].lower():
-                    self.bindings[i] = proc
-                    break
-        
-        
+        if self.generic:
+            for i in range(len(self.bindings)):
+                for proc in self.parent.boundprocs:
+                    if proc.name.lower() == self.bindings[i].lower():
+                        self.bindings[i] = proc.bindings[0]
+                        break
+        else:
+            for i in range(len(self.bindings)):
+                for proc in self.all_procs:
+                    if proc.name.lower() == self.bindings[i].lower():
+                        self.bindings[i] = proc
+                        break
+
+
 
 class FortranModuleProcedure(FortranBase):
     """

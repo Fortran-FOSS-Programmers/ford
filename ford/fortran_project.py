@@ -66,30 +66,30 @@ class Project(object):
                 if item.split('.')[-1] in self.extensions and not item in exclude:
                     # Get contents of the file
                     print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
-                    self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
-                    #~ try:
-                        #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item)))
-                    #~ except Exception as e:
-                        #~ print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
-                        #~ continue
+                    #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display))
+                    try:
+                        self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display))
+                    except Exception as e:
+                        print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
+                        continue
                     
                     for module in self.files[-1].modules:
                         self.modules.append(module)
-                        for function in module.functions:
-                            if function.permission in display:
-                                self.procedures.append(function)
-                        for subroutine in module.subroutines:
-                            if subroutine.permission in display:
-                                self.procedures.append(subroutine)
-                        for interface in module.interfaces:
-                            if interface.permission in display:
-                                self.procedures.append(interface)
-                        for absint in module.absinterfaces:
-                            if absint.permission in display:
-                                self.absinterfaces.append(absint)
-                        for dtype in module.types:
-                            if dtype.permission in display:
-                                self.types.append(dtype)
+                        #~ for function in module.functions:
+                            #~ if function.permission in module.display:
+                                #~ self.procedures.append(function)
+                        #~ for subroutine in module.subroutines:
+                            #~ if subroutine.permission in module.display:
+                                #~ self.procedures.append(subroutine)
+                        #~ for interface in module.interfaces:
+                            #~ if interface.permission in module.display:
+                                #~ self.procedures.append(interface)
+                        #~ for absint in module.absinterfaces:
+                            #~ if absint.permission in module.display:
+                                #~ self.absinterfaces.append(absint)
+                        #~ for dtype in module.types:
+                            #~ if dtype.permission in module.display:
+                                #~ self.types.append(dtype)
                     
                     for function in self.files[-1].functions:
                         self.procedures.append(function)
@@ -97,16 +97,16 @@ class Project(object):
                         self.procedures.append(subroutine)
                     for program in self.files[-1].programs:
                         self.programs.append(program)
-                        for function in program.functions:
-                            self.procedures.append(function)
-                        for subroutine in program.subroutines:
-                            self.procedures.append(subroutine)
-                        for interface in program.interfaces:
-                            self.procedures.append(interfaces)
-                        for absint in program.absinterfaces:
-                            self.absinterfaces.append(absint)
-                        for dtype in program.types:
-                            self.types.append(dtype)
+                        #~ for function in program.functions:
+                            #~ self.procedures.append(function)
+                        #~ for subroutine in program.subroutines:
+                            #~ self.procedures.append(subroutine)
+                        #~ for interface in program.interfaces:
+                            #~ self.procedures.append(interfaces)
+                        #~ for absint in program.absinterfaces:
+                            #~ self.absinterfaces.append(absint)
+                        #~ for dtype in program.types:
+                            #~ self.types.append(dtype)
 
 
     def __str__(self):
@@ -143,6 +143,37 @@ class Project(object):
         # Perform remaining correlations for the project
         for container in ranklist:
             if type(container) != str: container.correlate(self)
+        
+        for sfile in self.files:
+            for module in sfile.modules:
+                #~ self.modules.append(module)
+                for function in module.functions:
+                    self.procedures.append(function)
+                for subroutine in module.subroutines:
+                    self.procedures.append(subroutine)
+                for interface in module.interfaces:
+                    self.procedures.append(interface)
+                for absint in module.absinterfaces:
+                    self.absinterfaces.append(absint)
+                for dtype in module.types:
+                    self.types.append(dtype)
+            #~ 
+            #~ for function in sfile.functions:
+                #~ self.procedures.append(function)
+            #~ for subroutine in sfile.subroutines:
+                #~ self.procedures.append(subroutine)
+            for program in sfile.programs:
+                #~ self.programs.append(program)
+                for function in program.functions:
+                    self.procedures.append(function)
+                for subroutine in program.subroutines:
+                    self.procedures.append(subroutine)
+                for interface in program.interfaces:
+                    self.procedures.append(interfaces)
+                for absint in program.absinterfaces:
+                    self.absinterfaces.append(absint)
+                for dtype in program.types:
+                    self.types.append(dtype)
 
     def markdown(self,md,base_url='..'):
         """
@@ -153,6 +184,17 @@ class Project(object):
         if self.warn: print()
         for src in self.files:
             src.markdown(md,self)
+        return
+
+    def make_links(self,base_url='..'):
+        """
+        Substitute intrasite links to documentation for other parts of 
+        the program.
+        """
+        
+        ford.sourceform.set_base_url(base_url)        
+        for src in self.files:
+            src.make_links(self)
         return
 
 

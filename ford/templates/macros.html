@@ -384,7 +384,7 @@
 {% macro final(finals,display=['public','protected']) %}
     {% for proc in finals %}
 <div class="panel panel-default">
-  <div class="panel-heading codesum"><a class="anchor" name="fp-{{ proc.name }}"></a><h3>final :: {{ proc.name }}</h3></div>
+  <div class="panel-heading codesum"><a class="anchor" name="fp-{{ proc.name }}"></a><h3>final :: <strong>{{ proc.name }}</strong></h3></div>
   <div class="panel-body">
      {{ proc_summary(proc,display,title=True) }}
   </div>
