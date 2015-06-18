@@ -22,17 +22,17 @@
     {% if interface.doc %}
     <h2>{% if interface.abstract %}abstract {% endif %}interface</h2>
     {{ interface.doc }}
-    <h2>{{ macros.proc_line(procedure,[],False) }}</h2>
+    <h2>{{ macros.proc_line(procedure,False) }}</h2>
     {% else %}
     <h2>{% if interface.abstract %}abstract {% endif %}interface <br>
-    {{ macros.proc_line(procedure,[],False) }}</h2>    
+    {{ macros.proc_line(procedure,False) }}</h2>    
     {% endif %}
 
     {{ macros.use_list(procedure) }}
 
     <h3>Arguments</h3>
     {% if procedure.args|length > 0 %}
-      {{ macros.var_list(procedure.args,intent=True,display=display) }}
+      {{ macros.var_list(procedure.args,intent=True) }}
     {% else %}
       <em>None</em>
     {% endif %}

@@ -25,21 +25,21 @@
 	{% if interface.functions|length > 0 %}
 	 <h2>Functions</h2>
 	 {% for proc in interface.functions %}
-    {{ macros.proc_entry(proc,display) }}
+    {{ macros.proc_entry(proc) }}
  	 {% endfor %}
   	 {% endif %}
 
 	{% if interface.subroutines|length > 0 %}
 	 <h2>Subroutines</h2>
 	 {% for proc in interface.subroutines %}
-    {{ macros.proc_entry(proc,display) }}
+    {{ macros.proc_entry(proc) }}
  	 {% endfor %}
   	 {% endif %}
 
 	{% if interface.modprocs|length > 0 %}
 	 <h2>Module Procedures</h2>
 	 {% for proc in interface.modprocs %}
-    {{ macros.proc_entry(proc.procedure,display) }}
+    {{ macros.proc_entry(proc.procedure) }}
  	 {% endfor %}
   	 {% endif %}
 

@@ -23,7 +23,7 @@
     {% if dtype.variables|length > 0 %}
     <section>
     <h2>Components</h2>
-    {{ macros.var_list(dtype.variables,permission=True,display=display) }}
+    {{ macros.var_list(dtype.variables,permission=True) }}
     </section>
     <br>
     {% endif %}
@@ -32,13 +32,13 @@
 	 <section>
 	 <h2>Constructor</h2>
 	   {% if dtype.constructor.obj == "interface" %}
-	   {{ macros.interface(dtype.constructor,display) }}
+	   {{ macros.interface(dtype.constructor) }}
 	   {% elif dtype.constructor.obj == "subroutine" or dtype.constructor.obj == "function" %}
 		  {% set obj = dtype.constructor %}
 	     <div class="panel panel-default">
   		  <div class="panel-heading codesum"><a class="anchor" name="con-{{ obj.name }}"></a><h3>{{ macros.proc_line(obj) }}</h3></div>
 	       <div class="panel-body">
-          {{ macros.proc_summary(obj,display,False) }}
+          {{ macros.proc_summary(obj,False) }}
           </div>
         </div>
 	   {% endif %}
@@ -49,7 +49,7 @@
     {% if dtype.finalprocs|length > 0 %}
     <section>
     <h2>Finalization Procedures</h2>
-	   {{ macros.final(dtype.finalprocs,display) }}
+	   {{ macros.final(dtype.finalprocs) }}
     </section>
     <br>
     {% endif %}
@@ -58,7 +58,7 @@
     <section>
     <h2>Type-Bound Procedures</h2>
     {% for bp in dtype.boundprocs %}
-	   {{ macros.bound_info(bp,display) }}
+	   {{ macros.bound_info(bp) }}
     {% endfor %}
     </section>
     {% endif %}

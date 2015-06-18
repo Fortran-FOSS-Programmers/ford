@@ -227,7 +227,7 @@
   {% endmacro %}
 
 
-{% macro var_list(variables,intent=False,permission=False,summary=False,display=['public','protected']) %}
+{% macro var_list(variables,intent=False,permission=False,summary=False) %}
 <table class="table table-striped varlist">
 <thead><tr><th>Type</th>{% if permission %}<th>Visibility</th>{% endif %}
 {% if intent %}<th>Intent</th><th>Optional</th>{% endif %}
@@ -251,7 +251,7 @@
   <td><strong>{{ var.name }}</strong>{{ var.dimension }}</td>{% if not intent %}<td>{% if var.initial -%}{% if var.points -%} => {% else %} = {%- endif %}{% endif %}</td><td>{% if var.initial %}{{ var.initial }}{%- endif %}</td>{% endif %}<td>{% if summary -%}{{ var.meta['summary'] }}{% else %}{{ var.doc }}{% endif %}</td>
   {% elif var.obj == 'proc' %}
   <td colspan="{{ colnum }}">
-      <small>{{ proc_summary(var,display,title=True,small=True) }}</small>
+      <small>{{ proc_summary(var,title=True,small=True) }}</small>
   </td> 
   {% endif %}
 </tr>
@@ -261,16 +261,16 @@
 {% endmacro %}
 
 
-{% macro proc_summary(proc,display=['public','protected'],title=True,small=False) %}
+{% macro proc_summary(proc,title=True,small=False) %}
     {% if title %}
-    {% if small %}<h5>{% else %}<h3>{% endif %}{{ proc_line(proc,display) }}{% if small %}</h5>{% else %}</h3>{% endif %}
+    {% if small %}<h5>{% else %}<h3>{% endif %}{{ proc_line(proc) }}{% if small %}</h5>{% else %}</h3>{% endif %}
     {% endif %}
     {% if small %}<h6>{% else %}<h4>{% endif %}Arguments{% if small %}</h6>{% else %}</h4>{% endif %}
     {% if proc.args|length > 0 %}
       {% if proc.permission in proc.parent.display %}
-      {{ var_list(proc.args,intent=True,summary=True,display=display) }}
+      {{ var_list(proc.args,intent=True,summary=True) }}
       {% else %}
-      {{ var_list(proc.args,intent=True,display=display) }}
+      {{ var_list(proc.args,intent=True) }}
       {% endif %}
     {% else %}
       <em>None</em>
@@ -293,7 +293,7 @@
 {% endmacro %}
 
 
-{% macro bound_info(tb,display=['public','protected']) %}
+{% macro bound_info(tb) %}
 <div class="panel panel-default">
   <div class="panel-heading codesum"><a class="anchor" name="bp-{{ tb.name }}"></a><h3>{% if tb.generic -%}generic,{% else %}procedure,{%- endif %} {{ tb.permission }}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or tb.name != tb.bindings[0].name %} => {% for bind in tb.bindings -%}{% if bind.permission in bind.parent.display %}{{ bind }}{% else %}{{ bind.name }}{% endif %}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
     {% if tb.meta['deprecated'] %}
@@ -309,7 +309,7 @@
   <ul class="list-group">
     {% for bind in tb.bindings %}
       <li class="list-group-item">
-      {{ proc_summary(bind,display) }}
+      {{ proc_summary(bind) }}
       </li>
     {% endfor %}
   </ul>
@@ -317,7 +317,7 @@
 {% endmacro %}
 
 
-{% macro interface(intr,display=['public','protected']) %}
+{% macro interface(intr) %}
 <div class="panel panel-default">
   <div class="panel-heading codesum"><a class="anchor" name="intr-{{ intr.name }}"></a><h3>{% if intr.parobj == 'module' and intr.generic %}{{ intr.permission }} {% endif %}interface {% if intr.generic %}{% if intr.permission in intr.parent.display %}{{ intr }}{% else %}{{ intr.name }}{% endif %}{% endif %}
     {% if intr.meta['deprecated'] %}
@@ -334,24 +334,24 @@
   {% if intr.generic %}
   {% for proc in intr.functions + intr.subroutines %}
     <li class="list-group-item">
-    {{ proc_summary(proc,display) }}
+    {{ proc_summary(proc) }}
     </li>
   {% endfor %}
   {% for proc in intr.modprocs %}
     <li class="list-group-item">
-    {{ proc_summary(proc.procedure,display) }}
+    {{ proc_summary(proc.procedure) }}
     </li>
   {% endfor %}
   {% else %}
     <li class="list-group-item">
-    {{ proc_summary(intr.procedure,display) }}
+    {{ proc_summary(intr.procedure) }}
     </li>
   {% endif %}
   </ul>
 </div>
 {% endmacro %}
 
-{% macro absinterface(intr,display=['public','protected']) %}
+{% macro absinterface(intr) %}
 <div class="panel panel-default">
   <div class="panel-heading codesum"><a class="anchor" name="intr-{{ intr.name }}"></a><h3>abstract interface
     {% if intr.meta['deprecated'] %}
@@ -366,13 +366,13 @@
   {% endif %}
   <ul class="list-group">
     <li class="list-group-item">
-    {{ proc_summary(intr.procedure,display) }}
+    {{ proc_summary(intr.procedure) }}
     </li>
   </ul>
 </div>
 {% endmacro %}
 
-{% macro proc_line(proc,display=['public','protected'],link=True) %}
+{% macro proc_line(proc,link=True) %}
 {% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} {% if proc.permission in proc.parent.display and link %}{{ proc }}{% else %}{{ proc.name }}{% endif %}({% for arg in proc.args -%}{{ arg.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c)
     {% if proc.meta['deprecated'] %}
 	 <span class="label label-danger depwarn">Deprecated</span>
@@ -381,19 +381,19 @@
 {% endmacro %}
 
 
-{% macro final(finals,display=['public','protected']) %}
+{% macro final(finals) %}
     {% for proc in finals %}
 <div class="panel panel-default">
   <div class="panel-heading codesum"><a class="anchor" name="fp-{{ proc.name }}"></a><h3>final :: <strong>{{ proc.name }}</strong></h3></div>
   <div class="panel-body">
-     {{ proc_summary(proc,display,title=True) }}
+     {{ proc_summary(proc,title=True) }}
   </div>
 </div>
     {% endfor %}
 {% endmacro %}
 
 
-{% macro type_summary(dtype,display=['public','protected']) %}
+{% macro type_summary(dtype) %}
 <div class="panel panel-default">
   <div class="panel-heading codesum"><a class="anchor" name="type-{{ dtype.name }}"></a><h3>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% if dtype.sequence%}, sequence {% endif %}{% for attrib in dtype.attribs -%}, {{ attrib }}{%- endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {% if dtype.permission in dtype.parent.display %}{{ dtype }}{% else %}{{ dtype.name }}{% endif %}
     {% if dtype.meta['deprecated'] %}
@@ -403,7 +403,7 @@
   <div class="panel-body">
      {% if dtype.variables|length > 0 %}
      <h4>Components</h4>
-    {{ var_list(dtype.variables,permission=True,summary=True,display=display) }}
+    {{ var_list(dtype.variables,permission=True,summary=True) }}
      {% endif %}
      {% if dtype.constructor %}
      <h4>Constructor</h4>
@@ -413,7 +413,7 @@
        <table class="table table-striped varlist">
       <tbody>
         {% if dtype.constructor.obj == 'proc' %}
-        <tr><td>{{ proc_line(dtype.constructor,display) }}</td><td>{{ dtype.constructor.meta['summary'] }}</td></tr>
+        <tr><td>{{ proc_line(dtype.constructor) }}</td><td>{{ dtype.constructor.meta['summary'] }}</td></tr>
         {% elif dtype.constructor.obj == 'interface' %}
              {% for proc in dtype.constructor.functions + dtype.constructor.subroutines %}
              <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.permission in proc.parent.display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}</td><td>{{ proc.meta['summary'] }}</td></tr>
@@ -457,11 +457,11 @@
 {% endmacro %}
 
 
-{% macro proc_entry(proc,display=['public','protected']) %}
+{% macro proc_entry(proc) %}
   <div class="panel panel-default">
-  <div class="panel-heading codesum"><a class="anchor" name="proc-{{ proc.name }}"></a><h3>{{ proc_line(proc,display) }}</h3></div>
+  <div class="panel-heading codesum"><a class="anchor" name="proc-{{ proc.name }}"></a><h3>{{ proc_line(proc) }}</h3></div>
   <div class="panel-body">
-       {{ proc_summary(proc,display,False) }}
+       {{ proc_summary(proc,False) }}
   </div>
   </div>
 {% endmacro %}

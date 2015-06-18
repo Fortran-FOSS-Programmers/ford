@@ -25,7 +25,7 @@
     {% if module.variables|length > 0 %}
     <section>
     <h2>Variables</h2>
-    {{ macros.var_list(module.variables,permission=True,display=display) }}
+    {{ macros.var_list(module.variables,permission=True) }}
     </section>
     <br>
     {% endif %}
@@ -33,7 +33,7 @@
     {% if module.interfaces|length > 0 %}
 	 <h2>Interfaces</h2>
 	 {% for intr in module.interfaces %}
-	   {{ macros.interface(intr,display) }}
+	   {{ macros.interface(intr) }}
     {% endfor %}
     </section>
 	 <br>
@@ -42,7 +42,7 @@
     {% if module.absinterfaces|length > 0 %}
 	 <h2>Abstract Interfaces</h2>
 	 {% for intr in module.absinterfaces %}
-	   {{ macros.absinterface(intr,display) }}
+	   {{ macros.absinterface(intr) }}
     {% endfor %}
     </section>
 	 <br>
@@ -51,7 +51,7 @@
     {% if module.types|length > 0 %}
 	 <h2>Derived Types</h2>
 	 {% for type in module.types %}
-	   {{ macros.type_summary(type,display) }}
+	   {{ macros.type_summary(type) }}
     {% endfor %}
     </section>
 	 <br>
@@ -61,7 +61,7 @@
     <section>
     <h2>Functions</h2>
     {% for proc in module.functions %}
-    {{ macros.proc_entry(proc,display) }}
+    {{ macros.proc_entry(proc) }}
     {% endfor %}
     </section>
     <br>
@@ -72,7 +72,7 @@
     <section>
     <h2>Subroutines</h2>
     {% for proc in module.subroutines %}
-    {{ macros.proc_entry(proc,display) }}
+    {{ macros.proc_entry(proc) }}
     {% endfor %}
     </section>    
     {% endif %}
