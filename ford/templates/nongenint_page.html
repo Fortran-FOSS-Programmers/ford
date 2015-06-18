@@ -22,10 +22,10 @@
     {% if interface.doc %}
     <h2>{% if interface.abstract %}abstract {% endif %}interface</h2>
     {{ interface.doc }}
-    <h2>{{ macros.proc_line(procedure,[]) }}</h2>
+    <h2>{{ macros.proc_line(procedure,[],False) }}</h2>
     {% else %}
     <h2>{% if interface.abstract %}abstract {% endif %}interface <br>
-    {{ macros.proc_line(procedure,[]) }}</h2>    
+    {{ macros.proc_line(procedure,[],False) }}</h2>    
     {% endif %}
 
     {{ macros.use_list(procedure) }}
