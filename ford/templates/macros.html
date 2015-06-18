@@ -243,7 +243,7 @@
   {% if var.proto %}{% set args = args + 1 %}{% endif %}
 <tr>
   {% if var.obj == 'variable' %}
-  <td><a class="anchor" name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if var.proto[0].permission in display or not var.proto[0].permission -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if intent or permission or var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>
+  <td><a class="anchor" name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].permission in var.proto[0].parent.display -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if intent or permission or var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>
   {% if intent -%}<td>intent({{ var.intent }}){% if var.optional or permission or var.parameter or var.attribs|length > 0 -%},{% endif %}</td>
   <td>{% if var.optional -%}optional{% if permission or var.parameter or var.attributes|length > 0 -%},{%- endif %}{%- endif %}</td>{%- endif %}
   {% if permission %}<td>{{ var.permission }}{% if var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>{% endif %}
@@ -267,7 +267,7 @@
     {% endif %}
     {% if small %}<h6>{% else %}<h4>{% endif %}Arguments{% if small %}</h6>{% else %}</h4>{% endif %}
     {% if proc.args|length > 0 %}
-      {% if proc.permission in display %}
+      {% if proc.permission in proc.parent.display %}
       {{ var_list(proc.args,intent=True,summary=True,display=display) }}
       {% else %}
       {{ var_list(proc.args,intent=True,display=display) }}
@@ -281,7 +281,7 @@
   {% if var.kind %}{% set args = args + 1 %}{% endif %}
   {% if var.strlen %}{% set args = args + 1 %}{% endif %}
   {% if var.proto %}{% set args = args + 1 %}{% endif %}
-     {% if small %}<h6>{% else %}<h4>{% endif %}Return Value <small><a class="anchor" name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if var.proto[0].permission in display -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
+     {% if small %}<h6>{% else %}<h4>{% endif %}Return Value <small><a class="anchor" name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].permission in var.proto[0].parent.display -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
   {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {%- endif %}{%- endfor %}{{ var.dimension }}</small>{% if small %}</h6>{% else %}</h4>{% endif %}
   {{ var.meta['summary'] }}
     {% endif %}
@@ -295,7 +295,7 @@
 
 {% macro bound_info(tb,display=['public','protected']) %}
 <div class="panel panel-default">
-  <div class="panel-heading codesum"><a class="anchor" name="bp-{{ tb.name }}"></a><h3>{% if tb.generic -%}generic,{% else %}procedure,{%- endif %} {{ tb.permission }}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or tb.name != tb.bindings[0].name %} => {% for bind in tb.bindings -%}{% if bind.permission in display %}{{ bind }}{% else %}{{ bind.name }}{% endif %}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
+  <div class="panel-heading codesum"><a class="anchor" name="bp-{{ tb.name }}"></a><h3>{% if tb.generic -%}generic,{% else %}procedure,{%- endif %} {{ tb.permission }}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or tb.name != tb.bindings[0].name %} => {% for bind in tb.bindings -%}{% if bind.permission in bind.parent.display %}{{ bind }}{% else %}{{ bind.name }}{% endif %}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
     {% if tb.meta['deprecated'] %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
@@ -319,7 +319,7 @@
 
 {% macro interface(intr,display=['public','protected']) %}
 <div class="panel panel-default">
-  <div class="panel-heading codesum"><a class="anchor" name="intr-{{ intr.name }}"></a><h3>{% if intr.parobj == 'module' and intr.generic %}{{ intr.permission }} {% endif %}interface {% if intr.generic %}{% if intr.permission in display %}{{ intr }}{% else %}{{ intr.name }}{% endif %}{% endif %}
+  <div class="panel-heading codesum"><a class="anchor" name="intr-{{ intr.name }}"></a><h3>{% if intr.parobj == 'module' and intr.generic %}{{ intr.permission }} {% endif %}interface {% if intr.generic %}{% if intr.permission in intr.parent.display %}{{ intr }}{% else %}{{ intr.name }}{% endif %}{% endif %}
     {% if intr.meta['deprecated'] %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
@@ -373,7 +373,8 @@
 {% endmacro %}
 
 {% macro proc_line(proc,display=['public','protected'],link=True) %}
-{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} {% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}({% for arg in proc.args -%}{{ arg.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c)
+TODO: Will have to edit this to deal with fact it is sometimes passed an empty list for DISPLAY
+{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} {% if proc.permission in proc.permission.display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}({% for arg in proc.args -%}{{ arg.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c)
     {% if proc.meta['deprecated'] %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
@@ -395,7 +396,7 @@
 
 {% macro type_summary(dtype,display=['public','protected']) %}
 <div class="panel panel-default">
-  <div class="panel-heading codesum"><a class="anchor" name="type-{{ dtype.name }}"></a><h3>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% if dtype.sequence%}, sequence {% endif %}{% for attrib in dtype.attribs -%}, {{ attrib }}{%- endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {% if dtype.permission in display %}{{ dtype }}{% else %}{{ dtype.name }}{% endif %}
+  <div class="panel-heading codesum"><a class="anchor" name="type-{{ dtype.name }}"></a><h3>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% if dtype.sequence%}, sequence {% endif %}{% for attrib in dtype.attribs -%}, {{ attrib }}{%- endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {% if dtype.permission in dtype.parent.display %}{{ dtype }}{% else %}{{ dtype.name }}{% endif %}
     {% if dtype.meta['deprecated'] %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
@@ -416,11 +417,11 @@
         <tr><td>{{ proc_line(dtype.constructor,display) }}</td><td>{{ dtype.constructor.meta['summary'] }}</td></tr>
         {% elif dtype.constructor.obj == 'interface' %}
              {% for proc in dtype.constructor.functions + dtype.constructor.subroutines %}
-             <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}</td><td>{{ proc.meta['summary'] }}</td></tr>
+             <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.permission in proc.parent.display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}</td><td>{{ proc.meta['summary'] }}</td></tr>
              {% endfor %}
              {% for mproc in dtype.constructor.modprocs %}
              {% set proc = mproc.procedure %}
-             <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.permission in display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}</td><td>{{ proc.meta['summary'] }}</td></tr>
+             <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.permission in proc.parent.display %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c){% endif %}</td><td>{{ proc.meta['summary'] }}</td></tr>
              {% endfor %}
         {% endif %}
        </tbody>
