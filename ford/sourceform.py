@@ -162,11 +162,25 @@ class FortranBase(object):
                 print('Warning: Undocumented {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
             self.doc = ""
             self.meta = {}
-        #~ print(self.obj,self.name)
+
+        if self.parent:
+            self.display = self.parent.display
+
         for key in self.meta:
             if key == 'display':
-                self.display = [ item.lower() for item in self.meta[key] ]
-                if 'none' in self.display: self.display = []
+                tmp = [ item.lower() for item in self.meta[key] ]
+                if type(self) == FortranSourceFile:
+                    while 'none' in tmp:
+                        tmp.remove('none')
+                
+                if len(tmp) == 0:
+                    pass
+                elif 'none' in tmp:
+                    self.display = []
+                elif 'public' not in tmp and 'private' not in tmp and 'protected' not in tmp:
+                    pass
+                else:
+                    self.display = tmp
             elif len(self.meta[key]) == 1:
                 self.meta[key] = self.meta[key][0]
             elif key == 'summary':
@@ -471,13 +485,23 @@ class FortranCodeUnit(FortranContainer):
         if hasattr(self,'retvar'):
             self.retvar.correlate(project)
         
-        # Prune anything which we don't want to be displayed
+
+    def prune(self):
+        """
+        Remove anything which shouldn't be displayed.
+        """
+        print(self.name, self.display)
+        print(len(self.functions)+len(self.subroutines))
         self.functions = [ obj for obj in self.functions if obj.permission in self.display]
         self.subroutines = [ obj for obj in self.subroutines if obj.permission in self.display]
         self.types = [ obj for obj in self.types if obj.permission in self.display]
         self.interfaces = [ obj for obj in self.interfaces if obj.permission in self.display]
         self.absinterfaces = [ obj for obj in self.absinterfaces if obj.permission in self.display]
         self.variables = [ obj for obj in self.variables if obj.permission in self.display]
+        print(len(self.functions)+len(self.subroutines))        
+        # Recurse
+        for obj in self.functions + self.subroutines + self.types:
+            obj.prune()
 
         
 class FortranSourceFile(FortranContainer):
@@ -867,7 +891,11 @@ class FortranType(FortranContainer):
                 self.constructor = proc
                 break
         
-        # Prune anything which we don't want to be displayed
+    
+    def prune(self):
+        """
+        Remove anything which shouldn't be displayed.
+        """
         self.boundprocs = [ obj for obj in self.boundprocs if obj.permission in self.display ]
         self.variables = [ obj for obj in self.variables if obj.permission in self.display ]
 

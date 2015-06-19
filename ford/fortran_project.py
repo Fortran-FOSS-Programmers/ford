@@ -118,6 +118,8 @@ class Project(object):
         # Perform remaining correlations for the project
         for container in ranklist:
             if type(container) != str: container.correlate(self)
+        for container in ranklist:
+            if type(container) != str: container.prune()
         
         for sfile in self.files:
             for module in sfile.modules:
