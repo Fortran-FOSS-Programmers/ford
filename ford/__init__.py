@@ -97,7 +97,8 @@ def main():
                u'project_bitbucket',u'project_website',u'project_download',
                u'project_sourceforge',u'project_url',u'display',u'version',
                u'year',u'docmark',u'predocmark',u'docmark_alt',u'predocmark_alt',
-               u'media_dir',u'favicon',u'warn',u'extra_vartypes',u'page_dir']
+               u'media_dir',u'favicon',u'warn',u'extra_vartypes',u'page_dir',
+               u'source']
     defaults = {u'project_dir':       u'./src',
                 u'extensions':        [u"f90",u"f95",u"f03",u"f08",u"F90",
                                        u"F95",u"F03",u"F08"],
@@ -113,6 +114,7 @@ def main():
                 u'predocmark':        '',
                 u'favicon':           'default-icon',
                 u'extra_vartypes':    [],
+                u'source':            'false',
                }
     listopts = [u'extensions',u'display',u'extra_vartypes','project_dir']
     
@@ -148,7 +150,8 @@ def main():
         sys.exit(1)
 
     relative = (proj_data['project_url'] == '')
-    if relative: proj_data['project_url'] = '.'            
+    if relative: proj_data['project_url'] = '.'
+    if 'source' in proj_data: ford.sourceform.set_source(proj_data['source'])
 
     # Parse the files in your project
     warn = ('warn' in proj_data)
@@ -173,7 +176,7 @@ def main():
     else:
         project.make_links(proj_data['project_url'])
     
-    if relative: ford.sourceform.set_base_url('.')        
+    if relative: ford.sourceform.set_base_url('.')
     if 'summary' in proj_data:
         proj_data['summary'] = md.convert(proj_data['summary'])
         proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url']),project)

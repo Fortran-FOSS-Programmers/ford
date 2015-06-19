@@ -62,6 +62,14 @@
     {% endfor %}
     </section>
     {% endif %}
+    
+    {% if dtype.src %}
+    <section>
+    <h2><a class="anchor" name="src"></a>Source Code</h2>
+    {{ dtype.src }}
+    </section>
+    {% endif %}
+    
     </div>
   </div>
 {% endblock body %}

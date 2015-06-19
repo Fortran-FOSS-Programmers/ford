@@ -61,6 +61,7 @@ predocmark = ''
 docmark_alt = ''
 predocmark_alt = ''
 warn = False
+show_source = 'false'
 
 #TODO: Add ability to note EXTERNAL procedures, PARAMETER statements, and DATA statements.
 class FortranBase(object):
@@ -70,6 +71,9 @@ class FortranBase(object):
     """
     POINTS_TO_RE = re.compile("\s*=>\s*",re.IGNORECASE)
     SPLIT_RE = re.compile("\s*,\s*",re.IGNORECASE)
+    SRC_CAPTURE_STR = r"^[ \t]*([\w(),*: \t]+?[ \t]+)?{0}([\w(),*: \t]+?)?[ \t]+{1}.*?end[ \t]*{0}[ \t]+{1}[ \t]*?(!.*?)?$"
+    
+    #~ this regex is not working for the LINK and DOUBLE_LINK types
     
     base_url = ''
     
@@ -194,6 +198,25 @@ class FortranBase(object):
         elif PARA_CAPTURE_RE.search(self.doc):
             self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
 
+        if 'source' not in self.meta:
+            self.meta['source'] = show_source
+        else:
+            self.meta['source'] = self.meta['source'].lower()
+        if self.meta['source'].lower() == 'true' and (self.obj == 'proc' or self.obj == 'type' or self.obj == 'program'):
+            if self.obj == 'proc':
+                obj = self.proctype.lower()
+            else:
+                obj = self.obj
+            regex = re.compile(self.SRC_CAPTURE_STR.format(obj,self.name), re.IGNORECASE|re.DOTALL|re.MULTILINE)
+            match = regex.search(self.hierarchy[0].raw_src)
+            if match:
+                self.src = highlight(match.group(),FortranLexer(),HtmlFormatter())
+            else:
+                self.src = ''
+                if warn:
+                    print('Warning: Could not extract source code for {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
+                
+        
         md_list = []
         if hasattr(self,'variables'): md_list.extend(self.variables)
         if hasattr(self,'types'): md_list.extend(self.types)
@@ -490,15 +513,12 @@ class FortranCodeUnit(FortranContainer):
         """
         Remove anything which shouldn't be displayed.
         """
-        print(self.name, self.display)
-        print(len(self.functions)+len(self.subroutines))
         self.functions = [ obj for obj in self.functions if obj.permission in self.display]
         self.subroutines = [ obj for obj in self.subroutines if obj.permission in self.display]
         self.types = [ obj for obj in self.types if obj.permission in self.display]
         self.interfaces = [ obj for obj in self.interfaces if obj.permission in self.display]
         self.absinterfaces = [ obj for obj in self.absinterfaces if obj.permission in self.display]
         self.variables = [ obj for obj in self.variables if obj.permission in self.display]
-        print(len(self.functions)+len(self.subroutines))        
         # Recurse
         for obj in self.functions + self.subroutines + self.types:
             obj.prune()
@@ -528,10 +548,10 @@ class FortranSourceFile(FortranContainer):
         
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
-        self.src = readobj.read()
+        self.raw_src = readobj.read()
         #~ self.src = highlight(self.src,FortranLexer(),HtmlFormatter(linenos=True))
         # TODO: Get line-numbers working in such a way that it will look right with Bootstrap CSS
-        self.src = highlight(self.src,FortranLexer(),HtmlFormatter())
+        self.src = highlight(self.raw_src,FortranLexer(),HtmlFormatter())
 
 
 
@@ -1293,3 +1313,7 @@ def get_mod_procs(source,line,parent):
     retlist[-1].doc = doc
     
     return retlist
+
+def set_source(setting):
+    global show_source
+    show_source = setting.lower()

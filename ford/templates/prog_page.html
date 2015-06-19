@@ -77,6 +77,13 @@
     </section>    
     {% endif %}
     
+    {% if program.src %}
+    <section>
+    <h2><a class="anchor" name="src"></a>Source Code</h2>
+    {{ program.src }}
+    </section>
+    {% endif %}
+    
     </div>
   </div>
 {% endblock body %}

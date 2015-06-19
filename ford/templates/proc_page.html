@@ -97,6 +97,13 @@
     </section>    
     {% endif %}
     
+    {% if procedure.src %}
+    <section>
+    <h2><a class="anchor" name="src"></a>Source Code</h2>
+    {{ procedure.src }}
+    </section>
+    {% endif %}
+    
     </div>
   </div>
 {% endblock body %}
