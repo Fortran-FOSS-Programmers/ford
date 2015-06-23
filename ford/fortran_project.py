@@ -37,9 +37,9 @@ class Project(object):
     project which is to be documented.
     """
     def __init__(self, name,topdirs=["."], extensions=["f90","f95","f03","f08"],
-                 display=['public','protected'], exclude=[], docmark='!',
-                 predocmark='', docmark_alt='', predocmark_alt='', warn=False,
-                 exvartypes=[]):
+                 display=['public','protected'], exclude=[], excludedir=[],
+                 docmark='!',predocmark='', docmark_alt='', predocmark_alt='',
+                 warn=False, exvartypes=[]):
         self.name = name
         self.topdirs = topdirs
         self.extensions = extensions
@@ -60,28 +60,30 @@ class Project(object):
         srctree = []
         for topdir in topdirs:
             srctree = os.walk(topdir)
-        for srcdir in srctree:
-            curdir = srcdir[0]
-            for item in srcdir[2]:
-                if item.split('.')[-1] in self.extensions and not item in exclude:
-                    # Get contents of the file
-                    print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
-                    #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display))
-                    try:
-                        self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display))
-                    except Exception as e:
-                        print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
-                        continue
-                    
-                    for module in self.files[-1].modules:
-                        self.modules.append(module)
-                    
-                    for function in self.files[-1].functions:
-                        self.procedures.append(function)
-                    for subroutine in self.files[-1].subroutines:
-                        self.procedures.append(subroutine)
-                    for program in self.files[-1].programs:
-                        self.programs.append(program)
+            for srcdir in srctree:
+                if os.path.split(srcdir[0])[1] in excludedir:
+                    continue
+                curdir = srcdir[0]
+                for item in srcdir[2]:
+                    if item.split('.')[-1] in self.extensions and not item in exclude:
+                        # Get contents of the file
+                        print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
+                        #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display))
+                        try:
+                            self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display))
+                        except Exception as e:
+                            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
+                            continue
+                        
+                        for module in self.files[-1].modules:
+                            self.modules.append(module)
+                        
+                        for function in self.files[-1].functions:
+                            self.procedures.append(function)
+                        for subroutine in self.files[-1].subroutines:
+                            self.procedures.append(subroutine)
+                        for program in self.files[-1].programs:
+                            self.programs.append(program)
 
 
     def __str__(self):
