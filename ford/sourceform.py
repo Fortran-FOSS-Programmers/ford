@@ -198,23 +198,24 @@ class FortranBase(object):
         elif PARA_CAPTURE_RE.search(self.doc):
             self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
 
-        if 'source' not in self.meta:
-            self.meta['source'] = show_source
-        else:
-            self.meta['source'] = self.meta['source'].lower()
-        if self.meta['source'].lower() == 'true' and (self.obj == 'proc' or self.obj == 'type' or self.obj == 'program'):
-            if self.obj == 'proc':
-                obj = self.proctype.lower()
+        if self.obj == 'proc' or self.obj == 'type' or self.obj == 'program':
+            if 'source' not in self.meta:
+                self.meta['source'] = show_source
             else:
-                obj = self.obj
-            regex = re.compile(self.SRC_CAPTURE_STR.format(obj,self.name), re.IGNORECASE|re.DOTALL|re.MULTILINE)
-            match = regex.search(self.hierarchy[0].raw_src)
-            if match:
-                self.src = highlight(match.group(),FortranLexer(),HtmlFormatter())
-            else:
-                self.src = ''
-                if warn:
-                    print('Warning: Could not extract source code for {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
+                self.meta['source'] = self.meta['source'].lower()
+            if self.meta['source'].lower() == 'true':
+                if self.obj == 'proc':
+                    obj = self.proctype.lower()
+                else:
+                    obj = self.obj
+                regex = re.compile(self.SRC_CAPTURE_STR.format(obj,self.name), re.IGNORECASE|re.DOTALL|re.MULTILINE)
+                match = regex.search(self.hierarchy[0].raw_src)
+                if match:
+                    self.src = highlight(match.group(),FortranLexer(),HtmlFormatter())
+                else:
+                    self.src = ''
+                    if warn:
+                        print('Warning: Could not extract source code for {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
                 
         
         md_list = []
@@ -418,9 +419,20 @@ class FortranContainer(FortranBase):
                     raise Exception("Found INTERFACE in {}".format(type(self).__name__[7:].upper()))
             elif self.BOUNDPROC_RE.match(line) and incontains:
                 if hasattr(self,'boundprocs'):
-                    self.boundprocs.append(FortranBoundProcedure(source,
-                                           self.BOUNDPROC_RE.match(line),self,
-                                           permission))
+                    match = self.BOUNDPROC_RE.match(line)
+                    split = match.group(4).split(',')
+                    split.reverse()
+                    if match.group(1).lower() == 'generic' or len(split) == 1:
+                        self.boundprocs.append(FortranBoundProcedure(source,
+                                               self.BOUNDPROC_RE.match(line),self,
+                                               permission))
+                    else:
+                        for bind in split:
+                            pseudo_line = line[:match.start(4)] + bind
+                            self.boundprocs.append(FortranBoundProcedure(source,
+                                                   self.BOUNDPROC_RE.match(pseudo_line),
+                                                   self,permission))
+                            
                 else:
                     raise Exception("Found type-bound procedure in {}".format(type(self).__name__[7:].upper()))
             elif self.FINAL_RE.match(line) and incontains:
@@ -1065,10 +1077,10 @@ class FortranBoundProcedure(FortranBase):
                 else: self.attribs.append(tmp_attribs[i])
         rest = line.group(4)
         split = self.POINTS_TO_RE.split(rest)
-        self.name = split[0]
+        self.name = split[0].strip()
         self.generic = (line.group(1).lower() == "generic")
         self.bindings = []
-        if len(split) > 1: # This won't work for non-generic bindings with multiple procedures on one line
+        if len(split) > 1:
             binds = self.SPLIT_RE.split(split[1])
             for bind in binds:
                 self.bindings.append(bind.strip())
