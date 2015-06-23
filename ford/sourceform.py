@@ -1068,7 +1068,7 @@ class FortranBoundProcedure(FortranBase):
         self.name = split[0]
         self.generic = (line.group(1).lower() == "generic")
         self.bindings = []
-        if len(split) > 1:
+        if len(split) > 1: # This won't work for non-generic bindings with multiple procedures on one line
             binds = self.SPLIT_RE.split(split[1])
             for bind in binds:
                 self.bindings.append(bind.strip())
