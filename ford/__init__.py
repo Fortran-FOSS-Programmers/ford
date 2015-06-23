@@ -120,11 +120,11 @@ def main():
                 u'source':            'false',
                 u'macros':            [],
                }
-    listopts = [u'extensions',u'display',u'extra_vartypes','project_dir','exclude','exclude_dir']
+    listopts = [u'extensions',u'display',u'extra_vartypes',u'project_dir',u'exclude',u'exclude_dir',u'macros']
     
     for option in options:
-        if hasattr(args,option) and eval("args." + option):
-            proj_data[option] = eval("args." + option)
+        if hasattr(args,option) and getattr(args,option):
+            proj_data[option] = getattr(args,option)
         elif option in proj_data:
             # Think if there is a safe  way to evaluate any expressions found in this list
             #proj_data[option] = proj_data[option]
