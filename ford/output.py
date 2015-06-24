@@ -40,6 +40,8 @@ else:
     from urllib import quote
 
 def print_html(project,proj_data,proj_docs,page_tree,relative):
+    out_dir = quote(proj_data['output_dir'])
+    
     def set_base_url(url):
         ford.sourceform.set_base_url(url)
         ford.pagetree.set_base_url(url)
@@ -57,18 +59,18 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
             set_base_url(base_url)
 
         if node.filename == 'index':
-            os.mkdir(os.path.join(proj_data['output_dir'],'page',node.location), 0o755)
+            os.mkdir(os.path.join(out_dir,'page',node.location), 0o755)
         template = env.get_template('info_page.html')
         node.contents = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(node.contents),base_url),project)
         html = template.render(proj_data,page=node,project=project,topnode=page_tree)
-        out = open(quote(os.path.join(proj_data['output_dir'],'page',node.location,node.filename+'.html')),'wb')
+        out = open(os.path.join(out_dir,'page',node.location,quote(node.filename)+'.html'),'wb')
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'page'+node.location+'/'+node.filename+'.html')
         for item in node.files:
             try:
                 shutil.copy(os.path.join(proj_data['page_dir'],node.location,item),
-                            os.path.join(proj_data['output_dir'],'page',node.location))
+                            os.path.join(out_dir,'page',node.location))
             except Exception as e:
                 print('Warning: could not copy file {}. Error: {}'.format(
                   os.path.join(proj_data['page_dir'],node.location,item),e.args[0]))
@@ -81,56 +83,56 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
 
     try:
-        if os.path.isfile(proj_data['output_dir']):
-            os.remove(proj_data['output_dir'])
-        elif os.path.isdir(proj_data['output_dir']):
-            shutil.rmtree(proj_data['output_dir'])
-        os.makedirs(proj_data['output_dir'], 0o755)
+        if os.path.isfile(out_dir):
+            os.remove(out_dir)
+        elif os.path.isdir(out_dir):
+            shutil.rmtree(out_dir)
+        os.makedirs(out_dir, 0o755)
     except Exception as e:
         print('Error: Could not create output directory. {}'.format(e.args[0]))
-    os.mkdir(os.path.join(proj_data['output_dir'],'lists'), 0o755)
-    os.mkdir(os.path.join(proj_data['output_dir'],'sourcefile'), 0o755)
-    os.mkdir(os.path.join(proj_data['output_dir'],'type'), 0o755)
-    os.mkdir(os.path.join(proj_data['output_dir'],'proc'), 0o755)
-    os.mkdir(os.path.join(proj_data['output_dir'],'interface'), 0o755)
-    os.mkdir(os.path.join(proj_data['output_dir'],'module'), 0o755)
-    os.mkdir(os.path.join(proj_data['output_dir'],'program'), 0o755)
-    os.mkdir(os.path.join(proj_data['output_dir'],'src'), 0o755)
+    os.mkdir(os.path.join(out_dir,'lists'), 0o755)
+    os.mkdir(os.path.join(out_dir,'sourcefile'), 0o755)
+    os.mkdir(os.path.join(out_dir,'type'), 0o755)
+    os.mkdir(os.path.join(out_dir,'proc'), 0o755)
+    os.mkdir(os.path.join(out_dir,'interface'), 0o755)
+    os.mkdir(os.path.join(out_dir,'module'), 0o755)
+    os.mkdir(os.path.join(out_dir,'program'), 0o755)
+    os.mkdir(os.path.join(out_dir,'src'), 0o755)
     
-    shutil.copytree(os.path.join(loc,'css'), os.path.join(proj_data['output_dir'],'css'))
-    shutil.copytree(os.path.join(loc,'fonts'), os.path.join(proj_data['output_dir'],'fonts'))
-    shutil.copytree(os.path.join(loc,'js'),os.path.join(proj_data['output_dir'],'js'))
-    shutil.copytree(os.path.join(loc,'tipuesearch'),os.path.join(proj_data['output_dir'],'tipuesearch'))
+    shutil.copytree(os.path.join(loc,'css'), os.path.join(out_dir,'css'))
+    shutil.copytree(os.path.join(loc,'fonts'), os.path.join(out_dir,'fonts'))
+    shutil.copytree(os.path.join(loc,'js'),os.path.join(out_dir,'js'))
+    shutil.copytree(os.path.join(loc,'tipuesearch'),os.path.join(out_dir,'tipuesearch'))
     
     if 'media_dir' in proj_data:
         try:
-            shutil.copytree(proj_data['media_dir'],os.path.join(proj_data['output_dir'],'media'))
+            shutil.copytree(proj_data['media_dir'],os.path.join(out_dir,'media'))
         except:
             print('Warning: error copying media directory {}'.format(proj_data['media_dir']))
 
     
     if 'css' in proj_data:
-        shutil.copy(proj_data['css'],os.path.join(proj_data['output_dir'],'css','user.css'))
+        shutil.copy(proj_data['css'],os.path.join(out_dir,'css','user.css'))
     if proj_data['favicon'] == 'default-icon':
-        shutil.copy(os.path.join(loc,'favicon.png'),os.path.join(proj_data['output_dir'],'favicon.png'))
+        shutil.copy(os.path.join(loc,'favicon.png'),os.path.join(out_dir,'favicon.png'))
     else:
-        shutil.copy(proj_data['favicon'],os.path.join(proj_data['output_dir'],'favicon.png'))
+        shutil.copy(proj_data['favicon'],os.path.join(out_dir,'favicon.png'))
     
     if relative: set_base_url('.')
     else: set_base_url(proj_data['project_url'])        
 
-    tipue = ford.tipue_search.Tipue_Search_JSON_Generator(proj_data['output_dir'],proj_data['project_url'])
+    tipue = ford.tipue_search.Tipue_Search_JSON_Generator(out_dir,proj_data['project_url'])
 
     template = env.get_template('index.html')
     html = template.render(proj_data,proj_docs=proj_docs,project=project)
-    out = open(proj_data['output_dir'] + '/index.html','wb')
+    out = open(os.path.join(out_dir,'index.html'),'wb')
     out.write(html.encode('utf8'))
     out.close()
     tipue.create_node(html,'index.html', {'category': 'home'})
     
     template = env.get_template('search.html')
     html = template.render(proj_data,project=project)
-    out = open(proj_data['output_dir'] + '/search.html','wb')
+    out = open(os.path.join(out_dir,'search.html'),'wb')
     out.write(html.encode('utf8'))
     out.close()
     
@@ -139,7 +141,7 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
     if len(project.procedures) > 0:
         template = env.get_template('proc_list.html')
         html = template.render(proj_data,project=project)
-        out = open(os.path.join(proj_data['output_dir'],'lists','procedures.html'),'wb')
+        out = open(os.path.join(out_dir,'lists','procedures.html'),'wb')
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'lists/procedures.html', {'category': 'list procedures'})
@@ -147,7 +149,7 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
     if len(project.files) > 1:
         template = env.get_template('file_list.html')
         html = template.render(proj_data,project=project)
-        out = open(os.path.join(proj_data['output_dir'],'lists','files.html'),'wb')
+        out = open(os.path.join(out_dir,'lists','files.html'),'wb')
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'lists/files.html', {'category': 'list files'})
@@ -155,7 +157,7 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
     if len(project.modules) > 0:
         template = env.get_template('mod_list.html')
         html = template.render(proj_data,project=project)
-        out = open(os.path.join(proj_data['output_dir'],'lists','modules.html'),'wb')
+        out = open(os.path.join(out_dir,'lists','modules.html'),'wb')
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'lists/modules.html', {'category': 'list modules'})
@@ -163,7 +165,7 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
     if len(project.programs) > 1:
         template = env.get_template('prog_list.html')
         html = template.render(proj_data,project=project)
-        out = open(os.path.join(proj_data['output_dir'],'lists','programs.html'),'wb')
+        out = open(os.path.join(out_dir,'lists','programs.html'),'wb')
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'lists/programs.html', {'category': 'list programs'})
@@ -171,7 +173,7 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
     if len(project.types) > 0:
         template = env.get_template('types_list.html')
         html = template.render(proj_data,project=project)
-        out = open(os.path.join(proj_data['output_dir'],'lists','types.html'),'wb')
+        out = open(os.path.join(out_dir,'lists','types.html'),'wb')
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'lists/types.html', {'category': 'list derived types'})
@@ -179,7 +181,7 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
     if len(project.absinterfaces) > 0:
         template = env.get_template('absint_list.html')
         html = template.render(proj_data,project=project)
-        out = open(os.path.join(proj_data['output_dir'],'lists','absint.html'),'wb')
+        out = open(os.path.join(out_dir,'lists','absint.html'),'wb')
         out.write(html.encode('utf8'))
         out.close()
         tipue.create_node(html,'lists/absint.html', {'category': 'list abstract interfaces'})
@@ -187,43 +189,43 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
     for src in project.files:
         template = env.get_template('file_page.html')
         html = template.render(proj_data,src=src,project=project)
-        out = open(quote(os.path.join(proj_data['output_dir'],'sourcefile',src.name.lower().replace('/','\\')+'.html')),'wb')
+        out = open(os.path.join(out_dir,'sourcefile',quote(src.name.lower().replace('/','slash'))+'.html'),'wb')
         out.write(html.encode('utf8'))
         out.close()
-        dstdir = os.path.join(proj_data['output_dir'],'src',src.name)
+        dstdir = os.path.join(out_dir,'src',src.name)
         shutil.copy(src.path,dstdir)
-        tipue.create_node(html,'sourcefile/'+src.name.lower().replace('/','\\')+'.html', src.meta)
+        tipue.create_node(html,'sourcefile/'+src.name.lower().replace('/','slash')+'.html', src.meta)
 
     for dtype in project.types:
         template = env.get_template('type_page.html')
         html = template.render(proj_data,dtype=dtype,project=project)
-        out = open(quote(os.path.join(proj_data['output_dir'],'type',dtype.name.lower().replace('/','\\')+'.html')),'wb')
+        out = open(os.path.join(out_dir,'type',quote(dtype.name.lower().replace('/','slash'))+'.html'),'wb')
         out.write(html.encode('utf8'))
         out.close()
-        tipue.create_node(html,'type/'+dtype.name.lower().replace('/','\\')+'.html', dtype.meta)
+        tipue.create_node(html,'type/'+dtype.name.lower().replace('/','slash')+'.html', dtype.meta)
 
     for absint in project.absinterfaces:
         template = env.get_template('nongenint_page.html')
-        out = open(quote(os.path.join(proj_data['output_dir'],'interface',absint.name.lower().replace('/','\\')+'.html')),'wb')
+        out = open(os.path.join(out_dir,'interface',quote(absint.name.lower().replace('/','slash'))+'.html'),'wb')
         html = template.render(proj_data,interface=absint,project=project)
         out.write(html.encode('utf8'))
         out.close()
-        tipue.create_node(html,'interface/'+absint.name.lower().replace('/','\\')+'.html',absint.meta)
+        tipue.create_node(html,'interface/'+absint.name.lower().replace('/','slash')+'.html',absint.meta)
 
     for proc in project.procedures:
         if proc.obj == 'proc':
             template = env.get_template('proc_page.html')
-            out = open(quote(os.path.join(proj_data['output_dir'],'proc',proc.name.lower().replace('/','\\')+'.html')),'wb')
+            out = open(os.path.join(out_dir,'proc',quote(proc.name.lower().replace('/','slash'))+'.html'),'wb')
             html = template.render(proj_data,procedure=proc,project=project)
-            tipue.create_node(html,'proc/'+proc.name.lower().replace('/','\\')+'.html', proc.meta)
+            tipue.create_node(html,'proc/'+proc.name.lower().replace('/','slash')+'.html', proc.meta)
         else:
             if proc.generic:
                 template = env.get_template('genint_page.html')
             else:
                 template = env.get_template('nongenint_page.html')
-            out = open(quote(os.path.join(proj_data['output_dir'],'interface',proc.name.lower().replace('/','\\')+'.html')),'wb')
+            out = open(os.path.join(out_dir,'interface',quote(proc.name.lower().replace('/','slash'))+'.html'),'wb')
             html = template.render(proj_data,interface=proc,project=project)
-            tipue.create_node(html,'interface/'+proc.name.lower().replace('/','\\')+'.html', proc.meta)
+            tipue.create_node(html,'interface/'+proc.name.lower().replace('/','slash')+'.html', proc.meta)
         
         out.write(html.encode('utf8'))
         out.close()
@@ -231,18 +233,18 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
     for mod in project.modules:
         template = env.get_template('mod_page.html')
         html = template.render(proj_data,module=mod,project=project)
-        out = open(quote(os.path.join(proj_data['output_dir'],'module',mod.name.lower().replace('/','\\')+'.html')),'wb')
+        out = open(os.path.join(out_dir,'module',quote(mod.name.lower().replace('/','slash'))+'.html'),'wb')
         out.write(html.encode('utf8'))
         out.close()
-        tipue.create_node(html,'module/'+mod.name.lower().replace('/','\\')+'.html', mod.meta)
+        tipue.create_node(html,'module/'+mod.name.lower().replace('/','slash')+'.html', mod.meta)
 
     for prog in project.programs:
         template = env.get_template('prog_page.html')
         html = template.render(proj_data,program=prog,project=project)
-        out = open(quote(os.path.join(proj_data['output_dir'],'program',prog.name.lower().replace('/','\\')+'.html')),'wb')
+        out = open(os.path.join(out_dir,'program',quote(prog.name.lower().replace('/','slash'))+'.html'),'wb')
         out.write(html.encode('utf8'))
         out.close()
-        tipue.create_node(html,'program/'+prog.name.lower().replace('/','\\')+'.html', prog.meta)
+        tipue.create_node(html,'program/'+prog.name.lower().replace('/','slash')+'.html', prog.meta)
     
     if page_tree: 
         print_pages(page_tree)

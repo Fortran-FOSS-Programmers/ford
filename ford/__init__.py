@@ -51,10 +51,13 @@ def main():
     parser.add_argument("project_file",help="file containing the description and settings for the project",
                         type=argparse.FileType('r'))
     parser.add_argument("-d","--project_dir",action="append",help='directories containing all source files for the project')
+    parser.add_argument("-p","--page_dir",help="directory containing the optional page tree describing the project")
     parser.add_argument("-o","--output_dir",help="directory in which to place output files")
     parser.add_argument("-s","--css",help="custom style-sheet for the output")
     parser.add_argument("--exclude",action="append",help="any files which should not be included in the documentation")
+    parser.add_argument("--exclude_dir",action="append",help="any directories whose contents should not be included in the documentation")
     parser.add_argument("-e","--extensions",action="append",help="extensions which should be scanned for documentation (default: f90, f95, f03, f08)")
+    parser.add_argument("-m","--macros",action="append",help="preprocessor macro (and, optionally, its value) to be applied to files in need of preprocessing.")
     parser.add_argument("-w","--warn",dest='warn',action='store_true',
                         help="display warnings for undocumented items")
     parser.add_argument("--no-warn",dest='warn',action='store_false',
@@ -62,7 +65,6 @@ def main():
     parser.set_defaults(warn=False)
     parser.add_argument('-V', '--version', action='version',
                         version="{}, version {}".format(__appname__,__version__))
-    parser.add_argument("--exclude_dir",action="append",help="any directories whose contents should not be included in the documentation")
 
 
     args = parser.parse_args()
@@ -163,7 +165,8 @@ def main():
                 proj_data['project_dir'], proj_data['extensions'], 
                 proj_data['display'], proj_data['exclude'], proj_data['exclude_dir'],
                 proj_data['docmark'], proj_data['predocmark'], proj_data['docmark_alt'],
-                proj_data['predocmark_alt'], warn, proj_data['extra_vartypes'])
+                proj_data['predocmark_alt'], warn, proj_data['extra_vartypes'],
+                proj_data['macros'])
     if len(project.files) < 1:
         print("Error: No source files with appropriate extension found in specified directory.")
         sys.exit(1)

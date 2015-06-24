@@ -114,15 +114,15 @@ class FortranBase(object):
         if ( type(self) in [FortranSubroutine,FortranFunction] and 
              type(self.parent) == FortranInterface and 
              not self.parent.generic ):
-            outstr = quote(outstr.format(self.base_url,'interface',self.name.lower().replace('/','\\'),''))
+            outstr = quote(outstr.format(self.base_url,'interface',self.name.lower().replace('/','slash'),''))
         elif ( type(self) in [FortranSourceFile,FortranProgram,FortranModule]
                or ( type(self) in [FortranType,FortranInterface,FortranFunction,
                                    FortranSubroutine]
                     and type(self.parent) in [FortranSourceFile,FortranProgram,
                                               FortranModule] ) ):
-            outstr = quote(outstr.format(self.base_url,self.obj,self.name.lower().replace('/','\\'),''))
+            outstr = quote(outstr.format(self.base_url,self.obj,self.name.lower().replace('/','slash'),''))
         elif ( (type(self) == FortranBoundProcedure) ):
-            outstr = quote(outstr.format(self.base_url,self.parobj,self.parent.name.lower().replace('/','\\'),self.name.lower().replace('/','\\')))
+            outstr = quote(outstr.format(self.base_url,self.parobj,self.parent.name.lower().replace('/','slash'),self.name.lower().replace('/','slash')))
         else:
             outstr = None
         return outstr
@@ -542,7 +542,7 @@ class FortranSourceFile(FortranContainer):
     will consist of a list of these objects. In tern, SourceFile objects will
     contains lists of all of that file's contents
     """
-    def __init__(self,filepath,display):
+    def __init__(self,filepath,display,macros=[]):
         self.path = filepath.strip()
         self.name = os.path.basename(self.path)
         self.parent = None
@@ -556,7 +556,7 @@ class FortranSourceFile(FortranContainer):
         self.display = display
                 
         source = ford.reader.FortranReader(self.path,docmark,predocmark,
-                                           docmark_alt,predocmark_alt)
+                                           docmark_alt,predocmark_alt,macros)
         
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
