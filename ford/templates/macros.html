@@ -305,7 +305,7 @@
 {% macro bound_info(tb) %}
 <div class="panel panel-default">
   <div class="panel-heading codesum"><a class="anchor" name="bp-{{ tb.name }}"></a><h3>{% if tb.generic -%}generic,{% else %}procedure,{%- endif %} {{ tb.permission }}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or tb.name != tb.bindings[0].name %} => {% for bind in tb.bindings -%}{% if not bind.parent or bind.permission in bind.parent.display %}{{ bind }}{% else %}{{ bind.name }}{% endif %}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
-    {% if tb.meta['deprecated'] %}
+    {% if tb.meta['deprecated'] and tb.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
   <h3></div>
@@ -329,7 +329,7 @@
 {% macro interface(intr) %}
 <div class="panel panel-default">
   <div class="panel-heading codesum"><a class="anchor" name="intr-{{ intr.name }}"></a><h3>{% if intr.parobj == 'module' and intr.generic %}{{ intr.permission }} {% endif %}interface {% if intr.generic %}{% if intr.permission in intr.parent.display %}{{ intr }}{% else %}{{ intr.name }}{% endif %}{% endif %}
-    {% if intr.meta['deprecated'] %}
+    {% if intr.meta['deprecated'] and intr.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
   </h3></div>
@@ -363,7 +363,7 @@
 {% macro absinterface(intr) %}
 <div class="panel panel-default">
   <div class="panel-heading codesum"><a class="anchor" name="intr-{{ intr.name }}"></a><h3>abstract interface
-    {% if intr.meta['deprecated'] %}
+    {% if intr.meta['deprecated'] and intr.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
   </h3></div>
@@ -383,7 +383,7 @@
 
 {% macro proc_line(proc,link=True) %}
 {% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} {% if not proc.parent or (proc.permission in proc.parent.display and link) %}{{ proc }}{% else %}{{ proc.name }}{% endif %}({% for arg in proc.args -%}{{ arg.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind(c)
-    {% if proc.meta['deprecated'] %}
+    {% if proc.meta['deprecated'] and proc.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
 {% endif %}
@@ -405,7 +405,7 @@
 {% macro type_summary(dtype) %}
 <div class="panel panel-default">
   <div class="panel-heading codesum"><a class="anchor" name="type-{{ dtype.name }}"></a><h3>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% if dtype.sequence%}, sequence {% endif %}{% for attrib in dtype.attribs -%}, {{ attrib }}{%- endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {% if dtype.permission in dtype.parent.display %}{{ dtype }}{% else %}{{ dtype.name }}{% endif %}
-    {% if dtype.meta['deprecated'] %}
+    {% if dtype.meta['deprecated'] and dtype.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
   </h3></div>

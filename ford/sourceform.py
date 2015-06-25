@@ -170,6 +170,8 @@ class FortranBase(object):
         if self.parent:
             self.display = self.parent.display
 
+        if 'display' not in self.meta and self.obj == 'proc':
+            self.meta['display'] = 'none'
         for key in self.meta:
             if key == 'display':
                 tmp = [ item.lower() for item in self.meta[key] ]
@@ -542,7 +544,7 @@ class FortranSourceFile(FortranContainer):
     will consist of a list of these objects. In tern, SourceFile objects will
     contains lists of all of that file's contents
     """
-    def __init__(self,filepath,display,macros=[]):
+    def __init__(self,filepath,display,preprocess=False,macros=[]):
         self.path = filepath.strip()
         self.name = os.path.basename(self.path)
         self.parent = None
@@ -556,7 +558,8 @@ class FortranSourceFile(FortranContainer):
         self.display = display
                 
         source = ford.reader.FortranReader(self.path,docmark,predocmark,
-                                           docmark_alt,predocmark_alt,macros)
+                                           docmark_alt,predocmark_alt,
+                                           preprocess,macros)
         
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')

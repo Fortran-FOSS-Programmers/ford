@@ -5,7 +5,7 @@
   <div class="row">
     <h1>{{ src.name }}
     <small>Source File</small>
-    {% if src.meta['deprecated'] %}
+    {% if src.meta['deprecated'] and src.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>

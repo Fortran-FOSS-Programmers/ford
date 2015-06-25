@@ -5,7 +5,7 @@
   <div class="row">
     <h1>{{ interface.name }}
 	 <small>{% if interface.abstract -%}Abstract {% endif %}Interface</small>
-    {% if interface.meta['deprecated'] %}
+    {% if interface.meta['deprecated'] and interface.meta['deprecated'].lower() == 'true' %}
     <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>

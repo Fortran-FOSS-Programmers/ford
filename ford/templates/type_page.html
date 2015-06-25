@@ -5,7 +5,7 @@
   <div class="row">
     <h1>{{ dtype.name }}
     <small>Derived Type{% if dtype.extends %}, Extends({{ dtype.extends }}){% endif %}</small>
-    {% if dtype.meta['deprecated'] %}
+    {% if dtype.meta['deprecated'] and dtype.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>

@@ -5,7 +5,7 @@
   <div class="row">
     <h1>{{ module.name }} 
     <small>Module</small>
-    {% if module.meta['deprecated'] %}
+    {% if module.meta['deprecated'] and module.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>

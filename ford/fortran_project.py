@@ -39,7 +39,7 @@ class Project(object):
     def __init__(self, name,topdirs=["."], extensions=["f90","f95","f03","f08"],
                  display=['public','protected'], exclude=[], excludedir=[],
                  docmark='!',predocmark='', docmark_alt='', predocmark_alt='',
-                 warn=False, exvartypes=[], macros=[]):
+                 warn=False, exvartypes=[], fpp_ext=[], macros=[]):
         self.name = name
         self.topdirs = topdirs
         self.extensions = extensions
@@ -68,9 +68,10 @@ class Project(object):
                     if item.split('.')[-1] in self.extensions and not item in exclude:
                         # Get contents of the file
                         print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
-                        #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display,macros))
+                        fpp = item.split('.')[-1] in fpp_ext
+                        #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display,fpp,macros))
                         try:
-                            self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display,macros))
+                            self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display,fpp,macros))
                         except Exception as e:
                             print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
                             continue

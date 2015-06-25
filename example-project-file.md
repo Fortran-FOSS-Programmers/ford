@@ -11,6 +11,8 @@ predocmark: >
 media_dir: ./media
 docmark_alt: #
 predocmark_alt: <
+macros: TEST
+        LOGIC=.true.
 
 This is a project which I wrote. This file will provide the documents. I'm
 writing the body of the text here. It contains an overall description of the

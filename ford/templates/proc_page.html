@@ -5,7 +5,7 @@
   <div class="row">
     <h1>{{ procedure.name }}
     <small>{{ procedure.proctype }}</small>
-    {% if procedure.meta['deprecated'] %}
+    {% if procedure.meta['deprecated'] and procedure.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>

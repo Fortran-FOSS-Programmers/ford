@@ -27,7 +27,8 @@ from __future__ import print_function
 import sys
 import argparse
 import markdown
-import os.path
+import os
+import subprocess
 from datetime import date
 
 import ford.fortran_project
@@ -37,13 +38,13 @@ from ford.mdx_mathjax import MathJaxExtension
 import ford.utils
 import ford.pagetree
 
-__appname__ = "FORD"
-__author__ = "Chris MacMackin, Jacob Williams, Marco Restelli"
-__credits__ = ["Stefano Zhagi", "Z. Beekman", "Gavin Huttley"]
-__license__ = "GPLv3"
-__version__ = "2.1.0"
+__appname__    = "FORD"
+__author__     = "Chris MacMackin, Jacob Williams, Marco Restelli"
+__credits__    = ["Stefano Zhagi", "Izaak Beekman", "Gavin Huttley"]
+__license__    = "GPLv3"
+__version__    = "3.0.0"
 __maintainer__ = "Chris MacMackin"
-__status__ = "Production"
+__status__     = "Production"
 
 def main():    
     # Setup the command-line options and parse them.
@@ -102,7 +103,7 @@ def main():
                u'project_sourceforge',u'project_url',u'display',u'version',
                u'year',u'docmark',u'predocmark',u'docmark_alt',u'predocmark_alt',
                u'media_dir',u'favicon',u'warn',u'extra_vartypes',u'page_dir',
-               u'source',u'exclude_dir',u'macros']
+               u'source',u'exclude_dir',u'macros',u'preprocess']
     defaults = {u'project_dir':       u'./src',
                 u'extensions':        [u"f90",u"f95",u"f03",u"f08",u"F90",
                                        u"F95",u"F03",u"F08"],
@@ -114,13 +115,15 @@ def main():
                 u'exclude':           [],
                 u'exclude_dir':       [],
                 u'docmark':           '!',
-                u'docmark_alt':       '',
-                u'predocmark_alt':    '',
-                u'predocmark':        '',
+                u'docmark_alt':       '*',
+                u'predocmark':        '>',
+                u'predocmark_alt':    '#',
                 u'favicon':           'default-icon',
                 u'extra_vartypes':    [],
                 u'source':            'false',
                 u'macros':            [],
+                u'preprocess':        'true',
+                u'warn':              'false',
                }
     listopts = [u'extensions',u'display',u'extra_vartypes',u'project_dir',u'exclude',u'exclude_dir',u'macros']
     
@@ -159,14 +162,26 @@ def main():
     if relative: proj_data['project_url'] = '.'
     if 'source' in proj_data: ford.sourceform.set_source(proj_data['source'])
 
+    try:
+        devnull = open(os.devnull)
+        subprocess.Popen(["gfortran","--version"], stdout=devnull, stderr=devnull).communicate()
+    except OSError as e:
+        if proj_data['preprocess'].lower() == 'true':
+            print("Warning: gfortran not found; preprocessing turned off")
+            proj_data['preprocess'] = 'false'
+    fpp_ext = []
+    if proj_data['preprocess'].lower() == 'true':
+        for ext in proj_data['extensions']:
+            if ext == ext.upper() and ext != ext.lower(): fpp_ext.append(ext)
+
     # Parse the files in your project
-    warn = ('warn' in proj_data)
+    warn = proj_data['warn'].lower() == 'true'
     project = ford.fortran_project.Project(proj_data['project'],
                 proj_data['project_dir'], proj_data['extensions'], 
                 proj_data['display'], proj_data['exclude'], proj_data['exclude_dir'],
                 proj_data['docmark'], proj_data['predocmark'], proj_data['docmark_alt'],
                 proj_data['predocmark_alt'], warn, proj_data['extra_vartypes'],
-                proj_data['macros'])
+                fpp_ext, proj_data['macros'])
     if len(project.files) < 1:
         print("Error: No source files with appropriate extension found in specified directory.")
         sys.exit(1)
