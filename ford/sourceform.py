@@ -170,8 +170,6 @@ class FortranBase(object):
         if self.parent:
             self.display = self.parent.display
 
-        if 'display' not in self.meta and self.obj == 'proc':
-            self.meta['display'] = 'none'
         for key in self.meta:
             if key == 'display':
                 tmp = [ item.lower() for item in self.meta[key] ]
