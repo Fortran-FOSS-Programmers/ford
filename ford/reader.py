@@ -138,6 +138,8 @@ class FortranReader(object):
             if match:
                 # Switch to predoc: following comment lines are predoc until the end of the block
                 reading_predoc = True
+                self.reading_alt = 0
+                readeing_predoc_alt = 0
                 # Substitute predocmark with docmark
                 tmp = match.group(4)
                 tmp = tmp[:1] + self.docmark + tmp[1+len(self.predocmark):]
@@ -153,6 +155,8 @@ class FortranReader(object):
             if match:
                 # Switch to doc_alt: following comment lines are documentation until end of the block
                 reading_predoc_alt = 1
+                self.reading_alt = 0
+                reading_predoc = False
                 # Substitute predocmark_alt with docmark
                 tmp = match.group(4)
                 tmp = tmp[:1] + self.docmark + tmp[1+len(self.predocmark_alt):]
@@ -168,6 +172,8 @@ class FortranReader(object):
             if match:
                 # Switch to doc_alt: following comment lines are documentation until end of the block
                 self.reading_alt = 1
+                reading_predoc = False
+                reading_predoc_alt = 0
                 # Substitute predocmark_alt with docmark
                 tmp = match.group(4)
                 tmp = tmp[:1] + self.docmark + tmp[1+len(self.docmark_alt):]

@@ -157,6 +157,21 @@ def main():
     if proj_data['docmark'] == proj_data['predocmark']:
         print('Error: docmark and predocmark are the same.')
         sys.exit(1)
+    if proj_data['docmark'] == proj_data['docmark_alt']:
+        print('Error: docmark and docmark_alt are the same.')
+        sys.exit(1)
+    if proj_data['docmark'] == proj_data['predocmark_alt']:
+        print('Error: docmark and predocmark_alt are the same.')
+        sys.exit(1)
+    if proj_data['docmark_alt'] == proj_data['predocmark']:
+        print('Error: docmark_alt and predocmark are the same.')
+        sys.exit(1)
+    if proj_data['docmark_alt'] == proj_data['predocmark_alt']:
+        print('Error: docmark_alt and predocmark_alt are the same.')
+        sys.exit(1)
+    if proj_data['predocmark'] == proj_data['predocmark_alt']:
+        print('Error: predocmark and predocmark_alt are the same.')
+        sys.exit(1)
 
     relative = (proj_data['project_url'] == '')
     if relative: proj_data['project_url'] = '.'
