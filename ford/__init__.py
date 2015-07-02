@@ -105,8 +105,8 @@ def main():
                u'media_dir',u'favicon',u'warn',u'extra_vartypes',u'page_dir',
                u'source',u'exclude_dir',u'macro',u'preprocess']
     defaults = {u'project_dir':       u'./src',
-                u'extensions':        [u"f90",u"f95",u"f03",u"f08",u"F90",
-                                       u"F95",u"F03",u"F08"],
+                u'extensions':        [u"f90",u"f95",u"f03",u"f08",u"f15",u"F90",
+                                       u"F95",u"F03",u"F08",u"F15"],
                 u'output_dir':        u'./doc',
                 u'project':           u'Fortran Program',
                 u'project_url':       u'',

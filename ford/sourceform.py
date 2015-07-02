@@ -122,7 +122,7 @@ class FortranBase(object):
                                               FortranModule] ) ):
             outstr = quote(outstr.format(self.base_url,self.obj,self.name.lower().replace('/','slash'),''))
         elif ( (type(self) == FortranBoundProcedure) ):
-            outstr = quote(outstr.format(self.base_url,self.parobj,self.parent.name.lower().replace('/','slash'),self.name.lower().replace('/','slash')))
+            outstr = quote(outstr.format(self.base_url,self.parobj,self.parent.name.lower().replace('/','slash'),'#'+self.name.lower().replace('/','slash')))
         else:
             outstr = None
         return outstr
@@ -133,11 +133,10 @@ class FortranBase(object):
         url = self.get_url()
         if url:
             outstr = outstr.format(url,self.name)
+        elif self.name:
+            outstr = self.name
         else:
-            if self.name:
-                outstr = self.name
-            else:
-                outstr = ''
+            outstr = ''
         return outstr
 
     def __lt__(self,other):
