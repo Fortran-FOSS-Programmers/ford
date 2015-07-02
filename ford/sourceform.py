@@ -260,6 +260,7 @@ class FortranBase(object):
         # if hasattr(self,'finalprocs'): recurse_list.extend(self.finalprocs)
         # if hasattr(self,'constructor') and self.constructor: recurse_list.append(self.constructor)
         if hasattr(self,'args'): recurse_list.extend(self.args)
+        if hasattr(self,'bindings'): recurse_list.extend(self.bindings)
         if hasattr(self,'retvar') and self.retvar: recurse_list.append(self.retvar)
         if hasattr(self,'procedure'): recurse_list.append(self.procedure)
         

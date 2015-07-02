@@ -121,7 +121,7 @@ def main():
                 u'favicon':           'default-icon',
                 u'extra_vartypes':    [],
                 u'source':            'false',
-                u'macro':            [],
+                u'macro':             [],
                 u'preprocess':        'true',
                 u'warn':              'false',
                }
