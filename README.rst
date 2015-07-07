@@ -71,7 +71,7 @@ documentation, pip will allow you to install FORD and its dependencies
 in a `virtualenv <https://virtualenv.pypa.io/en/latest/>`__ located
 somewhere in your home directory.
 
-Alternatively, FORD is available through the [Homebrew}(http://brew.sh) package
+Alternatively, FORD is available through the `Homebrew <http://brew.sh>`__ package
 manager for Mac OS X. To update Homebrew and install FORD, run these commands in
 a terminal:
 
