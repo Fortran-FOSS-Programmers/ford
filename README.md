@@ -57,7 +57,7 @@ your home directory.
 If you prefer, you can install all of those dependencies manually and clone
 FORD from Github. Then place FORD somewhere in your PYTHONPATH.
 
-Alternatively, FORD is available through the [Homebrew}(http://brew.sh) package
+Alternatively, FORD is available through the [Homebrew](http://brew.sh) package
 manager for Mac OS X. To update Homebrew and install FORD, run these commands in
 a terminal:
 
