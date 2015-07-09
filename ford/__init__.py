@@ -23,7 +23,8 @@
 #  
 
 from __future__ import print_function
-
+from contextlib import contextmanager
+from StringIO import StringIO
 import sys
 import argparse
 import markdown
@@ -46,6 +47,15 @@ __version__    = "3.0.2"
 __maintainer__ = "Chris MacMackin"
 __status__     = "Production"
 
+@contextmanager
+def stdout_redirector(stream):
+    old_stdout = sys.stdout
+    sys.stdout = stream
+    try:
+        yield
+    finally:
+        sys.stdout = old_stdout
+
 def main():    
     # Setup the command-line options and parse them.
     parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
@@ -63,6 +73,10 @@ def main():
                         help="display warnings for undocumented items")
     parser.add_argument("--no-warn",dest='warn',action='store_false',
                         help="don't display warnings for undocumented items (default)")
+    parser.add_argument("-q","--quiet",dest='quiet',action='store_true',
+                        help="do not print any description of progress")
+    parser.add_argument("-v","--verbose",dest='quiet',action='store_false',
+                        help="print description of progress (default)")
     parser.set_defaults(warn=False)
     parser.add_argument('-V', '--version', action='version',
                         version="{}, version {}".format(__appname__,__version__))
@@ -103,7 +117,7 @@ def main():
                u'project_sourceforge',u'project_url',u'display',u'version',
                u'year',u'docmark',u'predocmark',u'docmark_alt',u'predocmark_alt',
                u'media_dir',u'favicon',u'warn',u'extra_vartypes',u'page_dir',
-               u'source',u'exclude_dir',u'macro',u'preprocess']
+               u'source',u'exclude_dir',u'macro',u'preprocess',u'quiet']
     defaults = {u'project_dir':       u'./src',
                 u'extensions':        [u"f90",u"f95",u"f03",u"f08",u"f15",u"F90",
                                        u"F95",u"F03",u"F08",u"F15"],
@@ -124,9 +138,12 @@ def main():
                 u'macro':             [],
                 u'preprocess':        'true',
                 u'warn':              'false',
+                u'quiet':             'false',
                }
     listopts = [u'extensions',u'display',u'extra_vartypes',u'project_dir',u'exclude',u'exclude_dir',u'macro']
     
+    if getattr(args,'warn',False): args.warn = 'true'
+    if getattr(args,'quiet',False): args.quiet = 'true'
     for option in options:
         if hasattr(args,option) and getattr(args,option):
             proj_data[option] = getattr(args,option)
@@ -139,104 +156,112 @@ def main():
            proj_data[option] = defaults[option]
     
     proj_data['display'] = [ item.lower() for item in proj_data['display'] ]
-    
-    # Make sure no project_dir is contained within output_dir
-    for projdir in proj_data['project_dir']:
-        proj_path = ford.utils.split_path(projdir)
-        out_path  = ford.utils.split_path(proj_data['output_dir'])
-        for directory in out_path:
-            if len(proj_path) == 0: break
-            if directory == proj_path[0]:
-                proj_path.remove(directory)
+
+    def process():
+        # Make sure no project_dir is contained within output_dir
+        for projdir in proj_data['project_dir']:
+            proj_path = ford.utils.split_path(projdir)
+            out_path  = ford.utils.split_path(proj_data['output_dir'])
+            for directory in out_path:
+                if len(proj_path) == 0: break
+                if directory == proj_path[0]:
+                    proj_path.remove(directory)
+                else:
+                    break
             else:
-                break
-        else:
-            print('Error: directory containing source-code {} a subdirectory of output directory {}.'.format(proj_data['output_dir'],projdir))
+                print('Error: directory containing source-code {} a subdirectory of output directory {}.'.format(proj_data['output_dir'],projdir))
+                sys.exit(1)
+            
+        if proj_data['docmark'] == proj_data['predocmark']:
+            print('Error: docmark and predocmark are the same.')
+            sys.exit(1)
+        if proj_data['docmark'] == proj_data['docmark_alt']:
+            print('Error: docmark and docmark_alt are the same.')
+            sys.exit(1)
+        if proj_data['docmark'] == proj_data['predocmark_alt']:
+            print('Error: docmark and predocmark_alt are the same.')
+            sys.exit(1)
+        if proj_data['docmark_alt'] == proj_data['predocmark']:
+            print('Error: docmark_alt and predocmark are the same.')
+            sys.exit(1)
+        if proj_data['docmark_alt'] == proj_data['predocmark_alt']:
+            print('Error: docmark_alt and predocmark_alt are the same.')
+            sys.exit(1)
+        if proj_data['predocmark'] == proj_data['predocmark_alt']:
+            print('Error: predocmark and predocmark_alt are the same.')
+            sys.exit(1)
+
+        relative = (proj_data['project_url'] == '')
+        if relative: proj_data['project_url'] = '.'
+        if 'source' in proj_data: ford.sourceform.set_source(proj_data['source'])
+
+        try:
+            devnull = open(os.devnull)
+            subprocess.Popen(["gfortran","--version"], stdout=devnull, stderr=devnull).communicate()
+        except OSError as e:
+            if proj_data['preprocess'].lower() == 'true':
+                print("Warning: gfortran not found; preprocessing turned off")
+                proj_data['preprocess'] = 'false'
+        fpp_ext = []
+        if proj_data['preprocess'].lower() == 'true':
+            for ext in proj_data['extensions']:
+                if ext == ext.upper() and ext != ext.lower(): fpp_ext.append(ext)
+
+        # Parse the files in your project
+        warn = proj_data['warn'].lower() == 'true'
+        project = ford.fortran_project.Project(proj_data['project'],
+                    proj_data['project_dir'], proj_data['extensions'], 
+                    proj_data['display'], proj_data['exclude'], proj_data['exclude_dir'],
+                    proj_data['docmark'], proj_data['predocmark'], proj_data['docmark_alt'],
+                    proj_data['predocmark_alt'], warn, proj_data['extra_vartypes'],
+                    fpp_ext, proj_data['macro'])
+        if len(project.files) < 1:
+            print("Error: No source files with appropriate extension found in specified directory.")
             sys.exit(1)
         
-    if proj_data['docmark'] == proj_data['predocmark']:
-        print('Error: docmark and predocmark are the same.')
-        sys.exit(1)
-    if proj_data['docmark'] == proj_data['docmark_alt']:
-        print('Error: docmark and docmark_alt are the same.')
-        sys.exit(1)
-    if proj_data['docmark'] == proj_data['predocmark_alt']:
-        print('Error: docmark and predocmark_alt are the same.')
-        sys.exit(1)
-    if proj_data['docmark_alt'] == proj_data['predocmark']:
-        print('Error: docmark_alt and predocmark are the same.')
-        sys.exit(1)
-    if proj_data['docmark_alt'] == proj_data['predocmark_alt']:
-        print('Error: docmark_alt and predocmark_alt are the same.')
-        sys.exit(1)
-    if proj_data['predocmark'] == proj_data['predocmark_alt']:
-        print('Error: predocmark and predocmark_alt are the same.')
-        sys.exit(1)
+        # Convert the documentation from Markdown to HTML. Make sure to properly
+        # handle LateX and metadata.
+        if relative:
+            project.markdown(md,'..')
+        else:
+            project.markdown(md,proj_data['project_url'])
+        project.correlate()
+        if relative:
+            project.make_links('..')
+        else:
+            project.make_links(proj_data['project_url'])
+        
+        if relative: ford.sourceform.set_base_url('.')
+        if 'summary' in proj_data:
+            proj_data['summary'] = md.convert(proj_data['summary'])
+            proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url']),project)
+        if 'author_description' in proj_data:
+            proj_data['author_description'] = md.convert(proj_data['author_description'])
+            proj_data['author_description'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url']),project)
+        proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url']),project)
+        if relative: ford.sourceform.set_base_url('..')        
+        
+        # Process any pages
+        if 'page_dir' in proj_data:
+            page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md)
+            print()
+        else:
+            page_tree = None
+        proj_data['pages'] = page_tree
+        
+        # Produce the documentation using Jinja2. Output it to the desired location
+        # and copy any files that are needed (CSS, JS, images, fonts, source files,
+        # etc.)
+        print("Creating HTML documentation...")
+        ford.output.print_html(project,proj_data,proj_docs_,page_tree,relative)
+        print('')
 
-    relative = (proj_data['project_url'] == '')
-    if relative: proj_data['project_url'] = '.'
-    if 'source' in proj_data: ford.sourceform.set_source(proj_data['source'])
-
-    try:
-        devnull = open(os.devnull)
-        subprocess.Popen(["gfortran","--version"], stdout=devnull, stderr=devnull).communicate()
-    except OSError as e:
-        if proj_data['preprocess'].lower() == 'true':
-            print("Warning: gfortran not found; preprocessing turned off")
-            proj_data['preprocess'] = 'false'
-    fpp_ext = []
-    if proj_data['preprocess'].lower() == 'true':
-        for ext in proj_data['extensions']:
-            if ext == ext.upper() and ext != ext.lower(): fpp_ext.append(ext)
-
-    # Parse the files in your project
-    warn = proj_data['warn'].lower() == 'true'
-    project = ford.fortran_project.Project(proj_data['project'],
-                proj_data['project_dir'], proj_data['extensions'], 
-                proj_data['display'], proj_data['exclude'], proj_data['exclude_dir'],
-                proj_data['docmark'], proj_data['predocmark'], proj_data['docmark_alt'],
-                proj_data['predocmark_alt'], warn, proj_data['extra_vartypes'],
-                fpp_ext, proj_data['macro'])
-    if len(project.files) < 1:
-        print("Error: No source files with appropriate extension found in specified directory.")
-        sys.exit(1)
-    
-    # Convert the documentation from Markdown to HTML. Make sure to properly
-    # handle LateX and metadata.
-    if relative:
-        project.markdown(md,'..')
+    if proj_data['quiet'].lower() == 'true':
+        f = StringIO()
+        with stdout_redirector(f):
+            process()
     else:
-        project.markdown(md,proj_data['project_url'])
-    project.correlate()
-    if relative:
-        project.make_links('..')
-    else:
-        project.make_links(proj_data['project_url'])
-    
-    if relative: ford.sourceform.set_base_url('.')
-    if 'summary' in proj_data:
-        proj_data['summary'] = md.convert(proj_data['summary'])
-        proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url']),project)
-    if 'author_description' in proj_data:
-        proj_data['author_description'] = md.convert(proj_data['author_description'])
-        proj_data['author_description'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url']),project)
-    proj_docs = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url']),project)
-    if relative: ford.sourceform.set_base_url('..')        
-    
-    # Process any pages
-    if 'page_dir' in proj_data:
-        page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md)
-        print()
-    else:
-        page_tree = None
-    proj_data['pages'] = page_tree
-    
-    # Produce the documentation using Jinja2. Output it to the desired location
-    # and copy any files that are needed (CSS, JS, images, fonts, source files,
-    # etc.)
-    print("Creating HTML documentation...")
-    ford.output.print_html(project,proj_data,proj_docs,page_tree,relative)
-    print('')
+        process()
     
     return 0
 
