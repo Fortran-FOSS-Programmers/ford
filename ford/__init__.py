@@ -43,7 +43,7 @@ __appname__    = "FORD"
 __author__     = "Chris MacMackin, Jacob Williams, Marco Restelli"
 __credits__    = ["Stefano Zhagi", "Izaak Beekman", "Gavin Huttley"]
 __license__    = "GPLv3"
-__version__    = "3.0.2"
+__version__    = "3.1.0"
 __maintainer__ = "Chris MacMackin"
 __status__     = "Production"
 
