@@ -25,9 +25,11 @@
 from __future__ import print_function
 
 import sys
-import jinja2
 import os
 import shutil
+import time
+
+import jinja2
 
 import ford.sourceform
 import ford.tipue_search
@@ -99,14 +101,14 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
     os.mkdir(os.path.join(out_dir,'program'), 0o755)
     os.mkdir(os.path.join(out_dir,'src'), 0o755)
     
-    shutil.copytree(os.path.join(loc,'css'), os.path.join(out_dir,'css'))
-    shutil.copytree(os.path.join(loc,'fonts'), os.path.join(out_dir,'fonts'))
-    shutil.copytree(os.path.join(loc,'js'),os.path.join(out_dir,'js'))
-    shutil.copytree(os.path.join(loc,'tipuesearch'),os.path.join(out_dir,'tipuesearch'))
+    copytree(os.path.join(loc,'css'), os.path.join(out_dir,'css'))
+    copytree(os.path.join(loc,'fonts'), os.path.join(out_dir,'fonts'))
+    copytree(os.path.join(loc,'js'),os.path.join(out_dir,'js'))
+    copytree(os.path.join(loc,'tipuesearch'),os.path.join(out_dir,'tipuesearch'))
     
     if 'media_dir' in proj_data:
         try:
-            shutil.copytree(proj_data['media_dir'],os.path.join(out_dir,'media'))
+            copytree(proj_data['media_dir'],os.path.join(out_dir,'media'))
         except:
             print('Warning: error copying media directory {}'.format(proj_data['media_dir']))
 
@@ -251,3 +253,65 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
     
     tipue.print_output()
 
+
+def copytree(src, dst, symlinks=False, ignore=None):
+    """
+    A version of shutil.copystat() modified so that it won't copy over
+    date metadata.
+    """
+    try:
+        WindowsError
+    except NameError:
+        WindowsError = None
+    
+    def touch(path):
+        now = time.time()
+        try:
+            # assume it's there
+            os.utime(path, (now, now))
+        except os.error:
+            # if it isn't, try creating the directory,
+            # a file with that name
+            os.makedirs(os.path.dirname(path))
+            open(path, "w").close()
+            os.utime(path, (now, now))
+
+    names = os.listdir(src)
+    if ignore is not None:
+        ignored_names = ignore(src, names)
+    else:
+        ignored_names = set()
+
+    os.makedirs(dst)
+    errors = []
+    for name in names:
+        if name in ignored_names:
+            continue
+        srcname = os.path.join(src, name)
+        dstname = os.path.join(dst, name)
+        try:
+            if symlinks and os.path.islink(srcname):
+                linkto = os.readlink(srcname)
+                os.symlink(linkto, dstname)
+            elif os.path.isdir(srcname):
+                copytree(srcname, dstname, symlinks, ignore)
+            else:
+                shutil.copy2(srcname, dstname)
+                touch(dstname)                
+            # XXX What about devices, sockets etc.?
+        except (IOError, os.error) as why:
+            errors.append((srcname, dstname, str(why)))
+        # catch the Error from the recursive copytree so that we can
+        # continue with other files
+        except Error as err:
+            errors.extend(err.args[0])
+    try:
+        shutil.copystat(src, dst)
+    except WindowsError:
+        # can't copy file access times on Windows
+        pass
+    except OSError as why:
+        errors.extend((src, dst, str(why)))
+    touch(dst)
+    if errors:
+        raise Error(errors)
