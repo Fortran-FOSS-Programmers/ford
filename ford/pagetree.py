@@ -93,8 +93,8 @@ def get_page_tree(topdir,md,parent=None):
         print('Warning: No index.md file in directory {}'.format(topdir))
         return None
     for name in filelist:
-        if name[0] != '.':
-            if os.path.isdir(name):
+        if name[0] != '.' and name[-1] != '~':
+            if os.path.isdir(os.path.join(topdir,name)):
                 # recurse into subdirectories
                 subnode = get_page_tree(os.path.join(topdir,name),md,node)
                 if subnode: node.subpages.append(subnode)
