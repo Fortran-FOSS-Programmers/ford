@@ -58,7 +58,7 @@ class Tipue_Search_JSON_Generator(object):
     def create_node(self, html, loc, meta={}):
 
         soup = BeautifulSoup(html,'html.parser')
-        page_text = soup.find("div", {"class": "row"}).get_text(' ', strip=True).replace('\\(','').replace('\\)','').replace('\\[','').replace('\\]','').replace('$$','').replace('^','&#94;')
+        page_text = soup.find("div", {"id": "text"}).get_text(' ', strip=True).replace('\\(','').replace('\\)','').replace('\\[','').replace('\\]','').replace('$$','').replace('^','&#94;')
 
         # What happens if there is not a title.
         if soup.title is not None:
