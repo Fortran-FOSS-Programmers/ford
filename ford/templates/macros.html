@@ -119,7 +119,7 @@
     <div class="panel-heading text-left"><h3 class="panel-title">Functions</h3></div>
     <div class="list-group">
       {% for proc in self.functions %}
-      <a class="list-group-item" href="="{% if self.obj == 'sourcefile' %}{{ proc.get_url() }}{% else %}{{ self.get_url() }}#proc-{{ proc.name }}{% endif %}">{{ proc.name }}</a>
+      <a class="list-group-item" href="{% if self.obj == 'sourcefile' %}{{ proc.get_url() }}{% else %}{{ self.get_url() }}#proc-{{ proc.name }}{% endif %}">{{ proc.name }}</a>
       {% endfor %}
     </div>
   </div>
