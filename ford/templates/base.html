@@ -29,10 +29,13 @@
     <![endif]-->
     
     <script src="{{ project_url }}/js/jquery-2.1.3.min.js"></script>
+
+    {% if search|lower == 'true' %}
     <script src="{{ project_url }}/tipuesearch/tipuesearch_content.js"></script>
     <link  href="{{ project_url }}/tipuesearch/tipuesearch.css" rel="stylesheet">
     <script src="{{ project_url }}/tipuesearch/tipuesearch_set.js"></script>
     <script src="{{ project_url }}/tipuesearch/tipuesearch.js"></script>
+    {% endif %}
 
   </head>
 
@@ -77,6 +80,7 @@
             <li><a href="{{ project.programs[0].get_url() }}">Program</a></li>
 				{% endif %}
           </ul>
+        {% if search|lower == 'true' %}
         <form action="{{ project_url }}/search.html" class="navbar-form navbar-right" role="search">
         <div class="form-group">
           <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
@@ -85,6 +89,7 @@
         <button type="submit" class="btn btn-default">Submit</button>
 -->
         </form>
+        {% endif %}
         </div><!--/.nav-collapse -->
       </div>
     </nav>

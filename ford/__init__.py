@@ -117,7 +117,7 @@ def main():
                'project_sourceforge','project_url','display','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
-               'source','exclude_dir','macro','preprocess','quiet']
+               'source','exclude_dir','macro','preprocess','quiet','search']
     defaults = {'project_dir':       './src',
                 'extensions':        ['f90','f95','f03','f08','f15','F90',
                                       'F95','F03','F08','F15'],
@@ -139,6 +139,7 @@ def main():
                 'preprocess':        'true',
                 'warn':              'false',
                 'quiet':             'false',
+                'search':             'true',
                }
     listopts = ['extensions','display','extra_vartypes','project_dir','exclude','exclude_dir','macro']
     
