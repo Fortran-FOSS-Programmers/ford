@@ -242,7 +242,6 @@ def sub_links(string,project):
         
         if found and match.group(3):
             searchlist = []
-            # TODO: Need to add code to check that item actually has these attributes. In particular, the default behaviour WILL NOT be safe.
             if not match.group(4):
                 for key, val in SUBLINK_TYPES.items():
                     if val == 'constructor':

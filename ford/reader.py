@@ -30,8 +30,6 @@ import ford.utils
 import subprocess
 from StringIO import StringIO
 
-#FIXME: Do I need the docbuffer variable? Could I just put that contents into the pending list?
-
 class FortranReader(object):
     """
     An iterator which will convert a free-form Fortran source file into

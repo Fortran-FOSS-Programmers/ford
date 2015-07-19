@@ -117,7 +117,8 @@ def main():
                'project_sourceforge','project_url','display','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
-               'source','exclude_dir','macro','preprocess','quiet','search']
+               'source','exclude_dir','macro','preprocess','quiet','search',
+               'lower']
     defaults = {'project_dir':       './src',
                 'extensions':        ['f90','f95','f03','f08','f15','F90',
                                       'F95','F03','F08','F15'],
@@ -139,7 +140,8 @@ def main():
                 'preprocess':        'true',
                 'warn':              'false',
                 'quiet':             'false',
-                'search':             'true',
+                'search':            'true',
+                'lower':             'false',
                }
     listopts = ['extensions','display','extra_vartypes','project_dir','exclude','exclude_dir','macro']
     
@@ -194,8 +196,7 @@ def main():
 
         relative = (proj_data['project_url'] == '')
         if relative: proj_data['project_url'] = '.'
-        if 'source' in proj_data: ford.sourceform.set_source(proj_data['source'])
-
+        
         try:
             devnull = open(os.devnull)
             subprocess.Popen(["gfortran","--version"], stdout=devnull, stderr=devnull).communicate()
@@ -203,19 +204,9 @@ def main():
             if proj_data['preprocess'].lower() == 'true':
                 print("Warning: gfortran not found; preprocessing turned off")
                 proj_data['preprocess'] = 'false'
-        fpp_ext = []
-        if proj_data['preprocess'].lower() == 'true':
-            for ext in proj_data['extensions']:
-                if ext == ext.upper() and ext != ext.lower(): fpp_ext.append(ext)
 
         # Parse the files in your project
-        warn = proj_data['warn'].lower() == 'true'
-        project = ford.fortran_project.Project(proj_data['project'],
-                    proj_data['project_dir'], proj_data['extensions'], 
-                    proj_data['display'], proj_data['exclude'], proj_data['exclude_dir'],
-                    proj_data['docmark'], proj_data['predocmark'], proj_data['docmark_alt'],
-                    proj_data['predocmark_alt'], warn, proj_data['extra_vartypes'],
-                    fpp_ext, proj_data['macro'])
+        project = ford.fortran_project.Project(proj_data)
         if len(project.files) < 1:
             print("Error: No source files with appropriate extension found in specified directory.")
             sys.exit(1)

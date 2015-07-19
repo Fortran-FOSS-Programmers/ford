@@ -42,7 +42,6 @@ else:
     from urllib import quote
 
 VAR_TYPE_STRING = "^integer|real|double\s*precision|character|complex|logical|type|class|procedure"
-VAR_TYPE_RE = re.compile(VAR_TYPE_STRING,re.IGNORECASE)
 VARKIND_RE = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
 KIND_RE = re.compile("kind\s*=\s*",re.IGNORECASE)
 LEN_RE = re.compile("len\s*=\s*",re.IGNORECASE)
@@ -56,14 +55,8 @@ QUOTES_RE = re.compile("\"([^\"]|\"\")*\"|'([^']|'')*'",re.IGNORECASE)
 PARA_CAPTURE_RE = re.compile("<p>.*?</p>",re.IGNORECASE|re.DOTALL)
 
 base_url = ''
-docmark = '!'
-predocmark = ''
-docmark_alt = ''
-predocmark_alt = ''
-warn = False
-show_source = 'false'
 
-#TODO: Add ability to note EXTERNAL procedures, PARAMETER statements, and DATA statements.
+
 class FortranBase(object):
     """
     An object containing the data common to all of the classes used to represent
@@ -88,8 +81,11 @@ class FortranBase(object):
         if self.parent:
             self.parobj = self.parent.obj
             self.display = self.parent.display
+            self.settings = self.parent.settings
         else:
+            self.parobj = None
             self.display = None
+            self.settings = None
         self.obj = type(self).__name__[7:].lower()
         if self.obj == 'subroutine' or self.obj == 'function':
             self.obj = 'proc'
@@ -97,7 +93,7 @@ class FortranBase(object):
         del self.strings
         self.doc = []
         line = source.__next__()
-        while line[0:2] == "!" + docmark:
+        while line[0:2] == "!" + self.settings['docmark']:
             self.doc.append(line[2:])
             line = source.__next__()
         source.pass_back(line)
@@ -160,7 +156,7 @@ class FortranBase(object):
             self.meta = md.Meta
             md.reset()
         else:
-            if warn and self.obj != 'sourcefile':
+            if self.settings['warn'].lower() == 'true' and self.obj != 'sourcefile':
                 #TODO: Add ability to print line number where this item is in file
                 print('Warning: Undocumented {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
             self.doc = ""
@@ -199,10 +195,10 @@ class FortranBase(object):
 
         if self.obj == 'proc' or self.obj == 'type' or self.obj == 'program':
             if 'source' not in self.meta:
-                self.meta['source'] = show_source
+                self.meta['source'] = self.settings['source'].lower()
             else:
                 self.meta['source'] = self.meta['source'].lower()
-            if self.meta['source'].lower() == 'true':
+            if self.meta['source'] == 'true':
                 if self.obj == 'proc':
                     obj = self.proctype.lower()
                 else:
@@ -213,7 +209,7 @@ class FortranBase(object):
                     self.src = highlight(match.group(),FortranLexer(),HtmlFormatter())
                 else:
                     self.src = ''
-                    if warn:
+                    if self.settings['warn'].lower() == 'true':
                         print('Warning: Could not extract source code for {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
                 
         
@@ -288,10 +284,11 @@ class FortranContainer(FortranBase):
     #~ ABS_INTERFACE_RE = re.compile("^abstract\s+interface(?:\s+(\S.+))?$",re.IGNORECASE)
     BOUNDPROC_RE = re.compile("^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)",re.IGNORECASE)
     FINAL_RE = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
-    VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is)|procedure{})\s*((?:\(|\s\w|[:,*]).*)$"
-    VARIABLE_RE = re.compile(VARIABLE_STRING.format(''),re.IGNORECASE)
     USE_RE = re.compile("^use\s+(\w+)($|,\s*)",re.IGNORECASE)
     CALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
+    
+    VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is)|procedure{})\s*((?:\(|\s\w|[:,*]).*)$"
+    
     #TODO: Add the ability to recognize function calls
         
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
@@ -302,9 +299,14 @@ class FortranContainer(FortranBase):
                              strings)
         incontains = False
         permission = "public"
-              
+        
+        typestr = ''
+        for vtype in self.settings['extra_vartypes']:
+            typestr = typestr + '|' + vtype
+        self.VARIABLE_RE = re.compile(self.VARIABLE_STRING.format(typestr),re.IGNORECASE)
+        
         for line in source:
-            if line[0:2] == "!" + docmark: 
+            if line[0:2] == "!" + self.settings['docmark']: 
                 self.doc.append(line[2:])
                 continue
 
@@ -317,6 +319,7 @@ class FortranContainer(FortranBase):
                 search_from += QUOTES_RE.search(line[search_from:]).end(0)
 
             # Check the various possibilities for what is on this line
+            if self.settings['lower'].lower() == 'true': line = line.lower()
             if line.lower() == "contains":
                 if not incontains and type(self) in _can_have_contains:
                     incontains = True
@@ -542,9 +545,10 @@ class FortranSourceFile(FortranContainer):
     will consist of a list of these objects. In tern, SourceFile objects will
     contains lists of all of that file's contents
     """
-    def __init__(self,filepath,display,preprocess=False,macros=[]):
+    def __init__(self,filepath,settings,preprocess=False):
         self.path = filepath.strip()
         self.name = os.path.basename(self.path)
+        self.settings = settings
         self.parent = None
         self.modules = []
         self.functions = []
@@ -553,11 +557,12 @@ class FortranSourceFile(FortranContainer):
         self.doc = []
         self.hierarchy = []
         self.obj = 'sourcefile'
-        self.display = display
+        self.display = settings['display']
                 
-        source = ford.reader.FortranReader(self.path,docmark,predocmark,
-                                           docmark_alt,predocmark_alt,
-                                           preprocess,macros)
+        source = ford.reader.FortranReader(self.path,settings['docmark'],
+                    settings['predocmark'],settings['docmark_alt'],
+                    settings['predocmark_alt'],preprocess,
+                    settings['macro'])
         
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
@@ -740,8 +745,13 @@ class FortranFunction(FortranCodeUnit):
             self.retvar = line.group(4)
         else:
             self.retvar = self.name
-        if VAR_TYPE_RE.search(attribstr):
-            rettype, retkind, retlen, retproto, rest =  parse_type(attribstr,self.strings)
+            
+        typestr = ''
+        for vtype in self.settings['extra_vartypes']:
+            typestr = typestr + '|' + vtype
+        var_type_re = re.compile(VAR_TYPE_STRING + typestr,re.IGNORECASE)
+        if var_type_re.search(attribstr):
+            rettype, retkind, retlen, retproto, rest =  parse_type(attribstr,self.strings,self.settings)
             self.retvar = FortranVariable(self.retvar,rettype,self.parent,
                                           kind=retkind,strlen=retlen,
                                           proto=retproto)
@@ -1010,6 +1020,10 @@ class FortranVariable(FortranBase):
         self.parent = parent
         if self.parent:
             self.parobj = self.parent.obj
+            self.settings = self.parent.settings
+        else:
+            self.parobj = None
+            self.settings = None
         self.obj = type(self).__name__[7:].lower()
         self.attribs = attribs
         self.intent = intent
@@ -1123,6 +1137,10 @@ class FortranModuleProcedure(FortranBase):
         self.parent = parent
         if self.parent:
             self.parobj = self.parent.obj
+            self.settings = self.parent.settings
+        else:
+            self.parobj = None
+            self.settings = None
         self.obj = 'moduleprocedure'
         self.name = name
         self.procedure = None
@@ -1143,7 +1161,7 @@ def line_to_variables(source, line, inherit_permission, parent):
     Returns a list of variables declared in the provided line of code. The
     line of code should be provided as a string.
     """
-    vartype, kind, strlen, proto, rest = parse_type(line,parent.strings)
+    vartype, kind, strlen, proto, rest = parse_type(line,parent.strings,parent.settings)
     attribs = []
     intent = "inout"
     optional = False
@@ -1212,7 +1230,7 @@ def line_to_variables(source, line, inherit_permission, parent):
         
     doc = []
     docline = source.__next__()
-    while docline[0:2] == "!" + docmark:
+    while docline[0:2] == "!" + parent.settings['docmark']:
         doc.append(docline[2:])
         docline = source.__next__()
     source.pass_back(docline)
@@ -1221,12 +1239,16 @@ def line_to_variables(source, line, inherit_permission, parent):
     
     
 
-def parse_type(string,capture_strings):
+def parse_type(string,capture_strings,settings):
     """
     Gets variable type, kind, length, and/or derived-type attributes from a 
     variable declaration.
     """
-    match = VAR_TYPE_RE.match(string)
+    typestr = ''
+    for vtype in settings['extra_vartypes']:
+        typestr = typestr + '|' + vtype
+    var_type_re = re.compile(VAR_TYPE_STRING + typestr,re.IGNORECASE)
+    match = var_type_re.match(string)
     if not match: raise Exception("Invalid variable declaration: {}".format(string))
     
     vartype = match.group().lower()
@@ -1285,29 +1307,6 @@ def parse_type(string,capture_strings):
 def set_base_url(url):
     FortranBase.base_url = url
 
-def set_doc_mark(mark,premark,mark_alt,premark_alt):
-    global docmark
-    docmark = mark
-    global predocmark
-    predocmark = premark
-    global docmark_alt
-    docmark_alt = mark_alt
-    global predocmark_alt
-    predocmark_alt = premark_alt
-
-def set_warn(val):
-    global warn
-    warn = bool(val)
-
-def set_vartypes(exvartypes):
-    typestr = ''
-    for vtype in exvartypes:
-        typestr = typestr + '|' + vtype
-
-    global VAR_TYPE_RE
-    VAR_TYPE_RE = re.compile(VAR_TYPE_STRING + typestr,re.IGNORECASE)
-    FortranContainer.VARIABLE_RE = re.compile(FortranContainer.VARIABLE_STRING.format(typestr),re.IGNORECASE)
-
 def get_mod_procs(source,line,parent):
     inherit_permission = parent.permission
     retlist = []
@@ -1321,14 +1320,10 @@ def get_mod_procs(source,line,parent):
     
     doc = []
     docline = source.__next__()
-    while docline[0:2] == "!" + docmark:
+    while docline[0:2] == "!" + parent.settings['docmark']:
         doc.append(docline[2:])
         docline = source.__next__()
     source.pass_back(docline)
     retlist[-1].doc = doc
     
     return retlist
-
-def set_source(setting):
-    global show_source
-    show_source = setting.lower()

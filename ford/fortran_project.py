@@ -36,45 +36,48 @@ class Project(object):
     An object which collects and contains all of the information about the
     project which is to be documented.
     """
-    def __init__(self, name,topdirs=["."], extensions=["f90","f95","f03","f08"],
-                 display=['public','protected'], exclude=[], excludedir=[],
-                 docmark='!',predocmark='', docmark_alt='', predocmark_alt='',
-                 warn=False, exvartypes=[], fpp_ext=[], macros=[]):
-        self.name = name
-        self.topdirs = topdirs
-        self.extensions = extensions
+    def __init__(self, settings):#name,topdirs=["."], extensions=["f90","f95","f03","f08"],
+                 #~ display=['public','protected'], exclude=[], excludedir=[],
+                 #~ docmark='!',predocmark='', docmark_alt='', predocmark_alt='',
+                 #~ warn=False, exvartypes=[], fpp_ext=[], macros=[]):
+        self.settings = settings
+        
+        self.name = settings['project']
+        self.topdirs = settings['project_dir']
+        self.extensions = settings['extensions']
+        self.display = settings['display']
+
+        fpp_ext = []
+        if settings['preprocess'].lower() == 'true':
+            for ext in self.extensions:
+                if ext == ext.upper() and ext != ext.lower(): fpp_ext.append(ext)        
+        
         self.files = []
         self.modules = []
         self.programs = []
         self.procedures = []
         self.absinterfaces = []
         self.types = []
-        self.display = display
-        self.warn = warn
-        
-        ford.sourceform.set_warn(warn)
-        ford.sourceform.set_doc_mark(docmark,predocmark,docmark_alt,predocmark_alt)
-        ford.sourceform.set_vartypes(exvartypes)
-        
+                
         # Get all files within topdir, recursively
         srctree = []
-        for topdir in topdirs:
+        for topdir in self.topdirs:
             srctree = os.walk(topdir)
             for srcdir in srctree:
-                if os.path.split(srcdir[0])[1] in excludedir:
+                if os.path.split(srcdir[0])[1] in settings['exclude_dir']:
                     continue
                 curdir = srcdir[0]
                 for item in srcdir[2]:
-                    if item.split('.')[-1] in self.extensions and not item in exclude:
+                    if item.split('.')[-1] in self.extensions and not item in settings['exclude']:
                         # Get contents of the file
                         print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
                         fpp = item.split('.')[-1] in fpp_ext
-                        #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display,fpp,macros))
-                        try:
-                            self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),display,fpp,macros))
-                        except Exception as e:
-                            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
-                            continue
+                        self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,fpp))
+                        #~ try:
+                            #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,fpp))
+                        #~ except Exception as e:
+                            #~ print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
+                            #~ continue
                         
                         for module in self.files[-1].modules:
                             self.modules.append(module)
@@ -155,7 +158,7 @@ class Project(object):
         """
         
         ford.sourceform.set_base_url(base_url)        
-        if self.warn: print()
+        if self.settings['warn'].lower() == 'true': print()
         for src in self.files:
             src.markdown(md,self)
         return
@@ -187,39 +190,3 @@ def id_mods(obj,modlist):
     for subroutine in obj.subroutines:
         id_mods(subroutine,modlist)
     return
-
-#~ def place_mod(mod,ranklist,usedlist,allmods):
-    #~ """
-    #~ Places mod within ranklist in the appropriate order.
-    #~ """
-    #~ # get all modules which are used within this one
-    #~ used_here = []
-    
-    #~ def find_uses(container,uses):
-        #~ uses.extend(container.uses)
-        #~ for subrtn in container.subroutines:
-            #~ find_uses(subrtn,uses)
-        #~ for func in container.functions:
-            #~ find_uses(func,uses)
-
-    #~ find_uses(mod,used_here)
-
-    #~ # place each such module within the rank
-    #~ mod_rank = 0
-    #~ for item in used_here:
-        #~ num = allmods.index(item)
-        #~ if usedlist[num]:
-            #~ tmp_rank = place_mod(item,ranklist,usedlist,allmods)
-            #~ usedlist[num] = False
-        #~ else:
-            #~ tmp_rank = ranklist.index(item) + 1
-        #~ if tmp_rank > mod_rank: mod_rank = tmp_rank
-            
-
-    #~ # Place the current module within the rank, after the last of the contained modules
-    #~ num = allmods.index(mod)
-    #~ usedlist[num] = False
-    #~ ranklist.insert(mod_rank,mod)
-
-    #~ return mod_rank + 1
-    
