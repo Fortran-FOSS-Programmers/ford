@@ -1026,18 +1026,20 @@ class FortranVariable(FortranBase):
         self.dimension = ''
         self.meta = {}
         
+        indexlist = []
         indexparen = self.name.find('(')
-        indexstar = self.name.find('*')
         if indexparen > 0:
-            if indexparen < indexstar or indexstar < 0:
-                self.dimension = self.name[indexparen:]
-                self.name = self.name[0:indexparen]
-            else:
-                self.dimension = self.name[indexstar:]
-                self.name = self.name[0:indexstar]
-        elif indexstar > 0:
-            self.dimension = self.name[indexstar:]
-            self.name = self.name[0:indexstar]
+            indexlist.append(indexparen)
+        indexbrack = self.name.find('[')
+        if indexbrack > 0:
+            indexlist.append(indexbrack)
+        indexstar = self.name.find('*')
+        if indexstar > 0:
+            indexlist.append(indexstar)
+            
+        if len(indexlist) > 0:
+            self.dimension = self.name[min(indexlist):]
+            self.name = self.name[0:min(indexlist)]
         
         self.hierarchy = []
         cur = self.parent
