@@ -118,7 +118,7 @@ def main():
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'source','exclude_dir','macro','preprocess','quiet','search',
-               'lower']
+               'lower','sort']
     defaults = {'project_dir':       './src',
                 'extensions':        ['f90','f95','f03','f08','f15','F90',
                                       'F95','F03','F08','F15'],
@@ -142,6 +142,7 @@ def main():
                 'quiet':             'false',
                 'search':            'true',
                 'lower':             'false',
+                'sort':              'src',
                }
     listopts = ['extensions','display','extra_vartypes','project_dir','exclude','exclude_dir','macro']
     

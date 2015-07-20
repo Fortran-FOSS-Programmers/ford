@@ -212,20 +212,83 @@ class FortranBase(object):
                     if self.settings['warn'].lower() == 'true':
                         print('Warning: Could not extract source code for {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
                 
+        def sort_items(items,args=False):
+            def alpha(i):
+                return i.name
+            def permission(i):
+                if args:
+                    if i.intent == 'in': return 'b'
+                    if i.intent == 'inout': return 'c'
+                    if i.intent == 'out': return 'd'
+                if i.permission == 'public': return 'b'
+                if i.permission == 'protected': return 'c'
+                if i.permission == 'private': return 'd'
+                return 'a'
+            def permission_alpha(i):
+                return permission(i) + '-' + i.name
+            def itype(i):
+                if i.obj == 'variable':
+                    retstr = i.vartype
+                    if retstr == 'class': retstr = 'type'
+                    if i.kind: retstr = retstr + '-' + str(i.kind)
+                    if i.strlen: retstr = retstr + '-' + str(i.strlen)
+                    if i.proto:
+                        retstr = retstr + '-' + i.proto[0]
+                    return retstr
+                elif i.obj == 'proc':
+                    if i.proctype != 'Function':
+                        return i.proctype.lower()
+                    else:
+                        return i.proctype.lower() + '-' + itype(i.retvar)
+                else:
+                    return i.obj
+            def itype_alpha(i):
+                return itype(i) + '-' + i.name
+            
+            if self.settings['sort'].lower() == 'src':
+                pass
+            elif self.settings['sort'].lower() == 'alpha':
+                items.sort(key=alpha)
+            elif self.settings['sort'].lower() == 'permission':
+                items.sort(key=permission)
+            elif self.settings['sort'].lower() == 'permission-alpha':
+                items.sort(key=permission_alpha)
+            elif self.settings['sort'].lower() == 'type':
+                items.sort(key=itype)
+            elif self.settings['sort'].lower() == 'type-alpha':
+                items.sort(key=itype_alpha)
         
         md_list = []
-        if hasattr(self,'variables'): md_list.extend(self.variables)
-        if hasattr(self,'types'): md_list.extend(self.types)
-        if hasattr(self,'modules'): md_list.extend(self.modules)
-        if hasattr(self,'subroutines'): md_list.extend(self.subroutines)
-        if hasattr(self,'functions'): md_list.extend(self.functions)
-        if hasattr(self,'interfaces'): md_list.extend(self.interfaces)
-        if hasattr(self,'absinterfaces'): md_list.extend(self.absinterfaces)
-        if hasattr(self,'programs'): md_list.extend(self.programs)
-        if hasattr(self,'boundprocs'): md_list.extend(self.boundprocs)
-        # if hasattr(self,'finalprocs'): md_list.extend(self.finalprocs)
-        # if hasattr(self,'constructor') and self.constructor: md_list.append(self.constructor)
-        if hasattr(self,'args'): md_list.extend(self.args)
+        if hasattr(self,'variables'):
+            md_list.extend(self.variables)
+            sort_items(self.variables)
+        if hasattr(self,'types'):
+            md_list.extend(self.types)
+            sort_items(self.types)
+        if hasattr(self,'modules'):
+            md_list.extend(self.modules)
+            sort_items(self.modules)
+        if hasattr(self,'subroutines'):
+            md_list.extend(self.subroutines)
+            sort_items(self.subroutines)
+        if hasattr(self,'functions'):
+            md_list.extend(self.functions)
+            sort_items(self.functions)
+        if hasattr(self,'interfaces'):
+            md_list.extend(self.interfaces)
+            sort_items(self.interfaces)
+        if hasattr(self,'absinterfaces'):
+            md_list.extend(self.absinterfaces)
+            sort_items(self.absinterfaces)
+        if hasattr(self,'programs'):
+            md_list.extend(self.programs)
+            sort_items(self.programs)
+        if hasattr(self,'boundprocs'):
+            md_list.extend(self.boundprocs)
+            sort_items(self.boundprocs)
+        if hasattr(self,'args'):
+            md_list.extend(self.args)
+            sort_items(self.args,args=True)
         if hasattr(self,'retvar') and self.retvar: md_list.append(self.retvar)
         if hasattr(self,'procedure'): md_list.append(self.procedure)
         
