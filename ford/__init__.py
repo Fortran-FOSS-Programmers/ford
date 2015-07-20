@@ -71,22 +71,12 @@ def main():
     parser.add_argument("-m","--macro",action="append",help="preprocessor macro (and, optionally, its value) to be applied to files in need of preprocessing.")
     parser.add_argument("-w","--warn",dest='warn',action='store_true',
                         help="display warnings for undocumented items")
-    parser.add_argument("--no-warn",dest='warn',action='store_false',
-                        help="don't display warnings for undocumented items (default)")
-    parser.add_argument("--search",dest='search',action='store_true',
-                        help="process documentation to produce a search feature (default)")
     parser.add_argument("--no-search",dest='search',action='store_false',
                         help="don't process documentation to produce a search feature")
     parser.add_argument("-q","--quiet",dest='quiet',action='store_true',
                         help="do not print any description of progress")
-    parser.add_argument("-v","--verbose",dest='quiet',action='store_false',
-                        help="print description of progress (default)")
-    parser.set_defaults(warn=False)
-    parser.set_defaults(quiet=False)
-    parser.set_defaults(search=True)
     parser.add_argument('-V', '--version', action='version',
                         version="{}, version {}".format(__appname__,__version__))
-
 
     args = parser.parse_args()
 
@@ -124,7 +114,7 @@ def main():
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'source','exclude_dir','macro','preprocess','quiet','search',
-               'lower','sort']
+               'lower','sort','extra_mods']
     defaults = {'project_dir':       './src',
                 'extensions':        ['f90','f95','f03','f08','f15','F90',
                                       'F95','F03','F08','F15'],
@@ -138,7 +128,7 @@ def main():
                 'docmark':           '!',
                 'docmark_alt':       '*',
                 'predocmark':        '>',
-                'predocmark_alt':    '#',
+                'predocmark_alt':    '|',
                 'favicon':           'default-icon',
                 'extra_vartypes':    [],
                 'source':            'false',
@@ -149,21 +139,24 @@ def main():
                 'search':            'true',
                 'lower':             'false',
                 'sort':              'src',
+                'extra_mods':        [],
                }
-    listopts = ['extensions','display','extra_vartypes','project_dir','exclude','exclude_dir','macro']
+    listopts = ['extensions','display','extra_vartypes','project_dir',
+                'exclude','exclude_dir','macro','extra_mods']
     
-    if getattr(args,'warn'):
+    #~ this won't work because will overwrite anything in project file, even if no flag used
+    if args.warn:
         args.warn = 'true'
     else:
-        args.warn = 'false'
-    if getattr(args,'quiet'):
+        del args.warn
+    if args.quiet:
         args.quiet = 'true'
     else:
-        args.quiet = 'false'
-    if getattr(args,'search'):
-        args.search = 'true'
-    else:
+        del args.quiet
+    if not args.search:
         args.search = 'false'
+    else:
+        del args.search
     for option in options:
         if hasattr(args,option) and getattr(args,option):
             proj_data[option] = getattr(args,option)

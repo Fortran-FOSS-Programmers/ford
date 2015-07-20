@@ -31,6 +31,17 @@ import toposort
 
 import ford.sourceform
 
+
+INTRINSIC_MODS = {'iso_fortran_env': '<a href="https://software.intel.com/en-us/node/511041">iso_fortran_env</a>',
+                  'iso_c_binding': '<a href="https://software.intel.com/en-us/node/511038">iso_c_binding</a>',
+                  'ieee_arithmetic': '<a href="https://software.intel.com/en-us/node/511043">ieee_arithmetic</a>',
+                  'ieee_exceptions': '<a href="https://software.intel.com/en-us/node/511044">ieee_exceptions</a>',
+                  'ieee_features': '<a href="https://software.intel.com/en-us/node/511045">ieee_features</a>',
+                  'openacc': '<a href="http://www.openacc.org/sites/default/files/OpenACC.2.0a_1.pdf#page=49">openacc</a>',
+                  'omp_lib': '<a href="https://gcc.gnu.org/onlinedocs/gcc-4.4.3/libgomp/Runtime-Library-Routines.html">omp_lib</a>',
+                  'mpi': '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node410.htm">mpi</a>',
+                  'mpi_f08': '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node409.htm">mpi_f08</a>',}
+
 class Project(object):
     """
     An object which collects and contains all of the information about the
@@ -95,12 +106,22 @@ class Project(object):
         """
 
         print("\nCorrelating information from different parts of your project...\n")
+                        
+        non_local_mods = INTRINSIC_MODS        
+        for item in self.settings['extra_mods']:
+            i = item.index(':')
+            if i < 0:
+                print('Warning: could not parse extra modules ""'.format(item))
+                continue
+            name = item[:i].strip()
+            url = item[i+1:].strip()
+            non_local_mods[name.lower()] = '<a href="{}">{}</a>'.format(url,name)
         
         # Match USE statements up with the right modules
         for srcfile in self.files:
             containers = srcfile.modules + srcfile.functions + srcfile.subroutines + srcfile.programs
             for container in containers:
-                id_mods(container,self.modules)
+                id_mods(container,self.modules,non_local_mods)
             
         # Get the order to process other correlations with
         deplist = {}
@@ -172,11 +193,14 @@ class Project(object):
 
 
 
-def id_mods(obj,modlist):
+def id_mods(obj,modlist,intrinsic_mods={}):
     """
     Match USE statements up with the right modules
     """
     for i in range(len(obj.uses)):
+        if obj.uses[i].lower() in intrinsic_mods:
+            obj.uses[i] = intrinsic_mods[obj.uses[i].lower()]
+            continue
         for candidate in modlist:
             if obj.uses[i].lower() == candidate.name.lower():
                 obj.uses[i] = candidate

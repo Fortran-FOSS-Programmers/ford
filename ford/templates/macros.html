@@ -294,9 +294,11 @@
   {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {%- endif %}{%- endfor %}{{ var.dimension }}</small>{% if small %}</h6>{% else %}</h4>{% endif %}
   {{ var.meta['summary'] }}
     {% endif %}
-    {% if proc.doc or proc.meta %}
+    {% if proc.doc or (proc.meta and proc.permission not in proc.parent.display) %}
     {% if small %}<h6>{% else %}<h4>{% endif %}Description{% if small %}</h6>{% else %}</h4>{% endif %}
+       {% if proc.parent and proc.permission not in proc.parent.display %}
        {{ meta_list(proc.meta) }}
+       {% endif %}
        {{ proc.meta['summary'] }}
     {% endif %}    
 {% endmacro %}
@@ -333,9 +335,11 @@
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
   </h3></div>
-  {% if intr.doc or intr.meta %}
+  {% if intr.doc or (intr.meta and intr.permission not in intr.parent.display) %}
   <div class="panel-body">
+    {% if intr.permission not in intr.parent.display %}
     {{ meta_list(intr.meta) }}
+    {% endif %}
     {{ intr.meta['summary'] }}
   </div>
   {% endif %}
@@ -456,9 +460,11 @@
        </tbody>
        </table>
      {% endif %}
-     {% if dtype.doc or dtype.meta %}
+     {% if dtype.doc or (dtype.meta and dtype.permission not in dtype.parent.display) %}
      <h4>Description</h4>
+       {% if dtype.permission not in dtype.parent.display %}
        {{ meta_list(dtype.meta) }}
+       {% endif %}
        {{ dtype.meta['summary'] }}
      {% endif %}
   </div>

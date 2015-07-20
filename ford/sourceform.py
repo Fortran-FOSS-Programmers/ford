@@ -347,7 +347,7 @@ class FortranContainer(FortranBase):
     #~ ABS_INTERFACE_RE = re.compile("^abstract\s+interface(?:\s+(\S.+))?$",re.IGNORECASE)
     BOUNDPROC_RE = re.compile("^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)",re.IGNORECASE)
     FINAL_RE = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
-    USE_RE = re.compile("^use\s+(\w+)($|,\s*)",re.IGNORECASE)
+    USE_RE = re.compile("^use(?:\s*,\s*intrinsic\s*::\s*|\s+)(\w+)($|,\s*)",re.IGNORECASE)
     CALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
     
     VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is)|procedure{})\s*((?:\(|\s\w|[:,*]).*)$"
