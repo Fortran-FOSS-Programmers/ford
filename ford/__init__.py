@@ -144,7 +144,6 @@ def main():
     listopts = ['extensions','display','extra_vartypes','project_dir',
                 'exclude','exclude_dir','macro','extra_mods']
     
-    #~ this won't work because will overwrite anything in project file, even if no flag used
     if args.warn:
         args.warn = 'true'
     else:
@@ -157,6 +156,7 @@ def main():
         args.search = 'false'
     else:
         del args.search
+
     for option in options:
         if hasattr(args,option) and getattr(args,option):
             proj_data[option] = getattr(args,option)
