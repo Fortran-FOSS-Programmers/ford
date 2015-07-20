@@ -73,11 +73,17 @@ def main():
                         help="display warnings for undocumented items")
     parser.add_argument("--no-warn",dest='warn',action='store_false',
                         help="don't display warnings for undocumented items (default)")
+    parser.add_argument("--search",dest='search',action='store_true',
+                        help="process documentation to produce a search feature (default)")
+    parser.add_argument("--no-search",dest='search',action='store_false',
+                        help="don't process documentation to produce a search feature")
     parser.add_argument("-q","--quiet",dest='quiet',action='store_true',
                         help="do not print any description of progress")
     parser.add_argument("-v","--verbose",dest='quiet',action='store_false',
                         help="print description of progress (default)")
     parser.set_defaults(warn=False)
+    parser.set_defaults(quiet=False)
+    parser.set_defaults(search=True)
     parser.add_argument('-V', '--version', action='version',
                         version="{}, version {}".format(__appname__,__version__))
 
@@ -146,8 +152,18 @@ def main():
                }
     listopts = ['extensions','display','extra_vartypes','project_dir','exclude','exclude_dir','macro']
     
-    if getattr(args,'warn',False): args.warn = 'true'
-    if getattr(args,'quiet',False): args.quiet = 'true'
+    if getattr(args,'warn'):
+        args.warn = 'true'
+    else:
+        args.warn = 'false'
+    if getattr(args,'quiet'):
+        args.quiet = 'true'
+    else:
+        args.quiet = 'false'
+    if getattr(args,'search'):
+        args.search = 'true'
+    else:
+        args.search = 'false'
     for option in options:
         if hasattr(args,option) and getattr(args,option):
             proj_data[option] = getattr(args,option)
