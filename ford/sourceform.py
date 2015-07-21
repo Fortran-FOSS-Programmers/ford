@@ -350,7 +350,7 @@ class FortranContainer(FortranBase):
     USE_RE = re.compile("^use(?:\s*,\s*intrinsic\s*::\s*|\s+)(\w+)($|,\s*)",re.IGNORECASE)
     CALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
     
-    VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is)|procedure{})\s*((?:\(|\s\w|[:,*]).*)$"
+    VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure{})\s*((?:\(|\s\w|[:,*]).*)$"
     
     #TODO: Add the ability to recognize function calls
         
