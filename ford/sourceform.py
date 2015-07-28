@@ -150,7 +150,7 @@ class FortranBase(object):
         '''
         Compare two Fortran objects. Needed to make toposort work.
         '''
-        return (self.name < other.name)
+        return (self.ident < other.ident)
     
     def markdown(self,md,project):
         """

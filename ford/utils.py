@@ -191,24 +191,6 @@ def sub_links(string,project):
                       'final': 'finalprocs',
                       'bound': 'boundprocs',
                       'modproc': 'modprocs' }
-    #~ SUBLINK_ABBR  = { 'variable': 'var',
-                      #~ 'constructor': 'intr',
-                      #~ 'interface': 'intr',
-                      #~ 'absinterface': 'intr',
-                      #~ 'type': 'type',
-                      #~ 'subroutine': 'proc',
-                      #~ 'function': 'proc',
-                      #~ 'final': 'fp',
-                      #~ 'bound': 'bp',
-                      #~ 'modproc': 'proc' }
-    #~ 
-    #~ 
-    #~ def get_abbr(obj,parobj):
-        #~ if obj == getattr(parobj,'constructor',None):
-            #~ return SUBLINK_ABBR['constructor']
-        #~ for key, val in SUBLINK_TYPES.items():
-            #~ if val != 'constructor' and obj in getattr(parobj,val,[]):
-                #~ return SUBLINK_ABBR[key]
         
     
     def convert_link(match):
