@@ -13,12 +13,14 @@
          {% if page.date %}
         <li><i class="fa fa-calendar-o"></i> {{ page.date }}</li>
          {% endif %}
+<!--
         {% if page.subpages %}
         <li><i class="fa fa-sitemap"></i> Subsections:</li>
         {% for sub in page.subpages %}
         <li>{{ sub }}</li>
         {% endfor %}
         {% endif %}
+-->
       </ul>
         <ol class="breadcrumb in-well">
       {% for item in page.hierarchy %}
