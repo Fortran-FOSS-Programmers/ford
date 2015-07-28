@@ -36,7 +36,7 @@
 	   {% elif dtype.constructor.obj == "subroutine" or dtype.constructor.obj == "function" %}
 		  {% set obj = dtype.constructor %}
 	     <div class="panel panel-default">
-  		  <div class="panel-heading codesum"><a class="anchor" name="con-{{ obj.name }}"></a><h3>{{ macros.proc_line(obj) }}</h3></div>
+  		  <div class="panel-heading codesum"><span class="anchor" id="{{ obj.anchor }}"></span><h3>{{ macros.proc_line(obj) }}</h3></div>
 	       <div class="panel-body">
           {{ macros.proc_summary(obj,False) }}
           </div>
@@ -65,7 +65,7 @@
     
     {% if dtype.src %}
     <section>
-    <h2><a class="anchor" name="src"></a>Source Code</h2>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
     {{ dtype.src }}
     </section>
     {% endif %}

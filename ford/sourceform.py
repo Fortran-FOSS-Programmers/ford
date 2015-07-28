@@ -31,15 +31,15 @@ import copy
 from pygments import highlight
 from pygments.lexers import FortranLexer
 from pygments.formatters import HtmlFormatter
-
-import ford.reader
-import ford.utils
-
 #Python 2 or 3:
 if (sys.version_info[0]>2):
     from urllib.parse import quote
 else:
     from urllib import quote
+
+#~ from ford.filename import NameSelector
+import ford.reader
+import ford.utils
 
 VAR_TYPE_STRING = "^integer|real|double\s*precision|character|complex|logical|type|class|procedure"
 VARKIND_RE = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
@@ -103,37 +103,48 @@ class FortranBase(object):
             self.hierarchy.append(cur)
             cur = cur.parent
         self.hierarchy.reverse()
-    
-    def get_url(self):
-        outstr = "{0}/{1}/{2}.html{3}"
-        #~ and self.permission == 'public' and type(self.parent) == FortranSourceFile
-        if ( type(self) in [FortranSubroutine,FortranFunction] and 
+
+    def get_dir(self):
+        if ( type(self) in [FortranSubroutine,FortranFunction] and
              type(self.parent) == FortranInterface and 
              not self.parent.generic ):
-            outstr = quote(outstr.format(self.base_url,'interface',self.name.lower().replace('/','slash'),''))
+            return 'interface'
         elif ( type(self) in [FortranSourceFile,FortranProgram,FortranModule]
                or ( type(self) in [FortranType,FortranInterface,FortranFunction,
                                    FortranSubroutine]
                     and type(self.parent) in [FortranSourceFile,FortranProgram,
                                               FortranModule] ) ):
-            outstr = quote(outstr.format(self.base_url,self.obj,self.name.lower().replace('/','slash'),''))
-        elif ( (type(self) == FortranBoundProcedure) ):
-            outstr = quote(outstr.format(self.base_url,self.parobj,self.parent.name.lower().replace('/','slash'),'#'+self.name.lower().replace('/','slash')))
+            return self.obj
         else:
-            outstr = None
-        return outstr
+            return None
+            
+    def get_url(self):
+        outstr = "{0}/{1}/{2}.html"
+        loc = self.get_dir()
+        if loc:
+            return outstr.format(self.base_url,loc,quote(self.ident))
+        elif isinstance(self,FortranBoundProcedure):
+            return self.parent.get_url() + '#' + self.anchor
+        else:
+            return None
     
-    
+    @property
+    def ident(self):
+        return namelist.get_name(self)
+
+    @property
+    def anchor(self):
+        return self.obj + '-' + quote(self.ident)
+        
     def __str__(self):
         outstr = "<a href='{0}'>{1}</a>"
         url = self.get_url()
         if url:
-            outstr = outstr.format(url,self.name)
+            return outstr.format(url,self.name)
         elif self.name:
-            outstr = self.name
+            return self.name
         else:
-            outstr = ''
-        return outstr
+            return ''
 
     def __lt__(self,other):
         '''
@@ -288,7 +299,7 @@ class FortranBase(object):
             sort_items(self.boundprocs)
         if hasattr(self,'args'):
             md_list.extend(self.args)
-            sort_items(self.args,args=True)
+            #sort_items(self.args,args=True)
         if hasattr(self,'retvar') and self.retvar: md_list.append(self.retvar)
         if hasattr(self,'procedure'): md_list.append(self.procedure)
         
@@ -325,7 +336,6 @@ class FortranBase(object):
         
         for item in recurse_list:
             if isinstance(item, FortranBase): item.make_links(project)
-
 
 
 class FortranContainer(FortranBase):
@@ -714,7 +724,7 @@ class FortranSubroutine(FortranCodeUnit):
             self.attribs.append("recursive")
             attribstr = attribstr.replace("recursive","",1)
         attribstr = re.sub(" ","",attribstr)
-        self.name = line.group(2)
+        #~ self.name = line.group(2)
         self.args = []
         if line.group(3):
             if self.SPLIT_RE.split(line.group(3)[1:-1]):
@@ -1390,3 +1400,44 @@ def get_mod_procs(source,line,parent):
     retlist[-1].doc = doc
     
     return retlist
+
+
+class NameSelector(object):
+    """
+    Object which tracks what names have been provided for different
+    entities in Fortran code. It will provide an identifier which is
+    guaranteed to be unique. This identifier can then me used as a
+    filename for the documentation of that entity.
+    """
+    def __init__(self):
+        self._items = {}
+        self._counts = {}
+                       
+    
+    def get_name(self,item):
+        """
+        Return the name for this item registered with this NameSelector.
+        If no name has previously been registered, then generate a new
+        one.
+        """
+        if not isinstance(item,ford.sourceform.FortranBase):
+            raise Exception('{} is not of a type derived from FortranBase'.format(str(item)))
+        
+        if item in self._items:
+            return self._items[item]
+        else:
+            if item.get_dir() not in self._counts:
+                self._counts[item.get_dir()] = {}
+            if item.name in self._counts[item.get_dir()]:
+                num = self._counts[item.get_dir()][item.name] + 1
+            else:
+                num = 1
+            self._counts[item.get_dir()][item.name] = num
+            name = item.name.lower().replace('/','SLASH')
+            if num > 1:
+                name = name + '~' + str(num)
+            self._items[item] = name
+            return name
+            
+namelist = NameSelector()
+

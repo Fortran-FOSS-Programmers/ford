@@ -34,8 +34,8 @@
     {% if var.kind %}{% set args = args + 1 %}{% endif %}
     {% if var.strlen %}{% set args = args + 1 %}{% endif %}
     {% if var.proto %}{% set args = args + 1 %}{% endif %}
-	 <h3>Return Value <small><a class="anchor" name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{{ var.proto }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
-    {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %}</small></h3>
+	 <h3>Return Value <small><span class="anchor" id="{{ var.anchor }}"></span>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].permission in var.proto[0].parent.display -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
+  {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {%- endif %}{%- endfor %}{{ var.dimension }}</small></h3>
     {{ var.doc }}
     {% endif %}
     {% if procedure.doc %}
@@ -52,7 +52,8 @@
     {% endif %}
     
     {% if procedure.interfaces|length > 0 %}
-	 <h2>Interfaces</h2>
+	<section> 
+     <h2>Interfaces</h2>
 	 {% for intr in procedure.interfaces %}
 	   {{ macros.interface(intr) }}
     {% endfor %}
@@ -61,6 +62,7 @@
     {% endif %}
 
     {% if procedure.absinterfaces|length > 0 %}
+    <section>
 	 <h2>Abstract Interfaces</h2>
 	 {% for intr in procedure.absinterfaces %}
 	   {{ macros.absinterface(intr) }}
@@ -70,6 +72,7 @@
     {% endif %}
     
     {% if procedure.types|length > 0 %}
+    <section>
 	 <h2>Derived Types</h2>
 	 {% for type in procedure.types %}
 	   {{ macros.type_summary(type) }}
@@ -85,6 +88,7 @@
     {{ macros.proc_entry(proc) }}
     {% endfor %}
     </section>
+    <br>
     {% endif %}
 
 
@@ -99,9 +103,10 @@
     
     {% if procedure.src %}
     <section>
-    <h2><a class="anchor" name="src"></a>Source Code</h2>
+    <h2><span class="anchor" id="src"></span>Source Code</h2>
     {{ procedure.src }}
     </section>
+    <br>
     {% endif %}
     
     </div>

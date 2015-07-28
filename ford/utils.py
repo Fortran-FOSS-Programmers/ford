@@ -40,16 +40,16 @@ def sub_notes(docs):
     the corresponding div.
     """
     while NOTE_RE.search(docs):
-        docs = NOTE_RE.sub("<div class=\"alert alert-info\" role=\"alert\"><h4>Note</h4>\g<1></div></p>",docs)
+        docs = NOTE_RE.sub("</p><div class=\"alert alert-info\" role=\"alert\"><h4>Note</h4>\g<1></div>",docs)
         
     while WARNING_RE.search(docs):
-        docs = WARNING_RE.sub("<div class=\"alert alert-warning\" role=\"alert\"><h4>Warning</h4>\g<1></div></p>",docs)
+        docs = WARNING_RE.sub("</p><div class=\"alert alert-warning\" role=\"alert\"><h4>Warning</h4>\g<1></div>",docs)
     
     while TODO_RE.search(docs):
-        docs = TODO_RE.sub("<div class=\"alert alert-success\" role=\"alert\"><h4>ToDo</h4>\g<1></div></p>",docs)
+        docs = TODO_RE.sub("</p><div class=\"alert alert-success\" role=\"alert\"><h4>ToDo</h4>\g<1></div>",docs)
     
     while BUG_RE.search(docs):
-        docs = BUG_RE.sub("<div class=\"alert alert-danger\" role=\"alert\"><h4>Bug</h4>\g<1></div></p>",docs)
+        docs = BUG_RE.sub("</p><div class=\"alert alert-danger\" role=\"alert\"><h4>Bug</h4>\g<1></div>",docs)
 
     return docs
 
@@ -191,24 +191,24 @@ def sub_links(string,project):
                       'final': 'finalprocs',
                       'bound': 'boundprocs',
                       'modproc': 'modprocs' }
-    SUBLINK_ABBR  = { 'variable': 'var',
-                      'constructor': 'intr',
-                      'interface': 'intr',
-                      'absinterface': 'intr',
-                      'type': 'type',
-                      'subroutine': 'proc',
-                      'function': 'proc',
-                      'final': 'fp',
-                      'bound': 'bp',
-                      'modproc': 'proc' }
-    
-    
-    def get_abbr(obj,parobj):
-        if obj == getattr(parobj,'constructor',None):
-            return SUBLINK_ABBR['constructor']
-        for key, val in SUBLINK_TYPES.items():
-            if val != 'constructor' and obj in getattr(parobj,val,[]):
-                return SUBLINK_ABBR[key]
+    #~ SUBLINK_ABBR  = { 'variable': 'var',
+                      #~ 'constructor': 'intr',
+                      #~ 'interface': 'intr',
+                      #~ 'absinterface': 'intr',
+                      #~ 'type': 'type',
+                      #~ 'subroutine': 'proc',
+                      #~ 'function': 'proc',
+                      #~ 'final': 'fp',
+                      #~ 'bound': 'bp',
+                      #~ 'modproc': 'proc' }
+    #~ 
+    #~ 
+    #~ def get_abbr(obj,parobj):
+        #~ if obj == getattr(parobj,'constructor',None):
+            #~ return SUBLINK_ABBR['constructor']
+        #~ for key, val in SUBLINK_TYPES.items():
+            #~ if val != 'constructor' and obj in getattr(parobj,val,[]):
+                #~ return SUBLINK_ABBR[key]
         
     
     def convert_link(match):
@@ -268,7 +268,7 @@ def sub_links(string,project):
             
             for obj in searchlist:
                 if match.group(3).lower() == obj.name.lower():
-                    url = url + '#' + get_abbr(obj,item) + '-' + obj.name
+                    url = url + '#' + obj.anchor
                     name = obj.name
                     item = obj
                     break

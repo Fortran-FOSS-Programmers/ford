@@ -42,7 +42,7 @@
     {% if var.kind %}{% set args = args + 1 %}{% endif %}
     {% if var.strlen %}{% set args = args + 1 %}{% endif %}
     {% if var.proto %}{% set args = args + 1 %}{% endif %}
-	 <h3>Return Value <small><a class="anchor" name="var-{{ var.name }}"></a>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{{ var.proto }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
+	 <h3>Return Value <small><small class="anchor" id="{{ var.anchor }}"></small>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{{ var.proto }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
     {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %}</small></h3>
     {{ var.doc }}
     {% endif %}

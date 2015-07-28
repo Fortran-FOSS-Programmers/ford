@@ -31,30 +31,33 @@
     {% endif %}
     
     {% if module.interfaces|length > 0 %}
+    <section>
 	 <h2>Interfaces</h2>
 	 {% for intr in module.interfaces %}
 	   {{ macros.interface(intr) }}
     {% endfor %}
     </section>
-	 <br>
+	<br>
     {% endif %}
 
     {% if module.absinterfaces|length > 0 %}
-	 <h2>Abstract Interfaces</h2>
+    <section>
+     <h2>Abstract Interfaces</h2>
 	 {% for intr in module.absinterfaces %}
 	   {{ macros.absinterface(intr) }}
     {% endfor %}
     </section>
-	 <br>
+	<br>
     {% endif %}
     
     {% if module.types|length > 0 %}
-	 <h2>Derived Types</h2>
+    <section>
+     <h2>Derived Types</h2>
 	 {% for type in module.types %}
 	   {{ macros.type_summary(type) }}
     {% endfor %}
     </section>
-	 <br>
+	<br>
     {% endif %}
     
     {% if module.functions|length > 0 %} 

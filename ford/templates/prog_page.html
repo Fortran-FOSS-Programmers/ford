@@ -31,6 +31,7 @@
     {% endif %}
     
     {% if program.interfaces|length > 0 %}
+    <section>
 	 <h2>Interfaces</h2>
 	 {% for intr in program.interfaces %}
 	   {{ macros.interface(intr) }}
@@ -40,6 +41,7 @@
     {% endif %}
     
     {% if program.absinterfaces|length > 0 %}
+    <section>
 	 <h2>Abstract Interfaces</h2>
 	 {% for intr in program.absinterfaces %}
 	   {{ macros.absinterface(intr) }}
@@ -49,6 +51,7 @@
     {% endif %}
 
     {% if program.types|length > 0 %}
+    <section>
 	 <h2>Derived Types</h2>
 	 {% for type in program.types %}
 	   {{ macros.type_summary(type) }}
@@ -79,7 +82,7 @@
     
     {% if program.src %}
     <section>
-    <h2><a class="anchor" name="src"></a>Source Code</h2>
+    <h2 id="src">Source Code</h2>
     {{ program.src }}
     </section>
     {% endif %}

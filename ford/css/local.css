@@ -62,7 +62,8 @@
     
     .anchor {
       position: absolute;
-      margin: -4.5em
+      margin: -4.5em;
+      visibility:hidden;
     }
 
     .alert {
