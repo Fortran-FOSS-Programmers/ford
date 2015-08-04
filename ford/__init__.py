@@ -75,9 +75,11 @@ def main():
                         help="don't process documentation to produce a search feature")
     parser.add_argument("-q","--quiet",dest='quiet',action='store_true',
                         help="do not print any description of progress")
-    parser.add_argument('-V', '--version', action='version',
+    parser.add_argument("-V", "--version", action="version",
                         version="{}, version {}".format(__appname__,__version__))
-
+    parser.add_argument("--debug",dest="dbg",action="store_true",
+                        help="display traceback if fatal exception occurs")
+    
     args = parser.parse_args()
 
     md_ext = ['markdown.extensions.meta','markdown.extensions.codehilite',
@@ -114,7 +116,7 @@ def main():
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'source','exclude_dir','macro','preprocess','quiet','search',
-               'lower','sort','extra_mods']
+               'lower','sort','extra_mods','dbg']
     defaults = {'project_dir':       './src',
                 'extensions':        ['f90','f95','f03','f08','f15','F90',
                                       'F95','F03','F08','F15'],
@@ -140,6 +142,7 @@ def main():
                 'lower':             'false',
                 'sort':              'src',
                 'extra_mods':        [],
+                'dbg':               False,
                }
     listopts = ['extensions','display','extra_vartypes','project_dir',
                 'exclude','exclude_dir','macro','extra_mods']

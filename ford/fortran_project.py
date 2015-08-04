@@ -79,12 +79,14 @@ class Project(object):
                         # Get contents of the file
                         print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
                         fpp = item.split('.')[-1] in fpp_ext
-                        #~ self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,fpp))
-                        try:
+                        if settings['dbg']:
                             self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,fpp))
-                        except Exception as e:
-                            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
-                            continue
+                        else:
+                            try:
+                                self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,fpp))
+                            except Exception as e:
+                                print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
+                                continue
                         
                         for module in self.files[-1].modules:
                             self.modules.append(module)
