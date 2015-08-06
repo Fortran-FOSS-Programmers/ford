@@ -64,7 +64,7 @@ class FortranBase(object):
     """
     POINTS_TO_RE = re.compile("\s*=>\s*",re.IGNORECASE)
     SPLIT_RE = re.compile("\s*,\s*",re.IGNORECASE)
-    SRC_CAPTURE_STR = r"^[ \t]*([\w(),*: \t]+?[ \t]+)?{0}([\w(),*: \t]+?)?[ \t]+{1}.*?end[ \t]*{0}[ \t]+{1}[ \t]*?(!.*?)?$"
+    SRC_CAPTURE_STR = r"^[ \t]*([\w(),*: \t]+?[ \t]+)?{0}([\w(),*: \t]+?)?[ \t]+{1}[ \t\n,(].*?end[ \t]*{0}[ \t]+{1}[ \t]*?(!.*?)?$"
     
     #~ this regex is not working for the LINK and DOUBLE_LINK types
     
@@ -1200,7 +1200,7 @@ class FortranBoundProcedure(FortranBase):
 
 class FortranModuleProcedure(FortranBase):
     """
-    An object representing a module procedure procedure.
+    An object representing a module procedure in an interface.
     """
     def __init__(self,name,parent=None,inherited_permission=None):
         if (inherited_permission!=None):

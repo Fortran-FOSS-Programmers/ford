@@ -117,7 +117,7 @@ def main():
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'source','exclude_dir','macro','preprocess','quiet','search',
                'lower','sort','extra_mods','dbg']
-    defaults = {'project_dir':       './src',
+    defaults = {'project_dir':       ['./src'],
                 'extensions':        ['f90','f95','f03','f08','f15','F90',
                                       'F95','F03','F08','F15'],
                 'output_dir':        './doc',

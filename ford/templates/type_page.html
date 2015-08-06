@@ -4,7 +4,7 @@
   {% import 'macros.html' as macros %}
   <div class="row">
     <h1>{{ dtype.name }}
-    <small>Derived Type{% if dtype.extends %}, Extends({{ dtype.extends }}){% endif %}</small>
+    <small>Derived Type</small>
     {% if dtype.meta['deprecated'] and dtype.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
@@ -18,6 +18,7 @@
     </div>
     
     <div class="col-lg-9" id='text'>
+    <h2>type{% for attr in dtype.attributes%}, {{ attr }}{% endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {{ dtype.name }}</h2>
     {{ dtype.doc }}
     {% if dtype.doc %}<br>{% endif %}
     {% if dtype.variables|length > 0 %}
