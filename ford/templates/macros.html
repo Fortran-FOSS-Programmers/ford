@@ -408,7 +408,7 @@
 
 {% macro type_summary(dtype) %}
 <div class="panel panel-default">
-  <div class="panel-heading codesum"><span class="anchor" id="{{ dtype.anchor }}"></span><h3>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% if dtype.sequence%}, sequence {% endif %}{% for attrib in dtype.attribs -%}, {{ attrib }}{%- endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {% if dtype.permission in dtype.parent.display %}{{ dtype }}{% else %}{{ dtype.name }}{% endif %}
+  <div class="panel-heading codesum"><span class="anchor" id="{{ dtype.anchor }}"></span><h3>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% if dtype.sequence %}, sequence {% endif %}{% for attrib in dtype.attribs -%}, {{ attrib }}{%- endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {% if dtype.permission in dtype.parent.display %}{{ dtype }}{% else %}{{ dtype.name }}{% endif %}
     {% if dtype.meta['deprecated'] and dtype.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}

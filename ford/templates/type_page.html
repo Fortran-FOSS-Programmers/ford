@@ -18,7 +18,7 @@
     </div>
     
     <div class="col-lg-9" id='text'>
-    <h2>type{% for attr in dtype.attributes%}, {{ attr }}{% endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {{ dtype.name }}</h2>
+    <h2>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% for attr in dtype.attributes%}, {{ attr }}{% endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {{ dtype.name }}{% if dtype.sequence%}<br>sequence{% endif %}</h2>
     {{ dtype.doc }}
     {% if dtype.doc %}<br>{% endif %}
     {% if dtype.variables|length > 0 %}

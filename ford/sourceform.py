@@ -347,7 +347,7 @@ class FortranContainer(FortranBase):
     PROTECTED_RE = re.compile("^protected(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
     OPTIONAL_RE = re.compile("^optional(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
     END_RE = re.compile("^end\s*(?:(module|subroutine|function|program|type|interface)(?:\s+(\w+))?)?$",re.IGNORECASE)
-    MODPROC_RE = re.compile("^module\s+procedure\s*(?:::|\s)?\s*(\w.*)$",re.IGNORECASE)
+    MODPROC_RE = re.compile("^(module\s+)?procedure\s*(?:::|\s)?\s*(\w.*)$",re.IGNORECASE)
     MODULE_RE = re.compile("^module(?:\s+(\w+))?$",re.IGNORECASE)
     PROGRAM_RE = re.compile("^program(?:\s+(\w+))?$",re.IGNORECASE)
     SUBROUTINE_RE = re.compile("^\s*(?:(.+?)\s+)?subroutine\s+(\w+)\s*(\([^()]*\))?(\s*bind\s*\(\s*c.*\))?$",re.IGNORECASE)
@@ -439,7 +439,7 @@ class FortranContainer(FortranBase):
                     raise Exception("END statement outside of any nesting")
                 self._cleanup()
                 return
-            elif self.MODPROC_RE.match(line):
+            elif self.MODPROC_RE.match(line) and (self.MODPROC_RE.match(line).group(1) or type(self) is FortranInterface):
                 if hasattr(self,'modprocs'):
                     self.modprocs.extend(get_mod_procs(source,
                                          self.MODPROC_RE.match(line),self))
@@ -1384,7 +1384,7 @@ def get_mod_procs(source,line,parent):
     inherit_permission = parent.permission
     retlist = []
     SPLIT_RE = re.compile("\s*,\s*",re.IGNORECASE)
-    splitlist = SPLIT_RE.split(line.group(1))
+    splitlist = SPLIT_RE.split(line.group(2))
     if splitlist and len(splitlist) > 0:
         for item in splitlist:
             retlist.append(FortranModuleProcedure(item,parent,inherit_permission))
