@@ -105,3 +105,8 @@
       margin-bottom: 0px;
       float:right;
     }
+    
+    table tr.submod>td {
+      border-top: none;
+      font-size: 13.5px;
+    }

@@ -215,7 +215,7 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
             template = env.get_template('proc_page.html')
             out = open(os.path.join(out_dir,proc.get_dir(),proc.ident+'.html'),'wb')
             html = template.render(proj_data,procedure=proc,project=project)
-            if search: tipue.create_node(html,proc.get_url()+'/'+proc.ident+'.html', proc.meta)
+            if search: tipue.create_node(html,proc.get_dir()+'/'+proc.ident+'.html', proc.meta)
         else:
             if proc.generic:
                 template = env.get_template('genint_page.html')
@@ -223,12 +223,19 @@ def print_html(project,proj_data,proj_docs,page_tree,relative):
                 template = env.get_template('nongenint_page.html')
             out = open(os.path.join(out_dir,proc.get_dir(),proc.ident+'.html'),'wb')
             html = template.render(proj_data,interface=proc,project=project)
-            if search: tipue.create_node(html,proc.get_dir()+'/'+proc.ident+'.html', proc.meta)
-        
+            if search: tipue.create_node(html,proc.get_dir()+'/'+proc.ident+'.html', proc.meta)        
         out.write(html.encode('utf8'))
         out.close()
+    
+    for proc in project.submodprocedures:
+        template = env.get_template('proc_page.html')
+        out = open(os.path.join(out_dir,proc.get_dir(),proc.ident+'.html'),'wb')
+        html = template.render(proj_data,procedure=proc,project=project)
+        out.write(html.encode('utf8'))
+        out.close()
+        if search: tipue.create_node(html,proc.get_url()+'/'+proc.ident+'.html', proc.meta)
 
-    for mod in project.modules:
+    for mod in project.modules + project.submodules:
         template = env.get_template('mod_page.html')
         html = template.render(proj_data,module=mod,project=project)
         out = open(os.path.join(out_dir,mod.get_dir(),mod.ident+'.html'),'wb')

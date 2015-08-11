@@ -4,7 +4,7 @@
   {% import 'macros.html' as macros %}
   <div class="row">
     <h1>{{ module.name }} 
-    <small>Module</small>
+    <small>{% if module.obj == 'submodule' %}Submodule{% else %}Module{% endif %}</small>
     {% if module.meta['deprecated'] and module.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
@@ -18,6 +18,8 @@
     </div>
     
     <div class="col-lg-9" id='text'>
+    {% if module.obj == 'submodule' %}{{ macros.ancestry(module) }}{% endif %}
+    {% if module.descendants|length > 0 %}{{ macros.descendants(module) }}{% endif %}
     {{ macros.use_list(module) }}
     {{ module.doc }}
     {% if module.doc %}<br>{% endif %}
@@ -55,7 +57,7 @@
      <h2>Derived Types</h2>
 	 {% for type in module.types %}
 	   {{ macros.type_summary(type) }}
-    {% endfor %}
+     {% endfor %}
     </section>
 	<br>
     {% endif %}
@@ -70,7 +72,6 @@
     <br>
     {% endif %}
 
-
     {% if module.subroutines|length > 0 %}
     <section>
     <h2>Subroutines</h2>
@@ -78,8 +79,41 @@
     {{ macros.proc_entry(proc) }}
     {% endfor %}
     </section>    
+    <br>
     {% endif %}
     
+    {% if  module.obj == 'submodule' %}
+    
+        {% if module.modfunctions|length > 0 %} 
+        <section>
+        <h2>Module Functions</h2>
+        {% for proc in module.modfunctions %}
+        {{ macros.proc_entry(proc) }}
+        {% endfor %}
+        </section>
+        <br>
+        {% endif %}
+
+        {% if module.modsubroutines|length > 0 %}
+        <section>
+        <h2>Module Subroutines</h2>
+        {% for proc in module.modsubroutines %}
+        {{ macros.proc_entry(proc) }}
+        {% endfor %}
+        </section>
+        <br>
+        {% endif %}
+
+        {% if module.modprocedures|length > 0 %}
+        <section>
+        <h2>Module Procedures</h2>
+        {% for proc in module.modprocedures %}
+        {{ macros.proc_entry(proc) }}
+        {% endfor %}
+        </section>    
+        {% endif %}
+    
+    {% endif %}
     </div>
   </div>
 {% endblock body %}

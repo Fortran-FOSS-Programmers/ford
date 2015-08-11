@@ -4,7 +4,7 @@
   {% import 'macros.html' as macros %}
   <div class="row">
     <h1>{{ procedure.name }}
-    <small>{{ procedure.proctype }}</small>
+    <small>{%if procedure.module %}Module {% endif %}{% if not procedure.mp %}{{ procedure.proctype }}{% else %}Procedure{% endif %}</small>
     {% if procedure.meta['deprecated'] and procedure.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}

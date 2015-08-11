@@ -65,6 +65,8 @@ class Project(object):
         self.procedures = []
         self.absinterfaces = []
         self.types = []
+        self.submodules = []
+        self.submodprocedures = []
                 
         # Get all files within topdir, recursively
         srctree = []
@@ -90,7 +92,8 @@ class Project(object):
                         
                         for module in self.files[-1].modules:
                             self.modules.append(module)
-                        
+                        for submod in self.files[-1].submodules:
+                            self.submodules.append(submod)
                         for function in self.files[-1].functions:
                             self.procedures.append(function)
                         for subroutine in self.files[-1].subroutines:
@@ -107,7 +110,7 @@ class Project(object):
         Associates various constructs with each other.
         """
 
-        print("\nCorrelating information from different parts of your project...\n")
+        print("Correlating information from different parts of your project...\n")
                         
         non_local_mods = INTRINSIC_MODS        
         for item in self.settings['extra_mods']:
@@ -120,10 +123,9 @@ class Project(object):
             non_local_mods[name.lower()] = '<a href="{}">{}</a>'.format(url,name)
         
         # Match USE statements up with the right modules
-        for srcfile in self.files:
-            containers = srcfile.modules + srcfile.functions + srcfile.subroutines + srcfile.programs
-            for container in containers:
-                id_mods(container,self.modules,non_local_mods)
+        containers = self.modules + self.procedures + self.programs + self.submodules
+        for container in containers:
+                id_mods(container,self.modules,non_local_mods,self.submodules)
             
         # Get the order to process other correlations with
         deplist = {}
@@ -135,6 +137,26 @@ class Project(object):
                 uselist.extend(proc.uses)
             uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
             deplist[mod] = set(uselist)
+        for mod in self.submodules:
+            if type(mod.ancestor_mod) is ford.sourceform.FortranModule:
+                uselist = mod.uses
+                for proc in mod.subroutines:
+                    uselist.extend(proc.uses)
+                for proc in mod.functions:
+                    uselist.extend(proc.uses)
+                for proc in mod.modprocedures:
+                    uselist.extend(proc.uses)
+                uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
+                if mod.ancestor:
+                    if type(mod.ancestor) is ford.sourceform.FortranSubmodule:
+                        uselist.insert(0,mod.ancestor)
+                    elif self.settings['warn'].lower() == 'true':
+                        print('Warning: could not identify parent SUBMODULE of SUBMODULE ' + mod.name)
+                else:
+                    uselist.insert(0,mod.ancestor_mod)
+                deplist[mod] = set(uselist)
+            elif self.settings['warn'].lower() == 'true':
+                print('Warning: could not identify parent MODULE of SUBMODULE ' + mod.name)
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:
             if proc.parobj == 'sourcefile': ranklist.append(proc)
@@ -158,6 +180,24 @@ class Project(object):
                     self.absinterfaces.append(absint)
                 for dtype in module.types:
                     self.types.append(dtype)
+            
+            for module in sfile.submodules:
+                for function in module.functions:
+                    self.procedures.append(function)
+                for subroutine in module.subroutines:
+                    self.procedures.append(subroutine)
+                for function in module.modfunctions:
+                    self.submodprocedures.append(function)
+                for subroutine in module.modsubroutines:
+                    self.submodprocedures.append(subroutine)
+                for modproc in module.modprocedures:
+                    self.submodprocedures.append(modproc)
+                for interface in module.interfaces:
+                    self.procedures.append(interface)
+                for absint in module.absinterfaces:
+                    self.absinterfaces.append(absint)
+                for dtype in module.types:
+                    self.types.append(dtype)
 
             for program in sfile.programs:
                 for function in program.functions:
@@ -171,11 +211,12 @@ class Project(object):
                 for dtype in program.types:
                     self.types.append(dtype)
 
+
     def markdown(self,md,base_url='..'):
         """
         Process the documentation with Markdown to produce HTML.
         """
-        
+        print("\nProcessing documentation comments...")
         ford.sourceform.set_base_url(base_url)        
         if self.settings['warn'].lower() == 'true': print()
         for src in self.files:
@@ -195,7 +236,7 @@ class Project(object):
 
 
 
-def id_mods(obj,modlist,intrinsic_mods={}):
+def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
     """
     Match USE statements up with the right modules
     """
@@ -207,8 +248,20 @@ def id_mods(obj,modlist,intrinsic_mods={}):
             if obj.uses[i].lower() == candidate.name.lower():
                 obj.uses[i] = candidate
                 break
+    if getattr(obj,'ancestor',None):
+        for submod in submodlist:
+            if obj.ancestor == submod.name.lower():
+                obj.ancestor = submod
+                break
+    if hasattr(obj,'ancestor_mod'):
+        for mod in modlist:
+            if obj.ancestor_mod == mod.name.lower():
+                obj.ancestor_mod = mod
+                break
+    for modproc in getattr(obj,'modprocedures',[]):
+        id_mods(modproc,modlist,intrinsic_mods)
     for func in obj.functions:
-        id_mods(func,modlist)
+        id_mods(func,modlist,intrinsic_mods)
     for subroutine in obj.subroutines:
-        id_mods(subroutine,modlist)
+        id_mods(subroutine,modlist,intrinsic_mods)
     return
