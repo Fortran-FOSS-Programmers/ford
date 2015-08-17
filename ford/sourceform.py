@@ -168,7 +168,7 @@ class FortranBase(object):
         if len(self.doc) > 0:
             if len(self.doc) == 1 and ':' in self.doc[0]:
                 words = self.doc[0].split(':')[0].strip()
-                if words.lower() not in ['author','date','license','version','category','summary','deprecated','display']:
+                if words.lower() not in ['author','date','license','version','category','summary','deprecated','display','graph']:
                     self.doc.insert(0,'')
                 self.doc.append('')
             self.doc = '\n'.join(self.doc)
@@ -212,6 +212,10 @@ class FortranBase(object):
             self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url)
         elif PARA_CAPTURE_RE.search(self.doc):
             self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
+        if 'graph' not in self.meta:
+            self.meta['graph'] = self.settings['graph']
+        else:
+            self.meta['graph'] = self.meta['graph'].lower()
 
         if self.obj == 'proc' or self.obj == 'type' or self.obj == 'program':
             if 'source' not in self.meta:
@@ -677,12 +681,12 @@ class FortranCodeUnit(FortranContainer):
             self.ancestry.insert(0,item.ancestor_mod)
 
         # Recurse
+        for dtype in typeorder:
+            if dtype in self.types: dtype.correlate(project)
         for func in self.functions:
             func.correlate(project)
         for subrtn in self.subroutines:
             subrtn.correlate(project)
-        for dtype in typeorder:
-            if dtype in self.types: dtype.correlate(project)
         for interface in self.interfaces:
             interface.correlate(project)
         for absint in self.absinterfaces:
@@ -1165,7 +1169,14 @@ class FortranType(FortranContainer):
         self.all_boundprocs = copy.copy(self.boundprocs)
         # Get type of extension
         if self.extends and type(self.extends) is not str:
-            self.all_boundprocs.extend(self.extends.all_boundprocs)
+            for bp in self.extends.all_boundprocs:
+                deferred = False
+                for attr in bp.attribs:
+                    if attr.lower() == 'deferred': deferred = True
+                present = False
+                for b in self.boundprocs:
+                    if bp.name.lower() == b.name.lower(): present = True
+                if not deferred or not present: self.all_boundprocs.append(bp)
 
         # Match variables as needed (recurse)
         for i in range(len(self.variables)-1,-1,-1):
