@@ -67,15 +67,23 @@ class PageNode(object):
         if parent:
             self.topdir   = parent.topdir
             self.location = os.path.relpath(os.path.split(path)[0],self.topdir)
+            self.topnode = parent.topnode
         else:
             self.topdir   = os.path.split(path)[0]
             self.location = ''
+            self.topnode = self
 
     def __str__(self):
         #~ urlstr = "<a href='{0}/page/{1}/{2}.html'>{3}</a>"
         urlstr = "<a href='{0}'>{1}</a>"
         url = urlstr.format(os.path.join(self.base_url,'page',self.location,self.filename+'.html'),self.title)
         return url
+    
+    def __iter__(self):
+        retlist = [self]
+        for sp in self.subpages:
+            retlist.extend(list(sp.__iter__()))
+        return iter(retlist)
 
     
 def get_page_tree(topdir,md,parent=None):

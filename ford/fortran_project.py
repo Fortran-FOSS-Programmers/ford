@@ -30,7 +30,7 @@ import os
 import toposort
 
 import ford.sourceform
-
+from ford.graphs import ModuleGraph, UsesGraph
 
 INTRINSIC_MODS = {'iso_fortran_env': '<a href="https://software.intel.com/en-us/node/511041">iso_fortran_env</a>',
                   'iso_c_binding': '<a href="https://software.intel.com/en-us/node/511038">iso_c_binding</a>',
@@ -168,6 +168,11 @@ class Project(object):
         for container in ranklist:
             if type(container) != str: container.prune()
         
+        if self.settings['project_url'] == '.':
+            url = '..'
+        else:
+            url = self.settings['project_url']
+        
         for sfile in self.files:
             for module in sfile.modules:
                 for function in module.functions:
@@ -210,7 +215,7 @@ class Project(object):
                     self.absinterfaces.append(absint)
                 for dtype in program.types:
                     self.types.append(dtype)
-
+            
 
     def markdown(self,md,base_url='..'):
         """

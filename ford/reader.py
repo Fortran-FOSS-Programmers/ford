@@ -28,7 +28,10 @@ import sys
 import re
 import ford.utils
 import subprocess
-from StringIO import StringIO
+if (sys.version_info[0]>2):
+    from io import StringIO
+else:
+    from StringIO import StringIO
 
 class FortranReader(object):
     """
@@ -63,7 +66,7 @@ class FortranReader(object):
                 print('Warning: error preprocessing '+filename)
                 self.reader = open(filename,'r')
             else:
-                self.reader = StringIO(out)
+                self.reader = StringIO(str(out))
         else:
             self.reader = open(filename,'r')
         
