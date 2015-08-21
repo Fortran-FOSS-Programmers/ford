@@ -95,10 +95,13 @@ class Project(object):
                         for submod in self.files[-1].submodules:
                             self.submodules.append(submod)
                         for function in self.files[-1].functions:
+                            function.visible = True
                             self.procedures.append(function)
                         for subroutine in self.files[-1].subroutines:
+                            subroutine.visible = True
                             self.procedures.append(subroutine)
                         for program in self.files[-1].programs:
+                            program.visible = True
                             self.programs.append(program)
 
 

@@ -13,6 +13,7 @@ All Procedures &ndash; {{ project }}
 			   <tr><td>{{ proc }}</td><td>{{ proc.parent }}</td><td>{{ proc.proctype }}</td><td>{{ proc.meta['summary'] }}</td></tr>
 			 {% endfor %}
 			 </tbody></table>
+             {{ project.callgraph }}
         </div>
       </div>
 {% endblock %}

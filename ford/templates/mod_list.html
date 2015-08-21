@@ -24,6 +24,7 @@ All Modules &ndash; {{ project }}
                {%if loop.depth == 1 %}<!--{{row_class.next()}}-->{% endif %}
 			 {% endfor %}
 			 </tbody></table>
+             {{ project.usegraph }}
         </div>
       </div>
 {% endblock %}

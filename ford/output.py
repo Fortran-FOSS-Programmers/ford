@@ -34,6 +34,7 @@ import jinja2
 import ford.sourceform
 import ford.tipue_search
 import ford.utils
+from ford.graphmanager import GraphManager
 
 loc = os.path.dirname(__file__)
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
@@ -59,6 +60,27 @@ class Documentation(object):
             ford.sourceform.set_base_url('..')
             ford.pagetree.set_base_url('.,')
             data['project_url'] = '..'
+        self.graphs = GraphManager(data['project_url'],self.data['output_dir'],'graphs')
+        for item in project.files:
+            self.docs.append(FilePage(data,project,item))
+        for item in project.types:
+            self.graphs.create_graphs(item)
+            self.docs.append(TypePage(data,project,item))
+        for item in project.absinterfaces:
+            self.docs.append(AbsIntPage(data,project,item))
+        for item in project.procedures + project.submodprocedures:
+            self.graphs.create_graphs(item)
+            self.docs.append(ProcPage(data,project,item))
+        for item in project.modules + project.submodules:
+            self.graphs.create_graphs(item)
+            self.docs.append(ModulePage(data,project,item))
+        for item in project.programs:
+            self.graphs.create_graphs(item)
+            self.docs.append(ProgPage(data,project,item))
+        self.graphs.graph_all()
+        project.callgraph = self.graphs.callgraph
+        project.typegraph = self.graphs.typegraph
+        project.usegraph = self.graphs.usegraph
         if len(project.procedures) > 0:
             self.lists.append(ProcList(data,project))
         if len(project.files) > 1:
@@ -71,18 +93,6 @@ class Documentation(object):
             self.lists.append(TypeList(data,project))
         if len(project.absinterfaces) > 0:
             self.lists.append(AbsIntList(data,project))
-        for item in project.files:
-            self.docs.append(FilePage(data,project,item))
-        for item in project.types:
-            self.docs.append(TypePage(data,project,item))
-        for item in project.absinterfaces:
-            self.docs.append(AbsIntPage(data,project,item))
-        for item in project.procedures + project.submodprocedures:
-            self.docs.append(ProcPage(data,project,item))
-        for item in project.modules + project.submodules:
-            self.docs.append(ModulePage(data,project,item))
-        for item in project.programs:
-            self.docs.append(ProgPage(data,project,item))
         if pagetree:
             for item in pagetree:
                 self.pagetree.append(PagetreePage(data,project,item))
@@ -115,9 +125,11 @@ class Documentation(object):
         os.mkdir(os.path.join(out_dir,'module'), 0o755)
         os.mkdir(os.path.join(out_dir,'program'), 0o755)
         os.mkdir(os.path.join(out_dir,'src'), 0o755)
+        #~ os.mkdir(os.path.join(out_dir,'graphs'), 0o755)
         copytree(os.path.join(loc,'css'), os.path.join(out_dir,'css'))
         copytree(os.path.join(loc,'fonts'), os.path.join(out_dir,'fonts'))
         copytree(os.path.join(loc,'js'), os.path.join(out_dir,'js'))
+        self.graphs.output_graphs()
         if self.data['search'].lower() == 'true':
             copytree(os.path.join(loc,'tipuesearch'),os.path.join(out_dir,'tipuesearch'))
             self.tipue.print_output()

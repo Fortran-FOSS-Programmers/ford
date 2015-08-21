@@ -55,8 +55,44 @@ DOUBLE_PREC_RE = re.compile("double\s+precision",re.IGNORECASE)
 QUOTES_RE = re.compile("\"([^\"]|\"\")*\"|'([^']|'')*'",re.IGNORECASE)
 PARA_CAPTURE_RE = re.compile("<p>.*?</p>",re.IGNORECASE|re.DOTALL)
 
-base_url = ''
+INTRINSICS =  ['abort','abs','access','achar','acos','acosh','adjustl',
+'adjustr','aimag', 'aint','alarm','all','allocated','and','anint','any',
+'asin','asinh','associated','atan','atan2','atanh','atomic_add',
+'atomic_and','atomic_cas','atomic_define','atomic_fetch_add','atomic_fetch_and', 
+'atomic_fetch_or','atomic_fetch_xor','atomic_or','atomic_ref', 
+'atomic_xor','backtrace','bessel_j0','bessel_j1','bessel_jn','bessel_y0', 
+'bessel_y1','bessel_yn','bge','bgt','bit_size','ble','blt','btest', 
+'c_associated','c_f_pointer','c_f_procpointer','c_funloc','c_loc', 
+'c_sizeof','ceiling','char','chdir','chmod','cmplx','co_broadcast','co_max', 
+'co_min','co_reduce','co_sum','command_argument_count', 
+'compiler_options','compiler_version','complex','conjg','cos','cosh', 
+'count','cpu_time','cshift','ctime','date_and_time','dble','dcmplx','digits', 
+'dim','dot_product','dprod','dreal','dshiftl','dshiftr','dtime','eoshift', 
+'epsilon','erf','erfc','erfc_scaled','etime','execute_command_line','exit', 
+'exp','exponent','extends_type_of','fdate','fget','fgetc','floor','flush', 
+'fnum','fput','fputc','fraction','free','fseek','fstat','ftell','gamma','gerror', 
+'getarg','get_command','get_command_argument','getcwd','getenv', 
+'get_environment_variable','getgid','getlog','getpid','getuid','gmtime', 
+'hostnm','huge','hypot','iachar','iall','iand','iany','iargc','ibclr','ibits', 
+'ibset','ichar','idate','ieor','ierrno','image_index','index','int','int2','int8', 
+'ior','iparity','irand','is_iostat_end','is_iostat_eor','isatty','ishft', 
+'ishftc','isnan','itime','kill','kind','lbound','lcobound','leadz','len', 
+'len_trim','lge','lgt','link','lle','llt','lnblnk','loc','log','log10','log_gamma', 
+'logical','long','lshift','lstat','ltime','malloc','maskl','maskr','matmul','max', 
+'maxexponent','maxloc','maxval','mclock','mclock8','merge','merge_bits','min', 
+'minexponent','minloc','minval','mod','modulo','move_alloc','mvbits', 
+'nearest','new_line','nint','norm2','not','null','num_images','or','pack', 
+'parity','perror','popcnt','poppar','precision','present','product','radix', 
+'ran','rand','random_number','random_seed','range','rank','real','rename', 
+'repeat','reshape','rrspacing','rshift','same_type_as','scale','scan', 
+'secnds','second','selected_char_kind','selected_int_kind', 
+'selected_real_kind','set_exponent','shape','shifta','shiftl','shiftr', 
+'sign','signal','sin','sinh','size','sizeof','sleep','spacing','spread','sqrt', 
+'srand','stat','storage_size','sum','symlnk','system','system_clock','tan', 
+'tanh','this_image','time','time8','tiny','trailz','transfer','transpose', 
+'trim','ttynam','ubound','ucobound','umask','unlink','unpack','verify','xor']
 
+base_url = ''
 
 class FortranBase(object):
     """
@@ -73,6 +109,7 @@ class FortranBase(object):
     
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
+        self.visible = False
         if (inherited_permission!=None):
             self.permission = inherited_permission.lower()
         else:
@@ -565,9 +602,9 @@ class FortranContainer(FortranBase):
                     raise Exception("Found USE statemnt in {}".format(type(self).__name__[7:].upper()))
             elif self.CALL_RE.match(line):
                 if hasattr(self,'calls'):
-                    callval = self.CALL_RE.match(line).group()
-                    if self.CALL_RE.match(line).group() not in self.calls: 
-                        self.calls.append(callval)
+                    callval = self.CALL_RE.match(line).group(1)
+                    if callval.lower() not in self.calls and callval.lower() not in INTRINSICS: 
+                        self.calls.append(callval.lower())
                 else:
                     raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
             
@@ -656,7 +693,7 @@ class FortranCodeUnit(FortranContainer):
         typeorder = toposort.toposort_flatten(typelist)
 
         # Add procedures and types from USED modules to our lists
-        if hasattr(self.parent,'pub_procs'):
+        if hasattr(self,'pub_procs'):
             for mod in self.uses:
                 if type(mod) is str: continue
                 self.pub_procs.extend(mod.pub_procs)
@@ -667,8 +704,11 @@ class FortranCodeUnit(FortranContainer):
         # Match up called procedures
         if hasattr(self,'calls'):
             for i in range(len(self.calls)):
-                for proc in self.all_procs:
-                    if self.calls[i] == proc.name:
+                fileprocs = []
+                if self.parobj == 'sourcefile':
+                    fileprocs = self.parent.subroutines + self.parent.functions
+                for proc in self.all_procs + fileprocs:
+                    if self.calls[i].lower() == proc.name.lower():
                         self.calls[i] = proc
                         break
 
@@ -727,6 +767,8 @@ class FortranCodeUnit(FortranContainer):
             self.modfunctions = [obj for obj in self.modfunctions if obj.permission in self.display]
 
         # Recurse
+        for obj in self.functions + self.subroutines + self.types + self.interfaces + getattr(self,'modprocedures',[]) + getattr(self,'modfunctions',[]) + getattr(self,'modsubroutines',[]):
+            obj.visible = True
         for obj in self.functions + self.subroutines + self.types + getattr(self,'modprocedures',[]) + getattr(self,'modfunctions',[]) + getattr(self,'modsubroutines',[]):
             obj.prune()
 
@@ -786,6 +828,7 @@ class FortranModule(FortranCodeUnit):
         self.absinterfaces = []
         self.types = []
         self.descendants = []
+        self.visible = True
 
     def _cleanup(self):
         # Create list of all local procedures. Ones coming from other modules
@@ -793,11 +836,8 @@ class FortranModule(FortranCodeUnit):
         self.all_procs = self.functions + self.subroutines
         self.pub_procs = []
         for interface in self.interfaces:
-            if interface.name:
+            if not interface.abstract:
                 self.all_procs.append(interface)
-            else: # FIXME: Think this is legacy and could be deleted.
-                self.all_procs.extend(interface.functions)
-                self.all_procs.extend(interface.subroutines)
 
         for name in self.public_list:
             for var in self.variables + self.all_procs + self.types + self.interfaces + self.absinterfaces:
@@ -839,11 +879,8 @@ class FortranSubmodule(FortranModule):
         # will be added later, during correlation.
         self.all_procs = self.functions + self.subroutines
         for interface in self.interfaces:
-            if interface.name:
+            if not interface.abstract:
                 self.all_procs.append(interface)
-            else:
-                self.all_procs.extend(interface.functions)
-                self.all_procs.extend(interface.subroutines)
         return
     
     
@@ -908,11 +945,8 @@ class FortranSubroutine(FortranCodeUnit):
         self.all_procs = self.functions + self.subroutines
         self.pub_procs = []
         for interface in self.interfaces:
-            if interface.name:
+            if not interface.abstract:
                 self.all_procs.append(interface)
-            else:
-                self.all_procs.extend(interface.functions)
-                self.all_procs.extend(interface.subroutines)
 
         for varname in self.optional_list:
             for var in self.variables:
@@ -1018,11 +1052,8 @@ class FortranFunction(FortranCodeUnit):
         self.all_procs = self.functions + self.subroutines
         self.pub_procs = []
         for interface in self.interfaces:
-            if interface.name:
+            if not interface.abstract:
                 procs.append(interface)
-            else:
-                procs.extend(interface.functions)
-                procs.extend(interface.subroutines)
 
         for varname in self.optional_list:
             for var in self.variables:
@@ -1083,11 +1114,8 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.all_procs = self.functions + self.subroutines
         #~ self.pub_procs = []
         for interface in self.interfaces:
-            if interface.name:
+            if not interface.abstract:
                 self.all_procs.append(interface)
-            else:
-                self.all_procs.extend(interface.functions)
-                self.all_procs.extend(interface.subroutines)
         return
 
     
@@ -1110,11 +1138,8 @@ class FortranProgram(FortranCodeUnit):
         self.all_procs = self.functions + self.subroutines
         self.pub_procs = []
         for interface in self.interfaces:
-            if interface.name:
+            if not interface.abstract:
                 procs.append(interface)
-            else:
-                procs.extend(interface.functions)
-                procs.extend(interface.subroutines)
 
     
     
@@ -1205,6 +1230,8 @@ class FortranType(FortranContainer):
         """
         self.boundprocs = [ obj for obj in self.boundprocs if obj.permission in self.display ]
         self.variables = [ obj for obj in self.variables if obj.permission in self.display ]
+        for obj in self.boundprocs + self.variables:
+            obj.visible = True
 
         
     
@@ -1303,6 +1330,7 @@ class FortranVariable(FortranBase):
         self.initial = initial
         self.dimension = ''
         self.meta = {}
+        self.visible = False
         
         indexlist = []
         indexparen = self.name.find('(')
