@@ -63,61 +63,12 @@ def stdout_redirector(stream):
     finally:
         sys.stdout = old_stdout
 
-def main():
-    proj_data, proj_docs, md = initialize()
-    def process():
-        if proj_data['relative']: proj_data['project_url'] = '.'
-        # Parse the files in your project
-        project = ford.fortran_project.Project(proj_data)
-        if len(project.files) < 1:
-            print("Error: No source files with appropriate extension found in specified directory.")
-            sys.exit(1)        
-        # Convert the documentation from Markdown to HTML. Make sure to properly
-        # handle LateX and metadata.
-        if proj_data['relative']:
-            project.markdown(md,'..')
-        else:
-            project.markdown(md,proj_data['project_url'])
-        project.correlate()
-        if proj_data['relative']:
-            project.make_links('..')
-        else:
-            project.make_links(proj_data['project_url'])
-        # Convert summaries and descriptions to HTML
-        if proj_data['relative']: ford.sourceform.set_base_url('.')
-        if 'summary' in proj_data:
-            proj_data['summary'] = md.convert(proj_data['summary'])
-            proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url']),project)
-        if 'author_description' in proj_data:
-            proj_data['author_description'] = md.convert(proj_data['author_description'])
-            proj_data['author_description'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url']),project)
-        proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url']),project)
-        # Process any pages
-        if 'page_dir' in proj_data:
-            page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md)
-            print()
-        else:
-            page_tree = None
-        proj_data['pages'] = page_tree
-        # Produce the documentation using Jinja2. Output it to the desired location
-        # and copy any files that are needed (CSS, JS, images, fonts, source files,
-        # etc.)
-        print("Creating HTML documentation...")
-        docs = ford.output.Documentation(proj_data,proj_docs_,project,page_tree)
-        docs.writeout()
-        print('')
-
-    if proj_data['quiet'].lower() == 'true':
-        f = StringIO()
-        with stdout_redirector(f):
-            process()
-    else:
-        process()
-    
-    return 0
-
 
 def initialize():
+    """
+    Method to parse and check configurations of FORD, get the project's 
+    global documentation, and create the Markdown reader.
+    """
     # Setup the command-line options and parse them.
     parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
     parser.add_argument("project_file",help="file containing the description and settings for the project",
@@ -140,33 +91,30 @@ def initialize():
                         version="{}, version {}".format(__appname__,__version__))
     parser.add_argument("--debug",dest="dbg",action="store_true",
                         help="display traceback if fatal exception occurs")
-    
+    # Get options from command-line
     args = parser.parse_args()
-
+    # Set up Markdown reader
     md_ext = ['markdown.extensions.meta','markdown.extensions.codehilite',
               'markdown.extensions.extra',MathJaxExtension()]
     md = markdown.Markdown(extensions=md_ext, output_format="html5",
     extension_configs={})
-    
     # Read in the project-file. This will contain global documentation (which
     # will appear on the homepage) as well as any information about the project
     # and settings for generating the documentation.
     proj_docs = args.project_file.read()
     md.convert(proj_docs)
-    
-        # Remake the Markdown object with settings parsed from the project_file
+    # Remake the Markdown object with settings parsed from the project_file
     if 'md_base_dir' in md.Meta: md_base = md.Meta['md_base_dir'][0] 
     else: md_base = os.path.dirname(args.project_file.name)
     md_ext.append('markdown_include.include')
     if 'md_extensions' in md.Meta: md_ext.extend(md.Meta['md_extensions'])
     md = markdown.Markdown(extensions=md_ext, output_format="html5",
             extension_configs={'markdown_include.include': {'base_path': md_base}})
-
     md.reset()
+    # Re-read the project file
     proj_docs = md.convert(proj_docs)
     proj_data = md.Meta
     md.reset()
-
     # Get the default options, and any over-rides, straightened out
     options = ['project_dir','extensions','output_dir','css','exclude',
                'project','author','author_description','author_pic',
@@ -208,7 +156,6 @@ def initialize():
                }
     listopts = ['extensions','display','extra_vartypes','project_dir',
                 'exclude','exclude_dir','macro','extra_mods']
-    
     if args.warn:
         args.warn = 'true'
     else:
@@ -221,7 +168,6 @@ def initialize():
         args.search = 'false'
     else:
         del args.search
-
     for option in options:
         if hasattr(args,option) and getattr(args,option):
             proj_data[option] = getattr(args,option)
@@ -232,9 +178,9 @@ def initialize():
                 proj_data[option] = '\n'.join(proj_data[option])
         elif option in defaults:
            proj_data[option] = defaults[option]
-    
     proj_data['display'] = [ item.lower() for item in proj_data['display'] ]
-
+    relative = (proj_data['project_url'] == '')
+    proj_data['relative'] = relative
     # Make sure no project_dir is contained within output_dir
     for projdir in proj_data['project_dir']:
         proj_path = ford.utils.split_path(projdir)
@@ -248,7 +194,7 @@ def initialize():
         else:
             print('Error: directory containing source-code {} a subdirectory of output directory {}.'.format(proj_data['output_dir'],projdir))
             sys.exit(1)
-        
+    # Check that none of the docmarks are the same
     if proj_data['docmark'] == proj_data['predocmark'] != '':
         print('Error: docmark and predocmark are the same.')
         sys.exit(1)
@@ -267,7 +213,7 @@ def initialize():
     if proj_data['predocmark'] == proj_data['predocmark_alt'] != '':
         print('Error: predocmark and predocmark_alt are the same.')
         sys.exit(1)
-
+    # Check that gfortrran is present for preprocessing
     try:
         devnull = open(os.devnull)
         subprocess.Popen(["gfortran","--version"], stdout=devnull, stderr=devnull).communicate()
@@ -275,11 +221,66 @@ def initialize():
         if proj_data['preprocess'].lower() == 'true':
             print("Warning: gfortran not found; preprocessing turned off")
             proj_data['preprocess'] = 'false'
-
-    relative = (proj_data['project_url'] == '')
-    proj_data['relative'] = relative
-
+    # Return project data, docs, and the Markdown reader
     return (proj_data, proj_docs, md)
 
+
+def main(proj_data,proj_docs,md):
+    """
+    Main driver of FORD.
+    """
+    if proj_data['relative']: proj_data['project_url'] = '.'
+    # Parse the files in your project
+    project = ford.fortran_project.Project(proj_data)
+    if len(project.files) < 1:
+        print("Error: No source files with appropriate extension found in specified directory.")
+        sys.exit(1)        
+    # Convert the documentation from Markdown to HTML. Make sure to properly
+    # handle LateX and metadata.
+    if proj_data['relative']:
+        project.markdown(md,'..')
+    else:
+        project.markdown(md,proj_data['project_url'])
+    project.correlate()
+    if proj_data['relative']:
+        project.make_links('..')
+    else:
+        project.make_links(proj_data['project_url'])
+    # Convert summaries and descriptions to HTML
+    if proj_data['relative']: ford.sourceform.set_base_url('.')
+    if 'summary' in proj_data:
+        proj_data['summary'] = md.convert(proj_data['summary'])
+        proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url']),project)
+    if 'author_description' in proj_data:
+        proj_data['author_description'] = md.convert(proj_data['author_description'])
+        proj_data['author_description'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url']),project)
+    proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url']),project)
+    # Process any pages
+    if 'page_dir' in proj_data:
+        page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md)
+        print()
+    else:
+        page_tree = None
+    proj_data['pages'] = page_tree
+    # Produce the documentation using Jinja2. Output it to the desired location
+    # and copy any files that are needed (CSS, JS, images, fonts, source files,
+    # etc.)
+    print("Creating HTML documentation...")
+    docs = ford.output.Documentation(proj_data,proj_docs_,project,page_tree)
+    docs.writeout()
+    print('')
+    return 0
+
+
+def run():
+    proj_data, proj_docs, md = initialize()
+    if proj_data['quiet'].lower() == 'true':
+        f = StringIO()
+        with stdout_redirector(f):
+            main(proj_data,proj_docs,md)
+    else:
+        main(proj_data,proj_docs,md)
+
+
 if __name__ == '__main__':
-    main()
+    run()

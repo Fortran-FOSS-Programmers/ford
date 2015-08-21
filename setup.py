@@ -50,7 +50,7 @@ setup(
                       'jinja2','pygments','beautifulsoup4'],
   entry_points = {
     'console_scripts': [
-        'ford=ford:main',
+        'ford=ford:run',
     ],
   }
 )
