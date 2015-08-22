@@ -45,6 +45,7 @@ class GraphManager(object):
     """
     
     def __init__(self,base_url,outdir,graphdir):
+        self.graph_objs = []
         self.modules = set()
         self.programs = set()
         self.procedures = set()
@@ -56,39 +57,52 @@ class GraphManager(object):
         self.typegraph = None
         self.callgraph = None
 
-    def create_graphs(self, obj):
-        if isinstance(obj,FortranModule):
-            if obj.meta['graph'] == 'true':
-                obj.usesgraph = ford.graphs.UsesGraph(obj,self.webdir)
-                obj.usedbygraph = ford.graphs.UsedByGraph(obj,self.webdir)
-                self.modules.add(obj)
-            else:
-                obj.usesgraph = None
-                obj.usedbygraph = None
-        elif isinstance(obj,FortranType):
-            if obj.meta['graph'] == 'true':
-                obj.inhergraph = ford.graphs.InheritsGraph(obj,self.webdir)
-                obj.inherbygraph = ford.graphs.InheritedByGraph(obj,self.webdir)
-                self.types.add(obj)
-            else:
-                obj.inhergraph = None
-                obj.inherbygraph = None
-        elif isinstance(obj,(FortranFunction,FortranSubroutine,FortranInterface)):
-            if obj.meta['graph'] == 'true':
-                obj.callsgraph = ford.graphs.CallsGraph(obj,self.webdir)
-                obj.calledbygraph = ford.graphs.CalledByGraph(obj,self.webdir)
-                self.procedures.add(obj)
-            else:
-                obj.callsgraph = None
-                obj.calledbygraph = None
-        elif isinstance(obj,FortranProgram):
-            if obj.meta['graph'] == 'true':
-                obj.usesgraph = ford.graphs.UsesGraph(obj,self.webdir)
-                obj.callsgraph = ford.graphs.CallsGraph(obj,self.webdir)
-                self.programs.add(obj)
-            else:
-                obj.usesgraph = None
-                obj.callsgraph = None
+    def register(self,obj):
+        ford.graphs.FortranGraph.data.register(obj,type(obj))
+        self.graph_objs.append(obj)
+        
+    def graph_all(self):
+        for obj in self.graph_objs:
+            if isinstance(obj,FortranModule):
+                if obj.meta['graph'] == 'true':
+                    obj.usesgraph = ford.graphs.UsesGraph(obj,self.webdir)
+                    obj.usedbygraph = ford.graphs.UsedByGraph(obj,self.webdir)
+                    self.modules.add(obj)
+                else:
+                    obj.usesgraph = None
+                    obj.usedbygraph = None
+            elif isinstance(obj,FortranType):
+                if obj.meta['graph'] == 'true':
+                    obj.inhergraph = ford.graphs.InheritsGraph(obj,self.webdir)
+                    obj.inherbygraph = ford.graphs.InheritedByGraph(obj,self.webdir)
+                    self.types.add(obj)
+                else:
+                    obj.inhergraph = None
+                    obj.inherbygraph = None
+            elif isinstance(obj,(FortranFunction,FortranSubroutine,FortranInterface)):
+                if obj.meta['graph'] == 'true':
+                    obj.callsgraph = ford.graphs.CallsGraph(obj,self.webdir)
+                    obj.calledbygraph = ford.graphs.CalledByGraph(obj,self.webdir)
+                    self.procedures.add(obj)
+                else:
+                    obj.callsgraph = None
+                    obj.calledbygraph = None
+            elif isinstance(obj,FortranProgram):
+                if obj.meta['graph'] == 'true':
+                    obj.usesgraph = ford.graphs.UsesGraph(obj,self.webdir)
+                    obj.callsgraph = ford.graphs.CallsGraph(obj,self.webdir)
+                    self.programs.add(obj)
+                else:
+                    obj.usesgraph = None
+                    obj.callsgraph = None
+        usenodes = list(self.modules)
+        callnodes = list(self.procedures)
+        for p in self.programs:
+            if p.usesgraph.numnodes > 1: usenodes.append(p)
+            if p.callsgraph.numnodes > 1: callnodes.append(p)
+        self.usegraph = ford.graphs.ModuleGraph(usenodes,self.webdir,'module~~graph')
+        self.typegraph = ford.graphs.TypeGraph(self.types,self.webdir,'type~~graph')
+        self.callgraph = ford.graphs.CallGraph(callnodes,self.webdir,'call~~graph')
 
     def output_graphs(self):
         os.mkdir(self.outdir, 0o755)
@@ -110,14 +124,4 @@ class GraphManager(object):
             self.typegraph.create_svg(self.outdir)
         if self.callgraph:
             self.callgraph.create_svg(self.outdir)
-        
-    def graph_all(self):
-        usenodes = list(self.modules)
-        callnodes = list(self.procedures)
-        for p in self.programs:
-            if p.usesgraph.numnodes > 1: usenodes.append(p)
-            if p.callsgraph.numnodes > 1: callnodes.append(p)
-        self.usegraph = ford.graphs.ModuleGraph(usenodes,self.webdir,'module~~graph')
-        self.typegraph = ford.graphs.TypeGraph(self.types,self.webdir,'type~~graph')
-        self.callgraph = ford.graphs.CallGraph(callnodes,self.webdir,'call~~graph')
 

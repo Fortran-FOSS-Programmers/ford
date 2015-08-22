@@ -20,7 +20,15 @@
     <div class="col-lg-9" id='text'>
     <h2>{{ interface.permission }} interface {{ interface.name }}</h2>
 	 {{ interface.doc }}
-    {% if interface.doc %}<br>{% endif %}
+     {% if interface.callsgraph %}
+     <h3>Calls</h3>
+     {{ interface.callsgraph }}
+     {% endif %}
+     {% if interface.calledbygraph %}
+     <h3>Called By</h3>
+     {{ interface.calledbygraph }}
+     {% endif %}
+    {% if interface.doc or interface.callsgraph or interface.calledbygraph %}<br>{% endif %}
 	
 	{% if interface.functions|length > 0 %}
 	 <h2>Functions</h2>

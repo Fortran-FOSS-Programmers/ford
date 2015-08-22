@@ -19,11 +19,16 @@
     
     <div class="col-lg-9" id='text'>
     {% if module.obj == 'submodule' %}{{ macros.ancestry(module) }}{% endif %}
-    {% if module.descendants|length > 0 %}{{ macros.descendants(module) }}{% endif %}
     {{ macros.use_list(module) }}
-    {{ module.graph }}
+    {{ module.usesgraph }}
+    {% if module.descendants|length > 0 %}{{ macros.descendants(module) }}{% endif %}
     {{ module.doc }}
-    {% if module.doc or module.graph %}<br>{% endif %}
+    {% if module.doc and not module.usedbygraph %}<br>{% endif %}
+    {% if module.usedbygraph %}
+    <h3>Used By</h3>
+    {{ module.usedbygraph }}
+    <br>
+    {% endif %}
 
     {% if module.variables|length > 0 %}
     <section>

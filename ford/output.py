@@ -61,26 +61,34 @@ class Documentation(object):
             ford.pagetree.set_base_url('.,')
             data['project_url'] = '..'
         self.graphs = GraphManager(data['project_url'],self.data['output_dir'],'graphs')
-        for item in project.files:
-            self.docs.append(FilePage(data,project,item))
         for item in project.types:
-            self.graphs.create_graphs(item)
-            self.docs.append(TypePage(data,project,item))
-        for item in project.absinterfaces:
-            self.docs.append(AbsIntPage(data,project,item))
+            self.graphs.register(item)
         for item in project.procedures + project.submodprocedures:
-            self.graphs.create_graphs(item)
-            self.docs.append(ProcPage(data,project,item))
+            self.graphs.register(item)
         for item in project.modules + project.submodules:
-            self.graphs.create_graphs(item)
-            self.docs.append(ModulePage(data,project,item))
+            self.graphs.register(item)
         for item in project.programs:
-            self.graphs.create_graphs(item)
-            self.docs.append(ProgPage(data,project,item))
+            self.graphs.register(item)
         self.graphs.graph_all()
         project.callgraph = self.graphs.callgraph
         project.typegraph = self.graphs.typegraph
         project.usegraph = self.graphs.usegraph
+        for item in project.files:
+            self.docs.append(FilePage(data,project,item))
+        for item in project.types:
+            self.graphs.register(item)
+            self.docs.append(TypePage(data,project,item))
+        for item in project.absinterfaces:
+            self.docs.append(AbsIntPage(data,project,item))
+        for item in project.procedures + project.submodprocedures:
+            self.graphs.register(item)
+            self.docs.append(ProcPage(data,project,item))
+        for item in project.modules + project.submodules:
+            self.graphs.register(item)
+            self.docs.append(ModulePage(data,project,item))
+        for item in project.programs:
+            self.graphs.register(item)
+            self.docs.append(ProgPage(data,project,item))
         if len(project.procedures) > 0:
             self.lists.append(ProcList(data,project))
         if len(project.files) > 1:

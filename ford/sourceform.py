@@ -693,10 +693,10 @@ class FortranCodeUnit(FortranContainer):
         typeorder = toposort.toposort_flatten(typelist)
 
         # Add procedures and types from USED modules to our lists
-        if hasattr(self,'pub_procs'):
+        if hasattr(self,'pub_procs') or isinstance(self,FortranSubmodule):
             for mod in self.uses:
                 if type(mod) is str: continue
-                self.pub_procs.extend(mod.pub_procs)
+                if not isinstance(self,FortranSubmodule): self.pub_procs.extend(mod.pub_procs)
                 self.all_procs.extend(mod.pub_procs)
                 self.all_absinterfaces.extend(mod.all_absinterfaces)
                 self.all_types.extend(mod.all_types)
@@ -1204,8 +1204,10 @@ class FortranType(FortranContainer):
                 if not deferred or not present: self.all_boundprocs.append(bp)
 
         # Match variables as needed (recurse)
-        for i in range(len(self.variables)-1,-1,-1):
-            self.variables[i].correlate(project)
+        #~ for i in range(len(self.variables)-1,-1,-1):
+            #~ self.variables[i].correlate(project)
+        for v in self.variables:
+            v.correlate(project)
         # Match boundprocs with procedures
         # FIXME: This is not at all modular because must process non-generic bound procs first--could there be a better way to do it
         for proc in self.boundprocs:
@@ -1356,7 +1358,6 @@ class FortranVariable(FortranBase):
 
 
     def correlate(self,project):
-        if self.proto and self.proto[0] == '*': self.proto[0] = '*' #FIXME: Is this line necessary?
         if (self.vartype == "type" or self.vartype == "class") and self.proto and self.proto[0] != '*':
             for dtype in self.parent.all_types:
                 if dtype.name.lower() == self.proto[0].lower(): 

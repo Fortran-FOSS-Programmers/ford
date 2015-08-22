@@ -19,9 +19,17 @@
     
     <div class="col-lg-9" id='text'>
 	{% set procedure = interface.procedure %}
-    {% if interface.doc %}
+    {% if interface.doc or interface.callsgraph or interface.calledbygraph %}
     <h2>{% if interface.abstract %}abstract {% endif %}interface</h2>
     {{ interface.doc }}
+    {% if interface.callsgraph %}
+    <h3>Calls</h3>
+    {{ interface.callsgraph }}
+    {% endif %}
+    {% if interface.calledbygraph %}
+    <h3>Called By</h3>
+    {{ interface.calledbygraph }}
+    {% endif %}
     <h2>{{ macros.proc_line(procedure,False) }}</h2>
     {% else %}
     <h2>{% if interface.abstract %}abstract {% endif %}interface <br>

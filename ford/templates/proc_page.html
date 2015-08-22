@@ -42,6 +42,14 @@
     <h3>Description</h3>
     {{ procedure.doc }}
     {% endif %}
+    {% if procedure.callsgraph %}
+     <h3>Calls</h3>
+     {{ procedure.callsgraph }}
+     {% endif %}
+     {% if procedure.calledbygraph %}
+     <h3>Called By</h3>
+     {{ procedure.calledbygraph }}
+     {% endif %}
     <br>
     {% if procedure.variables|length > 0 %}
     <section>

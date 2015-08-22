@@ -31,12 +31,14 @@ if (sys.version_info[0]>2):
     from urllib.parse import quote
 else:
     from urllib import quote
+from collections import namedtuple
 
 from graphviz import Digraph
 
 from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule
 
 HYPERLINK_RE = re.compile("^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$",re.IGNORECASE)
+
 
 class GraphData(object):
     """
@@ -92,7 +94,7 @@ class BaseNode(object):
     colour = '#777777'
     def __init__(self,obj):
         self.attribs = {'color':self.colour,
-                        'fountcolor':'white',
+                        'fontcolor':'white',
                         'style':'filled'}
         self.fromstr = type(obj) is str
         self.url = None
@@ -124,10 +126,6 @@ class ModNode(BaseNode):
                 n = gd.get_node(u,FortranModule)
                 n.used_by.add(self)
                 self.uses.add(n)
-            #~ for d in obj.descendants:
-                #~ n = gd.get_node(d,FortranSubmodule)
-                #~ n.ancestor = self
-                #~ self.children.add(n)
 
 
 class SubmodNode(ModNode):
@@ -147,15 +145,11 @@ class TypeNode(BaseNode):
     colour = '#5cb85c'
     def __init__(self,obj,gd):
         super(TypeNode,self).__init__(obj)
-        #~ self.abstract = False
         self.ancestor = None
         self.children = set()
-        self.comp_types = dict() #set()
-        self.comp_of = dict()#set()
+        self.comp_types = dict()
+        self.comp_of = dict()
         if not self.fromstr:
-            #~ self.abstract = obj.abstract
-            #~ self.name = obj.name
-            #~ self.ident = obj.ident
             if obj.extends and getattr(obj.extends,'visible',True):
                 self.ancestor = gd.get_node(obj.extends,FortranType)
                 self.ancestor.children.add(self)
@@ -199,8 +193,6 @@ class ProcNode(BaseNode):
         self.interfaced_by = set()
         self.proctype = ''
         if not self.fromstr:
-            #~ self.name = obj.name
-            #~ self.ident = obj.ident
             for u in getattr(obj,'uses',[]):
                 n = gd.get_node(u,FortranModule)
                 n.used_by.add(self)
@@ -224,6 +216,7 @@ class ProcNode(BaseNode):
                         n.interfaced_by.add(self)
                         self.interfaces.add(n)
 
+
 class ProgNode(BaseNode):
     colour = '#f0ad4e'
     def __init__(self,obj,gd):
@@ -231,8 +224,6 @@ class ProgNode(BaseNode):
         self.uses = set()
         self.calls = set()
         if not self.fromstr:
-            #~ self.name = obj.name
-            #~ self.ident = obj.ident
             for u in obj.uses:
                 n = gd.get_node(u,FortranModule)
                 n.used_by.add(self)
@@ -262,9 +253,9 @@ class FortranGraph(object):
             self.root.append(self.data.get_node(root))
         self.webdir = webdir
         if ident:
-            self.ident = ident
+            self.ident = ident + '~~' + self.__class__.__name__
         else:
-            self.ident = root.ident
+            self.ident = root.get_dir() + '~~' + root.ident + '~~' + self.__class__.__name__
         self.imgfile = self.ident
         self.dot = Digraph(self.ident,
                            graph_attr={'size':'8.90625,1000.0',
@@ -299,11 +290,31 @@ class FortranGraph(object):
 
     def __str__(self):
         if self.numnodes <= 1: return ''
+        rettext = """
+            <img class="depgraph" alt="dependency graph" src={} usemap="#{}">
+            {}
+            <div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div>
+            <div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog">
+              <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  </div>
+                  <div class="modal-body">
+                    {}
+                  </div>
+                </div>
+              </div>
+            </div>
+            """
         wdir = self.webdir.strip()
         if wdir[-1] == '/': wdir = wdir[0:-1]
         link = quote(wdir + '/' + self.imgfile + '.' + self.dot.format)
-        return '<img class="depgraph" alt="dependency graph" src={} ' \
-               'usemap="#{}">\n{}'.format(link,self.ident,self.linkmap)
+        return rettext.format(link,self.ident,self.linkmap,GRAPH_KEY)
+    
+    def __nonzero__(self):
+        return(bool(self.__str__()))
     
     @classmethod
     def reset(cls):
@@ -460,6 +471,7 @@ class CallsGraph(FortranGraph):
             for p in getattr(n,'interfaces',[]):
                 self.dot.edge(n.ident,p.ident,style='dashed')
 
+
 class CalledByGraph(FortranGraph):
     def add_more_nodes(self,nodes):
         """
@@ -467,12 +479,13 @@ class CalledByGraph(FortranGraph):
         nodes. Adds appropriate edges between them.
         """
         for n in nodes:
+            if isinstance(n,ProgNode): continue
             self.add_node([x for x in n.called_by if x != n])
             for p in n.called_by:
                 self.dot.edge(p.ident,n.ident)
             self.add_node(getattr(n,'interfaced_by',[]))
             for p in getattr(n,'interfaced_by',[]):
-                self.dot.edge(n.ident,p.ident,style='dashed')
+                self.dot.edge(p.ident,n.ident,style='dashed')
 
 
 class BadType(Exception):
@@ -485,3 +498,61 @@ class BadType(Exception):
     def __str__(self):
         return repr(self.value)
     
+
+# Generate GRAPH_KEY
+gd = GraphData()
+class Proc(object):
+    def __init__(self,name,proctype):
+        self.name = name
+        self.proctype = proctype
+        self.ident = ''
+    def get_url(self):
+        return ''
+    def get_dir(self):
+        return ''
+    
+sub = Proc('Subroutine','Subroutine')
+func = Proc('Function','Function')
+intr = Proc('Interface','Interface')
+gd.register('Module',FortranModule)
+gd.register('Submodule',FortranSubmodule)
+gd.register('Type',FortranType)
+gd.register(sub,FortranSubroutine)
+gd.register(func,FortranFunction)
+gd.register(intr,FortranInterface)
+gd.register('Unknown Procedure Type',FortranSubroutine)
+gd.register('Program',FortranProgram)
+dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
+                                      #~ 'rankdir':'LR',
+                                      'concentrate':'true'},
+                          node_attr={'shape':'box',
+                                     'height':'0.0',
+                                     'margin':'0.08',
+                                     'fontname':'Helvetica',
+                                     'fontsize':'10.5'},
+                          edge_attr={'fontname':'Helvetica',
+                                     'fontsize':'9.5'},
+                          format='svg', engine='dot')
+for n in ['Module','Submodule','Type',sub,func,intr,'Unknown Procedure Type','Program']:
+    dot.node(getattr(n,'name',n),**gd.get_node(n).attribs)
+dot.node('This Page\'s Entity')
+svg = dot.pipe().decode('utf-8')
+GRAPH_KEY = """
+Nodes of different coloured nodes represent the following:
+{}
+<h5>Module Graph</h5>
+<p>Solid arrows point from a parent (sub)module to the submodule which is
+descended from it. Dashed arrows point from a module being used to the
+module using it.</p>
+<h5>Type Graph</h5>
+<p>Solid arrows point from one derived type to another which extends
+(inherits from) it. Dashed arrows point from a derived type to another
+type containing it as a components, with a label listing the name(s) of
+said component(s).</p>
+<h5>Call Graph</h5>
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.</p>
+""".format(svg)
+

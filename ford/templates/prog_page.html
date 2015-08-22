@@ -19,8 +19,14 @@
     
     <div class="col-lg-9" id='text'>
     {{ macros.use_list(program) }}
+    {{ program.usesgraph }}
+    {% if program.usesgraph %}<br><br>{% endif %}
     {{ program.doc }}
-    {% if program.doc %}<br>{% endif %}
+    {% if program.callsgraph %}
+     <h3>Calls</h3>
+     {{ program.callsgraph }}
+     {% endif %}
+    {% if program.doc or program.callsgraph %}<br>{% endif %}
 
     {% if program.variables|length > 0 %}
     <section>
