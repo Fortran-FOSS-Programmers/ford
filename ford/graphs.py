@@ -538,7 +538,7 @@ for n in ['Module','Submodule','Type',sub,func,intr,'Unknown Procedure Type','Pr
 dot.node('This Page\'s Entity')
 svg = dot.pipe().decode('utf-8')
 GRAPH_KEY = """
-Nodes of different coloured nodes represent the following:
+Nodes of different colours represent the following:
 {}
 <h5>Module Graph</h5>
 <p>Solid arrows point from a parent (sub)module to the submodule which is
