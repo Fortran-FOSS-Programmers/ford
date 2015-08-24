@@ -133,22 +133,22 @@ class Project(object):
         # Get the order to process other correlations with
         deplist = {}
         for mod in self.modules:
-            uselist = mod.uses
+            uselist = [m[0] for m in mod.uses]
             for proc in mod.subroutines:
-                uselist.extend(proc.uses)
+                uselist.extend([m[0] for m in proc.uses])
             for proc in mod.functions:
-                uselist.extend(proc.uses)
+                uselist.extend([m[0] for m in proc.uses])
             uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
             deplist[mod] = set(uselist)
         for mod in self.submodules:
             if type(mod.ancestor_mod) is ford.sourceform.FortranModule:
-                uselist = mod.uses
+                uselist = [m[0] for m in mod.uses]
                 for proc in mod.subroutines:
-                    uselist.extend(proc.uses)
+                    uselist.extend([m[0] for m in proc.uses])
                 for proc in mod.functions:
-                    uselist.extend(proc.uses)
+                    uselist.extend([m[0] for m in proc.uses])
                 for proc in mod.modprocedures:
-                    uselist.extend(proc.uses)
+                    uselist.extend([m[0] for m in proc.uses])
                 uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
                 if mod.ancestor:
                     if type(mod.ancestor) is ford.sourceform.FortranSubmodule:
@@ -249,12 +249,12 @@ def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
     Match USE statements up with the right modules
     """
     for i in range(len(obj.uses)):
-        if obj.uses[i].lower() in intrinsic_mods:
-            obj.uses[i] = intrinsic_mods[obj.uses[i].lower()]
+        if obj.uses[i][0].lower() in intrinsic_mods:
+            obj.uses[i] = [intrinsic_mods[obj.uses[i][0].lower()], obj.uses[i][1]]
             continue
         for candidate in modlist:
-            if obj.uses[i].lower() == candidate.name.lower():
-                obj.uses[i] = candidate
+            if obj.uses[i][0].lower() == candidate.name.lower():
+                obj.uses[i] = [candidate, obj.uses[i][1]]
                 break
     if getattr(obj,'ancestor',None):
         for submod in submodlist:

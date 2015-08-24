@@ -76,37 +76,36 @@ class Documentation(object):
         project.callgraph = self.graphs.callgraph
         project.typegraph = self.graphs.typegraph
         project.usegraph = self.graphs.usegraph
-        for item in project.files:
-            self.docs.append(FilePage(data,project,item))
-        for item in project.types:
-            self.graphs.register(item)
-            self.docs.append(TypePage(data,project,item))
-        for item in project.absinterfaces:
-            self.docs.append(AbsIntPage(data,project,item))
-        for item in project.procedures + project.submodprocedures:
-            self.graphs.register(item)
-            self.docs.append(ProcPage(data,project,item))
-        for item in project.modules + project.submodules:
-            self.graphs.register(item)
-            self.docs.append(ModulePage(data,project,item))
-        for item in project.programs:
-            self.graphs.register(item)
-            self.docs.append(ProgPage(data,project,item))
-        if len(project.procedures) > 0:
-            self.lists.append(ProcList(data,project))
-        if len(project.files) > 1:
-            self.lists.append(FileList(data,project))
-        if len(project.modules + project.submodules) > 0:
-            self.lists.append(ModList(data,project))
-        if len(project.programs) > 1:
-            self.lists.append(ProgList(data,project))
-        if len(project.types) > 0:
-            self.lists.append(TypeList(data,project))
-        if len(project.absinterfaces) > 0:
-            self.lists.append(AbsIntList(data,project))
-        if pagetree:
-            for item in pagetree:
-                self.pagetree.append(PagetreePage(data,project,item))
+        try:
+            for item in project.files:
+                self.docs.append(FilePage(data,project,item))
+            for item in project.types:
+                self.docs.append(TypePage(data,project,item))
+            for item in project.absinterfaces:
+                self.docs.append(AbsIntPage(data,project,item))
+            for item in project.procedures + project.submodprocedures:
+                self.docs.append(ProcPage(data,project,item))
+            for item in project.modules + project.submodules:
+                self.docs.append(ModulePage(data,project,item))
+            for item in project.programs:
+                self.docs.append(ProgPage(data,project,item))
+            if len(project.procedures) > 0:
+                self.lists.append(ProcList(data,project))
+            if len(project.files) > 1:
+                self.lists.append(FileList(data,project))
+            if len(project.modules + project.submodules) > 0:
+                self.lists.append(ModList(data,project))
+            if len(project.programs) > 1:
+                self.lists.append(ProgList(data,project))
+            if len(project.types) > 0:
+                self.lists.append(TypeList(data,project))
+            if len(project.absinterfaces) > 0:
+                self.lists.append(AbsIntList(data,project))
+            if pagetree:
+                for item in pagetree:
+                    self.pagetree.append(PagetreePage(data,project,item))
+        except:
+            sys.exit('Error encountered. Run with "--debug" flag for traceback.')
         if data['search'].lower() == 'true':
             if data['relative']:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],'')

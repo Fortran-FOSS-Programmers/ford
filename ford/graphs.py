@@ -34,7 +34,7 @@ else:
 
 from graphviz import Digraph
 
-from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule
+from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure
 
 HYPERLINK_RE = re.compile("^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$",re.IGNORECASE)
 
@@ -61,8 +61,8 @@ class GraphData(object):
             if obj not in self.modules: self.modules[obj] = ModNode(obj,self)
         elif isinstance(obj,FortranType) or issubclass(cls,FortranType):
             if obj not in self.types: self.types[obj] = TypeNode(obj,self)
-        elif (isinstance(obj,(FortranFunction,FortranSubroutine,FortranInterface)) or 
-              issubclass(cls,(FortranFunction,FortranSubroutine,FortranInterface))):
+        elif (isinstance(obj,(FortranFunction,FortranSubroutine,FortranInterface,FortranSubmoduleProcedure)) or 
+              issubclass(cls,(FortranFunction,FortranSubroutine,FortranInterface,FortranSubmoduleProcedure))):
             if obj not in self.procedures: self.procedures[obj] = ProcNode(obj,self)
         elif isinstance(obj,FortranProgram) or issubclass(cls,FortranProgram):
             if obj not in self.programs: self.programs[obj] = ProgNode(obj,self)
@@ -211,9 +211,9 @@ class ProcNode(BaseNode):
                         n.interfaced_by.add(self)
                         self.interfaces.add(n)
                 if hasattr(obj,'procedure') and obj.procedure.module and obj.procedure.module != True and getattr(obj.procedure.module,'visible',True):
-                        n = gd.get_node(obj.procedure.module,FortranSubroutine)
-                        n.interfaced_by.add(self)
-                        self.interfaces.add(n)
+                    n = gd.get_node(obj.procedure.module,FortranSubroutine)
+                    n.interfaced_by.add(self)
+                    self.interfaces.add(n)
 
 
 class ProgNode(BaseNode):
@@ -525,7 +525,6 @@ gd.register(intr,FortranInterface)
 gd.register('Unknown Procedure Type',FortranSubroutine)
 gd.register('Program',FortranProgram)
 dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
-                                      #~ 'rankdir':'LR',
                                       'concentrate':'true'},
                           node_attr={'shape':'box',
                                      'height':'0.0',

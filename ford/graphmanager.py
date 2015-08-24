@@ -25,7 +25,7 @@
 from __future__ import print_function
 import os
 
-from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule
+from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure
 import ford.graphs
 
 class GraphManager(object):
@@ -79,7 +79,7 @@ class GraphManager(object):
                 else:
                     obj.inhergraph = None
                     obj.inherbygraph = None
-            elif isinstance(obj,(FortranFunction,FortranSubroutine,FortranInterface)):
+            elif isinstance(obj,(FortranFunction,FortranSubroutine,FortranInterface,FortranSubmoduleProcedure)):
                 if obj.meta['graph'] == 'true':
                     obj.callsgraph = ford.graphs.CallsGraph(obj,self.webdir)
                     obj.calledbygraph = ford.graphs.CalledByGraph(obj,self.webdir)

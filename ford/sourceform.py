@@ -77,7 +77,7 @@ INTRINSICS =  ['abort','abs','access','achar','acos','acosh',
 'get_environment_variable','getgid','getlog','getpid','getuid','gmtime', 
 'hostnm','huge','hypot','iachar','iall','iand','iany','iargc','ibclr','ibits', 
 'ibset','ichar','idate','ieor','ierrno','if','image_index','index','inquire','int','int2',
-'int8','ior','iparity','irand','is_iostat_end','is_iostat_eor','isatty','ishft', 
+'int8','ior','iparity','irand','is','is_iostat_end','is_iostat_eor','isatty','ishft', 
 'ishftc','isnan','itime','kill','kind','lbound','lcobound','leadz','len', 
 'len_trim','lge','lgt','link','lle','llt','lnblnk','loc','log','log10','log_gamma', 
 'logical','long','lshift','lstat','ltime','malloc','maskl','maskr','matmul','max', 
@@ -405,6 +405,8 @@ class FortranContainer(FortranBase):
     PRIVATE_RE = re.compile("^private(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
     PROTECTED_RE = re.compile("^protected(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
     OPTIONAL_RE = re.compile("^optional(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
+    VOLATILE_RE = re.compile("^volatile(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
+    ASYNC_RE = re.compile("^asynchronous(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
     END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface)(?:\s+(\w+))?)?$",re.IGNORECASE)
     MODPROC_RE = re.compile("^(module\s+)?procedure\s*(?:::|\s)\s*(\w.*)$",re.IGNORECASE)
     MODULE_RE = re.compile("^module(?:\s+(\w+))?$",re.IGNORECASE)
@@ -417,10 +419,10 @@ class FortranContainer(FortranBase):
     #~ ABS_INTERFACE_RE = re.compile("^abstract\s+interface(?:\s+(\S.+))?$",re.IGNORECASE)
     BOUNDPROC_RE = re.compile("^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)",re.IGNORECASE)
     FINAL_RE = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
-    USE_RE = re.compile("^use(?:\s*,\s*intrinsic\s*::\s*|\s+)(\w+)($|,\s*)",re.IGNORECASE)
-    CALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
-    FUNCCALL_RE = re.compile("(?:^|(?<=[^a-zA-Z0-9_%]))\w+(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
-    EXTERNAL_RE = re.compile("^external\s+(\w.*?)\s*$",re.IGNORECASE)
+    USE_RE = re.compile("^use(?:\s*,\s*(?:non_)?intrinsic\s*::\s*|\s+)(\w+)\s*($|,.*)",re.IGNORECASE)
+    CALL_RE = re.compile("(?:^|(?<=[^a-zA-Z0-9_%]))\w+(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
+    SUBCALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
+    EXTERNAL_RE = re.compile("^external(?:\s+|\s*::\s*)(\w.*?)\s*$",re.IGNORECASE)
     
     VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure{})\s*((?:\(|\s\w|[:,*]).*)$"
     
@@ -503,7 +505,21 @@ class FortranContainer(FortranBase):
                 varlist = self.SPLIT_RE.split(self.OPTIONAL_RE.match(line).group(2))
                 varlist[-1] = varlist[-1].strip()
                 if hasattr(self,'optional_list'): 
-                    self._optional_list.extend(varlist)
+                    self.optional_list.extend(varlist)
+                else:
+                    raise Exception("OPTIONAL declaration in {}".format(type(self).__name__[7:].upper()))
+            elif self.VOLATILE_RE.match(line):
+                varlist = self.SPLIT_RE.split(self.VOLATILE_RE.match(line).group(2))
+                varlist[-1] = varlist[-1].strip()
+                if hasattr(self,'optional_list'): 
+                    self.volatile_list.extend(varlist)
+                else:
+                    raise Exception("OPTIONAL declaration in {}".format(type(self).__name__[7:].upper()))
+            elif self.ASYNC_RE.match(line):
+                varlist = self.SPLIT_RE.split(self.ASYNC_RE.match(line).group(2))
+                varlist[-1] = varlist[-1].strip()
+                if hasattr(self,'optional_list'): 
+                    self.async_list.extend(varlist)
                 else:
                     raise Exception("OPTIONAL declaration in {}".format(type(self).__name__[7:].upper()))
             elif self.END_RE.match(line):
@@ -609,25 +625,27 @@ class FortranContainer(FortranBase):
                     raise Exception("Found variable in {}".format(type(self).__name__[7:].upper()))
             elif self.USE_RE.match(line):
                 if hasattr(self,'uses'): 
-                    self.uses.append(self.USE_RE.match(line).group(1))
+                    self.uses.append(self.USE_RE.match(line).groups())
                 else:
                     raise Exception("Found USE statemnt in {}".format(type(self).__name__[7:].upper()))
+            elif self.CALL_RE.search(line):
+                if hasattr(self,'calls'):
+                    callvals = self.CALL_RE.findall(line)
+                    for val in callvals:
+                        if val.lower() not in self.calls and val.lower() not in INTRINSICS:
+                            self.calls.append(val.lower())
+                else:
+                    raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
             elif self.CALL_RE.match(line):
+                # Need this to catch any subroutines called without argument lists
                 if hasattr(self,'calls'):
                     callval = self.CALL_RE.match(line).group(1)
                     if callval.lower() not in self.calls and callval.lower() not in INTRINSICS: 
                         self.calls.append(callval.lower())
                 else:
                     raise ("Found procedure call in {}".format(type(self).__name__[7:].upper()))
-            elif self.FUNCCALL_RE.search(line):
-                if hasattr(self,'funccalls'):
-                    callvals = self.FUNCCALL_RE.findall(line)
-                    for val in callvals:
-                        if val.lower() not in self.funccalls and val.lower() not in INTRINSICS:
-                            self.funccalls.append(val.lower())
-                else:
-                    raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
             
+
         if not isinstance(self,FortranSourceFile):
             raise Exception("File ended while still nested.")
     
@@ -640,8 +658,6 @@ class FortranCodeUnit(FortranContainer):
     """
     A class on which programs, modules, functions, and subroutines are based.
     """
-    FUNCCALL_STR = "\W({})\s*\(\s*(?:.*?)\s*\)(?:\W|$)"
-
     def correlate(self,project):
         # Add procedures, interfaces and types from parent to our lists
         if hasattr(self.parent,'all_procs'): self.all_procs.update(self.parent.all_procs)
@@ -682,27 +698,12 @@ class FortranCodeUnit(FortranContainer):
                     intr = self.all_procs[proc.name.lower()]
                     # Don't think I need these checks...
                     if intr.proctype.lower() =='interface' and not intr.generic and not intr.abstract and intr.procedure.module == True:
-                        item = copy.copy(intr.procedure)
-                        item.name = proc.name
-                        item.parent = proc.parent
-                        item.parobj = proc.parobj
-                        item.hierarchy = proc.hierarchy
-                        item.variables = proc.variables
-                        item.uses = proc.uses
-                        item.calls = proc.calls
-                        item.subroutines = proc.subroutines
-                        item.functions = proc.functions
-                        item.interfaces = proc.interfaces
-                        item.absinterfaces = proc.absinterfaces
-                        item.types = proc.types
-                        item.permission = proc.permission
-                        item.module = intr
-                        item.mp = True
-                        item.doc = proc.doc
-                        proc = item
+                        proc.attribs = intr.procedure.attribs
+                        proc.args = intr.procedure.args
+                        proc.retvar = getattr(intr.procedure,'retvar',None)
+                        proc.proctype = intr.procedure.proctype
+                        proc.module = intr
                         intr.procedure.module = proc
-                        tmplist.append(proc)
-            self.modprocedures = tmplist
 
         typelist = {}
         for dtype in self.types:
@@ -714,51 +715,39 @@ class FortranCodeUnit(FortranContainer):
         typeorder = toposort.toposort_flatten(typelist)
 
         # Add procedures and types from USED modules to our lists
-        for mod in self.uses:
+        for mod, extra in self.uses:
             if type(mod) is str: continue
+            procs, absints, types, variables = mod.get_used_entities(extra)
             if self.obj == 'module':
-                self.pub_procs.update(mod.pub_procs)
-                self.pub_absints.update(mod.pub_absints)
-                self.pub_types.update(mod.pub_types)
-                self.pub_vars.update(mod.pub_vars)
-            self.all_procs.update(mod.pub_procs)
-            self.all_absinterfaces.update(mod.pub_absints)
-            self.all_types.update(mod.pub_types)
-            self.all_vars.update(mod.pub_vars)
+                self.pub_procs.update(procs)
+                self.pub_absints.update(absints)
+                self.pub_types.update(types)
+                self.pub_vars.update(variables)
+            self.all_procs.update(procs)
+            self.all_absinterfaces.update(absints)
+            self.all_types.update(types)
+            self.all_vars.update(variables)
+        self.uses = [m[0] for m in self.uses]
         
         # Match up called procedures
         if hasattr(self,'calls'):
-            for call in self.funccalls:
+            tmplst = []
+            for call in self.calls:
                 argname = False
                 for a in getattr(self,'args',[]):
+                    # Consider allowing procedures passed as arguments to be included in callgraphs
                     argname = argname or call == a.name
-                if call not in self.all_vars and not argname: self.calls.append(call)
-            del self.funccalls
+                if call not in self.all_vars and (call not in self.all_types or call in self.all_procs) and not argname: tmplst.append(call)
+            self.calls = tmplst
             fileprocs = {}
             if self.parobj == 'sourcefile':
                 for proc in self.parent.subroutines + self.parent.functions:
                     fileprocs[proc.name.lower()] = proc
             for i in range(len(self.calls)):
-                #~ print(self.name,[m for m in self.uses],self.calls[i],self.all_procs,fileprocs)
-                #~ print(self.calls[i].lower(),[p for p in self.all_procs])
                 if self.calls[i].lower() in self.all_procs:
                     self.calls[i] = self.all_procs[self.calls[i].lower()]
                 elif self.calls[i].lower() in fileprocs:
                     self.calls[i] = fileprocs[self.calls[i].lower()]
-
-        #~ # Check for function calls
-        #~ if self.obj == 'proc' or self.obj == 'program':
-            #~ for proc in self.all_procedures:
-                #~ if proc.proctype.lower() == 'subroutine': continue
-                #~ if ( proc.proctype.lower() == 'interface' and hasattr(proc,'procedure') 
-                     #~ and proc.procedure.proctype.lower() == 'subroutine' ):
-                    #~ continue
-                #~ if ( proc.proctype.lower() == 'interface' and hasattr(proc,'modprocs') and
-                     #~ len(proc.modprocs) > 0 and proc.modprocs[0].proctype.lower() == 
-                     #~ 'subroutine' ):
-                    #~ continue
-                #~ if re.search(self.FUNCCALL_STR.format(proc.name),self.src,re.IGNORECASE):
-                    #~ self.calls.append(proc)
 
         if self.obj == 'submodule':
             self.ancestry = []
@@ -781,13 +770,13 @@ class FortranCodeUnit(FortranContainer):
             absint.correlate(project)
         for var in self.variables:
             var.correlate(project)
-        if hasattr(self,'modprocedure'):
-            for arg in self.modprocedure:
-                arg.correlate(project)
-        if hasattr(self,'args'):
+        if hasattr(self,'modprocedures'):
+            for mp in self.modprocedures:
+                mp.correlate(project)
+        if hasattr(self,'args') and not getattr(self,'mp',False):
             for arg in self.args:
                 arg.correlate(project)
-        if hasattr(self,'retvar'):
+        if hasattr(self,'retvar') and not getattr(self,'mp',False):
             self.retvar.correlate(project)
         
         # Separate module subroutines/functions from normal ones
@@ -864,6 +853,9 @@ class FortranModule(FortranCodeUnit):
     objects contains lists of all of the module's contents, as well as its 
     dependencies.
     """
+    ONLY_RE = re.compile('^\s*,\s*only\s*:\s*(?=[^,])',re.IGNORECASE)
+    RENAME_RE = re.compile('(\w+)\s*=>\s*(\w+)',re.IGNORECASE)
+    
     def _initialize(self,line):
         self.name = line.group(1)
         # TODO: Add the ability to parse ONLY directives and procedure renaming
@@ -872,6 +864,8 @@ class FortranModule(FortranCodeUnit):
         self.public_list = []
         self.private_list = []
         self.protected_list = []
+        self.volatile_list = []
+        self.async_list = []
         self.subroutines = []
         self.functions = []
         self.interfaces = []
@@ -902,6 +896,14 @@ class FortranModule(FortranCodeUnit):
             for var in self.variables:
                 if varname.lower() == var.name.lower():
                     var.permission = "protected"
+        for varname in self.volatile_list:
+            for var in self.variables:
+                if varname.lower() == var.name.lower():
+                    var.attribs.append('volatile')
+        for varname in self.async_list:
+            for var in self.variables:
+                if varname.lower() == var.name.lower():
+                    var.attribs.apend('asynchronous')
 
         self.pub_procs = {}
         for p, proc in self.all_procs.items():
@@ -923,7 +925,65 @@ class FortranModule(FortranCodeUnit):
         del self.public_list
         del self.private_list
         del self.protected_list
+        del self.volatile_list
+        del self.async_list
         return
+        
+    def get_used_entities(self,use_specs):
+        """
+        Returns the entities which are imported by a use statement. These
+        are contained in dicts.
+        """
+        if len(use_specs.strip()) == 0:
+            return (self.pub_procs, self.pub_absints, self.pub_types, self.pub_vars)
+        only = bool(self.ONLY_RE.match(use_specs))
+        use_specs = self.ONLY_RE.sub('',use_specs)
+        ulist = self.SPLIT_RE.split(use_specs)
+        ulist[-1] = ulist[-1].strip()
+        uspecs = {}
+        for item in ulist:
+            match = self.RENAME_RE.search(item)
+            if match:
+                uspecs[match.group(1)] = match.group(2)
+            else:
+                uspecs[item] = item
+        ret_procs = {}
+        ret_absints = {}
+        ret_types = {}
+        ret_vars = {}
+        for name, obj in self.pub_procs.items():
+            if only:
+                if name in uspecs: ret_procs[uspecs[name]] = obj
+            else:
+                if name in uspecs: 
+                    ret_procs[uspecs[name]] = obj
+                else:
+                    ret_procs[name] = obj
+        for name, obj in self.pub_absints.items():
+            if only:
+                if name in uspecs: ret_absints[uspecs[name]] = obj
+            else:
+                if name in uspecs: 
+                    ret_absints[uspecs[name]] = obj
+                else:
+                    ret_absints[name] = obj
+        for name, obj in self.pub_types.items():
+            if only:
+                if name in uspecs: ret_types[uspecs[name]] = obj
+            else:
+                if name in uspecs: 
+                    ret_types[uspecs[name]] = obj
+                else:
+                    ret_types[name] = obj
+        for name, obj in self.pub_vars.items():
+            if only:
+                if name in uspecs: ret_vars[uspecs[name]] = obj
+            else:
+                if name in uspecs: 
+                    ret_vars[uspecs[name]] = obj
+                else:
+                    ret_vars[name] = obj
+        return (ret_procs,ret_absints,ret_types,ret_vars)
 
 
 class FortranSubmodule(FortranModule):
@@ -988,7 +1048,6 @@ class FortranSubroutine(FortranCodeUnit):
         self.variables = []
         self.uses = []
         self.calls = []
-        self.funccalls = []
         self.optional_list = []
         self.subroutines = []
         self.functions = []
@@ -996,6 +1055,8 @@ class FortranSubroutine(FortranCodeUnit):
         self.absinterfaces = []
         self.types = []
         self.external_list = []
+        self.volatile_list = []
+        self.async_list = []
 
     def set_permission(self, value):
         self._permission = value
@@ -1022,6 +1083,16 @@ class FortranSubroutine(FortranCodeUnit):
                     var.permission = "protected"
                     break
         del self.optional_list
+        for varname in self.volatile_list:
+            for var in self.variables:
+                if varname.lower() == var.name.lower():
+                    var.attribs.append('volatile')
+        del self.volatile_list
+        for varname in self.async_list:
+            for var in self.variables:
+                if varname.lower() == var.name.lower():
+                    var.attribs.apend('asynchronous')
+        del self.async_list
         for i in range(len(self.args)):
             for var in self.variables:
                 if self.args[i].lower() == var.name.lower():
@@ -1100,7 +1171,6 @@ class FortranFunction(FortranCodeUnit):
         self.variables = []
         self.uses = []
         self.calls = []
-        self.funccalls = []
         self.optional_list = []
         self.subroutines = []
         self.functions = []
@@ -1108,6 +1178,8 @@ class FortranFunction(FortranCodeUnit):
         self.absinterfaces = []
         self.types = []
         self.external_list = []
+        self.volatile_list = []
+        self.async_list = []
 
     def set_permission(self, value):
         self._permission = value
@@ -1134,6 +1206,16 @@ class FortranFunction(FortranCodeUnit):
                     var.permission = "protected"
                     break
         del self.optional_list
+        for varname in self.volatile_list:
+            for var in self.variables:
+                if varname.lower() == var.name.lower():
+                    var.attribs.append('volatile')
+        del self.volatile_list
+        for varname in self.async_list:
+            for var in self.variables:
+                if varname.lower() == var.name.lower():
+                    var.attribs.apend('asynchronous')
+        del self.async_list
         for i in range(len(self.args)):
             for var in self.variables:
                 if self.args[i].lower() == var.name.lower():
@@ -1179,13 +1261,15 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.variables = []
         self.uses = []
         self.calls = []
-        self.funccalls = []
         self.subroutines = []
         self.functions = []
         self.interfaces = []
         self.absinterfaces = []
         self.types = []
         self.external_list = []
+        self.volatile_list = []
+        self.async_list = []
+        self.mp = True
 
     def _cleanup(self):
         self.all_procs = {}
@@ -1196,6 +1280,15 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
                 self.all_procs[interface.name.lower()] = interface
         self.variables = [var for var in self.variables if var.name not in self.external_list]
         del self.external_list
+        for varname in self.volatile_list:
+            for var in self.variables:
+                if varname.lower() == var.name.lower():
+                    var.attribs.append('volatile')
+        del self.volatile_list
+        for varname in self.async_list:
+            for var in self.variables:
+                if varname.lower() == var.name.lower():
+                    var.attribs.apend('asynchronous')
         return
 
     
@@ -1212,9 +1305,10 @@ class FortranProgram(FortranCodeUnit):
         self.types = []
         self.uses = []
         self.calls = []
-        self.funccalls = []
         self.absinterfaces = []
         self.external_list = []
+        self.volatile_list = []
+        self.async_list = []
     
     def _cleanup(self):
         self.all_procs = {}
@@ -1223,9 +1317,19 @@ class FortranProgram(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+        for varname in self.volatile_list:
+            for var in self.variables:
+                if varname.lower() == var.name.lower():
+                    var.attribs.append('volatile')
+        del self.volatile_list
+        for varname in self.async_list:
+            for var in self.variables:
+                if varname.lower() == var.name.lower():
+                    var.attribs.apend('asynchronous')
+        del self.async_list
         self.variables = [var for var in self.variables if var.name not in self.external_list]
         del self.external_list
-
+        
     
     
 class FortranType(FortranContainer):
