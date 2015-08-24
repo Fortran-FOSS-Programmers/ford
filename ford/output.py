@@ -29,7 +29,10 @@ import os
 import shutil
 import time
 
+
 import jinja2
+if (sys.version_info[0]>2):
+    jinja2.utils.Cycler.next = jinja2.utils.Cycler.__next__
 
 import ford.sourceform
 import ford.tipue_search

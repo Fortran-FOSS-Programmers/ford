@@ -1597,10 +1597,12 @@ def line_to_variables(source, line, inherit_permission, parent):
             points = False
             
         if initial and vartype == "character":
-            match = QUOTES_RE.search(initial)
-            if match:
-                num = int(match.group()[1:-1])
-                initial = QUOTES_RE.sub(parent.strings[num],initial)
+            search_from = 0
+            while QUOTES_RE.search(initial[search_from:]):
+                num = int(QUOTES_RE.search(initial[search_from:]).group()[1:-1])
+                
+                initial = initial[0:search_from] + QUOTES_RE.sub(parent.strings[num],initial[search_from:],count=1)
+                search_from += QUOTES_RE.search(initial[search_from:]).end(0)
             # FIXME: add some code that will replace any spaces at the edges of a string with &nbsp;
             # What I have below is just a stop-gap measure. And it doesn't even seem to work...
             initial.replace("' '","'&nbsp;'")

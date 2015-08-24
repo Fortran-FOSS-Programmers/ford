@@ -47,7 +47,7 @@ setup(
         'Programming Language :: Python :: 3.4',
     ],
   install_requires = ['markdown','markdown-include >= 0.5.1','toposort',
-                      'jinja2','pygments','beautifulsoup4'],
+                      'jinja2 >= 2.1','pygments','beautifulsoup4'],
   entry_points = {
     'console_scripts': [
         'ford=ford:run',

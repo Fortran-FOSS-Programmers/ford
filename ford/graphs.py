@@ -31,7 +31,6 @@ if (sys.version_info[0]>2):
     from urllib.parse import quote
 else:
     from urllib import quote
-from collections import namedtuple
 
 from graphviz import Digraph
 
