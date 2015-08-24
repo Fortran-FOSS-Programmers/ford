@@ -313,6 +313,9 @@ class FortranGraph(object):
         return rettext.format(link,self.ident,self.linkmap,GRAPH_KEY)
     
     def __nonzero__(self):
+        return self.__bool__()
+    
+    def __bool__(self):
         return(bool(self.__str__()))
     
     @classmethod

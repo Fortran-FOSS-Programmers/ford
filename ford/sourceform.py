@@ -54,6 +54,8 @@ EXTENDS_RE = re.compile("extends\s*\(\s*([^()\s]+)\s*\)")
 DOUBLE_PREC_RE = re.compile("double\s+precision",re.IGNORECASE)
 QUOTES_RE = re.compile("\"([^\"]|\"\")*\"|'([^']|'')*'",re.IGNORECASE)
 PARA_CAPTURE_RE = re.compile("<p>.*?</p>",re.IGNORECASE|re.DOTALL)
+COMMA_RE = re.compile(",(?!\s)")
+NBSP_RE = re.compile(" (?= )|(?<= ) ")
 
 INTRINSICS =  ['abort','abs','access','achar','acos','acosh', 
 'adjustl','adjustr','aimag','aint','alarm','all','allocate','allocated','and','anint', 
@@ -74,8 +76,8 @@ INTRINSICS =  ['abort','abs','access','achar','acos','acosh',
 'gamma','gerror','getarg','get_command','get_command_argument','getcwd','getenv', 
 'get_environment_variable','getgid','getlog','getpid','getuid','gmtime', 
 'hostnm','huge','hypot','iachar','iall','iand','iany','iargc','ibclr','ibits', 
-'ibset','ichar','idate','ieor','ierrno','if','image_index','index','int','int2','int8', 
-'ior','iparity','irand','is_iostat_end','is_iostat_eor','isatty','ishft', 
+'ibset','ichar','idate','ieor','ierrno','if','image_index','index','inquire','int','int2',
+'int8','ior','iparity','irand','is_iostat_end','is_iostat_eor','isatty','ishft', 
 'ishftc','isnan','itime','kill','kind','lbound','lcobound','leadz','len', 
 'len_trim','lge','lgt','link','lle','llt','lnblnk','loc','log','log10','log_gamma', 
 'logical','long','lshift','lstat','ltime','malloc','maskl','maskr','matmul','max', 
@@ -724,7 +726,7 @@ class FortranCodeUnit(FortranContainer):
             self.all_types.update(mod.pub_types)
             self.all_vars.update(mod.pub_vars)
         
-        # Match up called subroutines
+        # Match up called procedures
         if hasattr(self,'calls'):
             for call in self.funccalls:
                 argname = False
@@ -735,9 +737,10 @@ class FortranCodeUnit(FortranContainer):
             fileprocs = {}
             if self.parobj == 'sourcefile':
                 for proc in self.parent.subroutines + self.parent.functions:
-                    fileprocs[proc.name] = proc
+                    fileprocs[proc.name.lower()] = proc
             for i in range(len(self.calls)):
                 #~ print(self.name,[m for m in self.uses],self.calls[i],self.all_procs,fileprocs)
+                #~ print(self.calls[i].lower(),[p for p in self.all_procs])
                 if self.calls[i].lower() in self.all_procs:
                     self.calls[i] = self.all_procs[self.calls[i].lower()]
                 elif self.calls[i].lower() in fileprocs:
@@ -1597,16 +1600,13 @@ def line_to_variables(source, line, inherit_permission, parent):
             points = False
             
         if initial and vartype == "character":
+            initial = COMMA_RE.sub(', ',initial)
             search_from = 0
             while QUOTES_RE.search(initial[search_from:]):
                 num = int(QUOTES_RE.search(initial[search_from:]).group()[1:-1])
-                
-                initial = initial[0:search_from] + QUOTES_RE.sub(parent.strings[num],initial[search_from:],count=1)
+                string = NBSP_RE.sub('&nbsp;',parent.strings[num])
+                initial = initial[0:search_from] + QUOTES_RE.sub(string,initial[search_from:],count=1)
                 search_from += QUOTES_RE.search(initial[search_from:]).end(0)
-            # FIXME: add some code that will replace any spaces at the edges of a string with &nbsp;
-            # What I have below is just a stop-gap measure. And it doesn't even seem to work...
-            initial.replace("' '","'&nbsp;'")
-            initial.replace('" "','"&nbsp;"')
         
         if proto:
             varlist.append(FortranVariable(name,vartype,parent,attribs,intent,

@@ -13,7 +13,7 @@ docmark_alt: #
 predocmark_alt: <
 display: public
          private
-source: true
+source: false
 graph: true
 macro: TEST
        LOGIC=.true.
@@ -24,7 +24,7 @@ This is a project which I wrote. This file will provide the documents. I'm
 writing the body of the text here. It contains an overall description of the
 project. It might explain how to go about installing/compiling it. It might
 provide a change-log for the code. [[linalg]] Maybe it will talk about the
-history and/or motivation for this software.  ñ ñ ñ
+history and/or motivation for this software.
 
 @Note
 You can include any notes (or bugs, warnings, or todos) like so.
