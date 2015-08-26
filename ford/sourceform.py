@@ -63,25 +63,25 @@ INTRINSICS =  ['abort','abs','access','achar','acos','acosh',
 'atomic_and','atomic_cas','atomic_define','atomic_fetch_add','atomic_fetch_and', 
 'atomic_fetch_or','atomic_fetch_xor','atomic_or','atomic_ref', 
 'atomic_xor','backtrace','bessel_j0','bessel_j1','bessel_jn','bessel_y0', 
-'bessel_y1','bessel_yn','bge','bgt','bit_size','ble','blt','btest', 
+'bessel_y1','bessel_yn','bge','bgt','bit_size','ble','blt','btest',
 'c_associated','c_f_pointer','c_f_procpointer','c_funloc','c_loc', 
-'c_sizeof','case','ceiling','char','chdir','chmod','class','close','cmplx','co_broadcast',
+'c_sizeof','cabs','case','cdabs','ceiling','char','chdir','chmod','class','close','cmplx','co_broadcast',
 'co_max','co_min','co_reduce','co_sum','command_argument_count', 
 'compiler_options','compiler_version','complex','conjg','cos','cosh', 
-'count','cpu_time','cshift','ctime','date_and_time','dble','dcmplx','deallocate','digits', 
-'dim','dot_product','dprod','dreal','dshiftl','dshiftr','dtime','elseif','eoshift', 
+'count','cpu_time','cshift','ctime','dabs','date_and_time','dble','dcmplx','deallocate','digits', 
+'dim','dlog','dlog10','dmax1','dmin1','dot_product','dprod','dreal','dshiftl','dshiftr','dsqrt','dtime','elseif','eoshift',
 'epsilon','erf','erfc','erfc_scaled','etime','execute_command_line','exit', 
 'exp','exponent','extends_type_of','fdate','fget','fgetc','floor','flush', 
 'fnum','forall','format','fput','fputc','fraction','free','fseek','fstat','ftell',
 'gamma','gerror','getarg','get_command','get_command_argument','getcwd','getenv', 
 'get_environment_variable','getgid','getlog','getpid','getuid','gmtime', 
-'hostnm','huge','hypot','iachar','iall','iand','iany','iargc','ibclr','ibits', 
-'ibset','ichar','idate','ieor','ierrno','if','image_index','index','inquire','int','int2',
+'hostnm','huge','hypot','iabs','iachar','iall','iand','iany','iargc','ibclr','ibits', 
+'ibset','ichar','idate','ieor','ierrno','if','imag','image_index','index','inquire','int','int2',
 'int8','ior','iparity','irand','is','is_iostat_end','is_iostat_eor','isatty','ishft', 
 'ishftc','isnan','itime','kill','kind','lbound','lcobound','leadz','len', 
 'len_trim','lge','lgt','link','lle','llt','lnblnk','loc','log','log10','log_gamma', 
-'logical','long','lshift','lstat','ltime','malloc','maskl','maskr','matmul','max', 
-'maxexponent','maxloc','maxval','mclock','mclock8','merge','merge_bits','min', 
+'logical','long','lshift','lstat','ltime','malloc','maskl','maskr','matmul','max','max0', 
+'maxexponent','maxloc','maxval','mclock','mclock8','merge','merge_bits','min','min0', 
 'minexponent','minloc','minval','mod','modulo','move_alloc','mvbits', 
 'nearest','new_line','nint','norm2','not','null','nullify','num_images','open','or','pack', 
 'parity','perror','popcnt','poppar','precision','present','procedure','product','radix', 
@@ -93,7 +93,7 @@ INTRINSICS =  ['abort','abs','access','achar','acos','acosh',
 'srand','stat','storage_size','sum','symlnk','system','system_clock','tan', 
 'tanh','this_image','time','time8','tiny','trailz','transfer','transpose', 
 'trim','ttynam','type','ubound','ucobound','umask','unlink','unpack','verify',
-'while','write','xor']
+'while','write','xor','zabs']
 
 base_url = ''
 
@@ -737,6 +737,8 @@ class FortranCodeUnit(FortranContainer):
                 for a in getattr(self,'args',[]):
                     # Consider allowing procedures passed as arguments to be included in callgraphs
                     argname = argname or call == a.name
+                if hasattr(self,'retvar'):
+                    argname = argname or call == self.retvar.name
                 if call not in self.all_vars and (call not in self.all_types or call in self.all_procs) and not argname: tmplst.append(call)
             self.calls = tmplst
             fileprocs = {}

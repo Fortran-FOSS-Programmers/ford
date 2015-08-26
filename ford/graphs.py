@@ -26,6 +26,7 @@ from __future__ import print_function
 import sys
 import os
 import re
+import copy
 #Python 2 or 3:
 if (sys.version_info[0]>2):
     from urllib.parse import quote
@@ -38,6 +39,10 @@ from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface
 
 HYPERLINK_RE = re.compile("^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$",re.IGNORECASE)
 
+def newdict(old,key,val):
+    new = copy.copy(old)
+    new[key] = val
+    return new
 
 class GraphData(object):
     """
@@ -50,11 +55,12 @@ class GraphData(object):
         self.procedures = {}
         self.programs = {}
 
-    def register(self,obj,cls=type(None)):
+    def register(self,obj,cls=type(None),hist={}):
         """
         Takes a FortranObject and adds it to the appropriate list, if
         not already present.
         """
+        ident = getattr(obj,'ident',obj)
         if isinstance(obj,FortranSubmodule) or issubclass(cls,FortranSubmodule):
             if obj not in self.submodules: self.submodules[obj] = SubmodNode(obj,self)
         elif isinstance(obj,FortranModule) or issubclass(cls,FortranModule):
@@ -63,17 +69,18 @@ class GraphData(object):
             if obj not in self.types: self.types[obj] = TypeNode(obj,self)
         elif (isinstance(obj,(FortranFunction,FortranSubroutine,FortranInterface,FortranSubmoduleProcedure)) or 
               issubclass(cls,(FortranFunction,FortranSubroutine,FortranInterface,FortranSubmoduleProcedure))):
-            if obj not in self.procedures: self.procedures[obj] = ProcNode(obj,self)
+            if obj not in self.procedures: self.procedures[obj] = ProcNode(obj,self,hist)
         elif isinstance(obj,FortranProgram) or issubclass(cls,FortranProgram):
             if obj not in self.programs: self.programs[obj] = ProgNode(obj,self)
         else:
             raise BadType("Object type {} not recognized by GraphData".format(type(obj).__name__))
     
-    def get_node(self,obj,cls=type(None)):
+    def get_node(self,obj,cls=type(None),hist={}):
         """
         Returns the node corresponding to obj. If does not already exist
         then it will create it.
         """
+        ident = getattr(obj,'ident',obj)
         if obj in self.modules:
             return self.modules[obj]
         elif obj in self.submodules:
@@ -85,7 +92,7 @@ class GraphData(object):
         elif obj in self.programs:
             return self.programs[obj]
         else:
-            self.register(obj,cls)
+            self.register(obj,cls,hist)
             return self.get_node(obj)
 
 
@@ -106,7 +113,9 @@ class BaseNode(object):
                 self.name = obj
             self.ident = self.name
         else:
-            self.ident = obj.get_dir() + '~' + obj.ident
+            d = obj.get_dir()
+            if not d: d = 'none'
+            self.ident = d + '~' + obj.ident
             self.name = obj.name
             self.url = obj.get_url()
         self.attribs['label'] = self.name
@@ -181,7 +190,7 @@ class ProcNode(BaseNode):
         else:
             return super(ProcNode,self).colour
     
-    def __init__(self,obj,gd):
+    def __init__(self,obj,gd,hist={}):
         #ToDo: Figure out appropriate way to handle interfaces to routines in submodules.
         self.proctype = getattr(obj,'proctype','')
         super(ProcNode,self).__init__(obj)
@@ -190,7 +199,6 @@ class ProcNode(BaseNode):
         self.called_by = set()
         self.interfaces = set()
         self.interfaced_by = set()
-        self.proctype = ''
         if not self.fromstr:
             for u in getattr(obj,'uses',[]):
                 n = gd.get_node(u,FortranModule)
@@ -200,18 +208,26 @@ class ProcNode(BaseNode):
                 if getattr(c,'visible',True):
                     if c == obj:
                         n = self
+                    elif c in hist:
+                        n = hist[c]
                     else:
-                        n = gd.get_node(c,FortranSubroutine)
+                        n = gd.get_node(c,FortranSubroutine,newdict(hist,obj,self))
                     n.called_by.add(self)
                     self.calls.add(n)
             if obj.proctype.lower() == 'interface':
                 for m in getattr(obj,'modprocs',[]):
                     if m.procedure and getattr(m.procedure,'visible',True):
-                        n = gd.get_node(m.procedure,FortranSubroutine)
+                        if m.procedure in hist:
+                            n = hist[m.procedure]
+                        else:
+                            n = gd.get_node(m.procedure,FortranSubroutine,newdict(hist,obj,self))
                         n.interfaced_by.add(self)
                         self.interfaces.add(n)
                 if hasattr(obj,'procedure') and obj.procedure.module and obj.procedure.module != True and getattr(obj.procedure.module,'visible',True):
-                    n = gd.get_node(obj.procedure.module,FortranSubroutine)
+                    if obj.procedure.module in hist:
+                        n = hist[obj.procedure.module]
+                    else:
+                        n = gd.get_node(obj.procedure.module,FortranSubroutine,newdict(hist,obj,self))
                     n.interfaced_by.add(self)
                     self.interfaces.add(n)
 
@@ -244,6 +260,7 @@ class FortranGraph(object):
         root is the object for which the graph is being constructed
         """
         self.numnodes = 0
+        self.added = []
         self.root = []
         try:
             for r in root:
@@ -277,15 +294,22 @@ class FortranGraph(object):
         and root is a boolean indicating whether this is the root of the
         graph.
         """    
+        recurse = []
         if root:
             for n in nodes:
-                self.dot.node(n.ident,label=n.name)
-                self.numnodes += 1
+                if n.ident not in self.added:
+                    self.dot.node(n.ident,label=n.name)
+                    self.numnodes += 1
+                    self.added.append(n.ident)
+                    recurse.append(n)
         else:
             for n in nodes:
-                self.dot.node(n.ident,**n.attribs)
-                self.numnodes += 1
-        self.add_more_nodes(nodes)
+                if n.ident not in self.added:
+                    self.dot.node(n.ident,**n.attribs)
+                    self.numnodes += 1
+                    self.added.append(n.ident)
+                    recurse.append(n)
+        self.add_more_nodes(recurse)
 
     def __str__(self):
         if self.numnodes <= 1: return ''
@@ -327,7 +351,7 @@ class FortranGraph(object):
             self._create_image_file(os.path.join(out_location, self.imgfile))
     
     def _create_image_file(self,filename):
-        self.dot.render(filename,cleanup=True)
+        self.dot.render(filename,cleanup=False)
 
 
 class ModuleGraph(FortranGraph):
@@ -337,19 +361,18 @@ class ModuleGraph(FortranGraph):
         listed in nodes.
         """
         self.dot.attr('graph',size='11.875,1000.0')
-        added = []
         for n in nodes:
             for nu in n.uses:
-                if nu not in nodes and nu not in added:
+                if nu not in nodes and nu.ident not in self.added:
                     self.dot.node(nu.ident,**nu.attribs)
                     self.numnodes += 1
-                    added.append(nu)
+                    self.added.append(nu.ident)
                 self.dot.edge(nu.ident,n.ident,style='dashed')
             if hasattr(n,'ancestor'):
-                if n.ancestor not in nodes and n.ancestor not in added:
+                if n.ancestor not in nodes and n.ancestor.ident not in self.added:
                     self.dot.node(n.ancestor.ident,**n.ancestor.attribs)
                     self.numnodes += 1
-                    added.append(n.ancestor)
+                    self.added.append(n.ancestor.ident)
                 self.dot.edge(n.ancestor.ident,n.ident)
 
 
@@ -360,11 +383,11 @@ class UsesGraph(FortranGraph):
         edges between them. Also does this for ancestor (sub)modules.
         """
         for n in nodes:
-            self.add_node(n.uses)
+            self.add_node([x for x in n.uses if x.ident not in self.added])
             for nu in n.uses:
                 self.dot.edge(nu.ident,n.ident,style='dashed')
             if hasattr(n,'ancestor'):
-                self.add_node([n.ancestor])
+                if n.ancestor.ident not in self.added: self.add_node([n.ancestor])
                 self.dot.edge(n.ancestor.ident,n.ident)
         
 
@@ -375,10 +398,10 @@ class UsedByGraph(FortranGraph):
         nodes. Adds appropriate edges between them.
         """
         for n in nodes:
-            self.add_node(getattr(n,'used_by',[]))
+            self.add_node([x for x in getattr(n,'used_by',[]) if x.ident not in self.added])
             for nu in getattr(n,'used_by',[]):
                 self.dot.edge(n.ident,nu.ident,style='dashed')
-            self.add_node(getattr(n,'children',[]))
+            self.add_node([x for x in getattr(n,'children',[]) if x.ident not in self.added])
             for c in getattr(n,'children',[]):
                 self.dot.edge(n.ident,c.ident)
 
@@ -390,19 +413,18 @@ class TypeGraph(FortranGraph):
         nodes. Adds appropriate edges between them.
         """
         self.dot.attr('graph',size='11.875,1000.0')
-        added = []
         for n in nodes:
             for c in n.comp_types:
-                if c not in nodes and c not in added:
+                if c not in nodes and c.ident not in self.added:
                     self.dot.node(c.ident,**c.attribs)
                     self.numnodes += 1
-                    added.append(c)
+                    self.added.append(c.ident)
                 self.dot.edge(c.ident,n.ident,style='dashed',label=n.comp_types[c])
             if n.ancestor:
-                if n.ancestor not in nodes and n.ancestor not in added:
+                if n.ancestor not in nodes and n.ancestor.ident not in self.added:
                     self.dot.node(n.ancestor.ident,**n.ancestor.attribs)
                     self.numnodes += 1
-                    added.append(n.ancestor)
+                    self.added.append(n.ancestor.ident)
                 self.dot.edge(n.ancestor.ident,n.ident)
 
 
@@ -413,11 +435,11 @@ class InheritsGraph(FortranGraph):
         nodes. Adds appropriate edges between them.
         """
         for n in nodes:
-            self.add_node([x for x in n.comp_types.keys() if x != n])
+            self.add_node([x for x in n.comp_types.keys() if x.ident not in self.added])
             for c in n.comp_types:
                 self.dot.edge(c.ident,n.ident,style='dashed',label=n.comp_types[c])
             if n.ancestor:
-                self.add_node([n.ancestor])
+                if n.ancestor.ident not in self.added: self.add_node([n.ancestor])
                 self.dot.edge(n.ancestor.ident,n.ident)
 
 
@@ -428,10 +450,10 @@ class InheritedByGraph(FortranGraph):
         nodes. Adds appropriate edges between them.
         """
         for n in nodes:
-            self.add_node([x for x in n.comp_of.keys() if x != n])
+            self.add_node([x for x in n.comp_of.keys() if x.ident not in self.added])
             for c in n.comp_of:
                 self.dot.edge(n.ident,c.ident,style='dashed',label=n.comp_of[c])
-            self.add_node(n.children)
+            self.add_node([x for x in n.children if x.ident not in self.added])
             for c in n.children:
                 self.dot.edge(n.ident,c.ident)
 
@@ -443,19 +465,19 @@ class CallGraph(FortranGraph):
         nodes. Adds appropriate edges between them.
         """
         self.dot.attr('graph',size='11.875,1000.0')
-        added = []
+        self.dot.attr('graph',concentrate='false')
         for n in nodes:
             for p in n.calls:
-                if p not in nodes and p not in added:
+                if p not in nodes and p.ident not in self.added:
                     self.dot.node(p.ident,**p.attribs)
                     self.numnodes += 1
-                    added.append(p)
+                    self.added.append(p.ident)
                 self.dot.edge(n.ident,p.ident)
             for p in getattr(n,'interfaces',[]):
-                if p not in nodes and p not in added:
+                if p not in nodes and p.ident not in self.added:
                     self.dot.node(p.ident,**p.attribs)
                     self.numnodes += 1
-                    added.append(p)
+                    self.added.append(p.ident)
                 self.dot.edge(n.ident,p.ident,style='dashed')
                 
 
@@ -465,11 +487,12 @@ class CallsGraph(FortranGraph):
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
         """
+        self.dot.attr('graph',concentrate='false')
         for n in nodes:
-            self.add_node([x for x in n.calls if x != n])
+            self.add_node([x for x in n.calls if x.ident not in self.added])
             for p in n.calls:
                 self.dot.edge(n.ident,p.ident)
-            self.add_node(getattr(n,'interfaces',[]))
+            self.add_node([x for x in getattr(n,'interfaces',[]) if x.ident not in self.added])
             for p in getattr(n,'interfaces',[]):
                 self.dot.edge(n.ident,p.ident,style='dashed')
 
@@ -480,12 +503,13 @@ class CalledByGraph(FortranGraph):
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
         """
+        self.dot.attr('graph',concentrate='false')
         for n in nodes:
             if isinstance(n,ProgNode): continue
-            self.add_node([x for x in n.called_by if x != n])
+            self.add_node([x for x in n.called_by if x.ident not in self.added])
             for p in n.called_by:
                 self.dot.edge(p.ident,n.ident)
-            self.add_node(getattr(n,'interfaced_by',[]))
+            self.add_node([x for x in getattr(n,'interfaced_by',[]) if x.ident not in self.added])
             for p in getattr(n,'interfaced_by',[]):
                 self.dot.edge(p.ident,n.ident,style='dashed')
 
@@ -525,7 +549,7 @@ gd.register(intr,FortranInterface)
 gd.register('Unknown Procedure Type',FortranSubroutine)
 gd.register('Program',FortranProgram)
 dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
-                                      'concentrate':'true'},
+                                      'concentrate':'false'},
                           node_attr={'shape':'box',
                                      'height':'0.0',
                                      'margin':'0.08',

@@ -30,7 +30,6 @@ import os
 import toposort
 
 import ford.sourceform
-from ford.graphs import ModuleGraph, UsesGraph
 
 INTRINSIC_MODS = {'iso_fortran_env': '<a href="https://software.intel.com/en-us/node/511041">iso_fortran_env</a>',
                   'iso_c_binding': '<a href="https://software.intel.com/en-us/node/511038">iso_c_binding</a>',

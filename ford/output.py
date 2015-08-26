@@ -104,8 +104,11 @@ class Documentation(object):
             if pagetree:
                 for item in pagetree:
                     self.pagetree.append(PagetreePage(data,project,item))
-        except:
-            sys.exit('Error encountered. Run with "--debug" flag for traceback.')
+        except Exception as e:
+            if data['dbg']:
+                raise e
+            else:
+                sys.exit('Error encountered. Run with "--debug" flag for traceback.')
         if data['search'].lower() == 'true':
             if data['relative']:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],'')
