@@ -76,7 +76,14 @@ INTRINSICS =  ['abort','abs','access','achar','acos','acosh',
 'gamma','gerror','getarg','get_command','get_command_argument','getcwd','getenv', 
 'get_environment_variable','getgid','getlog','getpid','getuid','gmtime', 
 'hostnm','huge','hypot','iabs','iachar','iall','iand','iany','iargc','ibclr','ibits', 
-'ibset','ichar','idate','ieor','ierrno','if','imag','image_index','index','inquire','int','int2',
+'ibset','ichar','idate','ieee_class','ieee_copy_sign','ieee_get_flag','ieee_get_halting_mode',
+'ieee_get_rounding_mode','ieee_get_status','ieee_get_underflow_mode','ieee_is_finite','ieee_is_nan',
+'ieee_is_negative','ieee_is_normal','ieee_logb','ieee_next_after','ieee_rem','ieee_rint','ieee_scalb',
+'ieee_selected_real_kind','ieee_set_flag','ieee_set_halting_mode','ieee_set_rounding_mode',
+'ieee_set_status','ieee_support_datatype','ieee_support_denormal','ieee_support_divide',
+'ieee_support_flag','ieee_support_halting','ieee_support_inf','ieee_support_io','ieee_support_nan',
+'ieee_support_rounding','ieee_support_sqrt','ieee_support_standard','ieee_support_underflow_control',
+'ieee_unordered','ieee_value','ieor','ierrno','if','imag','image_index','index','inquire','int','int2',
 'int8','ior','iparity','irand','is','is_iostat_end','is_iostat_eor','isatty','ishft', 
 'ishftc','isnan','itime','kill','kind','lbound','lcobound','leadz','len', 
 'len_trim','lge','lgt','link','lle','llt','lnblnk','loc','log','log10','log_gamma', 
@@ -285,6 +292,7 @@ class FortranBase(object):
                     if i.intent == 'in': return 'b'
                     if i.intent == 'inout': return 'c'
                     if i.intent == 'out': return 'd'
+                    if i.intent == '': return 'e'
                 if i.permission == 'public': return 'b'
                 if i.permission == 'protected': return 'c'
                 if i.permission == 'private': return 'd'
@@ -1492,7 +1500,7 @@ class FortranVariable(FortranBase):
     """
     An object representing a variable within Fortran.
     """
-    def __init__(self,name,vartype,parent,attribs=[],intent="inout",
+    def __init__(self,name,vartype,parent,attribs=[],intent="",
                  optional=False,permission="public",parameter=False,kind=None,
                  strlen=None,proto=None,doc=[],points=False,initial=None):
         self.name = name
@@ -1659,7 +1667,7 @@ def line_to_variables(source, line, inherit_permission, parent):
     """
     vartype, kind, strlen, proto, rest = parse_type(line,parent.strings,parent.settings)
     attribs = []
-    intent = "inout"
+    intent = ""
     optional = False
     permission = inherit_permission
     parameter = False
@@ -1681,7 +1689,7 @@ def line_to_variables(source, line, inherit_permission, parent):
             elif tmp_attribs[i].lower().replace(' ','') == "intent(out)":
                 intent = 'out'
             elif tmp_attribs[i].lower().replace(' ','') == "intent(inout)":
-                pass
+                intent = 'inout'
             else: attribs.append(tmp_attribs[i])
     else:
         declarestr = ATTRIBSPLIT2_RE.match(rest).group(2)
