@@ -292,6 +292,7 @@ class FortranBase(object):
                     if i.intent == 'in': return 'b'
                     if i.intent == 'inout': return 'c'
                     if i.intent == 'out': return 'd'
+                    if i.intent == '': return 'e'
                 if i.permission == 'public': return 'b'
                 if i.permission == 'protected': return 'c'
                 if i.permission == 'private': return 'd'
@@ -1499,7 +1500,7 @@ class FortranVariable(FortranBase):
     """
     An object representing a variable within Fortran.
     """
-    def __init__(self,name,vartype,parent,attribs=[],intent="inout",
+    def __init__(self,name,vartype,parent,attribs=[],intent="",
                  optional=False,permission="public",parameter=False,kind=None,
                  strlen=None,proto=None,doc=[],points=False,initial=None):
         self.name = name
@@ -1666,7 +1667,7 @@ def line_to_variables(source, line, inherit_permission, parent):
     """
     vartype, kind, strlen, proto, rest = parse_type(line,parent.strings,parent.settings)
     attribs = []
-    intent = "inout"
+    intent = ""
     optional = False
     permission = inherit_permission
     parameter = False
@@ -1688,7 +1689,7 @@ def line_to_variables(source, line, inherit_permission, parent):
             elif tmp_attribs[i].lower().replace(' ','') == "intent(out)":
                 intent = 'out'
             elif tmp_attribs[i].lower().replace(' ','') == "intent(inout)":
-                pass
+                intent = 'inout'
             else: attribs.append(tmp_attribs[i])
     else:
         declarestr = ATTRIBSPLIT2_RE.match(rest).group(2)
