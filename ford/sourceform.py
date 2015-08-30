@@ -1594,7 +1594,7 @@ class FortranBoundProcedure(FortranBase):
             for i in range(len(self.bindings)):
                 for proc in self.parent.all_boundprocs:
                     if proc.name and proc.name.lower() == self.bindings[i].lower():
-                        self.bindings[i] = proc.bindings[0]
+                        self.bindings[i] = proc
                         self.matched.append(True)
                         break
                 else:
@@ -1606,7 +1606,6 @@ class FortranBoundProcedure(FortranBase):
                     self.matched.append(True)
                 else:
                     self.matched.append(False)
-
 
 
 class FortranModuleProcedure(FortranBase):

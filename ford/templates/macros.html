@@ -370,9 +370,18 @@
          {% elif tb.proto.obj == 'procedure' %}
             {{ proc_summary(tb.proto,proto=True) }}
          {% endif %}
-      {#{% elif tb.matched[loop.index0] %}#}
+      {% elif bind.obj == 'boundproc' %}
+         {% if 'deferred' in bind.attribs and bind.protomatch %}
+            {% if bind.proto.obj == 'interface' %}
+                {{ proc_summary(bind.proto.procedure,proto=True) }}
+            {% elif bind.proto.obj == 'procedure' %}
+                {{ proc_summary(bind.proto,proto=True) }}
+            {% endif %}
+         {% else %}
+            {{ proc_summary(bind.bindings[0]) }}
+         {% endif %}
       {% else %}
-        {{ proc_summary(bind) }}
+         {{ proc_summary(bind) }}
       {% endif %}
       </li>
     {% endfor %}

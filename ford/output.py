@@ -28,7 +28,7 @@ import sys
 import os
 import shutil
 import time
-
+import traceback
 
 import jinja2
 if (sys.version_info[0]>2):
@@ -106,7 +106,8 @@ class Documentation(object):
                     self.pagetree.append(PagetreePage(data,project,item))
         except Exception as e:
             if data['dbg']:
-                raise e
+                traceback.print_exc()
+                sys.exit('Error encountered.')
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
         if data['search'].lower() == 'true':
