@@ -138,7 +138,6 @@ class Documentation(object):
         os.mkdir(os.path.join(out_dir,'module'), 0o755)
         os.mkdir(os.path.join(out_dir,'program'), 0o755)
         os.mkdir(os.path.join(out_dir,'src'), 0o755)
-        #~ os.mkdir(os.path.join(out_dir,'graphs'), 0o755)
         copytree(os.path.join(loc,'css'), os.path.join(out_dir,'css'))
         copytree(os.path.join(loc,'fonts'), os.path.join(out_dir,'fonts'))
         copytree(os.path.join(loc,'js'), os.path.join(out_dir,'js'))

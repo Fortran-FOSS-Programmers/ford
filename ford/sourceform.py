@@ -220,7 +220,6 @@ class FortranBase(object):
         else:
             return namelist.get_name(self)
 
-
     @property
     def anchor(self):
         return self.obj + '-' + quote(self.ident)
@@ -448,8 +447,8 @@ class FortranContainer(FortranBase):
     MODULE_RE = re.compile("^module(?:\s+(\w+))?$",re.IGNORECASE)
     SUBMODULE_RE = re.compile("^submodule\s*\(\s*(\w+)\s*(?::\s*(\w+))?\s*\)\s*(?:::|\s)\s*(\w+)$",re.IGNORECASE)
     PROGRAM_RE = re.compile("^program(?:\s+(\w+))?$",re.IGNORECASE)
-    SUBROUTINE_RE = re.compile("^\s*(?:(.+?)\s+)?subroutine\s+(\w+)\s*(\([^()]*\))?(\s*bind\s*\(\s*c.*\))?$",re.IGNORECASE)
-    FUNCTION_RE = re.compile("^(?:(.+?)\s+)?function\s+(\w+)\s*(\([^()]*\))?(?:\s*result\s*\(\s*(\w+)\s*\))?(\s*bind\s*\(\s*c.*\))?$",re.IGNORECASE)
+    SUBROUTINE_RE = re.compile("^\s*(?:(.+?)\s+)?subroutine\s+(\w+)\s*(\([^()]*\))?(?:\s*bind\s*\(\s*(.*)\s*\))?$",re.IGNORECASE)
+    FUNCTION_RE = re.compile("^(?:(.+?)\s+)?function\s+(\w+)\s*(\([^()]*\))?(?=(?:.*result\s*\(\s*(\w+)\s*\))?)(?=(?:.*bind\s*\(\s*(.*)\s*\))?).*$",re.IGNORECASE)
     TYPE_RE = re.compile("^type(?:\s+|\s*(,.*)?::\s*)((?!(?:is))\w+)\s*(\([^()]*\))?\s*$",re.IGNORECASE)
     INTERFACE_RE = re.compile("^(abstract\s+)?interface(?:\s+(\S.+))?$",re.IGNORECASE)
     #~ ABS_INTERFACE_RE = re.compile("^abstract\s+interface(?:\s+(\S.+))?$",re.IGNORECASE)
@@ -1059,6 +1058,9 @@ class FortranSubroutine(FortranCodeUnit):
         if attribstr.find("elemental") >= 0:
             self.attribs.append("elemental")
             attribstr = attribstr.replace("elemental","",1)
+        if attribstr.find("non_recursive") >= 0:
+            self.attribs.append("non_recursive")
+            attribstr = attribstr.replace("non_recursive","",1)
         if attribstr.find("recursive") >= 0:
             self.attribs.append("recursive")
             attribstr = attribstr.replace("recursive","",1)
@@ -1072,7 +1074,7 @@ class FortranSubroutine(FortranCodeUnit):
             if self.SPLIT_RE.split(line.group(3)[1:-1]):
                 for arg in self.SPLIT_RE.split(line.group(3)[1:-1]):
                     if arg != '': self.args.append(arg.strip())
-        self.bindC = bool(line.group(4))
+        self.bindC = line.group(4)
         self.variables = []
         self.uses = []
         self.calls = []
@@ -1127,9 +1129,7 @@ class FortranSubroutine(FortranCodeUnit):
                 else:
                     vartype = 'real'
                 self.args[i] = FortranVariable(self.args[i],vartype,self)
-
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
-        return
     
     
 class FortranFunction(FortranCodeUnit):
@@ -1154,6 +1154,9 @@ class FortranFunction(FortranCodeUnit):
         if attribstr.find("elemental") >= 0:
             self.attribs.append("elemental")
             attribstr = attribstr.replace("elemental","",1)
+        if attribstr.find("non_recursive") >= 0:
+            self.attribs.append("non_recursive")
+            attribstr = attribstr.replace("non_recursive","",1)
         if attribstr.find("recursive") >= 0:
             self.attribs.append("recursive")
             attribstr = attribstr.replace("recursive","",1)
@@ -1180,7 +1183,16 @@ class FortranFunction(FortranCodeUnit):
         for arg in self.SPLIT_RE.split(line.group(3)[1:-1]):
             # FIXME: This is to avoid a problem whereby sometimes an empty argument list will appear to contain the argument ''. I didn't know why it would do this (especially since sometimes it works fine) and just put this in as a quick fix. However, at some point I should try to figure out the actual root of the problem.
             if arg != '': self.args.append(arg.strip())
-        self.bindC = bool(line.group(5))
+        try:
+            self.bindC = ford.utils.get_parens(line.group(5),-1)[0:-1]
+        except:
+            self.bindC = line.group(5)
+        if self.bindC:
+            search_from = 0
+            while QUOTES_RE.search(self.bindC[search_from:]):
+                num = int(QUOTES_RE.search(self.bindC[search_from:]).group()[1:-1])
+                self.bindC = self.bindC[0:search_from] + QUOTES_RE.sub(self.parent.strings[num],self.bindC[search_from:],count=1)
+                search_from += QUOTES_RE.search(self.bindC[search_from:]).end(0)
         self.variables = []
         self.uses = []
         self.calls = []

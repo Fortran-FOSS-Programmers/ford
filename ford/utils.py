@@ -55,10 +55,11 @@ def sub_notes(docs):
 
 
 
-def get_parens(line):
+def get_parens(line,retlevel=0,retblevel=0):
     """
-    Takes a string starting with an open parenthesis and returns the portion
-    of the string going to the corresponding close parenthesis.
+    By default akes a string starting with an open parenthesis and returns the portion
+    of the string going to the corresponding close parenthesis. If retlevel != 0 then
+    will return when that level (for parentheses) is reached. Same for retblevel.
     """
     if len(line) == 0: return line
     parenstr = ''
@@ -74,11 +75,11 @@ def get_parens(line):
         elif char == ']':
             blevel -= 1
         elif (char.isalpha() or char == '_' or char == ':' or char == ',' 
-          or char == ' ') and level == 0 and blevel == 0:
+          or char == ' ') and level == retlevel and blevel == retblevel:
             return parenstr
         parenstr = parenstr + char
     
-    if level == 0 and blevel == 0: return parenstr    
+    if level == retlevel and blevel == retblevel: return parenstr    
     raise Exception("Couldn't parse parentheses: {}".format(line))
 
 
