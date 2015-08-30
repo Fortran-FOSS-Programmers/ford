@@ -61,7 +61,7 @@ class Documentation(object):
         self.search = SearchPage(data,project)
         if data['relative']:
             ford.sourceform.set_base_url('..')
-            ford.pagetree.set_base_url('.,')
+            ford.pagetree.set_base_url('..')
             data['project_url'] = '..'
         self.graphs = GraphManager(data['project_url'],self.data['output_dir'],'graphs')
         for item in project.types:

@@ -56,51 +56,84 @@ QUOTES_RE = re.compile("\"([^\"]|\"\")*\"|'([^']|'')*'",re.IGNORECASE)
 PARA_CAPTURE_RE = re.compile("<p>.*?</p>",re.IGNORECASE|re.DOTALL)
 COMMA_RE = re.compile(",(?!\s)")
 NBSP_RE = re.compile(" (?= )|(?<= ) ")
+DIM_RE = re.compile("^\w+\s*(\(.*\))\s*$")
 
-INTRINSICS =  ['abort','abs','access','achar','acos','acosh', 
-'adjustl','adjustr','aimag','aint','alarm','all','allocate','allocated','and','anint', 
-'any','asin','asinh','associate','associated','atan','atan2','atanh','atomic_add', 
-'atomic_and','atomic_cas','atomic_define','atomic_fetch_add','atomic_fetch_and', 
-'atomic_fetch_or','atomic_fetch_xor','atomic_or','atomic_ref', 
-'atomic_xor','backtrace','bessel_j0','bessel_j1','bessel_jn','bessel_y0', 
-'bessel_y1','bessel_yn','bge','bgt','bit_size','ble','blt','btest',
-'c_associated','c_f_pointer','c_f_procpointer','c_funloc','c_loc', 
-'c_sizeof','cabs','case','cdabs','ceiling','char','chdir','chmod','class','close','cmplx','co_broadcast',
-'co_max','co_min','co_reduce','co_sum','command_argument_count', 
-'compiler_options','compiler_version','complex','conjg','cos','cosh', 
-'count','cpu_time','cshift','ctime','dabs','date_and_time','dble','dcmplx','deallocate','digits', 
-'dim','dlog','dlog10','dmax1','dmin1','dot_product','dprod','dreal','dshiftl','dshiftr','dsqrt','dtime','elseif','eoshift',
-'epsilon','erf','erfc','erfc_scaled','etime','execute_command_line','exit', 
-'exp','exponent','extends_type_of','fdate','fget','fgetc','floor','flush', 
-'fnum','forall','format','fput','fputc','fraction','free','fseek','fstat','ftell',
-'gamma','gerror','getarg','get_command','get_command_argument','getcwd','getenv', 
-'get_environment_variable','getgid','getlog','getpid','getuid','gmtime', 
-'hostnm','huge','hypot','iabs','iachar','iall','iand','iany','iargc','ibclr','ibits', 
-'ibset','ichar','idate','ieee_class','ieee_copy_sign','ieee_get_flag','ieee_get_halting_mode',
-'ieee_get_rounding_mode','ieee_get_status','ieee_get_underflow_mode','ieee_is_finite','ieee_is_nan',
-'ieee_is_negative','ieee_is_normal','ieee_logb','ieee_next_after','ieee_rem','ieee_rint','ieee_scalb',
-'ieee_selected_real_kind','ieee_set_flag','ieee_set_halting_mode','ieee_set_rounding_mode',
-'ieee_set_status','ieee_support_datatype','ieee_support_denormal','ieee_support_divide',
-'ieee_support_flag','ieee_support_halting','ieee_support_inf','ieee_support_io','ieee_support_nan',
-'ieee_support_rounding','ieee_support_sqrt','ieee_support_standard','ieee_support_underflow_control',
-'ieee_unordered','ieee_value','ieor','ierrno','if','imag','image_index','index','inquire','int','int2',
-'int8','ior','iparity','irand','is','is_iostat_end','is_iostat_eor','isatty','ishft', 
-'ishftc','isnan','itime','kill','kind','lbound','lcobound','leadz','len', 
-'len_trim','lge','lgt','link','lle','llt','lnblnk','loc','log','log10','log_gamma', 
-'logical','long','lshift','lstat','ltime','malloc','maskl','maskr','matmul','max','max0', 
-'maxexponent','maxloc','maxval','mclock','mclock8','merge','merge_bits','min','min0', 
-'minexponent','minloc','minval','mod','modulo','move_alloc','mvbits', 
-'nearest','new_line','nint','norm2','not','null','nullify','num_images','open','or','pack', 
-'parity','perror','popcnt','poppar','precision','present','procedure','product','radix', 
-'ran','rand','random_number','random_seed','range','rank','read','real','rename', 
-'repeat','reshape','rewind','rrspacing','rshift','same_type_as','scale','scan', 
-'secnds','second','selected_char_kind','selected_int_kind', 
-'selected_real_kind','set_exponent','shape','shifta','shiftl','shiftr', 
-'sign','signal','sin','sinh','size','sizeof','sleep','spacing','spread','sqrt', 
-'srand','stat','storage_size','sum','symlnk','system','system_clock','tan', 
-'tanh','this_image','time','time8','tiny','trailz','transfer','transpose', 
-'trim','ttynam','type','ubound','ucobound','umask','unlink','unpack','verify',
-'while','write','xor','zabs']
+INTRINSICS = ['abort','abs','abstract','access','achar','acos','acosh','adjustl',
+              'adjustr','aimag','aint','alarm','all','allocatable','allocate',
+              'allocated','and','anint','any','asin','asinh','assign','associate',
+              'associated','asynchronous','atan','atan2','atanh','atomic_add ',
+              'atomic_and','atomic_cas','atomic_define','atomic_fetch_add',
+              'atomic_fetch_and ','atomic_fetch_or','atomic_fetch_xor','atomic_or',
+              'atomic_ref','atomic_xor','backtrace','backspace','bessel_j0',
+              'bessel_j1','bessel_jn','bessel_y0','bessel_y1','bessel_yn','bge',
+              'bgt','bind','bit_size','ble','block','block data','blt','btest',
+              'c_associated','c_f_pointer','c_f_procpointer','c_funloc','c_loc ',
+              'c_sizeof','cabs','call','case','case default','cdabs','ceiling',
+              'char','character','chdir','chmod','class','close','cmplx',
+              'codimension','co_broadcast','co_max','co_min','co_reduce','co_sum',
+              'command_argument_count','common','compiler_options',
+              'compiler_version','complex','conjg','contains','contiguous',
+              'continue','cos','cosh','count','cpu_time','critical','cshift',
+              'cycle','data','ctime','dabs','date_and_time','dble','dcmplx',
+              'deallocate','deferred','digits','dim','dimension','do',
+              'do concurrent','do while','dlog','dlog10','dmax1','dmin1',
+              'dot_product','double precision','dprod','dreal','dshiftl','dshiftr',
+              'dsqrt','dtime','elemental','else','else if','elseif','elsewhere',
+              'end','end associate','end block','end block data','end critical',
+              'end do','end enum','end forall','end function','end if',
+              'end interface','end module','end program','end select',
+              'end submodule','end subroutine','end type','end where','endfile',
+              'endif','entry','enum','enumerator','eoshift','epsilon',
+              'equivalence','erf','erfc','erfc_scaled','etime','error stop',
+              'execute_command_line','exit','exp','exponent','extends',
+              'extends_type_of','external','fget','fgetc','final','findloc',
+              'fdate','floor','flush','fnum','forall','format','fput','fputc',
+              'fraction','function','free','fseek','fstat','ftell','gamma',
+              'generic','gerror','getarg','get_command','get_command_argument',
+              'getcwd','getenv ','get_environment_variable','go to','goto','getgid',
+              'getlog','getpid','getuid','gmtime ','hostnm','huge','hypot','iabs',
+              'iachar','iall','iand','iany','iargc','ibclr','ibits','ibset','ichar',
+              'idate','ieee_class','ieee_copy_sign','ieee_get_flag',
+              'ieee_get_halting_mode','ieee_get_rounding_mode','ieee_get_status',
+              'ieee_get_underflow_mode','ieee_is_finite','ieee_is_nan',
+              'ieee_is_negative','ieee_is_normal','ieee_logb','ieee_next_after',
+              'ieee_rem','ieee_rint','ieee_scalb','ieee_selected_real_kind',
+              'ieee_set_flag','ieee_set_halting_mode','ieee_set_rounding_mode',
+              'ieee_set_status','ieee_support_datatype','ieee_support_denormal',
+              'ieee_support_divide','ieee_support_flag','ieee_support_halting',
+              'ieee_support_inf','ieee_support_io','ieee_support_nan',
+              'ieee_support_rounding','ieee_support_sqrt','ieee_support_standard',
+              'ieee_support_underflow_control','ieee_unordered','ieee_value',
+              'ieor','ierrno','if','imag','image_index','implicit',
+              'implicit none','import','include','index','inquire','int','integer',
+              'intent','interface','intrinsic','int2','int8','ior','iparity',
+              'irand','is','is_contiguous','is_iostat_end','is_iostat_eor',
+              'isatty','ishft','ishftc','isnan','itime','kill','kind','lbound',
+              'lcobound','leadz','len','len_trim','lge','lgt','link','lle','llt',
+              'lock','lnblnk','loc','log','log_gamma','log10','logical','long',
+              'lshift','lstat','ltime','malloc','maskl','maskr','matmul','max',
+              'max0 ','maxexponent','maxloc','maxval','mclock','mclock8','merge',
+              'merge_bits','min','min0 ','minexponent','minloc','minval','mod',
+              'module','module procedure','modulo','move_alloc','mvbits','namelist',
+              'nearest','new_line','nint','non_overridable','none','nopass','norm2',
+              'not','null','nullify','num_images','only','open','or','operator',
+              'optional','pack','parameter','parity','pass','pause','pointer',
+              'perror','popcnt','poppar','precision','present','print','private',
+              'procedure','product','program','protected','public','pure','radix',
+              'ran','rand','random_number','random_seed','range','rank','read',
+              'real','recursive','rename','repeat','reshape','result','return',
+              'rewind','rewrite','rrspacing','rshift','same_type_as','save',
+              'scale','scan','secnds','second','select','select case','select type',
+              'selected_char_kind','selected_int_kind','selected_real_kind',
+              'sequence','set_exponent','shape','shifta','shiftl','shiftr','sign',
+              'signal','sin','sinh','size','sizeof','sleep','spacing','spread',
+              'sqrt','srand','stat','stop','storage_size','submodule','subroutine',
+              'sum','sync all','sync images','sync memory','symlnk','system',
+              'system_clock','tan','tanh','target','then','this_image','time',
+              'time8','tiny','trailz','transfer','transpose','trim','ttynam',
+              'type','type_as','ubound','ucobound','umask','unlock','unlink',
+              'unpack','use','value','verify','volatile','wait','where','while',
+              'write','xor','zabs']
 
 base_url = ''
 
@@ -409,12 +442,7 @@ class FortranContainer(FortranBase):
     """
     A class on which any classes requiring further parsing are based.
     """
-    PUBLIC_RE = re.compile("^public(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
-    PRIVATE_RE = re.compile("^private(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
-    PROTECTED_RE = re.compile("^protected(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
-    OPTIONAL_RE = re.compile("^optional(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
-    VOLATILE_RE = re.compile("^volatile(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
-    ASYNC_RE = re.compile("^asynchronous(\s+|\s*::\s*)((\w|\s|,)+)$",re.IGNORECASE)
+    ATTRIB_RE = re.compile("^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",re.IGNORECASE)
     END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface)(?:\s+(\w+))?)?$",re.IGNORECASE)
     MODPROC_RE = re.compile("^(module\s+)?procedure\s*(?:::|\s)\s*(\w.*)$",re.IGNORECASE)
     MODULE_RE = re.compile("^module(?:\s+(\w+))?$",re.IGNORECASE)
@@ -430,7 +458,6 @@ class FortranContainer(FortranBase):
     USE_RE = re.compile("^use(?:\s*,\s*(?:non_)?intrinsic\s*::\s*|\s+)(\w+)\s*($|,.*)",re.IGNORECASE)
     CALL_RE = re.compile("(?:^|(?<=[^a-zA-Z0-9_%]))\w+(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
     SUBCALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
-    EXTERNAL_RE = re.compile("^external(?:\s+|\s*::\s*)(\w.*?)\s*$",re.IGNORECASE)
     
     VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure{})\s*((?:\(|\s\w|[:,*]).*)$"
     
@@ -477,59 +504,44 @@ class FortranContainer(FortranBase):
                 else:
                     raise Exception("CONTAINS statement in {}".format(type(self).__name__[7:].upper()))
             elif line.lower() == "public": permission = "public"
-            elif self.PUBLIC_RE.match(line):
-                varlist = self.SPLIT_RE.split(self.PUBLIC_RE.match(line).group(2))
-                varlist[-1] = varlist[-1].strip()
-                if hasattr(self,'public_list'): 
-                    self.public_list.extend(varlist)
-                else:
-                    raise Exception("PUBLIC declaration in {}".format(type(self).__name__[7:].upper()))
             elif line.lower() == "private": permission = "private"
-            elif self.PRIVATE_RE.match(line):
-                varlist = self.SPLIT_RE.split(self.PRIVATE_RE.match(line).group(2))
-                varlist[-1] = varlist[-1].strip()
-                if hasattr(self,'private_list'): 
-                    self.private_list.extend(varlist)
-                else:
-                    raise Exception("PRIVATE declaration in {}".format(type(self).__name__[7:].upper()))
             elif line.lower() == "protected": permission = "protected"
-            elif self.PROTECTED_RE.match(line):
-                varlist = self.SPLIT_RE.split(self.PROTECTED_RE.match(line).group(2))
-                varlist[-1] = varlist[-1].strip()
-                if hasattr(self,'protected_list'): 
-                    self.protected_list.extend(varlist)
-                else:
-                    raise Exception("PROTECTED declaration in {}".format(type(self).__name__[7:].upper()))
-            elif self.EXTERNAL_RE.match(line):
-                extlist = self.SPLIT_RE.split(self.EXTERNAL_RE.match(line).group(1))
-                extlist[-1] = extlist[-1].strip()
-                if hasattr(self,'external_list'):
-                    self.external_list.extend(extlist)
-                else:
-                    raise Exception("EXTERNAL declaration in {}".format(type(self).__name__[7:].upper()))
             elif line.lower() == "sequence":
                 if type(self) == FortranType: self.sequence = True
-            elif self.OPTIONAL_RE.match(line):
-                varlist = self.SPLIT_RE.split(self.OPTIONAL_RE.match(line).group(2))
-                varlist[-1] = varlist[-1].strip()
-                if hasattr(self,'optional_list'): 
-                    self.optional_list.extend(varlist)
+            elif self.ATTRIB_RE.match(line):
+                match = self.ATTRIB_RE.match(line)
+                attr = match.group(1).lower().replace(" ", "")
+                if len(attr) >= 4 and attr[0:4].lower() == 'bind':
+                    attr = attr.replace(",",", ")
+                if hasattr(self,'attr_dict'):
+                    if attr == 'data':
+                        pass
+                    elif attr == 'dimension' or attr == 'allocatable' or attr == 'pointer':
+                        names = ford.utils.paren_split(',',match.group(2))
+                        for name in names:
+                            name = name.strip().lower()
+                            i = name.index('(')
+                            n = name[:i]
+                            sh = name[i:]
+                            if n in self.attr_dict:
+                                self.attr_dict[n].append(attr+sh)
+                            else:
+                                self.attr_dict[n] = [attr+sh]
+                    else:
+                        names = ford.utils.paren_split(',',match.group(2))
+                        search_from = 0
+                        while QUOTES_RE.search(attr[search_from:]):
+                            num = int(QUOTES_RE.search(attr[search_from:]).group()[1:-1])
+                            attr = attr[0:search_from] + QUOTES_RE.sub(self.strings[num],attr[search_from:],count=1)
+                            search_from += QUOTES_RE.search(attr[search_from:]).end(0)
+                        for name in names:
+                            name = name.strip().lower()
+                            if name in self.attr_dict:
+                                self.attr_dict[name].append(attr)
+                            else:
+                                self.attr_dict[name] = [attr]
                 else:
-                    raise Exception("OPTIONAL declaration in {}".format(type(self).__name__[7:].upper()))
-            elif self.VOLATILE_RE.match(line):
-                varlist = self.SPLIT_RE.split(self.VOLATILE_RE.match(line).group(2))
-                varlist[-1] = varlist[-1].strip()
-                if hasattr(self,'optional_list'): 
-                    self.volatile_list.extend(varlist)
-                else:
-                    raise Exception("OPTIONAL declaration in {}".format(type(self).__name__[7:].upper()))
-            elif self.ASYNC_RE.match(line):
-                varlist = self.SPLIT_RE.split(self.ASYNC_RE.match(line).group(2))
-                varlist[-1] = varlist[-1].strip()
-                if hasattr(self,'optional_list'): 
-                    self.async_list.extend(varlist)
-                else:
-                    raise Exception("OPTIONAL declaration in {}".format(type(self).__name__[7:].upper()))
+                    raise Exception("Found {} statement in {}".format(attr.upper(),type(self).__name__[7:].upper()))
             elif self.END_RE.match(line):
                 if isinstance(self,FortranSourceFile):
                     raise Exception("END statement outside of any nesting")
@@ -616,7 +628,6 @@ class FortranContainer(FortranBase):
                             self.boundprocs.append(FortranBoundProcedure(source,
                                                    self.BOUNDPROC_RE.match(pseudo_line),
                                                    self,permission))
-                            
                 else:
                     raise Exception("Found type-bound procedure in {}".format(type(self).__name__[7:].upper()))
             elif self.FINAL_RE.match(line) and incontains:
@@ -796,6 +807,36 @@ class FortranCodeUnit(FortranContainer):
             self.modsubroutines = [sub for sub in self.subroutines if sub.module]
             self.subroutines = [sub for sub in self.subroutines if not sub.module]
 
+
+    def process_attribs(self):
+        for item in self.functions + self.subroutines + self.types + self.interfaces + self.absinterfaces:
+            if item.name.lower() in self.attr_dict:
+                if 'public' in self.attr_dict[item.name.lower()]:
+                    item.permission = 'public'
+                elif 'private' in self.attr_dict[item.name.lower()]:
+                    item.permission = 'private'
+                elif attr[0:4] == 'bind':
+                    if hasattr(item,'bindC'):
+                        item.bindC = attr[5:-1]
+                    elif getattr(item,'procedure',None):
+                        item.procedure.bindC = attr[5:-1]
+                    else:
+                        item.attribs.append(attr[5:-1])
+        for var in self.variables:
+            for attr in self.attr_dict.get(var.name.lower(),[]):
+                if attr == 'public' or attr == 'private' or attr == 'protected':
+                    var.permission = attr
+                elif attr[0:6] == 'intent':
+                    var.intent = attr[6:-1]
+                elif DIM_RE.match(attr) and ('dimension' in attr or 'pointer' in attr or 'allocatable' in attr):
+                    i = attr.index('(')
+                    var.attribs.append(attr[0:i])
+                    var.dimension = attr[i:]
+                else:
+                    var.attribs.append(attr)
+        del self.attr_dict
+
+
     def prune(self):
         """
         Remove anything which shouldn't be displayed.
@@ -874,6 +915,7 @@ class FortranModule(FortranCodeUnit):
         self.public_list = []
         self.private_list = []
         self.protected_list = []
+        self.external_list = []
         self.volatile_list = []
         self.async_list = []
         self.subroutines = []
@@ -883,6 +925,7 @@ class FortranModule(FortranCodeUnit):
         self.types = []
         self.descendants = []
         self.visible = True
+        self.attr_dict = dict()
 
     def _cleanup(self):
         # Create list of all local procedures. Ones coming from other modules
@@ -893,28 +936,8 @@ class FortranModule(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
-
-        for name in self.public_list:
-            for var in self.variables + self.functions + self.subroutines + self.types + self.interfaces + self.absinterfaces:
-                if (var.name != None) and name.lower() == var.name.lower():
-                    var.permission = "public"
-        for name in self.private_list:
-            for var in self.variables + self.functions + self.subroutines + self.types + self.interfaces + self.absinterfaces:
-                if (var.name != None) and name.lower() == var.name.lower():
-                    var.permission = "private"
-        for varname in self.protected_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.permission = "protected"
-        for varname in self.volatile_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.attribs.append('volatile')
-        for varname in self.async_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.attribs.apend('asynchronous')
-
+        self.process_attribs()
+        self.variables = [v for v in self.variables if 'external' not in v.attribs]
         self.pub_procs = {}
         for p, proc in self.all_procs.items():
             if proc.permission == "public":
@@ -932,12 +955,6 @@ class FortranModule(FortranCodeUnit):
             if ai.permission == "public":
                 self.pub_absints[ai.name] = ai
 
-        del self.public_list
-        del self.private_list
-        del self.protected_list
-        del self.volatile_list
-        del self.async_list
-        return
         
     def get_used_entities(self,use_specs):
         """
@@ -1010,13 +1027,14 @@ class FortranSubmodule(FortranModule):
     def _cleanup(self):
         # Create list of all local procedures. Ones coming from other modules
         # will be added later, during correlation.
+        self.process_attribs()
+        self.variables = [v for v in self.variables if 'external' not in v.attribs]
         self.all_procs = {}
         for p in self.functions + self.subroutines:
             self.all_procs[p.name.lower()] = p
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
-        return
     
     
 class FortranSubroutine(FortranCodeUnit):
@@ -1067,6 +1085,7 @@ class FortranSubroutine(FortranCodeUnit):
         self.external_list = []
         self.volatile_list = []
         self.async_list = []
+        self.attr_dict = dict()
 
     def set_permission(self, value):
         self._permission = value
@@ -1086,23 +1105,7 @@ class FortranSubroutine(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
-
-        for varname in self.optional_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower(): 
-                    var.permission = "protected"
-                    break
-        del self.optional_list
-        for varname in self.volatile_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.attribs.append('volatile')
-        del self.volatile_list
-        for varname in self.async_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.attribs.apend('asynchronous')
-        del self.async_list
+        self.process_attribs()
         for i in range(len(self.args)):
             for var in self.variables:
                 if self.args[i].lower() == var.name.lower():
@@ -1124,8 +1127,8 @@ class FortranSubroutine(FortranCodeUnit):
                 else:
                     vartype = 'real'
                 self.args[i] = FortranVariable(self.args[i],vartype,self)
-        self.variables = [var for var in self.variables if var.name not in self.external_list]
-        del self.external_list
+
+        self.variables = [v for v in self.variables if 'external' not in v.attribs]
         return
     
     
@@ -1190,6 +1193,7 @@ class FortranFunction(FortranCodeUnit):
         self.external_list = []
         self.volatile_list = []
         self.async_list = []
+        self.attr_dict = dict()
 
     def set_permission(self, value):
         self._permission = value
@@ -1209,23 +1213,7 @@ class FortranFunction(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
-
-        for varname in self.optional_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.permission = "protected"
-                    break
-        del self.optional_list
-        for varname in self.volatile_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.attribs.append('volatile')
-        del self.volatile_list
-        for varname in self.async_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.attribs.apend('asynchronous')
-        del self.async_list
+        self.process_attribs()
         for i in range(len(self.args)):
             for var in self.variables:
                 if self.args[i].lower() == var.name.lower():
@@ -1255,9 +1243,7 @@ class FortranFunction(FortranCodeUnit):
                     self.retvar = var
                     self.variables.remove(var)
                     break
-        self.variables = [var for var in self.variables if var.name not in self.external_list]
-        del self.external_list
-        return
+        self.variables = [v for v in self.variables if 'external' not in v.attribs]
 
 
 class FortranSubmoduleProcedure(FortranCodeUnit):
@@ -1279,29 +1265,20 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.external_list = []
         self.volatile_list = []
         self.async_list = []
+        self.attr_dict = dict()
         self.mp = True
 
     def _cleanup(self):
+        self.process_attribs()
         self.all_procs = {}
         for p in self.functions + self.subroutines:
             self.all_procs[p.name.lower()] = p
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
-        self.variables = [var for var in self.variables if var.name not in self.external_list]
-        del self.external_list
-        for varname in self.volatile_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.attribs.append('volatile')
-        del self.volatile_list
-        for varname in self.async_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.attribs.apend('asynchronous')
-        return
+        self.variables = [v for v in self.variables if 'external' not in v.attribs]
 
-    
+
 class FortranProgram(FortranCodeUnit):
     """
     An object representing the main Fortran program.
@@ -1319,6 +1296,7 @@ class FortranProgram(FortranCodeUnit):
         self.external_list = []
         self.volatile_list = []
         self.async_list = []
+        self.attr_dict = dict()
     
     def _cleanup(self):
         self.all_procs = {}
@@ -1327,18 +1305,8 @@ class FortranProgram(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
-        for varname in self.volatile_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.attribs.append('volatile')
-        del self.volatile_list
-        for varname in self.async_list:
-            for var in self.variables:
-                if varname.lower() == var.name.lower():
-                    var.attribs.apend('asynchronous')
-        del self.async_list
-        self.variables = [var for var in self.variables if var.name not in self.external_list]
-        del self.external_list
+        self.process_attribs()
+        self.variables = [v for v in self.variables if 'external' not in v.attribs]
         
     
     
@@ -1362,6 +1330,8 @@ class FortranType(FortranContainer):
                     self.permission = "public"
                 elif attrib.strip().lower() == "private":
                     self.permission = "private"
+                elif attrib.strip().lower() == "external":
+                    self.attributes.append("external")
                 else:
                     self.attributes.append(attrib.strip())
         if line.group(3):
@@ -1723,11 +1693,11 @@ def line_to_variables(source, line, inherit_permission, parent):
                 search_from += QUOTES_RE.search(initial[search_from:]).end(0)
         
         if proto:
-            varlist.append(FortranVariable(name,vartype,parent,attribs,intent,
+            varlist.append(FortranVariable(name,vartype,parent,copy.copy(attribs),intent,
                            optional,permission,parameter,kind,strlen,list(proto),
                            [],points,initial))
         else:
-            varlist.append(FortranVariable(name,vartype,parent,attribs,intent,
+            varlist.append(FortranVariable(name,vartype,parent,copy.copy(attribs),intent,
                            optional,permission,parameter,kind,strlen,proto,
                            [],points,initial))
         

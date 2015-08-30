@@ -18,7 +18,7 @@ setup(
   author = 'Chris MacMackin',
   author_email = 'cmacmackin@gmail.com',
   url = 'https://github.com/cmacmackin/ford/', 
-  download_url = 'https://github.com/cmacmackin/ford/tarball/4.1.0',
+  download_url = 'https://github.com/cmacmackin/ford/tarball/4.2.1',
   keywords = ['Markdown', 'Fortran', 'documentation', 'comments'],
   classifiers=[
         # How mature is this project? Common values are
