@@ -296,7 +296,7 @@
   {% if var.proto %}{% set args = args + 1 %}{% endif %}
 <tr>
   {% if var.obj == 'variable' %}
-  <td><span class="anchor" {% if id %}id="{{ var.anchor }}"{% endif %}></span>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if intent or permission or var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>
+  <td><span class="anchor" {% if id %}id="{{ var.anchor }}"{% endif %}></span>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if (intent and var.intent) or permission or var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>
   {% if intent -%}<td>{% if var.intent -%}intent({{ var.intent }}){%- endif%}{% if var.optional or permission or var.parameter or var.attribs|length > 0 -%},{% endif %}</td>
   <td>{% if var.optional -%}optional{% if permission or var.parameter or var.attributes|length > 0 -%},{%- endif %}{%- endif %}</td>{%- endif %}
   {% if permission %}<td>{{ var.permission }}{% if var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>{% endif %}

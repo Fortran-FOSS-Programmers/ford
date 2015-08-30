@@ -826,7 +826,7 @@ class FortranCodeUnit(FortranContainer):
                 if attr == 'public' or attr == 'private' or attr == 'protected':
                     var.permission = attr
                 elif attr[0:6] == 'intent':
-                    var.intent = attr[6:-1]
+                    var.intent = attr[7:-1]
                 elif DIM_RE.match(attr) and ('dimension' in attr or 'pointer' in attr or 'allocatable' in attr):
                     i = attr.index('(')
                     var.attribs.append(attr[0:i])
