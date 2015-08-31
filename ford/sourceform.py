@@ -1107,7 +1107,6 @@ class FortranSubroutine(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
-        self.process_attribs()
         for i in range(len(self.args)):
             for var in self.variables:
                 if self.args[i].lower() == var.name.lower():
@@ -1129,6 +1128,7 @@ class FortranSubroutine(FortranCodeUnit):
                 else:
                     vartype = 'real'
                 self.args[i] = FortranVariable(self.args[i],vartype,self)
+        self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
     
     
@@ -1225,7 +1225,6 @@ class FortranFunction(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
-        self.process_attribs()
         for i in range(len(self.args)):
             for var in self.variables:
                 if self.args[i].lower() == var.name.lower():
@@ -1255,6 +1254,8 @@ class FortranFunction(FortranCodeUnit):
                     self.retvar = var
                     self.variables.remove(var)
                     break
+            # TODO:Add support for implicitely typed retval
+        self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
 
 
