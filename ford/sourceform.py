@@ -754,10 +754,10 @@ class FortranCodeUnit(FortranContainer):
                 argname = False
                 for a in getattr(self,'args',[]):
                     # Consider allowing procedures passed as arguments to be included in callgraphs
-                    argname = argname or call == a.name
+                    argname = argname or call.lower() == a.name.lower()
                 if hasattr(self,'retvar'):
-                    argname = argname or call == self.retvar.name
-                if call not in self.all_vars and (call not in self.all_types or call in self.all_procs) and not argname: tmplst.append(call)
+                    argname = argname or call.lower() == self.retvar.name.lower()
+                if call.lower() not in self.all_vars and (call.lower() not in self.all_types or call in self.all_procs) and not argname: tmplst.append(call)
             self.calls = tmplst
             fileprocs = {}
             if self.parobj == 'sourcefile':
