@@ -49,6 +49,17 @@
     </div>
   </div>
   {% endif %}
+  {% if self.enums %}
+  {% set count = count + 1 %}
+  <div class="panel panel-primary">
+    <div class="panel-heading text-left"><h3 class="panel-title">Enumerations</h3></div>
+    <div class="list-group">
+      {% for enum in self.enums %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ enum.anchor }}">{{ enum.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
   {% if self.constructor %}
   {% set count = count + 1 %}
   <div class="panel panel-primary">
@@ -538,6 +549,29 @@
 </div>
 {% endmacro %}
 
+{% macro enum_entry(enum) %}
+  <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="{{ enum.anchor }}"></span><h3>enum, bind(c){% if enum.meta['deprecated'] and enum.meta['deprecated'].lower() == 'true' %}<span class="label label-danger depwarn">Deprecated</span>{% endif %}</h3></div>
+  <div class="panel-body">
+     <h4>Enumerators</h4>
+        <table class="table table-striped varlist">
+        <tbody>
+        {% for var in enum.variables %}
+        <tr>
+          <td>{{ var.vartype }}</td><td>::</td>
+          <td><strong>{{ var.name }}</strong></td><td> = </td><td>{{ var.initial }}</td><td>{% if summary -%}{{ var.meta['summary'] }}{% else %}{{ var.doc }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+        </table>
+     {% if enum.doc or meta_list(enum.meta)|trim|length > 0 %}
+     <h4>Description</h4>
+       {{ meta_list(enum.meta) }}
+       {{ enum.doc }}
+     {% endif %}    
+  </div>
+  </div>
+{% endmacro %}
 
 {% macro proc_entry(proc) %}
   <div class="panel panel-default">

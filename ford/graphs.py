@@ -38,6 +38,8 @@ from graphviz import Digraph
 from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure
 
 HYPERLINK_RE = re.compile("^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$",re.IGNORECASE)
+WIDTH_RE = re.compile('width="(.*?)pt"',re.IGNORECASE)
+HEIGHT_RE = re.compile('height="(.*?)pt"',re.IGNORECASE)
 
 def newdict(old,key,val):
     new = copy.copy(old)
@@ -276,7 +278,8 @@ class FortranGraph(object):
         self.dot = Digraph(self.ident,
                            graph_attr={'size':'8.90625,1000.0',
                                        'rankdir':'LR',
-                                       'concentrate':'true'},
+                                       'concentrate':'true',
+                                       'id':self.ident},
                            node_attr={'shape':'box',
                                       'height':'0.0',
                                       'margin':'0.08',
@@ -287,6 +290,14 @@ class FortranGraph(object):
                            format='svg', engine='dot')
         self.add_node(self.root,(len(self.root) == 1))
         self.linkmap = self.dot.pipe('cmapx').decode('utf-8')
+        self.svg_src = self.dot.pipe().decode('utf-8')
+        self.svg_src = self.svg_src.replace('<svg ','<svg id="' + re.sub('[^\w]','',self.ident) + '" ')
+        w = int(WIDTH_RE.search(self.svg_src).group(1))
+        if isinstance(self,(ModuleGraph,CallGraph,TypeGraph)):
+            self.scaled = (w >= 855)
+        else:
+            self.scaled = (w >= 641)
+
 
     def add_node(self,nodes,root=False):
         """
@@ -313,28 +324,52 @@ class FortranGraph(object):
 
     def __str__(self):
         if self.numnodes <= 1: return ''
-        rettext = """
-            <img class="depgraph" alt="dependency graph" src={} usemap="#{}">
-            {}
-            <div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div>
-            <div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog">
-              <div class="modal-dialog modal-lg" role="document">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
-                  </div>
-                  <div class="modal-body">
-                    {}
+        if self.scaled:
+            rettext = """
+                <div class="depgraph">{0}</div>
+                <script>var pan{1} = svgPanZoom('#{1}', {{
+                    zoomEnabled: true,
+                    controlIconsEnabled: true,
+                    fit: true,
+                    center: true,}});
+                    </script>
+                <div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div>
+                <div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog">
+                  <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                      </div>
+                      <div class="modal-body">
+                        {2}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-            """
+                """
+        else:
+            rettext = """
+                <div class="depgraph">{0}</div>
+                <div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div>
+                <div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog">
+                  <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                      </div>
+                      <div class="modal-body">
+                        {2}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                """
         wdir = self.webdir.strip()
         if wdir[-1] == '/': wdir = wdir[0:-1]
         link = quote(wdir + '/' + self.imgfile + '.' + self.dot.format)
-        return rettext.format(link,self.ident,self.linkmap,GRAPH_KEY)
+        return rettext.format(self.svg_src,re.sub('[^\w]','',self.ident),GRAPH_KEY)
     
     def __nonzero__(self):
         return self.__bool__()

@@ -64,6 +64,7 @@ class FortranReader(object):
             (out, err) = fpp.communicate()
             if len(err) > 0:
                 print('Warning: error preprocessing '+filename)
+                print(err)
                 self.reader = open(filename,'r')
             else:
                 self.reader = StringIO(str(out))

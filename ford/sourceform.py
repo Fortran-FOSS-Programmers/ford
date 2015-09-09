@@ -42,7 +42,7 @@ from pygments.formatters import HtmlFormatter
 import ford.reader
 import ford.utils
 
-VAR_TYPE_STRING = "^integer|real|double\s*precision|character|complex|logical|type|class|procedure"
+VAR_TYPE_STRING = "^integer|real|double\s*precision|character|complex|logical|type|class|procedure|enumerator"
 VARKIND_RE = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
 KIND_RE = re.compile("kind\s*=\s*",re.IGNORECASE)
 LEN_RE = re.compile("len\s*=\s*",re.IGNORECASE)
@@ -398,6 +398,8 @@ class FortranBase(object):
         if hasattr(self,'args'):
             md_list.extend(self.args)
             #sort_items(self.args,args=True)
+        if hasattr(self,'enums'):
+            md_list.extend(self.enums)
         if hasattr(self,'retvar') and self.retvar: md_list.append(self.retvar)
         if hasattr(self,'procedure'): md_list.append(self.procedure)
         
@@ -418,6 +420,7 @@ class FortranBase(object):
         
         if hasattr(self,'variables'): recurse_list.extend(self.variables)
         if hasattr(self,'types'): recurse_list.extend(self.types)
+        if hasattr(self,'enums'): recurse_list.extend(self.enums)
         if hasattr(self,'modules'): recurse_list.extend(self.modules)
         if hasattr(self,'submodules'): recurse_list.extend(self.submodules)
         if hasattr(self,'subroutines'): recurse_list.extend(self.subroutines)
@@ -442,7 +445,8 @@ class FortranContainer(FortranBase):
     A class on which any classes requiring further parsing are based.
     """
     ATTRIB_RE = re.compile("^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",re.IGNORECASE)
-    END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface)(?:\s+(\w+))?)?$",re.IGNORECASE)
+    END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface|enum)(?:\s+(\w+))?)?$",re.IGNORECASE)
+    ENUM_RE = re.compile("^enum\s*,\s*bind\s*\(.*\)\s*$",re.IGNORECASE)
     MODPROC_RE = re.compile("^(module\s+)?procedure\s*(?:::|\s)\s*(\w.*)$",re.IGNORECASE)
     MODULE_RE = re.compile("^module(?:\s+(\w+))?$",re.IGNORECASE)
     SUBMODULE_RE = re.compile("^submodule\s*\(\s*(\w+)\s*(?::\s*(\w+))?\s*\)\s*(?:::|\s)\s*(\w+)$",re.IGNORECASE)
@@ -458,7 +462,7 @@ class FortranContainer(FortranBase):
     CALL_RE = re.compile("(?:^|(?<=[^a-zA-Z0-9_%]))\w+(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
     SUBCALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
     
-    VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure{})\s*((?:\(|\s\w|[:,*]).*)$"
+    VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
     
     #TODO: Add the ability to recognize function calls
         
@@ -612,6 +616,12 @@ class FortranContainer(FortranBase):
                         self.interfaces.extend(intr.contents)
                 else:
                     raise Exception("Found INTERFACE in {}".format(type(self).__name__[7:].upper()))
+            elif self.ENUM_RE.match(line):
+                if hasattr(self,'enums'):
+                    self.enums.append(FortranEnum(source,self.ENUM_RE.match(line),self,
+                                      permission))
+                else:
+                    raise Exception("Found ENUM in {}".format(type(self).__name__[7:].upper()))
             elif self.BOUNDPROC_RE.match(line) and incontains:
                 if hasattr(self,'boundprocs'):
                     match = self.BOUNDPROC_RE.match(line)
@@ -653,11 +663,14 @@ class FortranContainer(FortranBase):
                         if val.lower() not in self.calls and val.lower() not in INTRINSICS:
                             self.calls.append(val.lower())
                 else:
-                    raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
-            elif self.CALL_RE.match(line):
+                    pass
+                    # Not raising an error here as too much possibility that something
+                    # has been misidentified as a function call
+                    #~ raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
+            elif self.SUBCALL_RE.match(line):
                 # Need this to catch any subroutines called without argument lists
                 if hasattr(self,'calls'):
-                    callval = self.CALL_RE.match(line).group(1)
+                    callval = self.SUBCALL_RE.match(line).group(1)
                     if callval.lower() not in self.calls and callval.lower() not in INTRINSICS: 
                         self.calls.append(callval.lower())
                 else:
@@ -911,6 +924,7 @@ class FortranModule(FortranCodeUnit):
         # TODO: Add the ability to parse ONLY directives and procedure renaming
         self.uses = []
         self.variables = []
+        self.enums = []
         self.public_list = []
         self.private_list = []
         self.protected_list = []
@@ -1076,6 +1090,7 @@ class FortranSubroutine(FortranCodeUnit):
                     if arg != '': self.args.append(arg.strip())
         self.bindC = line.group(4)
         self.variables = []
+        self.enums = []
         self.uses = []
         self.calls = []
         self.optional_list = []
@@ -1194,6 +1209,7 @@ class FortranFunction(FortranCodeUnit):
                 self.bindC = self.bindC[0:search_from] + QUOTES_RE.sub(self.parent.strings[num],self.bindC[search_from:],count=1)
                 search_from += QUOTES_RE.search(self.bindC[search_from:]).end(0)
         self.variables = []
+        self.enums = []
         self.uses = []
         self.calls = []
         self.optional_list = []
@@ -1268,6 +1284,7 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.proctype = 'Module Procedure'
         self.name = line.group(2)
         self.variables = []
+        self.enums = []
         self.uses = []
         self.calls = []
         self.subroutines = []
@@ -1299,6 +1316,7 @@ class FortranProgram(FortranCodeUnit):
     def _initialize(self,line):
         self.name = line.group(1)
         self.variables = []
+        self.enums = []
         self.subroutines = []
         self.functions = []
         self.interfaces = []
@@ -1413,8 +1431,26 @@ class FortranType(FortranContainer):
         for obj in self.boundprocs + self.variables:
             obj.visible = True
 
+
+class FortranEnum(FortranContainer):
+    """
+    An object representing a Fortran enumeration. Contains the individual
+    enumerators as variables.
+    """
+    def _initialize(self,line):
+        self.variables = []        
         
-    
+    def _cleanup(self):
+        prev_val = -1
+        for var in self.variables:
+            if not var.initial: var.initial = prev_val + 1
+            try:
+                prev_val = int(var.initial)
+            except ValueError:
+                raise Exception('Non-integer assigned to enumerator.')
+
+
+
 class FortranInterface(FortranContainer):
     """
     An object representing a Fortran interface.

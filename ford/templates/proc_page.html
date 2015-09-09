@@ -59,6 +59,16 @@
     <br>
     {% endif %}
     
+    {% if procedure.enums|length > 0 %}
+    <section>
+    <h2>Enumerations</h2>
+    {% for enum in procedure.enums %}
+      {{ macros.enum_entry(enum) }}
+    {% endfor %}
+    </section>
+    <br>
+    {% endif %}
+    
     {% if procedure.interfaces|length > 0 %}
 	<section> 
      <h2>Interfaces</h2>

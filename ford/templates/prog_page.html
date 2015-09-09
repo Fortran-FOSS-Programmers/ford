@@ -36,6 +36,16 @@
     <br>
     {% endif %}
     
+    {% if program.enums|length > 0 %}
+    <section>
+    <h2>Enumerations</h2>
+    {% for enum in program.enums %}
+      {{ macros.enum_entry(enum) }}
+    {% endfor %}
+    </section>
+    <br>
+    {% endif %}
+    
     {% if program.interfaces|length > 0 %}
     <section>
 	 <h2>Interfaces</h2>

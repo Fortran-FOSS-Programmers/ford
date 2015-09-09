@@ -38,6 +38,16 @@
     <br>
     {% endif %}
     
+    {% if module.enums|length > 0 %}
+    <section>
+    <h2>Enumerations</h2>
+    {% for enum in module.enums %}
+      {{ macros.enum_entry(enum) }}
+    {% endfor %}
+    </section>
+    <br>
+    {% endif %}
+    
     {% if module.interfaces|length > 0 %}
     <section>
 	 <h2>Interfaces</h2>
