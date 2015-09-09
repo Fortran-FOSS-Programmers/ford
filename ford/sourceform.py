@@ -697,10 +697,10 @@ class FortranCodeUnit(FortranContainer):
             self.all_absinterfaces[ai.name.lower()] = ai
         self.all_types = getattr(self.parent,'all_types',{})
         for dt in self.types:
-            self.all_types[dt.name] = dt
+            self.all_types[dt.name.lower()] = dt
         self.all_vars = getattr(self.parent,'all_vars',{})
         for var in self.variables:
-            self.all_vars[var.name] = var
+            self.all_vars[var.name.lower()] = var
         
         if type(getattr(self,'ancestor','')) not in [str, type(None)]:
             self.ancestor.descendants.append(self)
@@ -770,7 +770,7 @@ class FortranCodeUnit(FortranContainer):
                     argname = argname or call.lower() == a.name.lower()
                 if hasattr(self,'retvar'):
                     argname = argname or call.lower() == self.retvar.name.lower()
-                if call.lower() not in self.all_vars and (call.lower() not in self.all_types or call in self.all_procs) and not argname: tmplst.append(call)
+                if call.lower() not in self.all_vars and (call.lower() not in self.all_types or call.lower() in self.all_procs) and not argname: tmplst.append(call)
             self.calls = tmplst
             fileprocs = {}
             if self.parobj == 'sourcefile':
