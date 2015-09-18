@@ -41,6 +41,8 @@ HYPERLINK_RE = re.compile("^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\
 WIDTH_RE = re.compile('width="(.*?)pt"',re.IGNORECASE)
 HEIGHT_RE = re.compile('height="(.*?)pt"',re.IGNORECASE)
 
+graphviz_installed = True
+
 def newdict(old,key,val):
     new = copy.copy(old)
     new[key] = val
@@ -289,14 +291,18 @@ class FortranGraph(object):
                                       'fontsize':'9.5'},
                            format='svg', engine='dot')
         self.add_node(self.root,(len(self.root) == 1))
-        self.linkmap = self.dot.pipe('cmapx').decode('utf-8')
-        self.svg_src = self.dot.pipe().decode('utf-8')
-        self.svg_src = self.svg_src.replace('<svg ','<svg id="' + re.sub('[^\w]','',self.ident) + '" ')
-        w = int(WIDTH_RE.search(self.svg_src).group(1))
-        if isinstance(self,(ModuleGraph,CallGraph,TypeGraph)):
-            self.scaled = (w >= 855)
+        #~ self.linkmap = self.dot.pipe('cmapx').decode('utf-8')
+        if graphviz_installed:
+            self.svg_src = self.dot.pipe().decode('utf-8')
+            self.svg_src = self.svg_src.replace('<svg ','<svg id="' + re.sub('[^\w]','',self.ident) + '" ')
+            w = int(WIDTH_RE.search(self.svg_src).group(1))
+            if isinstance(self,(ModuleGraph,CallGraph,TypeGraph)):
+                self.scaled = (w >= 855)
+            else:
+                self.scaled = (w >= 641)
         else:
-            self.scaled = (w >= 641)
+            self.svg_src = ''
+            self.scaled = False
 
 
     def add_node(self,nodes,root=False):
@@ -323,7 +329,7 @@ class FortranGraph(object):
         self.add_more_nodes(recurse)
 
     def __str__(self):
-        if self.numnodes <= 1: return ''
+        if self.numnodes <= 1 or not graphviz_installed: return ''
         if self.scaled:
             rettext = """
                 <div class="depgraph">{0}</div>
@@ -386,7 +392,8 @@ class FortranGraph(object):
             self._create_image_file(os.path.join(out_location, self.imgfile))
     
     def _create_image_file(self,filename):
-        self.dot.render(filename,cleanup=False)
+        if graphviz_installed:
+            self.dot.render(filename,cleanup=False)
 
 
 class ModuleGraph(FortranGraph):
@@ -596,7 +603,13 @@ dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
 for n in ['Module','Submodule','Type',sub,func,intr,'Unknown Procedure Type','Program']:
     dot.node(getattr(n,'name',n),**gd.get_node(n).attribs)
 dot.node('This Page\'s Entity')
-svg = dot.pipe().decode('utf-8')
+try:
+    svg = dot.pipe().decode('utf-8')
+except RuntimeError:
+    print("Warning: Will not be able to generate graphs. Graphviz not installed.")
+    graphviz_installed = False
+    svg = None
+
 GRAPH_KEY = """
 Nodes of different colours represent the following:
 {}

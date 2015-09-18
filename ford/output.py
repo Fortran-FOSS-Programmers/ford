@@ -38,6 +38,7 @@ import ford.sourceform
 import ford.tipue_search
 import ford.utils
 from ford.graphmanager import GraphManager
+from ford.graphs import graphviz_installed
 
 loc = os.path.dirname(__file__)
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
@@ -63,19 +64,24 @@ class Documentation(object):
             ford.sourceform.set_base_url('..')
             ford.pagetree.set_base_url('..')
             data['project_url'] = '..'
-        self.graphs = GraphManager(data['project_url'],self.data['output_dir'],'graphs')
-        for item in project.types:
-            self.graphs.register(item)
-        for item in project.procedures + project.submodprocedures:
-            self.graphs.register(item)
-        for item in project.modules + project.submodules:
-            self.graphs.register(item)
-        for item in project.programs:
-            self.graphs.register(item)
-        self.graphs.graph_all()
-        project.callgraph = self.graphs.callgraph
-        project.typegraph = self.graphs.typegraph
-        project.usegraph = self.graphs.usegraph
+        if graphviz_installed:
+            self.graphs = GraphManager(data['project_url'],self.data['output_dir'],'graphs')
+            for item in project.types:
+                self.graphs.register(item)
+            for item in project.procedures + project.submodprocedures:
+                self.graphs.register(item)
+            for item in project.modules + project.submodules:
+                self.graphs.register(item)
+            for item in project.programs:
+                self.graphs.register(item)
+            self.graphs.graph_all()
+            project.callgraph = self.graphs.callgraph
+            project.typegraph = self.graphs.typegraph
+            project.usegraph = self.graphs.usegraph
+        else:
+            project.callgraph = ''
+            project.typegraph = ''
+            project.usegraph = ''
         try:
             for item in project.files:
                 self.docs.append(FilePage(data,project,item))
