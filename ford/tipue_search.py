@@ -37,7 +37,7 @@ from __future__ import unicode_literals
 
 import os.path
 import json
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, FeatureNotFound
 from codecs import open
 try:
     from urlparse import urljoin
@@ -56,8 +56,11 @@ class Tipue_Search_JSON_Generator(object):
 
 
     def create_node(self, html, loc, meta={}):
-
-        soup = BeautifulSoup(html,'html.parser')
+        try:
+            soup = BeautifulSoup(html,'lxml')
+        except FeatureNotFound:
+            soup = BeautifulSoup(html,'html.parser')
+            
         page_text = soup.find("div", {"id": "text"}).get_text(' ', strip=True).replace('\\(','').replace('\\)','').replace('\\[','').replace('\\]','').replace('$$','').replace('^','&#94;')
 
         # What happens if there is not a title.
