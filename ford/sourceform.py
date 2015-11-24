@@ -899,7 +899,7 @@ class FortranSourceFile(FortranContainer):
         source = ford.reader.FortranReader(self.path,settings['docmark'],
                     settings['predocmark'],settings['docmark_alt'],
                     settings['predocmark_alt'],preprocess,
-                    settings['macro'])
+                    settings['macro'],settings['include'])
         
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')

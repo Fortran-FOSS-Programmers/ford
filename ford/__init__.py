@@ -124,8 +124,8 @@ def initialize():
                'project_sourceforge','project_url','display','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
-               'source','exclude_dir','macro','preprocess','quiet','search',
-               'lower','sort','extra_mods','dbg','graph']
+               'source','exclude_dir','macro','include','preprocess','quiet',
+               'search','lower','sort','extra_mods','dbg','graph']
     defaults = {'project_dir':       ['./src'],
                 'extensions':        ['f90','f95','f03','f08','f15','F90',
                                       'F95','F03','F08','F15'],
@@ -144,6 +144,7 @@ def initialize():
                 'extra_vartypes':    [],
                 'source':            'false',
                 'macro':             [],
+                'include':           [],
                 'preprocess':        'true',
                 'warn':              'false',
                 'quiet':             'false',
@@ -155,7 +156,7 @@ def initialize():
                 'graph':             'false',
                }
     listopts = ['extensions','display','extra_vartypes','project_dir',
-                'exclude','exclude_dir','macro','extra_mods']
+                'exclude','exclude_dir','macro','include','extra_mods']
     if args.warn:
         args.warn = 'true'
     else:
@@ -186,7 +187,7 @@ def initialize():
         proj_path = ford.utils.split_path(projdir)
         out_path  = ford.utils.split_path(proj_data['output_dir'])
         for directory in out_path:
-            if len(proj_path) == 0: break
+            if len(proj_path) ==  0: break
             if directory == proj_path[0]:
                 proj_path.remove(directory)
             else:

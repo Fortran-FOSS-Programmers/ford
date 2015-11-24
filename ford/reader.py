@@ -55,12 +55,13 @@ class FortranReader(object):
 
     #TODO: Add checks that there are no conflicts between docmark, predocmark, alt marks etc.
     def __init__(self,filename,docmark='!',predocmark='',docmark_alt='',
-                 predocmark_alt='',preprocess=False,macros=[]):
+                 predocmark_alt='',preprocess=False,macros=[],inc_dirs=[]):
         self.name = filename
             
         if preprocess:
             macros = ['-D' + mac.strip() for mac in macros]
-            fpp = subprocess.Popen(["gfortran", "-E", "-cpp", filename]+macros, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            incdirs = ['-I' + d.strip() for d in inc_dirs]
+            fpp = subprocess.Popen(["gfortran", "-E", "-cpp", filename]+macros+incdirs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             (out, err) = fpp.communicate()
             if len(err) > 0:
                 print('Warning: error preprocessing '+filename)
