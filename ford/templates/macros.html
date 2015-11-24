@@ -37,6 +37,7 @@
 
 
 {% macro sidebar(project,self) %}
+<div id="sidebar">
   {% set count = 0 %}
   {% if self.variables %}
   {% set count = count + 1 %}
@@ -334,6 +335,7 @@
     </div>
   </div>
   {% endif %}
+</div>
 {% endmacro %}
 
 
