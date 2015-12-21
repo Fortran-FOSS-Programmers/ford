@@ -531,13 +531,20 @@ class FortranContainer(FortranBase):
                             else:
                                 self.attr_dict[n] = [attr+sh]
                     else:
-                        names = ford.utils.paren_split(',',match.group(2))
+                        stmnt = match.group(2)
+                        if attr == 'parameter':
+                            stmnt = stmnt[1:-1].strip()
+                        names = ford.utils.paren_split(',',stmnt)
                         search_from = 0
                         while QUOTES_RE.search(attr[search_from:]):
                             num = int(QUOTES_RE.search(attr[search_from:]).group()[1:-1])
                             attr = attr[0:search_from] + QUOTES_RE.sub(self.strings[num],attr[search_from:],count=1)
                             search_from += QUOTES_RE.search(attr[search_from:]).end(0)
                         for name in names:
+                            if attr == 'parameter':
+                                split = ford.utils.paren_split('=',name)
+                                name = split[0].strip().lower()
+                                self.param_dict[name] = split[1]
                             name = name.strip().lower()
                             if name in self.attr_dict:
                                 self.attr_dict[name].append(attr)
@@ -844,6 +851,9 @@ class FortranCodeUnit(FortranContainer):
                     i = attr.index('(')
                     var.attribs.append(attr[0:i])
                     var.dimension = attr[i:]
+                elif attr == 'parameter':
+                    var.attribs.append(attr)
+                    var.initial = self.param_dict[var.name.lower()]
                 else:
                     var.attribs.append(attr)
         del self.attr_dict
@@ -939,6 +949,7 @@ class FortranModule(FortranCodeUnit):
         self.descendants = []
         self.visible = True
         self.attr_dict = dict()
+        self.param_dict = dict()
 
     def _cleanup(self):
         # Create list of all local procedures. Ones coming from other modules
@@ -1103,6 +1114,7 @@ class FortranSubroutine(FortranCodeUnit):
         self.volatile_list = []
         self.async_list = []
         self.attr_dict = dict()
+        self.param_dict = dict()
 
     def set_permission(self, value):
         self._permission = value
@@ -1222,6 +1234,7 @@ class FortranFunction(FortranCodeUnit):
         self.volatile_list = []
         self.async_list = []
         self.attr_dict = dict()
+        self.param_dict = dict()
 
     def set_permission(self, value):
         self._permission = value
@@ -1297,6 +1310,7 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.async_list = []
         self.attr_dict = dict()
         self.mp = True
+        self.param_dict = dict()
 
     def _cleanup(self):
         self.process_attribs()
@@ -1328,6 +1342,7 @@ class FortranProgram(FortranCodeUnit):
         self.volatile_list = []
         self.async_list = []
         self.attr_dict = dict()
+        self.param_dict = dict()
     
     def _cleanup(self):
         self.all_procs = {}
