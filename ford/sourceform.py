@@ -1718,12 +1718,11 @@ def line_to_variables(source, line, inherit_permission, parent):
         dec = re.sub(" ","",dec)
         split = ford.utils.paren_split('=',dec)
         if len(split) > 1:
+            name = split[0]
             if split[1][0] == '>':
-                name = split[0]
                 initial = split[1][1:]
                 points = True
             else:
-                name = split[0]
                 initial = split[1]
                 points = False
         else:
@@ -1731,7 +1730,7 @@ def line_to_variables(source, line, inherit_permission, parent):
             initial = None
             points = False
             
-        if initial and vartype == "character":
+        if initial:
             initial = COMMA_RE.sub(', ',initial)
             search_from = 0
             while QUOTES_RE.search(initial[search_from:]):
