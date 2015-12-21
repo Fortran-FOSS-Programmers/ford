@@ -228,7 +228,7 @@ def sub_links(string,project):
             if not match.group(4):
                 for key, val in SUBLINK_TYPES.items():
                     if val == 'constructor':
-                        if hasattr(item,'constructor'):
+                        if getattr(item,'constructor', False):
                             searchlist.append(item.constructor)
                         else:
                             continue
@@ -238,7 +238,8 @@ def sub_links(string,project):
                 if match.group(4).lower() in SUBLINK_TYPES:
                     if hasattr(item,SUBLINK_TYPES[match.group(4).lower()]):
                         if match.group(4).lower == 'constructor':
-                            searchlist.append(item.constructor)
+                            if item.constructor:
+                                searchlist.append(item.constructor)
                         else:
                             searchlist.extend(getattr(item,SUBLINK_TYPES[match.group(4).lower()]))
                     else:
@@ -247,7 +248,6 @@ def sub_links(string,project):
                 else:
                     print(ERR.format(match.group(),'Unrecognized classification "{}".'.format(match.group(2))))
                     return match.group()
-        
             
             for obj in searchlist:
                 if match.group(3).lower() == obj.name.lower():
