@@ -32,6 +32,7 @@ if (sys.version_info[0]>2):
     from io import StringIO
 else:
     from StringIO import StringIO
+import os.path
 
 class FortranReader(object):
     """
@@ -72,6 +73,7 @@ class FortranReader(object):
         else:
             self.reader = open(filename,'r')
         
+        self.inc_dirs = inc_dirs
         self.docbuffer = []
         self.pending = []
         self.prevdoc = False
@@ -107,6 +109,7 @@ class FortranReader(object):
     def __next__(self):   # Python 3
         # If there are any lines waiting to be returned, return them
         if len(self.pending) != 0:
+            self.include()
             self.prevdoc = False
             return self.pending.pop(0)
         # If there are any documentation lines waiting to be returned, return them.
@@ -252,6 +255,7 @@ class FortranReader(object):
         
         # Return the line
         if len(self.pending) > 0:
+            self.include()
             self.prevdoc = False
             return self.pending.pop(0)
         else:
@@ -259,6 +263,26 @@ class FortranReader(object):
             if tmp != "!"+self.docmark:
                 self.prevdoc = True;
             return tmp
+
+    def include(self):
+        """
+        If the next line is an include statement, inserts the contents
+        of the included file into the pending buffer.
+        """
+        if len(self.pending) == 0 or not self.pending[0].startswith('include '):
+            return
+        name = self.pending.pop(0)[8:].strip()[1:-1]
+        for b in [os.path.dirname(self.name)] + self.inc_dirs:
+            pname = os.path.join(b, name)
+            if os.path.isfile(pname):
+                name = pname
+                break
+        else:
+            raise Exception('Can not find include file "{}".'.format(name))
+        self.pending = list(FortranReader(name, self.docmark, self.predocmark, 
+                                          self.docmark_alt, self.predocmark_alt,
+                                          inc_dirs=self.inc_dirs)) \
+                       + self.pending
 
 
 if __name__ == '__main__':
