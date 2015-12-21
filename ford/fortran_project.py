@@ -70,10 +70,15 @@ class Project(object):
         # Get all files within topdir, recursively
         srctree = []
         for topdir in self.topdirs:
-            srctree = os.walk(topdir)
+            srctree = os.walk(os.path.relpath(topdir))
             for srcdir in srctree:
-                if os.path.split(srcdir[0])[1] in settings['exclude_dir']:
-                    continue
+                excluded = False
+                for ex in settings['exclude_dir']:
+                    fragment = srcdir[0]
+                    while fragment:
+                        excluded = excluded or fragment.endswith(ex)
+                        fragment = os.path.split(fragment)[0]
+                if excluded: continue
                 curdir = srcdir[0]
                 for item in srcdir[2]:
                     if item.split('.')[-1] in self.extensions and not item in settings['exclude']:
