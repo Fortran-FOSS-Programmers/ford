@@ -63,6 +63,18 @@ def stdout_redirector(stream):
     finally:
         sys.stdout = old_stdout
 
+LICENSES = { 'by': '<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" /></a>',
+             'by-nd': '<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>',
+             'by-sa': '<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>',
+             'by-nc': '<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/80x15.png" /></a>',
+             'by-nc-nd': '<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-nd/4.0/80x15.png" /></a>',
+             'by-nc-sa': '<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>',
+             'gfdl': '<a rel="license" href="http://www.gnu.org/licenses/old-licenses/fdl-1.2.en.html">GNU Free Documentation License</a>',
+             'opl': '<a rel="license" href="http://opencontent.org/openpub/">Open Publication License</a>',
+             'pdl': '<a rel="license" href="http://www.openoffice.org/licenses/PDL.html">Public Documentation License</a>',
+             'bsd': '<a rel="license" href="http://www.freebsd.org/copyright/freebsd-doc-license.html">FreeBSD Documentation License</a>',
+             '': ''
+           }
 
 def initialize():
     """
@@ -125,7 +137,7 @@ def initialize():
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'source','exclude_dir','macro','include','preprocess','quiet',
-               'search','lower','sort','extra_mods','dbg','graph']
+               'search','lower','sort','extra_mods','dbg','graph', 'license']
     defaults = {'project_dir':       ['./src'],
                 'extensions':        ['f90','f95','f03','f08','f15','F90',
                                       'F95','F03','F08','F15'],
@@ -154,6 +166,7 @@ def initialize():
                 'extra_mods':        [],
                 'dbg':               False,
                 'graph':             'false',
+                'license':           '',
                }
     listopts = ['extensions','display','extra_vartypes','project_dir',
                 'exclude','exclude_dir','macro','include','extra_mods']
@@ -222,6 +235,12 @@ def initialize():
         if proj_data['preprocess'].lower() == 'true':
             print("Warning: gfortran not found; preprocessing turned off")
             proj_data['preprocess'] = 'false'
+    # Get correct license
+    try:
+        proj_data['license'] = LICENSES[proj_data['license'].lower()]
+    except KeyError:
+        print('Warning: license "{}" not recognized.'.format(proj_data['license']))
+        proj_data['license'] = ''
     # Return project data, docs, and the Markdown reader
     return (proj_data, proj_docs, md)
 

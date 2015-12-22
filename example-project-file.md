@@ -19,6 +19,7 @@ macro: TEST
        LOGIC=.true.
 extra_mods: json_module: http://jacobwilliams.github.io/json-fortran/
             futility: http://cmacmackin.github.io
+license: by-nc
 
 This is a project which I wrote. This file will provide the documents. I'm
 writing the body of the text here. It contains an overall description of the
