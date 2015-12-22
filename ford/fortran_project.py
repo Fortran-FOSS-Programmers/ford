@@ -136,23 +136,24 @@ class Project(object):
             
         # Get the order to process other correlations with
         deplist = {}
-        for mod in self.modules:
+        
+        def get_deps(item):
             uselist = [m[0] for m in mod.uses]
-            for proc in mod.subroutines:
-                uselist.extend([m[0] for m in proc.uses])
-            for proc in mod.functions:
-                uselist.extend([m[0] for m in proc.uses])
+            for proc in item.subroutines:
+                uselist.extend(get_deps(proc))
+            for proc in item.functions:
+                uselist.extend(get_deps(proc))
+            for proc in getattr(item,'modprocedures',[]):
+                uselist.extend(get_deps(proc))
+            return uselist
+        
+        for mod in self.modules:
+            uselist = get_deps(mod)
             uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
             deplist[mod] = set(uselist)
         for mod in self.submodules:
             if type(mod.ancestor_mod) is ford.sourceform.FortranModule:
-                uselist = [m[0] for m in mod.uses]
-                for proc in mod.subroutines:
-                    uselist.extend([m[0] for m in proc.uses])
-                for proc in mod.functions:
-                    uselist.extend([m[0] for m in proc.uses])
-                for proc in mod.modprocedures:
-                    uselist.extend([m[0] for m in proc.uses])
+                uselist = get_deps(mod)
                 uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
                 if mod.ancestor:
                     if type(mod.ancestor) is ford.sourceform.FortranSubmodule:
