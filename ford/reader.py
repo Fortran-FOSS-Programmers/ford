@@ -54,11 +54,24 @@ class FortranReader(object):
     COM_RE = re.compile("^([^\"'!]|(\'[^']*')|(\"[^\"]*\"))*(!.*)$")
     SC_RE = re.compile("^([^;]*);(.*)$")
 
-    #TODO: Add checks that there are no conflicts between docmark, predocmark, alt marks etc.
     def __init__(self,filename,docmark='!',predocmark='',docmark_alt='',
                  predocmark_alt='',preprocess=False,macros=[],inc_dirs=[]):
         self.name = filename
-            
+        
+        # Check that none of the docmarks are the same
+        if docmark == predocmark != '':
+            raise Exception('Error: docmark and predocmark are the same.')
+        if docmark == docmark_alt != '':
+            raise Exception('Error: docmark and docmark_alt are the same.')
+        if docmark == predocmark_alt != '':
+            raise Exception('Error: docmark and predocmark_alt are the same.')
+        if docmark_alt == predocmark != '':
+            raise Exception('Error: docmark_alt and predocmark are the same.')
+        if docmark_alt == predocmark_alt != '':
+            raise Exception('Error: docmark_alt and predocmark_alt are the same.')
+        if predocmark == predocmark_alt != '':
+            raise Exception('Error: predocmark and predocmark_alt are the same.')
+        
         if preprocess:
             macros = ['-D' + mac.strip() for mac in macros]
             incdirs = ['-I' + d.strip() for d in inc_dirs]

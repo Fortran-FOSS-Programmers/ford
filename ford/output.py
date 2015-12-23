@@ -83,7 +83,7 @@ class Documentation(object):
             project.typegraph = ''
             project.usegraph = ''
         try:
-            for item in project.files:
+            for item in project.allfiles:
                 self.docs.append(FilePage(data,project,item))
             for item in project.types:
                 self.docs.append(TypePage(data,project,item))
@@ -97,7 +97,7 @@ class Documentation(object):
                 self.docs.append(ProgPage(data,project,item))
             if len(project.procedures) > 0:
                 self.lists.append(ProcList(data,project))
-            if len(project.files) > 1:
+            if len(project.allfiles) > 1:
                 self.lists.append(FileList(data,project))
             if len(project.modules + project.submodules) > 0:
                 self.lists.append(ModList(data,project))
@@ -163,7 +163,7 @@ class Documentation(object):
             shutil.copy(os.path.join(loc,'favicon.png'),os.path.join(out_dir,'favicon.png'))
         else:
             shutil.copy(self.data['favicon'],os.path.join(out_dir,'favicon.png'))
-        for src in self.project.files:
+        for src in self.project.allfiles:
             shutil.copy(src.path,os.path.join(out_dir,'src',src.name))
         for p in self.docs + self.lists + self.pagetree + [self.index, self.search]:
             p.writeout()

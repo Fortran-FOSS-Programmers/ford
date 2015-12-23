@@ -36,7 +36,7 @@ else:
 
 import toposort
 from pygments import highlight
-from pygments.lexers import FortranLexer
+from pygments.lexers import FortranLexer, guess_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
 import ford.reader
@@ -192,7 +192,8 @@ class FortranBase(object):
             return 'interface'
         elif type(self) is FortranSubmodule:
             return 'module'
-        elif ( type(self) in [FortranSourceFile,FortranProgram,FortranModule]
+        elif ( type(self) in [FortranSourceFile,FortranProgram,FortranModule,
+                              GenericSource]
                or ( type(self) in [FortranType,FortranInterface,FortranFunction,
                                    FortranSubroutine, FortranSubmoduleProcedure]
                     and type(self.parent) in [FortranSourceFile,FortranProgram,
@@ -255,7 +256,7 @@ class FortranBase(object):
             self.meta = md.Meta
             md.reset()
         else:
-            if self.settings['warn'].lower() == 'true' and self.obj != 'sourcefile':
+            if self.settings['warn'].lower() == 'true' and self.obj != 'sourcefile' and self.obj != 'genericsource':
                 #TODO: Add ability to print line number where this item is in file
                 print('Warning: Undocumented {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
             self.doc = ""
@@ -270,7 +271,6 @@ class FortranBase(object):
                 if type(self) == FortranSourceFile:
                     while 'none' in tmp:
                         tmp.remove('none')
-                
                 if len(tmp) == 0:
                     pass
                 elif 'none' in tmp:
@@ -445,7 +445,8 @@ class FortranContainer(FortranBase):
     A class on which any classes requiring further parsing are based.
     """
     ATTRIB_RE = re.compile("^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",re.IGNORECASE)
-    END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface|enum)(?:\s+(\w+))?)?$",re.IGNORECASE)
+    END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface|enum|block)(?:\s+(\w+))?)?$",re.IGNORECASE)
+    BLOCK_RE = re.compile("^(\w+\s*:)?\s*block\s*$",re.IGNORECASE)
     ENUM_RE = re.compile("^enum\s*,\s*bind\s*\(.*\)\s*$",re.IGNORECASE)
     MODPROC_RE = re.compile("^(module\s+)?procedure\s*(?:::|\s)\s*(\w.*)$",re.IGNORECASE)
     MODULE_RE = re.compile("^module(?:\s+(\w+))?$",re.IGNORECASE)
@@ -463,9 +464,7 @@ class FortranContainer(FortranBase):
     SUBCALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
     
     VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
-    
-    #TODO: Add the ability to recognize function calls
-        
+            
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
         
@@ -483,6 +482,7 @@ class FortranContainer(FortranBase):
             typestr = typestr + '|' + vtype
         self.VARIABLE_RE = re.compile(self.VARIABLE_STRING.format(typestr),re.IGNORECASE)
         
+        blocklevel = 0
         for line in source:
             if line[0:2] == "!" + self.settings['docmark']: 
                 self.doc.append(line[2:])
@@ -511,7 +511,7 @@ class FortranContainer(FortranBase):
             elif line.lower() == "protected": permission = "protected"
             elif line.lower() == "sequence":
                 if type(self) == FortranType: self.sequence = True
-            elif self.ATTRIB_RE.match(line):
+            elif self.ATTRIB_RE.match(line) and blocklevel == 0:
                 match = self.ATTRIB_RE.match(line)
                 attr = match.group(1).lower().replace(" ", "")
                 if len(attr) >= 4 and attr[0:4].lower() == 'bind':
@@ -555,8 +555,12 @@ class FortranContainer(FortranBase):
             elif self.END_RE.match(line):
                 if isinstance(self,FortranSourceFile):
                     raise Exception("END statement outside of any nesting")
-                self._cleanup()
-                return
+                endtype = self.END_RE.match(line).group(1)
+                if endtype and endtype.lower() == 'block':
+                    blocklevel -= 1
+                else:
+                    self._cleanup()
+                    return
             elif self.MODPROC_RE.match(line) and (self.MODPROC_RE.match(line).group(1) or type(self) is FortranInterface):
                 if hasattr(self,'modprocs'):
                     # Module procedure in an INTERFACE
@@ -569,6 +573,8 @@ class FortranContainer(FortranBase):
                                               permission))
                 else:
                     raise Exception("Found module procedure in {}".format(type(self).__name__[7:].upper()))
+            elif self.BLOCK_RE.match(line):
+                blocklevel += 1
             elif self.MODULE_RE.match(line):
                 if hasattr(self,'modules'):
                     self.modules.append(FortranModule(source,
@@ -605,13 +611,13 @@ class FortranContainer(FortranBase):
                                           permission))
                 else:
                     raise Exception("Found FUNCTION in {}".format(type(self).__name__[7:].upper()))
-            elif self.TYPE_RE.match(line):
+            elif self.TYPE_RE.match(line) and blocklevel == 0:
                 if hasattr(self,'types'):
                     self.types.append(FortranType(source,self.TYPE_RE.match(line),
                                       self,permission))
                 else:
                     raise Exception("Found derived TYPE in {}".format(type(self).__name__[7:].upper()))
-            elif self.INTERFACE_RE.match(line):
+            elif self.INTERFACE_RE.match(line) and blocklevel == 0:
                 if hasattr(self,'interfaces'):
                     intr = FortranInterface(source,self.INTERFACE_RE.match(line),
                                             self,permission)
@@ -623,7 +629,7 @@ class FortranContainer(FortranBase):
                         self.interfaces.extend(intr.contents)
                 else:
                     raise Exception("Found INTERFACE in {}".format(type(self).__name__[7:].upper()))
-            elif self.ENUM_RE.match(line):
+            elif self.ENUM_RE.match(line) and blocklevel == 0:
                 if hasattr(self,'enums'):
                     self.enums.append(FortranEnum(source,self.ENUM_RE.match(line),self,
                                       permission))
@@ -652,7 +658,7 @@ class FortranContainer(FortranBase):
                     self.finalprocs.extend(self.SPLIT_RE.split(procedures))
                 else:
                     raise Exception("Found finalization procedure in {}".format(type(self).__name__[7:].upper()))
-            elif self.VARIABLE_RE.match(line):
+            elif self.VARIABLE_RE.match(line) and blocklevel == 0:
                 if hasattr(self,'variables'):
                     self.variables.extend(line_to_variables(source,line,
                                           permission,self))
@@ -724,7 +730,6 @@ class FortranCodeUnit(FortranContainer):
             for proc in self.functions + self.subroutines:
                 if proc.module and proc.name.lower() in self.all_procs:
                     intr = self.all_procs[proc.name.lower()]
-                    # FIXME: Don't think these logical tests are necessary anymore
                     if intr.proctype.lower() == 'interface' and not intr.generic and not intr.abstract and intr.procedure.module == True:
                         proc.module = intr
                         intr.procedure.module = proc
@@ -914,7 +919,7 @@ class FortranSourceFile(FortranContainer):
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
         self.raw_src = readobj.read()
-        #~ self.src = highlight(self.src,FortranLexer(),HtmlFormatter(linenos=True))
+        #~ self.src = highlight(self.raw_src,FortranLexer(),HtmlFormatter(linenos=True))
         # TODO: Get line-numbers working in such a way that it will look right with Bootstrap CSS
         self.src = highlight(self.raw_src,FortranLexer(),HtmlFormatter())
 
@@ -931,7 +936,6 @@ class FortranModule(FortranCodeUnit):
     
     def _initialize(self,line):
         self.name = line.group(1)
-        # TODO: Add the ability to parse ONLY directives and procedure renaming
         self.uses = []
         self.variables = []
         self.enums = []
@@ -1283,7 +1287,12 @@ class FortranFunction(FortranCodeUnit):
                     self.retvar = var
                     self.variables.remove(var)
                     break
-            # TODO:Add support for implicitely typed retval
+            else:
+                if self.retvar[0].lower() in 'ijklmn':
+                    vartype = 'integer'
+                else:
+                    vartype = 'real'
+                self.retvar = FortranVariable(self.retvar,vartype,self)
         self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
 
@@ -1688,7 +1697,102 @@ class FortranModuleProcedure(FortranBase):
             self.hierarchy.append(cur)
             cur = cur.parent
         self.hierarchy.reverse()
-                
+
+
+class GenericSource(FortranBase):
+    """
+    Represent a non-Fortran source file. The contents of the file will
+    not be analyzed, but documentation can be extracted.
+    """
+    
+    def __init__(self, filename, settings):
+        self.obj = 'sourcefile'
+        self.parobj = None
+        self.parent = None
+        self.hierarchy = []
+        self.settings = settings
+        comchar = settings['extra_filetypes'][filename.split('.')[-1]]
+        docmark = settings['docmark']
+        predocmark = settings['predocmark']
+        docmark_alt = settings['docmark_alt']
+        predocmark_alt = settings['predocmark_alt']
+        self.path = filename.strip()
+        self.name = os.path.basename(self.path)
+        with open(filename, 'r') as r:
+            self.raw_src = r.read()
+        #TODO: Get line numbers to display properly
+        self.src = highlight(self.raw_src, guess_lexer_for_filename(self.name, self.raw_src),
+                              HtmlFormatter())
+        com_re = re.compile("^((?!{0}|[\"']).|(\'[^']*')|(\"[^\"]*\"))*({0}.*)$".format(re.escape(comchar)))
+        if docmark == docmark_alt != '':
+            raise Exception('Error: docmark and docmark_alt are the same.')
+        if docmark == predocmark_alt != '':
+            raise Exception('Error: docmark and predocmark_alt are the same.')
+        if docmark_alt == predocmark != '':
+            raise Exception('Error: docmark_alt and predocmark are the same.')
+        if predocmark == predocmark_alt != '':
+            raise Exception('Error: predocmark and predocmark_alt are the same.')
+        if len(predocmark) != 0:
+            doc_re = re.compile("^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}(?:{1}|{2}).*)$".format(re.escape(comchar),re.escape(docmark),re.escape(predocmark)))
+        else:
+            doc_re = re.compile("^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(re.escape(comchar),re.escape(docmark)))
+        if len(docmark_alt) != 0 and len(predocmark_alt) != 0:
+            doc_alt_re = re.compile("^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}(?:{1}|{2}).*)$".format(re.escape(comchar),re.escape(docmark_alt),re.escape(predocmark_alt)))
+        elif len(docmark_alt) != 0:
+            doc_alt_re = re.compile("^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(re.escape(comchar),re.escape(docmark_alt)))
+        elif len(predocmark_alt) != 0:
+            doc_alt_re = re.compile("^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(re.escape(comchar),re.escape(predocmark_alt)))
+        else:
+            doc_alt_re = None
+        self.doc = []
+        prevdoc = False
+        docalt = False
+        for line in open(filename, 'r'):
+            line = line.strip()
+            if doc_alt_re:
+                match = doc_alt_re.match(line)
+            else:
+                match = False
+            if match:
+                prevdoc = True
+                docalt = True
+                doc = match.group(4)
+                if doc.startswith(comchar + docmark_alt):
+                    doc = doc[len(comchar + docmark_alt):].strip()
+                else:
+                    doc = doc[len(comchar + predocmark_alt):].strip()
+                self.doc.append(doc)
+                continue
+            match = doc_re.match(line)
+            if match:
+                prevdoc = True
+                if docalt: docalt = False
+                doc = match.group(4)
+                if doc.startswith(comchar + docmark):
+                    doc = doc[len(comchar + docmark):].strip()
+                else:
+                    doc = doc[len(comchar + predocmark):].strip()
+                self.doc.append(doc)
+                continue
+            match = com_re.match(line)
+            if match:
+                if docalt:
+                    if match.start(4) == 0:
+                        doc = match.group(4)
+                        doc = doc[len(comchar):].strip()
+                        self.doc.append(doc)
+                    else:
+                        docalt = False
+                elif prevdoc:
+                    prevdoc = False
+                    self.doc.append('')
+                continue
+            # if not including any comment...
+            if prevdoc:
+                self.doc.append('')
+                prevdoc = False
+            docalt = False
+        
 
 _can_have_contains = [FortranModule,FortranProgram,FortranFunction,
                       FortranSubroutine,FortranType,FortranSubmodule]

@@ -59,7 +59,7 @@
 				{% if pages %}
             <li>{{ pages }}</li>
 				{% endif %}
-                {% if project.files|length > 1 %}
+                {% if project.allfiles|length > 1 %}
             <li><a href="{{ project_url }}/lists/files.html">Source Files</a></li>
 				{% else %}
             <li><a href="{{project.files[0].get_url()}}">Source File</a></li>

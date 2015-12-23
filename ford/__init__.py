@@ -137,7 +137,8 @@ def initialize():
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'source','exclude_dir','macro','include','preprocess','quiet',
-               'search','lower','sort','extra_mods','dbg','graph', 'license']
+               'search','lower','sort','extra_mods','dbg','graph', 'license',
+               'extra_filetypes']
     defaults = {'project_dir':       ['./src'],
                 'extensions':        ['f90','f95','f03','f08','f15','F90',
                                       'F95','F03','F08','F15'],
@@ -167,9 +168,11 @@ def initialize():
                 'dbg':               False,
                 'graph':             'false',
                 'license':           '',
+                'extra_filetypes':   [],
                }
     listopts = ['extensions','display','extra_vartypes','project_dir',
-                'exclude','exclude_dir','macro','include','extra_mods']
+                'exclude','exclude_dir','macro','include','extra_mods',
+                'extra_filetypes']
     if args.warn:
         args.warn = 'true'
     else:
@@ -195,6 +198,13 @@ def initialize():
     proj_data['display'] = [ item.lower() for item in proj_data['display'] ]
     relative = (proj_data['project_url'] == '')
     proj_data['relative'] = relative
+    # Parse file extensions and comment characters for extra filetypes
+    extdict = {}
+    for ext in proj_data['extra_filetypes']:
+        sp = ext.split()
+        if len(sp) < 2: continue
+        extdict[sp[0]] = sp[1]
+    proj_data['extra_filetypes'] = extdict
     # Make sure no project_dir is contained within output_dir
     for projdir in proj_data['project_dir']:
         proj_path = ford.utils.split_path(projdir)

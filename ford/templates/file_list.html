@@ -9,7 +9,7 @@ All Files &ndash; {{ project }}
 			 <table class="table table-striped">
 			 <thead><tr><th>File</th><th>Description</th></tr></thead>
 			 <tbody>
-			 {% for src in project.files|sort(attribute='name') %}
+			 {% for src in project.allfiles|sort(attribute='name') %}
 			   <tr><td>{{ src }}</td><td>{{ src.meta['summary'] }}</td></tr>
 			 {% endfor %}
 			 </tbody></table>

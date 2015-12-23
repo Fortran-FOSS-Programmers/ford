@@ -84,7 +84,7 @@
           <div class="col-lg-{{ width }}">
               <h3>Source Files</h3>
               <ul>
-                {% for src in project.files|sort(attribute='name') %}
+                {% for src in project.allfiles|sort(attribute='name') %}
                   {% if loop.index0 < 10 %}
                     <li>{{ src }}</li>
                   {% elif loop.index0 == 10 %}

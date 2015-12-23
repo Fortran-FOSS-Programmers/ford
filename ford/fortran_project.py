@@ -22,7 +22,6 @@
 #  
 #  
 
-#FIXME: Need to add .lower() to all equality tests between strings
 
 from __future__ import print_function
 
@@ -51,6 +50,7 @@ class Project(object):
         self.name = settings['project']
         self.topdirs = settings['project_dir']
         self.extensions = settings['extensions']
+        self.extra_filetypes = settings['extra_filetypes']
         self.display = settings['display']
 
         fpp_ext = []
@@ -66,6 +66,7 @@ class Project(object):
         self.types = []
         self.submodules = []
         self.submodprocedures = []
+        self.extra_files = []
                 
         # Get all files within topdir, recursively
         srctree = []
@@ -93,7 +94,6 @@ class Project(object):
                             except Exception as e:
                                 print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
                                 continue
-                        
                         for module in self.files[-1].modules:
                             self.modules.append(module)
                         for submod in self.files[-1].submodules:
@@ -107,6 +107,17 @@ class Project(object):
                         for program in self.files[-1].programs:
                             program.visible = True
                             self.programs.append(program)
+                    elif item.split('.')[-1] in self.extra_filetypes and not item in settings['exclude']:
+                        print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
+                        if settings['dbg']:
+                            self.extra_files.append(ford.sourceform.GenericSource(os.path.join(curdir,item),settings))
+                        else:
+                            try:
+                                self.extra_files.append(ford.sourceform.GenericSource(os.path.join(curdir,item),settings))
+                            except Exception as e:
+                                print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
+                                continue
+        self.allfiles = self.files + self.extra_files                
 
 
     def __str__(self):
@@ -132,7 +143,7 @@ class Project(object):
         # Match USE statements up with the right modules
         containers = self.modules + self.procedures + self.programs + self.submodules
         for container in containers:
-                id_mods(container,self.modules,non_local_mods,self.submodules)
+            id_mods(container,self.modules,non_local_mods,self.submodules)
             
         # Get the order to process other correlations with
         deplist = {}
@@ -232,7 +243,7 @@ class Project(object):
         print("\nProcessing documentation comments...")
         ford.sourceform.set_base_url(base_url)        
         if self.settings['warn'].lower() == 'true': print()
-        for src in self.files:
+        for src in self.files + self.extra_files:
             src.markdown(md,self)
         return
 
@@ -243,7 +254,7 @@ class Project(object):
         """
         
         ford.sourceform.set_base_url(base_url)        
-        for src in self.files:
+        for src in self.files + self.extra_files:
             src.make_links(self)
         return
 

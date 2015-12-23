@@ -177,7 +177,7 @@ def sub_links(string,project):
                       'subroutine': 'procedures',
                       'function': 'procedures',
                       'proc': 'procedures',
-                      'file': 'files',
+                      'file': 'allfiles',
                       'interface': 'absinterfaces',
                       'absinterface': 'absinterfaces',
                       'program': 'programs' }

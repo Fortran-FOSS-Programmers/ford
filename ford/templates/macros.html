@@ -328,7 +328,7 @@
     <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allfiles">All Source Files</a></h3></div>
     <div id="allfiles" class="panel-collapse collapse">
         <div class="list-group">
-          {% for src in project.files|sort(attribute='name') %}
+          {% for src in project.allfiles|sort(attribute='name') %}
           <a class="list-group-item" href="{{ src.get_url() }}">{{ src.name }}</a>
           {% endfor %}
         </div>
