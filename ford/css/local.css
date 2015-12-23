@@ -47,6 +47,50 @@
       white-space: pre
     }
     
+    /* .hl is for when line numbers are included, .highlight is for all
+       other cases. */
+    .hl pre { 
+      counter-reset: line-numbering;
+      overflow-x: auto; 
+      overflow-wrap: normal; 
+      white-space: pre;
+      padding: 0;
+      padding-right: 9.5px;
+      overflow-y: hidden;
+    }
+    
+    .hl pre a::before {
+      content: counter(line-numbering);
+      counter-increment: line-numbering;
+      padding-right: 0.7em; /* space after numbers */
+      width: 60px;
+      text-align: right;
+      opacity: 0.7;
+      display: inline-block;
+      color: #aaa;
+      background: #eee;
+      margin-right: 10px;
+      border-right: 1px solid #ccc;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    
+    .hl pre a:first-of-type::before {
+      padding-top: 9.5px;
+    }
+    
+    .hl pre a:last-of-type::before {
+      padding-bottom: 9.5px;
+    }
+    
+    .hl pre a:only-of-type::before {
+      padding: 9.5px;
+    }
+
     .codesum h3 {
       margin-top: 2px;
       margin-bottom: 2px;
@@ -125,3 +169,9 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    
+    .highlighttable {
+      width: auto;
+      table-layout: fixed;
+    }
+

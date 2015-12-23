@@ -919,9 +919,8 @@ class FortranSourceFile(FortranContainer):
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
         self.raw_src = readobj.read()
-        #~ self.src = highlight(self.raw_src,FortranLexer(),HtmlFormatter(linenos=True))
-        # TODO: Get line-numbers working in such a way that it will look right with Bootstrap CSS
-        self.src = highlight(self.raw_src,FortranLexer(),HtmlFormatter())
+        self.src = highlight(self.raw_src,FortranLexer(),
+                             HtmlFormatter(lineanchors='ln', cssclass='hl'))
 
 
 
@@ -1722,7 +1721,7 @@ class GenericSource(FortranBase):
             self.raw_src = r.read()
         #TODO: Get line numbers to display properly
         self.src = highlight(self.raw_src, guess_lexer_for_filename(self.name, self.raw_src),
-                              HtmlFormatter())
+                             HtmlFormatter(lineanchors='ln', cssclass='hl'))
         com_re = re.compile("^((?!{0}|[\"']).|(\'[^']*')|(\"[^\"]*\"))*({0}.*)$".format(re.escape(comchar)))
         if docmark == docmark_alt != '':
             raise Exception('Error: docmark and docmark_alt are the same.')
