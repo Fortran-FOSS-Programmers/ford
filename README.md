@@ -41,6 +41,8 @@ Current features include:
 - configurable settings.
 - ability to create a hiearchical set of pages containing general information,
   not associated with any particular part of the source code.
+- display an entry for non-Fortran source files with file-level documentation
+  and syntax highlighted code.
 
 ##Installation
 The simplest way to install FORD is using [pip](https://pip.pypa.io/en/latest/).
