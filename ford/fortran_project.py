@@ -229,7 +229,7 @@ class Project(object):
                 for subroutine in program.subroutines:
                     self.procedures.append(subroutine)
                 for interface in program.interfaces:
-                    self.procedures.append(interfaces)
+                    self.procedures.append(interface)
                 for absint in program.absinterfaces:
                     self.absinterfaces.append(absint)
                 for dtype in program.types:
