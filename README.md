@@ -1,4 +1,6 @@
 #FORD
+[![Latest Version](https://img.shields.io/pypi/v/FORD.py.svg)](https://pypi.python.org/pypi/FORD/4.5.0) [![GitHub tag](https://img.shields.io/github/tag/cmacmackin/ford.svg)](https://github.com/cmacmackin/ford/releases/latest)
+
 This is an automatic documentation generator for modern Fortran programs.
 FORD stands for FORtran Documenter. As you may know, "to ford" refers to
 crossing a river (or other body of water). It does not, in this context, refer
