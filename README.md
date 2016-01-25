@@ -1,5 +1,9 @@
 #FORD
-[![Latest Version](https://img.shields.io/pypi/v/FORD.py.svg)](https://pypi.python.org/pypi/FORD/4.5.0) [![GitHub tag](https://img.shields.io/github/tag/cmacmackin/ford.svg)](https://github.com/cmacmackin/ford/releases/latest)
+[![Latest Version](https://img.shields.io/pypi/v/ford.svg)](https://pypi.python.org/pypi/FORD)
+[![GitHub license](https://img.shields.io/badge/License-GPL_V3-blue.svg)](./LICENSE)
+<!-- [![GitHub tag](https://img.shields.io/github/release/cmacmackin/ford.svg)](https://github.com/cmacmackin/ford/releases/latest)
+     This last badge has not been rendering due to issues over at shields.io so I'm commenting it out for now
+     -->
 
 This is an automatic documentation generator for modern Fortran programs.
 FORD stands for FORtran Documenter. As you may know, "to ford" refers to
