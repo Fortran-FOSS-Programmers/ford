@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 #  graphs.py
+#  This file is part of FORD.
 #  
 #  Copyright 2015 Christopher MacMackin <cmacmackin@gmail.com>
 #  

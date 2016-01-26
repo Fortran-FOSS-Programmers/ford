@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 #  sourceform.py
+#  This file is part of FORD.
 #  
 #  Copyright 2014 Christopher MacMackin <cmacmackin@gmail.com>
 #  
