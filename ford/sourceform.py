@@ -749,15 +749,6 @@ class FortranCodeUnit(FortranContainer):
                         proc.module = intr
                         intr.procedure.module = proc
 
-        typelist = {}
-        for dtype in self.types:
-            if  dtype.extends and dtype.extends.lower() in self.all_types:
-                dtype.extends = self.all_types[dtype.extends.lower()]
-                typelist[dtype] = set([dtype.extends])
-            else:
-                typelist[dtype] = set([])
-        typeorder = toposort.toposort_flatten(typelist)
-
         # Add procedures and types from USED modules to our lists
         for mod, extra in self.uses:
             if type(mod) is str: continue
@@ -773,6 +764,15 @@ class FortranCodeUnit(FortranContainer):
             self.all_vars.update(variables)
         self.uses = [m[0] for m in self.uses]
         
+        typelist = {}
+        for dtype in self.types:
+            if  dtype.extends and dtype.extends.lower() in self.all_types:
+                dtype.extends = self.all_types[dtype.extends.lower()]
+                typelist[dtype] = set([dtype.extends])
+            else:
+                typelist[dtype] = set([])
+        typeorder = toposort.toposort_flatten(typelist)
+
         # Match up called procedures
         if hasattr(self,'calls'):
             tmplst = []
