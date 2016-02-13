@@ -1445,6 +1445,7 @@ class FortranType(FortranContainer):
         # Find a constructor, if one exists
         if self.name.lower() in self.all_procs:
             self.constructor = self.all_procs[self.name.lower()]
+            self.constructor.permission = self.permission
         
     def prune(self):
         """
