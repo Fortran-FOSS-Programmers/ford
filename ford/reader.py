@@ -242,7 +242,7 @@ class FortranReader(object):
                     else:
                         raise Exception("Can not start a new line in Fortran with \"&\"")
                 else:
-                    linebuffer = linebuffer.strip()
+                    linebuffer = linebuffer.strip() + ' '
                 # Check if line will be continued
                 if line[-1] == '&':
                     continued = True
