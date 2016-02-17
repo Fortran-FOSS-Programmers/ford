@@ -175,3 +175,11 @@
       table-layout: fixed;
     }
 
+    ul.checklist {
+      list-style-type: none;
+    }
+
+    ul.checklist input[type="checkbox"] {
+      margin-left: -20.8px;
+      margin-right: 4.55px;
+    }
