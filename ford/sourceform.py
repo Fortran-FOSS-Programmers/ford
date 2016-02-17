@@ -1102,7 +1102,7 @@ class FortranSubroutine(FortranCodeUnit):
         if line.group(3):
             if self.SPLIT_RE.split(line.group(3)[1:-1]):
                 for arg in self.SPLIT_RE.split(line.group(3)[1:-1]):
-                    if arg != '': self.args.append(arg.strip())
+                    if arg.strip() != '': self.args.append(arg.strip())
         self.bindC = line.group(4)
         self.variables = []
         self.enums = []
@@ -1213,7 +1213,7 @@ class FortranFunction(FortranCodeUnit):
         
         for arg in self.SPLIT_RE.split(line.group(3)[1:-1]):
             # FIXME: This is to avoid a problem whereby sometimes an empty argument list will appear to contain the argument ''. I didn't know why it would do this (especially since sometimes it works fine) and just put this in as a quick fix. However, at some point I should try to figure out the actual root of the problem.
-            if arg != '': self.args.append(arg.strip())
+            if arg.strip() != '': self.args.append(arg.strip())
         try:
             self.bindC = ford.utils.get_parens(line.group(5),-1)[0:-1]
         except:
