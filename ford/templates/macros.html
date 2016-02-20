@@ -520,15 +520,22 @@
 {% endmacro %}
 
 
-{% macro final(finals) %}
-    {% for proc in finals %}
+{% macro final(proc) %}
 <div class="panel panel-default">
-  <div class="panel-heading codesum"><span class="anchor" id="{{ proc.anchor }}"></span><h3>final :: <strong>{{ proc.name }}</strong></h3></div>
+  <div class="panel-heading codesum"><span class="anchor" id="{{ proc.anchor }}"></span><h3>final :: <strong>{{ proc.name }}</strong> 
+    {% if proc.meta['deprecated'] and proc.meta['deprecated'].lower() == 'true' %}
+	 <span class="label label-danger depwarn">Deprecated</span>
+    {% endif %}</h3></div>
   <div class="panel-body">
-     {{ proc_summary(proc,title=True) }}
+    {{ meta_list(proc.meta) }}
+    {{ proc.doc }}
   </div>
+  <ul class="list-group">
+     <li class="list-group-item">
+       {{ proc_summary(proc.procedure,title=True) }}
+     </li>
+  </ul>
 </div>
-    {% endfor %}
 {% endmacro %}
 
 

@@ -58,7 +58,9 @@
     {% if dtype.finalprocs|length > 0 %}
     <section>
     <h2>Finalization Procedures</h2>
-	   {{ macros.final(dtype.finalprocs) }}
+	   {% for proc in dtype.finalprocs %}
+         {{ macros.final(proc) }}
+       {% endfor %}  
     </section>
     <br>
     {% endif %}

@@ -396,6 +396,9 @@ class FortranBase(object):
         if hasattr(self,'boundprocs'):
             md_list.extend(self.boundprocs)
             sort_items(self.boundprocs)
+        if hasattr(self,'finalprocs'):
+            md_list.extend(self.finalprocs)
+            sort_items(self.finalprocs)
         if hasattr(self,'args'):
             md_list.extend(self.args)
             #sort_items(self.args,args=True)
@@ -655,8 +658,10 @@ class FortranContainer(FortranBase):
                     raise Exception("Found type-bound procedure in {}".format(type(self).__name__[7:].upper()))
             elif self.FINAL_RE.match(line) and incontains:
                 if hasattr(self,'finalprocs'):
-                    procedures = self.FINAL_RE.match(line).group(1).strip()
-                    self.finalprocs.extend(self.SPLIT_RE.split(procedures))
+                    procedures = self.SPLIT_RE.split(self.FINAL_RE.match(line).group(1).strip())
+                    finprocs = [FortranFinalProc(proc, self) for proc in procedures[:-1]]
+                    finprocs.append(FortranFinalProc(procedures[-1], self, source))
+                    self.finalprocs.extend(finprocs)
                 else:
                     raise Exception("Found finalization procedure in {}".format(type(self).__name__[7:].upper()))
             elif self.VARIABLE_RE.match(line) and blocklevel == 0:
@@ -1146,13 +1151,13 @@ class FortranSubroutine(FortranCodeUnit):
                     break
             if type(self.args[i]) == str:
                 for intr in self.interfaces:
-                    if not intr.generic and intr.procedure.name.lower() == self.args[i].lower():
-                        self.args[i] = intr.procedure
-                        self.args[i].parent = self
-                        self.args[i].parobj = self.obj
-                        self.args[i].permission = None
-                        self.interfaces.remove(intr)
-                        break
+                    if not (intr.abstract or intr.generic):
+                        proc = intr.procedure
+                        if proc.name.lower() == self.args[i].lower():
+                            self.args[i] = proc
+                            self.interfaces.remove(intr)
+                            self.args[i].parent = self
+                            break
             if type(self.args[i]) == str:
                 if self.args[i][0].lower() in 'ijklmn':
                     vartype = 'integer'
@@ -1266,13 +1271,11 @@ class FortranFunction(FortranCodeUnit):
                     break
             if type(self.args[i]) == str:
                 for intr in self.interfaces:
-                    for proc in intr.subroutines + intr.functions:
+                    if not (intr.abstract or intr.generic):
+                        proc = intr.procedure
                         if proc.name.lower() == self.args[i].lower():
                             self.args[i] = proc
-                            if proc.proctype == 'Subroutine': intr.subroutines.remove(proc)
-                            else: intr.functions.remove(proc)
-                            if len(intr.subroutines + intr.functions) < 1:
-                                self.interfaces.remove(intr)
+                            self.interfaces.remove(intr)
                             self.args[i].parent = self
                             break
             if type(self.args[i]) == str:
@@ -1439,9 +1442,8 @@ class FortranType(FortranContainer):
         for proc in self.boundprocs:
             if proc.generic: proc.correlate(project)
         # Match finalprocs
-        for i in range(len(self.finalprocs)):
-            if self.finalprocs[i].lower() in self.all_procs:
-                self.finalprocs[i] = self.all_procs[self.finalprocs[i].lower()]
+        for fp in self.finalprocs:
+            fp.correlate(project)
         # Find a constructor, if one exists
         if self.name.lower() in self.all_procs:
             self.constructor = self.all_procs[self.name.lower()]
@@ -1539,6 +1541,40 @@ class FortranInterface(FortranContainer):
             self.contents = contents
 
 
+
+class FortranFinalProc(FortranBase):
+    """
+    An object representing a finalization procedure for a derived type
+    within Fortran.
+    """
+    def __init__(self, name, parent, source=None):
+        self.name = name
+        self.parent = parent
+        self.procedure = None
+        self.obj = 'finalproc'
+        self.parobj = self.parent.obj
+        self.display = self.parent.display
+        self.settings = self.parent.settings
+        self.doc = []
+        if source:
+            line = source.__next__()
+            while line[0:2] == "!" + self.settings['docmark']:
+                self.doc.append(line[2:])
+                line = source.__next__()
+            source.pass_back(line)
+        self.hierarchy = []
+        cur = self.parent
+        while cur:
+            self.hierarchy.append(cur)
+            cur = cur.parent
+        self.hierarchy.reverse()
+
+    def correlate(self,project):
+        self.all_procs = self.parent.all_procs
+        if self.name.lower() in self.all_procs:
+            self.procedure = self.all_procs[self.name.lower()]
+
+    
     
 class FortranVariable(FortranBase):
     """
@@ -1651,23 +1687,16 @@ class FortranBoundProcedure(FortranBase):
             elif self.proto.lower() in self.parent.all_absinterfaces:
                 self.proto = self.parent.all_absinterfaces[self.proto.lower()]
                 self.protomatch = True
-        self.matched = []
         if self.generic:
             for i in range(len(self.bindings)):
                 for proc in self.parent.all_boundprocs:
                     if proc.name and proc.name.lower() == self.bindings[i].lower():
                         self.bindings[i] = proc
-                        self.matched.append(True)
                         break
-                else:
-                    self.matched.append(False)
         else:
             for i in range(len(self.bindings)):
                 if self.bindings[i].lower() in self.all_procs:
                     self.bindings[i] = self.all_procs[self.bindings[i].lower()]
-                    self.matched.append(True)
-                else:
-                    self.matched.append(False)
 
 
 class FortranModuleProcedure(FortranBase):
