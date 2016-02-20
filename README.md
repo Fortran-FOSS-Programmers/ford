@@ -78,6 +78,22 @@ simply add the `--HEAD` flag: `brew install --HEAD FORD`
 ##Documentation
 More complete documentation can be found in the [project wiki](https://github.com/cmacmackin/ford/wiki).
 
+##License
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but **without any warrenty**; without even the implied warranty of
+**merchantability** or **fitness for a particular purpose**.  See the
+GNU General Public License for more details.
+
+You should have received a [copy](./LICENSE) of the GNU General Public License
+along with this program.  If not, see the [GNU website](http://www.gnu.org/licenses/gpl.html).
+
+Documents produced by FORD are derivative works derived from the input used in their production;
+they are not affected by this license.
 <!--
 ##Approach
 The basic algorithm for generating the documentation is as follows:
