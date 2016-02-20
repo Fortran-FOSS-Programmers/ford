@@ -52,6 +52,8 @@ Current features include:
 -  configurable settings.
 -  ability to create a hiearchical set of pages containing general information,
    not associated with any particular part of the source code.
+-  display an entry for non-Fortran source files with file-level documentation
+   and syntax highlighted code.
 
 
 Installation
@@ -71,6 +73,9 @@ documentation, pip will allow you to install FORD and its dependencies
 in a `virtualenv <https://virtualenv.pypa.io/en/latest/>`__ located
 somewhere in your home directory.
 
+If you prefer, you can install all of those dependencies manually and clone
+FORD from Github. Then place FORD somewhere in your PYTHONPATH.
+
 Alternatively, FORD is available through the `Homebrew <http://brew.sh>`__ package
 manager for Mac OS X. To update Homebrew and install FORD, run these commands in
 a terminal:
@@ -83,8 +88,28 @@ a terminal:
 If you would like to install the latest development (master) branch from github,
 simply add the :code:`--HEAD` flag: :code:`brew install --HEAD FORD`
 
-Usage
------
 
-See the documentation in the README on `Github <https://github.com/cmacmackin/ford>`__. A sample of FORD's output can be found `here <http://szaghi.github.io/Lib_VTK_IO/index.html>`__.
+Documentation
+-------------
 
+More complete documentation can be found in the `project wiki <ttps://github.com/cmacmackin/ford/wiki>`__.
+
+
+License
+-------
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but **without any warrenty**; without even the implied warranty of
+**merchantability** or **fitness for a particular purpose**.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see the `GNU website <http://www.gnu.org/licenses/gpl.htm>`__.
+
+Documents produced by FORD are derivative works derived from the input used in their production;
+they are not affected by this license.
