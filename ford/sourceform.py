@@ -143,6 +143,9 @@ class FortranBase(object):
     An object containing the data common to all of the classes used to represent
     Fortran data.
     """
+    
+    IS_SPOOF = False
+    
     POINTS_TO_RE = re.compile("\s*=>\s*",re.IGNORECASE)
     SPLIT_RE = re.compile("\s*,\s*",re.IGNORECASE)
     SRC_CAPTURE_STR = r"^[ \t]*([\w(),*: \t]+?[ \t]+)?{0}([\w(),*: \t]+?)?[ \t]+{1}[ \t\n,(].*?end[ \t]*{0}[ \t]+{1}[ \t]*?(!.*?)?$"
@@ -1693,11 +1696,15 @@ class FortranBoundProcedure(FortranBase):
                     if proc.name and proc.name.lower() == self.bindings[i].lower():
                         self.bindings[i] = proc
                         break
+                else:
+                    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
         else:
             for i in range(len(self.bindings)):
                 if self.bindings[i].lower() in self.all_procs:
                     self.bindings[i] = self.all_procs[self.bindings[i].lower()]
-
+                    break
+            else:
+                self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
 
 class FortranModuleProcedure(FortranBase):
     """
@@ -1727,6 +1734,38 @@ class FortranModuleProcedure(FortranBase):
             self.hierarchy.append(cur)
             cur = cur.parent
         self.hierarchy.reverse()
+
+
+class FortranSpoof(object):
+    """
+    A dummy-type which is used to represent arguments, interfaces, type-bound
+    procedures, etc. which lack a corresponding variable or implementation.
+    """
+    IS_SPOOF = True
+    def __init__(self, name, parent=None, obj='ITEM'):
+        self.name = name
+        self.parent = parent
+        self.obj = obj
+        if self.parent.settings['warn']:
+            print('Warning: {} {} in {} {} could not be matched to '
+                  'corresponding item in code (file {}).'.format(self.obj.upper(),
+                  self.name, self.parent.obj.upper(),self.parent.name,
+                  self.parent.hierarchy[0].name))
+    
+    def __getitem__(self, key):
+        return []
+    
+    def __len__(self):
+        return 0
+    
+    def __contains__(self, item):
+        return False
+    
+    def __getattr__(self, name):
+        return []
+
+    def __str__(self):
+        return self.name
 
 
 class GenericSource(FortranBase):
