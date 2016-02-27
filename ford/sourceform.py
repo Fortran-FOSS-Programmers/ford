@@ -449,7 +449,7 @@ class FortranContainer(FortranBase):
     A class on which any classes requiring further parsing are based.
     """
     ATTRIB_RE = re.compile("^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",re.IGNORECASE)
-    END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface|enum|block)(?:\s+(\w+))?)?$",re.IGNORECASE)
+    END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface|enum|block)(?:\s+(\w.*))?)?$",re.IGNORECASE)
     BLOCK_RE = re.compile("^(\w+\s*:)?\s*block\s*$",re.IGNORECASE)
     ENUM_RE = re.compile("^enum\s*,\s*bind\s*\(.*\)\s*$",re.IGNORECASE)
     MODPROC_RE = re.compile("^(module\s+)?procedure\s*(?:::|\s)\s*(\w.*)$",re.IGNORECASE)
@@ -1181,24 +1181,24 @@ class FortranFunction(FortranCodeUnit):
         self.mp = False
         if not attribstr: attribstr = ""
         self.attribs = []
-        if attribstr.find("impure") >= 0:
+        if attribstr.lower().find("impure") >= 0:
             self.attribs.append("impure")
-            attribstr = attribstr.replace("impure","",1)
-        if attribstr.find("pure") >= 0:
+            attribstr = re.sub("impure","",attribstr,0,re.IGNORECASE)
+        if attribstr.lower().find("pure") >= 0:
             self.attribs.append("pure")
-            attribstr = attribstr.replace("pure","",1)
-        if attribstr.find("elemental") >= 0:
+            attribstr = re.sub("pure","",attribstr,0,re.IGNORECASE)
+        if attribstr.lower().find("elemental") >= 0:
             self.attribs.append("elemental")
-            attribstr = attribstr.replace("elemental","",1)
-        if attribstr.find("non_recursive") >= 0:
+            attribstr = re.sub("elemental","",attribstr,0,re.IGNORECASE)
+        if attribstr.lower().find("non_recursive") >= 0:
             self.attribs.append("non_recursive")
-            attribstr = attribstr.replace("non_recursive","",1)
-        if attribstr.find("recursive") >= 0:
+            attribstr = re.sub("non_recursive","",attribstr,0,re.IGNORECASE)
+        if attribstr.lower().find("recursive") >= 0:
             self.attribs.append("recursive")
-            attribstr = attribstr.replace("recursive","",1)
-        if attribstr.find("module") >= 0:
+            attribstr = re.sub("recursive","",attribstr,0,re.IGNORECASE)
+        if attribstr.lower().find("module") >= 0:
             self.module = True
-            attribstr = attribstr.replace("module","",1)
+            attribstr = re.sub("module","",attribstr,0,re.IGNORECASE)
         attribstr = re.sub(" ","",attribstr)
         if line.group(4):
             self.retvar = line.group(4)
