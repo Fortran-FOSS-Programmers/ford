@@ -423,14 +423,14 @@
   <ul class="list-group">
     {% for bind in tb.bindings %}
       <li class="list-group-item">
-      {% if 'deferred' in tb.attribs and tb.protomatch %}
+      {% if tb.deferred and tb.protomatch %}
          {% if tb.proto.obj == 'interface' %}
             {{ proc_summary(tb.proto.procedure,proto=True) }}
          {% elif tb.proto.obj == 'procedure' %}
             {{ proc_summary(tb.proto,proto=True) }}
          {% endif %}
       {% elif bind.obj == 'boundprocedure' %}
-         {% if 'deferred' in bind.attribs and bind.protomatch %}
+         {% if tb.deferred and bind.protomatch %}
             {% if bind.proto.obj == 'interface' %}
                 {{ proc_summary(bind.proto.procedure,proto=True) }}
             {% elif bind.proto.obj == 'procedure' %}
