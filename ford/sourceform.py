@@ -1428,7 +1428,7 @@ class FortranType(FortranContainer):
                 present = False
                 for b in self.boundprocs:
                     if bp.name.lower() == b.name.lower(): present = True
-                if not self.deferred or not present: self.all_boundprocs.append(bp)
+                if not present: self.all_boundprocs.append(bp)
 
         # Match variables as needed (recurse)
         #~ for i in range(len(self.variables)-1,-1,-1):
