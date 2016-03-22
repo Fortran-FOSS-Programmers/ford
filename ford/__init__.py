@@ -170,7 +170,7 @@ def initialize():
                 'graph':               'false',
                 'license':             '',
                 'extra_filetypes':     [],
-                'creation_date':       datetime.now().isoformat(),
+                'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': False,
                }
     listopts = ['extensions','display','extra_vartypes','project_dir',
@@ -199,6 +199,7 @@ def initialize():
         elif option in defaults:
            proj_data[option] = defaults[option]
     proj_data['display'] = [ item.lower() for item in proj_data['display'] ]
+    proj_data['creation_date'] = datetime.now().strftime(proj_data['creation_date'])
     relative = (proj_data['project_url'] == '')
     proj_data['relative'] = relative
     # Parse file extensions and comment characters for extra filetypes
