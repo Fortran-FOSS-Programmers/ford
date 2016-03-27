@@ -128,7 +128,7 @@
                 {% for dtype in project.types|sort(attribute='name') %}
                   {% if loop.index0 < 10 %}
                     <li>{{ dtype }}</li>
-                  {% elif loop.index0 == 0 %}
+                  {% elif loop.index0 == 10 %}
                     <li><a href="{{ project_url }}/lists/types.html"><em>All derived types&hellip;</em></a></li>
                   {% endif %}
                 {% endfor %}
