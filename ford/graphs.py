@@ -49,6 +49,25 @@ def newdict(old,key,val):
     new[key] = val
     return new
 
+def is_module(obj,cls):
+    return isinstance(obj,FortranModule) or issubclass(cls,FortranModule)
+
+def is_submodule(obj,cls):
+    return isinstance(obj,FortranSubmodule) or issubclass(cls,FortranSubmodule)
+    
+def is_type(obj,cls):
+    return isinstance(obj,FortranType) or issubclass(cls,FortranType)
+
+def is_proc(obj,cls):
+    return (isinstance(obj,(FortranFunction,FortranSubroutine,
+                            FortranInterface,FortranSubmoduleProcedure))
+         or issubclass(cls,(FortranFunction,FortranSubroutine,
+                               FortranInterface,FortranSubmoduleProcedure)))
+
+def is_program(obj, cls):
+    return isinstance(obj,FortranProgram) or issubclass(cls,FortranProgram)
+    
+    
 class GraphData(object):
     """
     Contains all of the nodes which may be displayed on a graph.
@@ -66,16 +85,15 @@ class GraphData(object):
         not already present.
         """
         ident = getattr(obj,'ident',obj)
-        if isinstance(obj,FortranSubmodule) or issubclass(cls,FortranSubmodule):
+        if is_submodule(obj,cls):
             if obj not in self.submodules: self.submodules[obj] = SubmodNode(obj,self)
-        elif isinstance(obj,FortranModule) or issubclass(cls,FortranModule):
+        elif is_module(obj,cls):
             if obj not in self.modules: self.modules[obj] = ModNode(obj,self)
-        elif isinstance(obj,FortranType) or issubclass(cls,FortranType):
+        elif is_type(obj,cls):
             if obj not in self.types: self.types[obj] = TypeNode(obj,self)
-        elif (isinstance(obj,(FortranFunction,FortranSubroutine,FortranInterface,FortranSubmoduleProcedure)) or 
-              issubclass(cls,(FortranFunction,FortranSubroutine,FortranInterface,FortranSubmoduleProcedure))):
+        elif is_proc(obj,cls):
             if obj not in self.procedures: self.procedures[obj] = ProcNode(obj,self,hist)
-        elif isinstance(obj,FortranProgram) or issubclass(cls,FortranProgram):
+        elif is_program(obj,cls):
             if obj not in self.programs: self.programs[obj] = ProgNode(obj,self)
         else:
             raise BadType("Object type {} not recognized by GraphData".format(type(obj).__name__))
@@ -86,19 +104,19 @@ class GraphData(object):
         then it will create it.
         """
         ident = getattr(obj,'ident',obj)
-        if obj in self.modules:
+        if obj in self.modules and is_module(obj,cls):
             return self.modules[obj]
-        elif obj in self.submodules:
+        elif obj in self.submodules and is_submodule(obj,cls):
             return self.submodules[obj]
-        elif obj in self.types:
+        elif obj in self.types and is_type(obj,cls):
             return self.types[obj]
-        elif obj in self.procedures:
+        elif obj in self.procedures and is_proc(obj,cls):
             return self.procedures[obj]
-        elif obj in self.programs:
+        elif obj in self.programs and is_program(obj,cls):
             return self.programs[obj]
         else:
             self.register(obj,cls,hist)
-            return self.get_node(obj)
+            return self.get_node(obj,cls,hist)
 
 
 class BaseNode(object):
@@ -601,8 +619,8 @@ dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
                           edge_attr={'fontname':'Helvetica',
                                      'fontsize':'9.5'},
                           format='svg', engine='dot')
-for n in ['Module','Submodule','Type',sub,func,intr,'Unknown Procedure Type','Program']:
-    dot.node(getattr(n,'name',n),**gd.get_node(n).attribs)
+for n in [('Module',FortranModule),('Submodule',FortranSubmodule),('Type',FortranType),(sub,FortranSubroutine),(func,FortranFunction),(intr, FortranInterface),('Unknown Procedure Type',FortranFunction),('Program', FortranProgram)]:
+    dot.node(getattr(n[0],'name',n[0]),**gd.get_node(n[0],cls=n[1]).attribs)
 dot.node('This Page\'s Entity')
 try:
     svg = dot.pipe().decode('utf-8')

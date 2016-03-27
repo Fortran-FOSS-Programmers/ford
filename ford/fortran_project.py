@@ -129,7 +129,7 @@ class Project(object):
         Associates various constructs with each other.
         """
 
-        print("Correlating information from different parts of your project...\n")
+        print("Correlating information from different parts of your project...")
                         
         non_local_mods = INTRINSIC_MODS        
         for item in self.settings['extra_mods']:
@@ -235,7 +235,7 @@ class Project(object):
                     self.absinterfaces.append(absint)
                 for dtype in program.types:
                     self.types.append(dtype)
-            
+        print()
 
     def markdown(self,md,base_url='..'):
         """

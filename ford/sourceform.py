@@ -143,6 +143,9 @@ class FortranBase(object):
     An object containing the data common to all of the classes used to represent
     Fortran data.
     """
+    
+    IS_SPOOF = False
+    
     POINTS_TO_RE = re.compile("\s*=>\s*",re.IGNORECASE)
     SPLIT_RE = re.compile("\s*,\s*",re.IGNORECASE)
     SRC_CAPTURE_STR = r"^[ \t]*([\w(),*: \t]+?[ \t]+)?{0}([\w(),*: \t]+?)?[ \t]+{1}[ \t\n,(].*?end[ \t]*{0}[ \t]+{1}[ \t]*?(!.*?)?$"
@@ -1422,13 +1425,10 @@ class FortranType(FortranContainer):
         # Get type of extension
         if self.extends and type(self.extends) is not str:
             for bp in self.extends.all_boundprocs:
-                deferred = False
-                for attr in bp.attribs:
-                    if attr.lower() == 'deferred': deferred = True
                 present = False
                 for b in self.boundprocs:
                     if bp.name.lower() == b.name.lower(): present = True
-                if not deferred or not present: self.all_boundprocs.append(bp)
+                if not present: self.all_boundprocs.append(bp)
 
         # Match variables as needed (recurse)
         #~ for i in range(len(self.variables)-1,-1,-1):
@@ -1651,12 +1651,14 @@ class FortranBoundProcedure(FortranBase):
     def _initialize(self,line):
         attribstr = line.group(3)
         self.attribs = []
+        self.deferred = False
         if attribstr:
             tmp_attribs = ford.utils.paren_split(",",attribstr[1:])
             for i in range(len(tmp_attribs)):
                 tmp_attribs[i] = tmp_attribs[i].strip()
                 if tmp_attribs[i].lower() == "public": self.permission = "public"
                 elif tmp_attribs[i].lower() == "private": self.permission = "private"
+                elif tmp_attribs[i].lower() == "deferred": self.deferred = True
                 else: self.attribs.append(tmp_attribs[i])
         rest = line.group(4)
         split = self.POINTS_TO_RE.split(rest)
@@ -1664,7 +1666,7 @@ class FortranBoundProcedure(FortranBase):
         self.generic = (line.group(1).lower() == "generic")
         self.proto = line.group(2)
         if self.proto:
-            self.proto = self.proto[1:-1]
+            self.proto = self.proto[1:-1].strip()
         self.bindings = []
         if len(split) > 1:
             binds = self.SPLIT_RE.split(split[1])
@@ -1687,17 +1689,24 @@ class FortranBoundProcedure(FortranBase):
             elif self.proto.lower() in self.parent.all_absinterfaces:
                 self.proto = self.parent.all_absinterfaces[self.proto.lower()]
                 self.protomatch = True
+            else:
+                self.proto = FortranSpoof(self.proto, self, 'INTERFACE')
+                self.protomatch = True
         if self.generic:
             for i in range(len(self.bindings)):
                 for proc in self.parent.all_boundprocs:
                     if proc.name and proc.name.lower() == self.bindings[i].lower():
                         self.bindings[i] = proc
                         break
-        else:
+                else:
+                    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
+        elif not self.deferred:
             for i in range(len(self.bindings)):
                 if self.bindings[i].lower() in self.all_procs:
                     self.bindings[i] = self.all_procs[self.bindings[i].lower()]
-
+                    break
+            else:
+                self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
 
 class FortranModuleProcedure(FortranBase):
     """
@@ -1727,6 +1736,38 @@ class FortranModuleProcedure(FortranBase):
             self.hierarchy.append(cur)
             cur = cur.parent
         self.hierarchy.reverse()
+
+
+class FortranSpoof(object):
+    """
+    A dummy-type which is used to represent arguments, interfaces, type-bound
+    procedures, etc. which lack a corresponding variable or implementation.
+    """
+    IS_SPOOF = True
+    def __init__(self, name, parent=None, obj='ITEM'):
+        self.name = name
+        self.parent = parent
+        self.obj = obj
+        if self.parent.settings['warn']:
+            print('Warning: {} {} in {} {} could not be matched to '
+                  'corresponding item in code (file {}).'.format(self.obj.upper(),
+                  self.name, self.parent.obj.upper(),self.parent.name,
+                  self.parent.hierarchy[0].name))
+    
+    def __getitem__(self, key):
+        return []
+    
+    def __len__(self):
+        return 0
+    
+    def __contains__(self, item):
+        return False
+    
+    def __getattr__(self, name):
+        return []
+
+    def __str__(self):
+        return self.name
 
 
 class GenericSource(FortranBase):
