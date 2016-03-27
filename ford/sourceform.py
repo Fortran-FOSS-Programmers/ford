@@ -1689,24 +1689,24 @@ class FortranBoundProcedure(FortranBase):
             elif self.proto.lower() in self.parent.all_absinterfaces:
                 self.proto = self.parent.all_absinterfaces[self.proto.lower()]
                 self.protomatch = True
-            else:
-                self.proto = FortranSpoof(self.proto, self, 'INTERFACE')
-                self.protomatch = True
+            #else:
+            #    self.proto = FortranSpoof(self.proto, self, 'INTERFACE')
+            #    self.protomatch = True
         if self.generic:
             for i in range(len(self.bindings)):
                 for proc in self.parent.all_boundprocs:
                     if proc.name and proc.name.lower() == self.bindings[i].lower():
                         self.bindings[i] = proc
                         break
-                else:
-                    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
+                #else:
+                #    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
         elif not self.deferred:
             for i in range(len(self.bindings)):
                 if self.bindings[i].lower() in self.all_procs:
                     self.bindings[i] = self.all_procs[self.bindings[i].lower()]
                     break
-            else:
-                self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
+            #else:
+            #    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
 
 class FortranModuleProcedure(FortranBase):
     """
