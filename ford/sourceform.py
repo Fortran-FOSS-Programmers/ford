@@ -1509,8 +1509,6 @@ class FortranInterface(FortranContainer):
             self.procedure.correlate(project)
 
     def _cleanup(self):
-        if len(self.subroutines + self.functions + self.modprocs) < 1 and self.generic:
-            raise Exception("Generic interface block found with no contents: {}".format(self.name))
         if self.abstract:
             contents = []
             for proc in (self.subroutines + self.functions):
