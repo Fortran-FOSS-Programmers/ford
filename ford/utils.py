@@ -146,7 +146,10 @@ def split_path(path):
     a list.
     '''
     def recurse_path(path,retlist):
-        if len(retlist) > 10: exit(0)
+        if len(retlist) > 100:
+            fullpath = os.path.join(*([ path, ] + retlist))
+            print("Directory '{}' contains too many levels".format(fullpath))
+            exit(1)
         head, tail = os.path.split(path)
         if len(tail) > 0:
             retlist.insert(0,tail)
