@@ -905,7 +905,7 @@ class FortranSourceFile(FortranContainer):
     will consist of a list of these objects. In turn, SourceFile objects will
     contains lists of all of that file's contents
     """
-    def __init__(self,filepath,settings,preprocess=False):
+    def __init__(self,filepath,settings,preprocessor=None):
         self.path = filepath.strip()
         self.name = os.path.basename(self.path)
         self.settings = settings
@@ -922,7 +922,7 @@ class FortranSourceFile(FortranContainer):
                 
         source = ford.reader.FortranReader(self.path,settings['docmark'],
                     settings['predocmark'],settings['docmark_alt'],
-                    settings['predocmark_alt'],preprocess,
+                    settings['predocmark_alt'],preprocessor,
                     settings['macro'],settings['include'])
         
         FortranContainer.__init__(self,source,"")
