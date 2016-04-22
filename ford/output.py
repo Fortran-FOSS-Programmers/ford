@@ -374,64 +374,22 @@ class PagetreePage(BasePage):
                   os.path.join(self.data['page_dir'],self.obj.location,item),e.args[0]))
 
 
-def copytree(src, dst, symlinks=False, ignore=None):
-    """
-    A version of shutil.copystat() modified so that it won't copy over
-    date metadata.
-    """
-    try:
-        WindowsError
-    except NameError:
-        WindowsError = None
-    
-    def touch(path):
-        now = time.time()
-        try:
-            # assume it's there
-            os.utime(path, (now, now))
-        except os.error:
-            # if it isn't, try creating the directory,
-            # a file with that name
-            os.makedirs(os.path.dirname(path))
-            open(path, "w").close()
-            os.utime(path, (now, now))
+def copytree(src, dst):
+    """Replaces shutil.copytree to avoid problems on certain file systems.
 
-    names = os.listdir(src)
-    if ignore is not None:
-        ignored_names = ignore(src, names)
-    else:
-        ignored_names = set()
-
-    os.makedirs(dst)
-    errors = []
-    for name in names:
-        if name in ignored_names:
-            continue
-        srcname = os.path.join(src, name)
-        dstname = os.path.join(dst, name)
-        try:
-            if symlinks and os.path.islink(srcname):
-                linkto = os.readlink(srcname)
-                os.symlink(linkto, dstname)
-            elif os.path.isdir(srcname):
-                copytree(srcname, dstname, symlinks, ignore)
-            else:
-                shutil.copy2(srcname, dstname)
-                touch(dstname)                
-            # XXX What about devices, sockets etc.?
-        except (IOError, os.error) as why:
-            errors.append((srcname, dstname, str(why)))
-        # catch the Error from the recursive copytree so that we can
-        # continue with other files
-        except Error as err:
-            errors.extend(err.args[0])
-    try:
-        shutil.copystat(src, dst)
-    except WindowsError:
-        # can't copy file access times on Windows
-        pass
-    except OSError as why:
-        errors.extend((src, dst, str(why)))
-    touch(dst)
-    if errors:
-        raise Error(errors)
+    shutil.copytree() and shutil.copystat() invoke os.setxattr(), which seems
+    to fail when called for directories on at least one NFS file system.
+    The current routine is a simple replacement, which should be good enough for
+    Ford.
+    """
+    for root, dirs, files in os.walk(src):
+        relsrcdir = os.path.relpath(root, src)
+        dstdir = os.path.join(dst, relsrcdir)
+        if not os.path.exists(dstdir):
+            try:
+                os.makedirs(dstdir)
+            except OSError as ex:
+                if ex.errno != errno.EEXIST:
+                    raise
+        for ff in files:
+            shutil.copy(os.path.join(root, ff), os.path.join(dstdir, ff))
