@@ -34,7 +34,7 @@ import argparse
 import markdown
 import os
 import subprocess
-from datetime import date
+from datetime import date, datetime
 
 import ford.fortran_project
 import ford.sourceform
@@ -139,7 +139,8 @@ def initialize():
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph', 'license',
-               'extra_filetypes','preprocessor']
+               'extra_filetypes','preprocessor','creation_date',
+               'print_creation_date']
     defaults = {'project_dir':       ['./src'],
                 'extensions':        ['f90','f95','f03','f08','f15','F90',
                                       'F95','F03','F08','F15'],
@@ -171,6 +172,8 @@ def initialize():
                 'graph':             'false',
                 'license':           '',
                 'extra_filetypes':   [],
+                'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
+                'print_creation_date': False,
                }
     listopts = ['extensions','display','extra_vartypes','project_dir',
                 'exclude','exclude_dir','macro','include','extra_mods',
@@ -198,6 +201,7 @@ def initialize():
         elif option in defaults:
            proj_data[option] = defaults[option]
     proj_data['display'] = [ item.lower() for item in proj_data['display'] ]
+    proj_data['creation_date'] = datetime.now().strftime(proj_data['creation_date'])
     relative = (proj_data['project_url'] == '')
     proj_data['relative'] = relative
     # Parse file extensions and comment characters for extra filetypes
