@@ -656,7 +656,7 @@ except RuntimeError:
 GRAPH_KEY = """
 Nodes of different colours represent the following:
 {}
-Where possible, edges connecting nodes are given unique colours to make them
+Where possible, edges connecting nodes are given different colours to make them
 easier to distinguish in large graphs.
 <h5>Module Graph</h5>
 <p>Solid arrows point from a parent (sub)module to the submodule which is
