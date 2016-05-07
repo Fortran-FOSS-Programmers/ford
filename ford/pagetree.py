@@ -89,7 +89,7 @@ class PageNode(object):
     
 def get_page_tree(topdir,md,parent=None):
     # look for files within topdir
-    filelist = os.listdir(topdir)
+    filelist = sorted(os.listdir(topdir))
     if 'index.md' in filelist:
         # process index.md
         try:
