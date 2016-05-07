@@ -382,6 +382,18 @@ def copytree(src, dst):
     The current routine is a simple replacement, which should be good enough for
     Ford.
     """
+    def touch(path):
+        now = time.time()
+        try:
+            # assume it's there
+            os.utime(path, (now, now))
+        except os.error:
+            # if it isn't, try creating the directory,
+            # a file with that name
+            os.makedirs(os.path.dirname(path))
+            open(path, "w").close()
+            os.utime(path, (now, now))
+
     for root, dirs, files in os.walk(src):
         relsrcdir = os.path.relpath(root, src)
         dstdir = os.path.join(dst, relsrcdir)
@@ -393,3 +405,4 @@ def copytree(src, dst):
                     raise
         for ff in files:
             shutil.copy(os.path.join(root, ff), os.path.join(dstdir, ff))
+            touch(os.path.join(dstdir, ff))
