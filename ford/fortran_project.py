@@ -271,13 +271,14 @@ def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
     Match USE statements up with the right modules
     """
     for i in range(len(obj.uses)):
-        if obj.uses[i][0].lower() in intrinsic_mods:
-            obj.uses[i] = [intrinsic_mods[obj.uses[i][0].lower()], obj.uses[i][1]]
-            continue
         for candidate in modlist:
             if obj.uses[i][0].lower() == candidate.name.lower():
                 obj.uses[i] = [candidate, obj.uses[i][1]]
                 break
+        else:
+            if obj.uses[i][0].lower() in intrinsic_mods:
+                obj.uses[i] = [intrinsic_mods[obj.uses[i][0].lower()], obj.uses[i][1]]
+                continue
     if getattr(obj,'ancestor',None):
         for submod in submodlist:
             if obj.ancestor == submod.name.lower():
