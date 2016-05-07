@@ -139,7 +139,7 @@ def initialize():
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph', 'license',
-               'extra_filetypes']
+               'extra_filetypes','preprocessor']
     defaults = {'project_dir':       ['./src'],
                 'extensions':        ['f90','f95','f03','f08','f15','F90',
                                       'F95','F03','F08','F15'],
@@ -160,6 +160,7 @@ def initialize():
                 'macro':             [],
                 'include':           [],
                 'preprocess':        'true',
+                'preprocessor':      '',
                 'warn':              'false',
                 'quiet':             'false',
                 'search':            'true',
@@ -238,14 +239,29 @@ def initialize():
     if proj_data['predocmark'] == proj_data['predocmark_alt'] != '':
         print('Error: predocmark and predocmark_alt are the same.')
         sys.exit(1)
-    # Check that gfortrran is present for preprocessing
-    try:
-        devnull = open(os.devnull)
-        subprocess.Popen(["gfortran","--version"], stdout=devnull, stderr=devnull).communicate()
-    except OSError as e:
-        if proj_data['preprocess'].lower() == 'true':
-            print("Warning: gfortran not found; preprocessing turned off")
+        
+    # Handle preprocessor:
+    if proj_data['preprocess'].lower() == 'true':
+        if proj_data['preprocessor']:
+            preprocessor = proj_data['preprocessor'].split()
+        else:
+            preprocessor = ['gfortran', '-E', '-cpp']
+
+        # Check whether preprocessor works (reading nothing from stdin)
+        try:
+            devnull = open(os.devnull)
+            subprocess.Popen(preprocessor, stdin=devnull, stdout=devnull,
+                             stderr=devnull).communicate()
+        except OSError as ex:
+            print('Warning: Testing preprocessor failed')
+            print('  Preprocessor command: {}'.format(preprocessor))
+            print('  Exception: {}'.format(ex))
+            print('  -> Preprocessing turned off')
             proj_data['preprocess'] = 'false'
+        else:
+            proj_data['preprocess'] = 'true'
+            proj_data['preprocessor'] = preprocessor
+    
     # Get correct license
     try:
         proj_data['license'] = LICENSES[proj_data['license'].lower()]

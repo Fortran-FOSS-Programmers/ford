@@ -56,7 +56,7 @@ class FortranReader(object):
     SC_RE = re.compile("^([^;]*);(.*)$")
 
     def __init__(self,filename,docmark='!',predocmark='',docmark_alt='',
-                 predocmark_alt='',preprocess=False,macros=[],inc_dirs=[]):
+                 predocmark_alt='',preprocessor=None,macros=[],inc_dirs=[]):
         self.name = filename
         
         # Check that none of the docmarks are the same
@@ -73,11 +73,15 @@ class FortranReader(object):
         if predocmark == predocmark_alt != '':
             raise Exception('Error: predocmark and predocmark_alt are the same.')
         
-        if preprocess:
+        if preprocessor:
             macros = ['-D' + mac.strip() for mac in macros]
             incdirs = ['-I' + d.strip() for d in inc_dirs]
-            fpp = subprocess.Popen(["gfortran", "-E", "-cpp", filename]+macros+incdirs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            preprocessor = preprocessor + macros + incdirs + [filename]
+            fpp = subprocess.Popen(preprocessor, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, 
+                                   universal_newlines=True)
             (out, err) = fpp.communicate()
+
             if len(err) > 0:
                 print('Warning: error preprocessing '+filename)
                 print(err)
@@ -147,7 +151,6 @@ class FortranReader(object):
                 line = self.reader.__next__()
             else:   #Python 2
                 line = self.reader.next()
-
             if len(line.strip()) > 0 and line.strip()[0] == '#': continue
 
             # Capture any preceding documenation comments
