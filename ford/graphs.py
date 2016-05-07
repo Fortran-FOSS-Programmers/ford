@@ -38,6 +38,12 @@ from graphviz import Digraph
 
 from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure
 
+import colorsys
+def rainbowcolour(depth, maxd):
+    (r, g, b) = colorsys.hsv_to_rgb(float(depth) / maxd, 1.0, 1.0)
+    R, G, B = int(255 * r), int(255 * g), int(255 * b)
+    return R, G, B
+
 HYPERLINK_RE = re.compile("^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$",re.IGNORECASE)
 WIDTH_RE = re.compile('width="(.*?)pt"',re.IGNORECASE)
 HEIGHT_RE = re.compile('height="(.*?)pt"',re.IGNORECASE)
@@ -422,19 +428,21 @@ class ModuleGraph(FortranGraph):
         listed in nodes.
         """
         self.dot.attr('graph',size='11.875,1000.0')
-        for n in nodes:
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
             for nu in n.uses:
                 if nu not in nodes and nu.ident not in self.added:
                     self.dot.node(nu.ident,**nu.attribs)
                     self.numnodes += 1
                     self.added.append(nu.ident)
-                self.dot.edge(nu.ident,n.ident,style='dashed')
+                self.dot.edge(nu.ident,n.ident,style='dashed',color=colour)
             if hasattr(n,'ancestor'):
                 if n.ancestor not in nodes and n.ancestor.ident not in self.added:
                     self.dot.node(n.ancestor.ident,**n.ancestor.attribs)
                     self.numnodes += 1
                     self.added.append(n.ancestor.ident)
-                self.dot.edge(n.ancestor.ident,n.ident)
+                self.dot.edge(nu.ident,n.ident,color=colour)
 
 
 class UsesGraph(FortranGraph):
@@ -443,13 +451,15 @@ class UsesGraph(FortranGraph):
         Adds nodes for the modules used by those listed in nodes. Adds
         edges between them. Also does this for ancestor (sub)modules.
         """
-        for n in nodes:
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
             self.add_node([x for x in n.uses if x.ident not in self.added])
             for nu in n.uses:
-                self.dot.edge(nu.ident,n.ident,style='dashed')
+                self.dot.edge(nu.ident,n.ident,style='dashed',color=colour)
             if hasattr(n,'ancestor'):
                 if n.ancestor.ident not in self.added: self.add_node([n.ancestor])
-                self.dot.edge(n.ancestor.ident,n.ident)
+                self.dot.edge(n.ancestor.ident,n.ident,color=colour)
         
 
 class UsedByGraph(FortranGraph):
@@ -458,13 +468,15 @@ class UsedByGraph(FortranGraph):
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
         """
-        for n in nodes:
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
             self.add_node([x for x in getattr(n,'used_by',[]) if x.ident not in self.added])
             for nu in getattr(n,'used_by',[]):
-                self.dot.edge(n.ident,nu.ident,style='dashed')
+                self.dot.edge(n.ident,nu.ident,style='dashed',color=colour)
             self.add_node([x for x in getattr(n,'children',[]) if x.ident not in self.added])
             for c in getattr(n,'children',[]):
-                self.dot.edge(n.ident,c.ident)
+                self.dot.edge(n.ident,c.ident,color=colour)
 
 
 class TypeGraph(FortranGraph):
@@ -474,19 +486,21 @@ class TypeGraph(FortranGraph):
         nodes. Adds appropriate edges between them.
         """
         self.dot.attr('graph',size='11.875,1000.0')
-        for n in nodes:
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
             for c in n.comp_types:
                 if c not in nodes and c.ident not in self.added:
                     self.dot.node(c.ident,**c.attribs)
                     self.numnodes += 1
                     self.added.append(c.ident)
-                self.dot.edge(c.ident,n.ident,style='dashed',label=n.comp_types[c])
+                self.dot.edge(c.ident,n.ident,style='dashed',label=n.comp_types[c],color=colour)
             if n.ancestor:
                 if n.ancestor not in nodes and n.ancestor.ident not in self.added:
                     self.dot.node(n.ancestor.ident,**n.ancestor.attribs)
                     self.numnodes += 1
                     self.added.append(n.ancestor.ident)
-                self.dot.edge(n.ancestor.ident,n.ident)
+                self.dot.edge(n.ancestor.ident,n.ident,color=colour)
 
 
 class InheritsGraph(FortranGraph):
@@ -495,13 +509,15 @@ class InheritsGraph(FortranGraph):
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
         """
-        for n in nodes:
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
             self.add_node([x for x in n.comp_types.keys() if x.ident not in self.added])
             for c in n.comp_types:
-                self.dot.edge(c.ident,n.ident,style='dashed',label=n.comp_types[c])
+                self.dot.edge(c.ident,n.ident,style='dashed',label=n.comp_types[c],color=colour)
             if n.ancestor:
                 if n.ancestor.ident not in self.added: self.add_node([n.ancestor])
-                self.dot.edge(n.ancestor.ident,n.ident)
+                self.dot.edge(n.ancestor.ident,n.ident,color=colour)
 
 
 class InheritedByGraph(FortranGraph):
@@ -510,13 +526,15 @@ class InheritedByGraph(FortranGraph):
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
         """
-        for n in nodes:
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
             self.add_node([x for x in n.comp_of.keys() if x.ident not in self.added])
             for c in n.comp_of:
-                self.dot.edge(n.ident,c.ident,style='dashed',label=n.comp_of[c])
+                self.dot.edge(n.ident,c.ident,style='dashed',label=n.comp_of[c],color=colour)
             self.add_node([x for x in n.children if x.ident not in self.added])
             for c in n.children:
-                self.dot.edge(n.ident,c.ident)
+                self.dot.edge(n.ident,c.ident,color=colour)
 
 
 class CallGraph(FortranGraph):
@@ -527,19 +545,21 @@ class CallGraph(FortranGraph):
         """
         self.dot.attr('graph',size='11.875,1000.0')
         self.dot.attr('graph',concentrate='false')
-        for n in nodes:
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
             for p in n.calls:
                 if p not in nodes and p.ident not in self.added:
                     self.dot.node(p.ident,**p.attribs)
                     self.numnodes += 1
                     self.added.append(p.ident)
-                self.dot.edge(n.ident,p.ident)
+                self.dot.edge(n.ident,p.ident,color=colour)
             for p in getattr(n,'interfaces',[]):
                 if p not in nodes and p.ident not in self.added:
                     self.dot.node(p.ident,**p.attribs)
                     self.numnodes += 1
                     self.added.append(p.ident)
-                self.dot.edge(n.ident,p.ident,style='dashed')
+                self.dot.edge(n.ident,p.ident,style='dashed',color=colour)
                 
 
 class CallsGraph(FortranGraph):
@@ -549,13 +569,15 @@ class CallsGraph(FortranGraph):
         nodes. Adds appropriate edges between them.
         """
         self.dot.attr('graph',concentrate='false')
-        for n in nodes:
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
             self.add_node([x for x in n.calls if x.ident not in self.added])
             for p in n.calls:
-                self.dot.edge(n.ident,p.ident)
+                self.dot.edge(n.ident,p.ident,color=colour)
             self.add_node([x for x in getattr(n,'interfaces',[]) if x.ident not in self.added])
             for p in getattr(n,'interfaces',[]):
-                self.dot.edge(n.ident,p.ident,style='dashed')
+                self.dot.edge(n.ident,p.ident,style='dashed',color=colour)
 
 
 class CalledByGraph(FortranGraph):
@@ -565,14 +587,16 @@ class CalledByGraph(FortranGraph):
         nodes. Adds appropriate edges between them.
         """
         self.dot.attr('graph',concentrate='false')
-        for n in nodes:
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
             if isinstance(n,ProgNode): continue
             self.add_node([x for x in n.called_by if x.ident not in self.added])
             for p in n.called_by:
-                self.dot.edge(p.ident,n.ident)
+                self.dot.edge(p.ident,n.ident,color=colour)
             self.add_node([x for x in getattr(n,'interfaced_by',[]) if x.ident not in self.added])
             for p in getattr(n,'interfaced_by',[]):
-                self.dot.edge(p.ident,n.ident,style='dashed')
+                self.dot.edge(p.ident,n.ident,style='dashed',color=colour)
 
 
 class BadType(Exception):
@@ -632,6 +656,8 @@ except RuntimeError:
 GRAPH_KEY = """
 Nodes of different colours represent the following:
 {}
+Where possible, edges connecting nodes are given unique colours to make them
+easier to distinguish in large graphs.
 <h5>Module Graph</h5>
 <p>Solid arrows point from a parent (sub)module to the submodule which is
 descended from it. Dashed arrows point from a module being used to the
