@@ -57,12 +57,14 @@
       padding: 0;
       padding-right: 9.5px;
       overflow-y: hidden;
+      padding-bottom: 9.5px;
     }
     
     .hl pre a::before {
       content: counter(line-numbering);
       counter-increment: line-numbering;
       padding-right: 0.7em; /* space after numbers */
+      margin-top: 4.5em;
       width: 60px;
       text-align: right;
       opacity: 0.7;
@@ -91,6 +93,11 @@
       padding: 9.5px;
     }
 
+    .hl pre a {
+	display: inline-block;
+	height: 4.5em;
+	margin: -4.5em 0 0;
+    }
     .codesum h3 {
       margin-top: 2px;
       margin-bottom: 2px;
