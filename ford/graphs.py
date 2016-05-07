@@ -442,7 +442,7 @@ class ModuleGraph(FortranGraph):
                     self.dot.node(n.ancestor.ident,**n.ancestor.attribs)
                     self.numnodes += 1
                     self.added.append(n.ancestor.ident)
-                self.dot.edge(nu.ident,n.ident,color=colour)
+                self.dot.edge(n.ancestor.ident,n.ident,color=colour)
 
 
 class UsesGraph(FortranGraph):
