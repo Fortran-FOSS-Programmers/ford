@@ -290,7 +290,7 @@ class FortranReader(object):
             return
         name = self.pending.pop(0)[8:].strip()[1:-1]
         for b in [os.path.dirname(self.name)] + self.inc_dirs:
-            pname = os.path.join(b, name)
+            pname = os.path.abspath(os.path.expanduser(os.path.join(b, name)))
             if os.path.isfile(pname):
                 name = pname
                 break
