@@ -52,7 +52,6 @@ class GraphManager(object):
         self.procedures = set()
         self.types = set()
         self.graphdir = graphdir
-        self.outdir = os.path.join(outdir,graphdir)
         self.webdir = base_url + '/' + graphdir
         self.usegraph = None
         self.typegraph = None
@@ -92,23 +91,27 @@ class GraphManager(object):
         self.callgraph = ford.graphs.CallGraph(callnodes,self.webdir,'call~~graph')
 
     def output_graphs(self):
-        os.mkdir(self.outdir, 0o755)
+        if not self.graphdir: return
+        try:
+            os.mkdir(self.graphdir, 0o755)
+        except OSError:
+            pass
         for m in self.modules:
-            m.usesgraph.create_svg(self.outdir)
-            m.usedbygraph.create_svg(self.outdir)
+            m.usesgraph.create_svg(self.graphdir)
+            m.usedbygraph.create_svg(self.graphdir)
         for t in self.types:
-            t.inhergraph.create_svg(self.outdir)
-            t.inherbygraph.create_svg(self.outdir)
+            t.inhergraph.create_svg(self.graphdir)
+            t.inherbygraph.create_svg(self.graphdir)
         for p in self.procedures:
-            p.callsgraph.create_svg(self.outdir)
-            p.calledbygraph.create_svg(self.outdir)
+            p.callsgraph.create_svg(self.graphdir)
+            p.calledbygraph.create_svg(self.graphdir)
         for p in self.programs:
-            p.callsgraph.create_svg(self.outdir)
-            p.usesgraph.create_svg(self.outdir)
+            p.callsgraph.create_svg(self.graphdir)
+            p.usesgraph.create_svg(self.graphdir)
         if self.usegraph:
-            self.usegraph.create_svg(self.outdir)
+            self.usegraph.create_svg(self.graphdir)
         if self.typegraph:
-            self.typegraph.create_svg(self.outdir)
+            self.typegraph.create_svg(self.graphdir)
         if self.callgraph:
-            self.callgraph.create_svg(self.outdir)
+            self.callgraph.create_svg(self.graphdir)
 

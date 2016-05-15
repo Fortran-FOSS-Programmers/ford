@@ -26,6 +26,7 @@
 from __future__ import print_function
 import sys
 import os
+import shutil
 import re
 import copy
 #Python 2 or 3:
@@ -431,6 +432,8 @@ class FortranGraph(object):
     def _create_image_file(self,filename):
         if graphviz_installed:
             self.dot.render(filename,cleanup=False)
+            shutil.move(filename,os.path.join(os.path.dirname(filename),
+                        os.path.basename(filename)+'.gv'))
 
 
 class ModuleGraph(FortranGraph):
