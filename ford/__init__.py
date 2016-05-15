@@ -140,7 +140,8 @@ def initialize():
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph', 'license',
                'extra_filetypes','preprocessor','creation_date',
-               'print_creation_date','proc_internals','coloured_edges']
+               'print_creation_date','proc_internals','coloured_edges',
+               'graph_dir','gitter_sidecar']
     defaults = {'project_dir':         ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15','F90',
                                         'F95','F03','F08','F15'],
@@ -176,6 +177,7 @@ def initialize():
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': False,
                 'coloured_edges':      'false',
+                'graph_dir':           '',
                }
     listopts = ['extensions','display','extra_vartypes','project_dir',
                 'exclude','exclude_dir','macro','include','extra_mods',
@@ -245,7 +247,17 @@ def initialize():
     if proj_data['predocmark'] == proj_data['predocmark_alt'] != '':
         print('Error: predocmark and predocmark_alt are the same.')
         sys.exit(1)
-        
+    # Add gitter sidecar if specified in metadata
+    if 'gitter_sidecar' in proj_data:
+        proj_docs += '''
+        <script>
+            ((window.gitter = {{}}).chat = {{}}).options = {{
+            room: '{}'
+            }};
+        </script>
+        <script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
+        '''.format(proj_data['gitter_sidecar'].strip())
+    
     # Handle preprocessor:
     if proj_data['preprocess'].lower() == 'true':
         if proj_data['preprocessor']:

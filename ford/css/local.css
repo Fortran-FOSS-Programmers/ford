@@ -1,4 +1,4 @@
-    body {
+body {
       padding-top: 70px;
     }
     table.nostretch {
@@ -190,3 +190,8 @@
       margin-left: -20.8px;
       margin-right: 4.55px;
     }
+
+    .gitter-chat-embed {
+      z-index: 100000;
+    }
+    
