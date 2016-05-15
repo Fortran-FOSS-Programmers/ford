@@ -33,16 +33,28 @@ if (sys.version_info[0]>2):
     from urllib.parse import quote
 else:
     from urllib import quote
+import colorsys
 
 from graphviz import Digraph
 
 from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure
 
-import colorsys
+_coloured_edges = False
+def set_coloured_edges(val):
+    '''
+    Public accessor to set whether to use coloured edges in graph or just 
+    use black ones.
+    '''
+    global _coloured_edges
+    _coloured_edges = val
+
 def rainbowcolour(depth, maxd):
-    (r, g, b) = colorsys.hsv_to_rgb(float(depth) / maxd, 1.0, 1.0)
-    R, G, B = int(255 * r), int(255 * g), int(255 * b)
-    return R, G, B
+    if _coloured_edges:
+        (r, g, b) = colorsys.hsv_to_rgb(float(depth) / maxd, 1.0, 1.0)
+        R, G, B = int(255 * r), int(255 * g), int(255 * b)
+        return R, G, B
+    else:
+        return 0, 0, 0
 
 HYPERLINK_RE = re.compile("^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$",re.IGNORECASE)
 WIDTH_RE = re.compile('width="(.*?)pt"',re.IGNORECASE)

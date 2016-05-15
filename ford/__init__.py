@@ -140,7 +140,7 @@ def initialize():
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph', 'license',
                'extra_filetypes','preprocessor','creation_date',
-               'print_creation_date','proc_internals']
+               'print_creation_date','proc_internals','coloured_edges']
     defaults = {'project_dir':         ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15','F90',
                                         'F95','F03','F08','F15'],
@@ -175,6 +175,7 @@ def initialize():
                 'extra_filetypes':     [],
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': False,
+                'coloured_edges':      'false',
                }
     listopts = ['extensions','display','extra_vartypes','project_dir',
                 'exclude','exclude_dir','macro','include','extra_mods',

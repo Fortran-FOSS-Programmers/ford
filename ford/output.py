@@ -66,7 +66,8 @@ class Documentation(object):
             ford.pagetree.set_base_url('..')
             data['project_url'] = '..'
         if graphviz_installed:
-            self.graphs = GraphManager(data['project_url'],self.data['output_dir'],'graphs')
+            self.graphs = GraphManager(data['project_url'],self.data['output_dir'],'graphs',
+                                       self.data['coloured_edges'].lower() == 'true')
             for item in project.types:
                 self.graphs.register(item)
             for item in project.procedures + project.submodprocedures:

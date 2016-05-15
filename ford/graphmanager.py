@@ -45,7 +45,7 @@ class GraphManager(object):
         The location of the graphs within the output tree.
     """
     
-    def __init__(self,base_url,outdir,graphdir):
+    def __init__(self,base_url,outdir,graphdir,coloured_edges):
         self.graph_objs = []
         self.modules = set()
         self.programs = set()
@@ -57,6 +57,7 @@ class GraphManager(object):
         self.usegraph = None
         self.typegraph = None
         self.callgraph = None
+        ford.graphs.set_coloured_edges(coloured_edges)
 
     def register(self,obj):
         if obj.meta['graph'] == 'true':
