@@ -259,6 +259,7 @@ class FortranBase(object):
             self.doc = md.convert(self.doc)
             self.meta = md.Meta
             md.reset()
+            md.Meta = {}
         else:
             if self.settings['warn'].lower() == 'true' and self.obj != 'sourcefile' and self.obj != 'genericsource':
                 #TODO: Add ability to print line number where this item is in file
@@ -269,7 +270,9 @@ class FortranBase(object):
         if self.parent:
             self.display = self.parent.display
 
+        #~ print (self.meta)
         for key in self.meta:
+            #~ print(key, self.meta[key])
             if key == 'display':
                 tmp = [ item.lower() for item in self.meta[key] ]
                 if type(self) == FortranSourceFile:
@@ -1923,7 +1926,16 @@ def line_to_variables(source, line, inherit_permission, parent):
             search_from = 0
             while QUOTES_RE.search(initial[search_from:]):
                 num = int(QUOTES_RE.search(initial[search_from:]).group()[1:-1])
-                string = NBSP_RE.sub('&nbsp;',parent.strings[num])
+                old_string = NBSP_RE.sub('&nbsp;',parent.strings[num])
+                string = ''
+                for i in range(len(old_string)):
+                    if old_string[i] == "\\" and (old_string[i+1] in '0123456789' or
+                                                   old_string[i+1] == 'g'):
+                        string += r'\\'
+                    elif old_string[i] == '(' and old_string[i+1] =='?':
+                        string += r'\('
+                    else:
+                        string += old_string[i]
                 initial = initial[0:search_from] + QUOTES_RE.sub(string,initial[search_from:],count=1)
                 search_from += QUOTES_RE.search(initial[search_from:]).end(0)
         

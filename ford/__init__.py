@@ -273,6 +273,8 @@ def initialize():
         print('Warning: license "{}" not recognized.'.format(proj_data['license']))
         proj_data['license'] = ''
     # Return project data, docs, and the Markdown reader
+    md.reset()
+    md.Meta = {}
     return (proj_data, proj_docs, md)
 
 
