@@ -321,7 +321,13 @@ class FortranBase(object):
                     self.src = ''
                     if self.settings['warn'].lower() == 'true':
                         print('Warning: Could not extract source code for {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
-                
+        
+        if self.obj == 'proc':
+            if 'proc_internals' not in self.meta:
+                self.meta['proc_internals'] = self.settings['proc_internals'].lower()
+            else:
+                self.meta['proc_internals'] = self.meta['proc_internals'].lower()
+        
         def sort_items(items,args=False):
             if self.settings['sort'].lower() == 'src': return
             def alpha(i):
@@ -892,7 +898,16 @@ class FortranCodeUnit(FortranContainer):
             self.modsubroutines = [obj for obj in self.modsubroutines if obj.permission in self.display]
         if hasattr(self,'modfunctions'):
             self.modfunctions = [obj for obj in self.modfunctions if obj.permission in self.display]
-
+        
+        if self.obj == 'proc':
+            if self.meta['proc_internals'] == 'false':
+                self.functions = []
+                self.subroutines = []
+                self.types = []
+                self.interfaces = []
+                self.absinterfaces = []
+                self.variables = []
+        
         # Recurse
         for obj in self.absinterfaces:
             obj.visible = True
