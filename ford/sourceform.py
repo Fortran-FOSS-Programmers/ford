@@ -770,7 +770,7 @@ class FortranCodeUnit(FortranContainer):
         for mod, extra in self.uses:
             if type(mod) is str: continue
             procs, absints, types, variables = mod.get_used_entities(extra)
-            if self.obj == 'module':
+            if self.obj == 'module': #FIXME: These shouldn't necessarily be listed as public
                 self.pub_procs.update(procs)
                 self.pub_absints.update(absints)
                 self.pub_types.update(types)
@@ -1187,7 +1187,6 @@ class FortranSubroutine(FortranCodeUnit):
                 self.args[i] = FortranVariable(self.args[i],vartype,self)
         self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
-    
     
 class FortranFunction(FortranCodeUnit):
     """

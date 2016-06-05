@@ -155,7 +155,7 @@ class Project(object):
         deplist = {}
         
         def get_deps(item):
-            uselist = [m[0] for m in mod.uses]
+            uselist = [m[0] for m in item.uses]
             for proc in item.subroutines:
                 uselist.extend(get_deps(proc))
             for proc in item.functions:
