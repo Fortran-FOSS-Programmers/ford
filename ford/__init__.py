@@ -263,7 +263,7 @@ def initialize():
         if proj_data['preprocessor']:
             preprocessor = proj_data['preprocessor'].split()
         else:
-            preprocessor = ['cpp','-traditional-cpp','-E']
+            preprocessor = ['cpp','-traditional-cpp','-E', '-D__GFORTRAN__']
 
         # Check whether preprocessor works (reading nothing from stdin)
         try:
