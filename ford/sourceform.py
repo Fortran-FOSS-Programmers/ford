@@ -566,6 +566,9 @@ class FortranContainer(FortranBase):
                                 self.attr_dict[name].append(attr)
                             else:
                                 self.attr_dict[name] = [attr]
+                elif attr.lower() == 'data' and self.obj == 'sourcefile':
+                    # TODO: This is just a fix to keep FORD from crashing on encountering a block data structure. At some point I should actually implement support for them.
+                    continue
                 else:
                     raise Exception("Found {} statement in {}".format(attr.upper(),type(self).__name__[7:].upper()))
             elif self.END_RE.match(line):
