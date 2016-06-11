@@ -32,7 +32,7 @@ NOTE_RE = re.compile("@note\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
 WARNING_RE = re.compile("@warning\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
 TODO_RE = re.compile("@todo\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
 BUG_RE = re.compile("@bug\s*(.*?)\s*</p>",re.IGNORECASE|re.DOTALL)
-LINK_RE = re.compile("\[\[(\w+)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)?\]\]")
+LINK_RE = re.compile("\[\[(\w+(?:\.\w+)?)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)?\]\]")
 
 
 def sub_notes(docs):
@@ -207,6 +207,7 @@ def sub_links(string,project):
         item = None
         
         #[name,obj,subname,subobj]
+        print(match.groups())
         if not match.group(2):
             for key, val in LINK_TYPES.items():
                 searchlist.extend(getattr(project,val))
