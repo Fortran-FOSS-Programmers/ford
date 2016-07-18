@@ -207,7 +207,6 @@ def sub_links(string,project):
         item = None
         
         #[name,obj,subname,subobj]
-        print(match.groups())
         if not match.group(2):
             for key, val in LINK_TYPES.items():
                 searchlist.extend(getattr(project,val))

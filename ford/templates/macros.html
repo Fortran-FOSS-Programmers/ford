@@ -1,3 +1,4 @@
+
 {% macro info_bar(name,meta,base_url,hierarchy) %}
 <div class="row">
 <div class="col-lg-12">
@@ -36,306 +37,297 @@
 {% endmacro %}
 
 
+{% macro content_list(self,panelnum=0) %}
+{% if self.variables %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-{{ panelnum }}">Variables</a></h3></div>
+  <div id="vars-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for var in self.variables %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ var.anchor }}">{{ var.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.enums %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#enums-{{ panelnum }}">Enumerations</a></h3></div>
+  <div id="enums-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for enum in self.enums %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ enum.anchor }}">{{ enum.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.constructor %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#cons-{{ panelnum }}">Constructor</a></h3></div>
+  <div id="cons-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ self.constructor.anchor }}">{{ self.constructor.name }}</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.programs %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#progs-{{ panelnum }}">Programs</a></h3></div>
+  <div id="progs-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for prog in self.programs %}
+      <a class="list-group-item" href="{{ prog.get_url() }}">{{ prog.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.modules %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#mods-{{ panelnum }}">Modules</a></h3></div>
+  <div id="mods-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for mod in self.modules %}
+      <a class="list-group-item" href="{{ mod.get_url() }}">{{ mod.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.submodules %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#submods-{{ panelnum }}">Submodules</a></h3></div>
+  <div id="submods-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for mod in self.submodules %}
+      <a class="list-group-item" href="{{ mod.get_url() }}">{{ mod.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.interfaces %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#inters-{{ panelnum }}">Interfaces</a></h3></div>
+  <div id="inters-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for intr in self.interfaces %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ intr.anchor }}">{{ intr.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.absinterfaces %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#absints-{{ panelnum }}">Abstract Interfaces</a></h3></div>
+  <div id="absints-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for intr in self.absinterfaces %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ intr.anchor }}">{{ intr.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.types %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#types-{{ panelnum }}">Derived Types</a></h3></div>
+  <div id="types-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for type in self.types %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ type.anchor }}">{{ type.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.functions %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#funcs-{{ panelnum }}">Functions</a></h3></div>
+  <div id="funcs-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for proc in self.functions %}
+      <a class="list-group-item" href="{% if self.obj == 'sourcefile' %}{{ proc.get_url() }}{% else %}{{ self.get_url() }}#{{ proc.anchor }}{% endif %}">{{ proc.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.subroutines %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#subs-{{ panelnum }}">Subroutines</a></h3></div>
+  <div class="list-group">
+    <div id="subs-{{ panelnum }}" class="panel-collapse collapse">
+      {% for proc in self.subroutines %}
+      <a class="list-group-item" href="{% if self.obj == 'sourcefile' %}{{ proc.get_url() }}{% else %}{{ self.get_url() }}#{{ proc.anchor }}{% endif %}">{{ proc.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.modfunctions %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#modfuncs-{{ panelnum }}">Module Functions</a></h3></div>
+  <div id="modfuncs-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for proc in self.modfunctions %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ proc.anchor }}">{{ proc.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.modsubroutines %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#modsubs-{{ panelnum }}">Module Subroutines</a></h3></div>
+  <div id="modsubs-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for proc in self.modsubroutines %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ proc.anchor }}">{{ proc.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.modprocedures %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#modprocs-{{ panelnum }}">Module Procedures</a></h3></div>
+  <div id="modprocs-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for proc in self.modprocedures %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ proc.anchor }}">{{ proc.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.finalprocs %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#fins-{{ panelnum }}">Finalization Procedures</a></h3></div>
+  <div id="fins-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for fp in self.finalprocs %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ fp.anchor }}">{{ fp.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.boundprocs %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#boundprocs-{{ panelnum }}">Type-Bound Procedures</a></h3></div>
+  <div id="boundprocs-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for bp in self.boundprocs %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ bp.anchor }}">{{ bp.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.modprocs %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#modprocs-{{ panelnum }}">Module Procedures</a></h3></div>
+  <div id="modprocs-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for mod in self.modprocs %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ mod.anchor }}">{{ mod.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.src %}
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+  <div class="list-group">
+    <a class="list-group-item" href="{{ self.get_url() }}#src">{{ self.name }}</a>
+  </div>
+</div>
+{% endif %}
+{% endmacro %}
+
+
+{% macro obj_list(project,self,panelnum=0) %}
+{% if self.obj == 'program' %}
+<div class="panel panel-default">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allprogs-{{ panelnum }}">All Programs</a></h3></div>
+  <div id="allprogs-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for prog in project.programs|sort(attribute='name') %}
+      <a class="list-group-item" href="{{ prog.get_url() }}">{{ prog.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% elif self.obj == 'module' or self.obj == 'submodule' %}
+<div class="panel panel-default">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allmods-{{ panelnum }}">All Modules</a></h3></div>
+  <div id="allmods-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for mod in project.modules|sort(attribute='name') %}
+      <a class="list-group-item" href="{{ mod.get_url() }}">{{ mod.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% elif self.obj == 'proc' or (self.obj == 'interface' and (not self.abstract)) %}
+<div class="panel panel-default">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allprocs-{{ panelnum }}">All Procedures</a></h3></div>
+  <div id="allprocs-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for proc in project.procedures|sort(attribute='name') %}
+      <a class="list-group-item" href="{{ proc.get_url() }}">{{ proc.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% elif self.obj == 'interface' %}
+<div class="panel panel-default">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allabsints-{{ panelnum }}">All Abstract Interfaces</a></h3></div>
+  <div id="allabsints-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for absint in project.absinterfaces|sort(attribute='name') %}
+      <a class="list-group-item" href="{{ absint.get_url() }}">{{ absint.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div> 
+{% elif self.obj == 'type' %}
+<div class="panel panel-default">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#alltypes-{{ panelnum }}">All Derived Types</a></h3></div>
+  <div id="alltypes-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for dtype in project.types|sort(attribute='name') %}
+      <a class="list-group-item" href="{{ dtype.get_url() }}">{{ dtype.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% elif self.obj == 'sourcefile' %}
+<div class="panel panel-default">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allfiles-{{ panelnum }}">All Source Files</a></h3></div>
+  <div id="allfiles-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for src in project.allfiles|sort(attribute='name') %}
+      <a class="list-group-item" href="{{ src.get_url() }}">{{ src.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+</div>
+{% endmacro %}
+
+
 {% macro sidebar(project,self) %}
 <div id="sidebar">
-  {% set count = 0 %}
-  {% if self.variables %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars">Variables</a></h3></div>
-    <div id="vars" class="panel-collapse collapse">
-      <div class="list-group">
-        {% for var in self.variables %}
-        <a class="list-group-item" href="{{ self.get_url() }}#{{ var.anchor }}">{{ var.name }}</a>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.enums %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#enums">Enumerations</a></h3></div>
-    <div id="enums" class="panel-collapse collapse">
-      <div class="list-group">
-        {% for enum in self.enums %}
-        <a class="list-group-item" href="{{ self.get_url() }}#{{ enum.anchor }}">{{ enum.name }}</a>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.constructor %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#cons">Constructor</a></h3></div>
-    <div id="cons" class="panel-collapse collapse">
-        <div class="list-group">
-          <a class="list-group-item" href="{{ self.get_url() }}#{{ self.constructor.anchor }}">{{ self.constructor.name }}</a>
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.programs %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#progs">Programs</a></h3></div>
-    <div id="progs" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for prog in self.programs %}
-          <a class="list-group-item" href="{{ prog.get_url() }}">{{ prog.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.modules %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#mods">Modules</a></h3></div>
-    <div id="mods" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for mod in self.modules %}
-          <a class="list-group-item" href="{{ mod.get_url() }}">{{ mod.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.submodules %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#submods">Submodules</a></h3></div>
-    <div id="submods" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for mod in self.submodules %}
-          <a class="list-group-item" href="{{ mod.get_url() }}">{{ mod.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.interfaces %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#inters">Interfaces</a></h3></div>
-    <div id="inters" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for intr in self.interfaces %}
-          <a class="list-group-item" href="{{ self.get_url() }}#{{ intr.anchor }}">{{ intr.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.absinterfaces %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#absints">Abstract Interfaces</a></h3></div>
-    <div id="absints" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for intr in self.absinterfaces %}
-          <a class="list-group-item" href="{{ self.get_url() }}#{{ intr.anchor }}">{{ intr.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.types %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#types">Derived Types</a></h3></div>
-    <div id="types" class="panel-collapse collapse">
-      <div class="list-group">
-        {% for type in self.types %}
-        <a class="list-group-item" href="{{ self.get_url() }}#{{ type.anchor }}">{{ type.name }}</a>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.functions %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#funcs">Functions</a></h3></div>
-    <div id="funcs" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for proc in self.functions %}
-          <a class="list-group-item" href="{% if self.obj == 'sourcefile' %}{{ proc.get_url() }}{% else %}{{ self.get_url() }}#{{ proc.anchor }}{% endif %}">{{ proc.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.subroutines %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#subs">Subroutines</a></h3></div>
-    <div class="list-group">
-        <div id="subs" class="panel-collapse collapse">
-          {% for proc in self.subroutines %}
-          <a class="list-group-item" href="{% if self.obj == 'sourcefile' %}{{ proc.get_url() }}{% else %}{{ self.get_url() }}#{{ proc.anchor }}{% endif %}">{{ proc.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.modfunctions %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#modfuncs">Module Functions</a></h3></div>
-    <div id="modfuncs" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for proc in self.modfunctions %}
-          <a class="list-group-item" href="{{ self.get_url() }}#{{ proc.anchor }}">{{ proc.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.modsubroutines %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#modsubs">Module Subroutines</a></h3></div>
-    <div id="modsubs" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for proc in self.modsubroutines %}
-          <a class="list-group-item" href="{{ self.get_url() }}#{{ proc.anchor }}">{{ proc.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.modprocedures %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#modprocs">Module Procedures</a></h3></div>
-    <div id="modprocs" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for proc in self.modprocedures %}
-          <a class="list-group-item" href="{{ self.get_url() }}#{{ proc.anchor }}">{{ proc.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.finalprocs %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#fins">Finalization Procedures</a></h3></div>
-    <div id="fins" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for fp in self.finalprocs %}
-          <a class="list-group-item" href="{{ self.get_url() }}#{{ fp.anchor }}">{{ fp.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.boundprocs %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#boundprocs">Type-Bound Procedures</a></h3></div>
-    <div id="boundprocs" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for bp in self.boundprocs %}
-          <a class="list-group-item" href="{{ self.get_url() }}#{{ bp.anchor }}">{{ bp.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.modprocs %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#modprocs">Module Procedures</a></h3></div>
-    <div id="modprocs" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for mod in self.modprocs %}
-          <a class="list-group-item" href="{{ self.get_url() }}#{{ mod.anchor }}">{{ mod.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-  {% if self.src %}
-  {% set count = count + 1 %}
-  <div class="panel panel-primary">
-    <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
-    <div class="list-group">
-      <a class="list-group-item" href="{{ self.get_url() }}#src">{{ self.name }}</a>
-    </div>
-  </div>
-  {% endif %}
-  {% if count > 0 %}<hr>{% endif %}
-  {% if self.obj == 'program' %}
-  <div class="panel panel-default">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allprogs">All Programs</a></h3></div>
-    <div id="allprogs" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for prog in project.programs|sort(attribute='name') %}
-          <a class="list-group-item" href="{{ prog.get_url() }}">{{ prog.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% elif self.obj == 'module' or self.obj == 'submodule' %}
-  <div class="panel panel-default">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allmods">All Modules</a></h3></div>
-    <div id="allmods" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for mod in project.modules|sort(attribute='name') %}
-          <a class="list-group-item" href="{{ mod.get_url() }}">{{ mod.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% elif self.obj == 'proc' or (self.obj == 'interface' and (not self.abstract)) %}
-  <div class="panel panel-default">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allprocs">All Procedures</a></h3></div>
-    <div id="allprocs" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for proc in project.procedures|sort(attribute='name') %}
-          <a class="list-group-item" href="{{ proc.get_url() }}">{{ proc.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% elif self.obj == 'interface' %}
-  <div class="panel panel-default">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allabsints">All Abstract Interfaces</a></h3></div>
-    <div id="allabsints" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for absint in project.absinterfaces|sort(attribute='name') %}
-          <a class="list-group-item" href="{{ absint.get_url() }}">{{ absint.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div> 
-  {% elif self.obj == 'type' %}
-  <div class="panel panel-default">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#alltypes">All Derived Types</a></h3></div>
-    <div id="alltypes" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for dtype in project.types|sort(attribute='name') %}
-          <a class="list-group-item" href="{{ dtype.get_url() }}">{{ dtype.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% elif self.obj == 'sourcefile' %}
-  <div class="panel panel-default">
-    <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#allfiles">All Source Files</a></h3></div>
-    <div id="allfiles" class="panel-collapse collapse">
-        <div class="list-group">
-          {% for src in project.allfiles|sort(attribute='name') %}
-          <a class="list-group-item" href="{{ src.get_url() }}">{{ src.name }}</a>
-          {% endfor %}
-        </div>
-    </div>
-  </div>
-  {% endif %}
-</div>
+  {{ content_list(self) }}
+  {% if self.contents_size > 0 %}<hr>{% endif %}
+  {{ obj_list(project,self) }}
 {% endmacro %}
 
 

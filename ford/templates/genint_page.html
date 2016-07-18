@@ -13,12 +13,12 @@
   </div>
   
   <div class="row">
-    <div class="col-lg-3">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
     {{ macros.sidebar(project,interface) }}
     </div>
     
-    <div class="col-lg-9" id='text'>
-    <h2>{{ interface.permission }} interface {{ interface.name }}</h2>
+    <div class="col-md-9" id='text'>
+      <h2>{{ interface.permission }} interface {{ interface.name }}</h2>
 	 {{ interface.doc }}
      {% if interface.callsgraph %}
      <h3>Calls</h3>
@@ -29,7 +29,12 @@
      {{ interface.calledbygraph }}
      {% endif %}
     {% if interface.doc or interface.callsgraph or interface.calledbygraph %}<br>{% endif %}
-	
+
+     <section class="visible-xs visible-sm hidden-md">
+       {{ macros.content_list(interface,1) }}
+     </section>
+     <br>
+     
 	{% if interface.functions|length > 0 %}
 	 <h2>Functions</h2>
 	 {% for proc in interface.functions %}
@@ -53,4 +58,9 @@
 
  </div>
 </div>
+
+  <section class="visible-xs visible-sm hidden-md">
+    <hr>
+    {{ macros.obj_list(project, interface, 1) }}
+  </section>
 {% endblock body %}

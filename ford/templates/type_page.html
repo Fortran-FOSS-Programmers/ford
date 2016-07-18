@@ -13,12 +13,12 @@
   </div>
   
   <div class="row">
-    <div class="col-lg-3">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
     {{ macros.sidebar(project,dtype) }}
     </div>
     
-    <div class="col-lg-9" id='text'>
-    <h2>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% for attr in dtype.attributes%}, {{ attr }}{% endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {{ dtype.name }}{% if dtype.sequence%}<br>sequence{% endif %}</h2>
+    <div class="col-md-9" id='text'>
+      <h2>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% for attr in dtype.attributes%}, {{ attr }}{% endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {{ dtype.name }}{% if dtype.sequence%}<br>sequence{% endif %}</h2>
     {% if dtype.inhergraph %}
     {{ dtype.inhergraph }}
     <br><br>
@@ -29,6 +29,12 @@
     <h3>Inherited By</h3>
     {{ dtype.inherbygraph }}
     {% endif %}
+
+    <section class="visible-xs visible-sm hidden-md">
+      {{ macros.content_list(dtype,1) }}
+    </section>
+    <br>
+
     {% if dtype.variables|length > 0 %}
     <section>
     <h2>Components</h2>
@@ -83,4 +89,9 @@
     
     </div>
   </div>
+
+  <section class="visible-xs visible-sm hidden-md">
+    <hr>
+    {{ macros.obj_list(project, dtype, 1) }}
+  </section>
 {% endblock body %}

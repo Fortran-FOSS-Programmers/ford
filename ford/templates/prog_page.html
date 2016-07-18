@@ -13,11 +13,11 @@
   </div>
   
   <div class="row">
-    <div class="col-lg-3">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
     {{ macros.sidebar(project,program) }}
     </div>
     
-    <div class="col-lg-9" id='text'>
+    <div class="col-md-9" id='text'>
     {{ macros.use_list(program) }}
     {{ program.usesgraph }}
     {% if program.usesgraph %}<br><br>{% endif %}
@@ -27,6 +27,11 @@
      {{ program.callsgraph }}
      {% endif %}
     {% if program.doc or program.callsgraph %}<br>{% endif %}
+
+     <section class="visible-xs visible-sm hidden-md">
+       {{ macros.content_list(program,1) }}
+     </section>
+     <br>
 
     {% if program.variables|length > 0 %}
     <section>
@@ -105,4 +110,9 @@
     
     </div>
   </div>
-{% endblock body %}
+
+  <section class="visible-xs visible-sm hidden-md">
+    <hr>
+    {{ macros.obj_list(project, program, 1) }}
+  </section>
+  {% endblock body %}

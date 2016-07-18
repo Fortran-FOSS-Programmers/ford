@@ -9,19 +9,30 @@
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
-	 {{ macros.info_bar(src.name,src.meta,project_url,src.hierarchy) }}    
+    {{ macros.info_bar(src.name,src.meta,project_url,src.hierarchy) }}
   </div>
   <div class="row">
-    <div class="col-lg-3">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
     {{ macros.sidebar(project,src) }}
     </div>
-    <div class="col-lg-9" id='text'>
+    <div class="col-md-9" id='text'>
     {{ src.doc }}
     {% if src.doc %}<br>{% endif %}
+
+    <section class="visible-xs visible-sm hidden-md">
+      {{ macros.content_list(src,1) }}
+    </section>
+    <br>
+
     <section>
     <h2><span class="anchor" id="src"></span>Source Code</h2>
     {{ src.src }}
     </section>
     </div>
   </div>
-{% endblock body %}
+
+  <section class="visible-xs visible-sm hidden-md">
+    <hr>
+    {{ macros.obj_list(project, src, 1) }}
+  </section>
+  {% endblock body %}

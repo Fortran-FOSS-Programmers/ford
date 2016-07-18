@@ -27,15 +27,15 @@
 
       <div class="row" id='text'>
 		  {% if author %}
-        <div class="col-lg-8">
+        <div class="col-md-8">
 		  {% else %}
-        <div class="col-lg-12">
+        <div class="col-md-12">
 		  {% endif %}
           <h1>{{ project }}</h1>
           {{ proj_docs }}
         </div>
 		  {% if author %}
-        <div class="col-lg-4">
+        <div class="col-md-4">
 	  <div class="well">
           <h2>Developer Info</h2>
           <h4>{{ author }}</h4>
@@ -81,7 +81,7 @@
       {% if project.types|length > 0 %}{% set count = count + 1 %}{% endif %}
 		{% set width = (12/count)|int %}
       <div class="row">
-          <div class="col-lg-{{ width }}">
+        <div class="col-xs-6 col-sm-{{ width }}">
               <h3>Source Files</h3>
               <ul>
                 {% for src in project.allfiles|sort(attribute='name') %}
@@ -94,7 +94,7 @@
               </ul>
           </div>
           {% if project.modules|length > 0 %}
-          <div class="col-lg-{{ width }}">
+		  <div class="col-xs-6 col-sm-{{ width }}">
               <h3>Modules</h3>
               <ul>
                 {% for mod in project.modules|sort(attribute='name') %}
@@ -108,7 +108,7 @@
           </div>
           {% endif %}
           {% if project.procedures|length > 0 %}
-          <div class="col-lg-{{ width }}">
+		  <div class="col-xs-6 col-sm-{{ width }}">
               <h3>Procedures</h3>
               <ul>
                 {% for proc in project.procedures|sort(attribute='name') %}
@@ -122,7 +122,7 @@
           </div>
           {% endif %}
           {% if project.types|length > 0 %}
-          <div class="col-lg-{{ width }}">
+		  <div class="col-xs-6 col-sm-{{ width }}">
               <h3>Derived Types</h3>
               <ul>
                 {% for dtype in project.types|sort(attribute='name') %}

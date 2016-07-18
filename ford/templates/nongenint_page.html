@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 {% block title %}{{ interface.name }} &ndash; {{ project }}{% endblock title %}
 {% block body %}
@@ -13,11 +14,11 @@
   </div>
   
   <div class="row">
-    <div class="col-lg-3">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
     {{ macros.sidebar(project,interface) }}
     </div>
     
-    <div class="col-lg-9" id='text'>
+    <div class="col-md-9" id='text'>
 	{% set procedure = interface.procedure %}
     {% if interface.doc or interface.callsgraph or interface.calledbygraph %}
     <h2>{% if interface.abstract %}abstract {% endif %}interface</h2>
@@ -36,7 +37,7 @@
     {{ macros.proc_line(procedure,False) }}</h2>    
     {% endif %}
 
-    {{ macros.use_list(procedure) }}
+    {{ macros.use_list(interface) }}
 
     <h3>Arguments</h3>
     {% if procedure.args|length > 0 %}
@@ -50,7 +51,7 @@
     {% if var.kind %}{% set args = args + 1 %}{% endif %}
     {% if var.strlen %}{% set args = args + 1 %}{% endif %}
     {% if var.proto %}{% set args = args + 1 %}{% endif %}
-	 <h3>Return Value <span class="anchor" id="{{ var.anchor }}"></span><small>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
+      <h3>Return Value <span class="anchor" id="{{ var.anchor }}"></span><small>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
   {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {%- endif %}{%- endfor %}{{ var.dimension }}</small></h3>
     {{ var.doc }}
     {% endif %}
@@ -62,4 +63,9 @@
 
  </div>
 </div>
+
+  <section class="visible-xs visible-sm hidden-md">
+    <hr>
+    {{ macros.obj_list(project, interface, 1) }}
+  </section>
 {% endblock body %}

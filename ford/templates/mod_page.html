@@ -13,12 +13,12 @@
   </div>
   
   <div class="row">
-    <div class="col-lg-3">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
     {{ macros.sidebar(project,module) }}
     </div>
     
-    <div class="col-lg-9" id='text'>
-    {% if module.obj == 'submodule' %}{{ macros.ancestry(module) }}{% endif %}
+    <div class="col-md-9" id='text'>
+      {% if module.obj == 'submodule' %}{{ macros.ancestry(module) }}{% endif %}
     {{ macros.use_list(module) }}
     {{ module.usesgraph }}
     {% if module.descendants|length > 0 %}{{ macros.descendants(module) }}{% endif %}
@@ -29,6 +29,11 @@
     {{ module.usedbygraph }}
     <br>
     {% endif %}
+
+    <section class="visible-xs visible-sm hidden-md">
+      {{ macros.content_list(module,1) }}
+    </section>
+    <br>
 
     {% if module.variables|length > 0 %}
     <section>
@@ -132,4 +137,9 @@
     {% endif %}
     </div>
   </div>
-{% endblock body %}
+
+  <section class="visible-xs visible-sm hidden-md">
+    <hr>
+    {{ macros.obj_list(project, module,1) }}
+  </section>
+  {% endblock body %}
