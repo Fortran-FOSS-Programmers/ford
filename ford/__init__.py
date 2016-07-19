@@ -104,6 +104,8 @@ def initialize():
                         version="{}, version {}".format(__appname__,__version__))
     parser.add_argument("--debug",dest="dbg",action="store_true",
                         help="display traceback if fatal exception occurs")
+    parser.add_argument("-I","--include",action="append",
+                        help="any directories which should be searched for include files")
     # Get options from command-line
     args = parser.parse_args()
     # Set up Markdown reader
