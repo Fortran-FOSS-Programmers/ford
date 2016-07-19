@@ -843,6 +843,11 @@ class FortranCodeUnit(FortranContainer):
                     self.calls[i] = self.all_procs[self.calls[i].lower()]
                 elif self.calls[i].lower() in fileprocs:
                     self.calls[i] = fileprocs[self.calls[i].lower()]
+                else:
+                    for proc in project.procedures:
+                        if self.calls[i] == proc.name.lower():
+                            self.calls[i] = proc
+                            break
 
         if self.obj == 'submodule':
             self.ancestry = []
