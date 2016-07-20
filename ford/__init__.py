@@ -260,7 +260,14 @@ def initialize():
         </script>
         <script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
         '''.format(proj_data['gitter_sidecar'].strip())
-    
+    # Evaluate paths relative to project file location
+    base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
+    for var in ['project_dir','page_dir','output_dir','exclude_dir','graph_dir','media_dir','include']:
+        if var in proj_data:
+            if var in listopts:
+                proj_data[var] = [os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(p)))) for p in proj_data[var]]
+            else:
+                proj_data[var] = os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(proj_data[var]))))
     # Handle preprocessor:
     if proj_data['preprocess'].lower() == 'true':
         if proj_data['preprocessor']:
