@@ -1475,14 +1475,6 @@ class FortranType(FortranContainer):
         self.all_absinterfaces = self.parent.all_absinterfaces
         self.all_types = self.parent.all_types
         self.all_procs = self.parent.all_procs
-        self.all_boundprocs = copy.copy(self.boundprocs)
-        # Get type of extension
-        if self.extends and type(self.extends) is not str:
-            for bp in self.extends.all_boundprocs:
-                present = False
-                for b in self.boundprocs:
-                    if bp.name.lower() == b.name.lower(): present = True
-                if not present: self.all_boundprocs.append(bp)
 
         # Match variables as needed (recurse)
         #~ for i in range(len(self.variables)-1,-1,-1):
@@ -1493,8 +1485,22 @@ class FortranType(FortranContainer):
         # FIXME: This is not at all modular because must process non-generic bound procs first--could there be a better way to do it
         for proc in self.boundprocs:
             if not proc.generic: proc.correlate(project)
-        for proc in self.boundprocs:
+        # Identify inherited type-bound procedures which are not overridden
+        inherited = []
+        inherited_generic = []
+        if self.extends and type(self.extends) is not str:
+            for bp in self.extends.boundprocs:
+                if all([bp.name.lower() != b.name.lower() for b in self.boundprocs]):
+                    inherited.append(bp)
+                elif bp.generic: inherited_generic.append(bp)
+        self.boundprocs = inherited + self.boundprocs
+        # Match up generic type-bound procedures to their particular bindings
+        for proc in self.boundprocs[len(inherited):]:
             if proc.generic: proc.correlate(project)
+            for bp in inherited_generic:
+                if bp.name.lower() == proc.name.lower():
+                    proc.bindings = bp.bindings + proc.bindings
+                    break
         # Match finalprocs
         for fp in self.finalprocs:
             fp.correlate(project)
@@ -1686,6 +1692,7 @@ class FortranVariable(FortranBase):
 
     def correlate(self,project):
         if (self.vartype == "type" or self.vartype == "class") and self.proto and self.proto[0] != '*':
+            print(self)
             if self.proto[0].lower() in self.parent.all_types:
                 self.proto[0] = self.parent.all_types[self.proto[0].lower()]
         elif self.vartype == "procedure" and self.proto and self.proto[0] != '*':
@@ -1746,7 +1753,7 @@ class FortranBoundProcedure(FortranBase):
             #    self.protomatch = True
         if self.generic:
             for i in range(len(self.bindings)):
-                for proc in self.parent.all_boundprocs:
+                for proc in self.parent.boundprocs:
                     if proc.name and proc.name.lower() == self.bindings[i].lower():
                         self.bindings[i] = proc
                         break
