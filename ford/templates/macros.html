@@ -376,6 +376,13 @@
     {% if title %}
     {% if small %}<h5>{% else %}<h3>{% endif %}{{ proc_line(proc,proto=proto) }}{% if proto %}<small>Prototype</small>{% endif %}{% if small %}</h5>{% else %}</h3>{% endif %}
     {% endif %}
+{% if proc.doc or (meta_list(proc.meta)|trim|length > 0 and proc.visible) %}
+{# {% if small %}<h6>{% else %}<h4>{% endif %}Description{% if small %}</h6>{% else %}</h4>{% endif %} #}
+{% if proc.parent and proc.visible %}
+{{ meta_list(proc.meta) }}
+{% endif %}
+{{ proc.meta['summary'] }}
+{% endif %}    
     {% if small %}<h6>{% else %}<h4>{% endif %}Arguments{% if small %}</h6>{% else %}</h4>{% endif %}
     {% if proc.args|length > 0 %}
       {% if proc.visible %}
@@ -393,16 +400,9 @@
   {% if var.strlen %}{% set args = args + 1 %}{% endif %}
   {% if var.proto %}{% set args = args + 1 %}{% endif %}
      {% if small %}<h6>{% else %}<h4>{% endif %}Return Value <small>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
-  {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {%- endif %}{%- endfor %}{{ var.dimension }}</small>{% if small %}</h6>{% else %}</h4>{% endif %}
+  {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {% endif %}{%- endfor %}{{ var.dimension }}</small>{% if small %}</h6>{% else %}</h4>{% endif %}
   {{ var.meta['summary'] }}
     {% endif %}
-    {% if proc.doc or (meta_list(proc.meta)|trim|length > 0 and proc.visible) %}
-    {% if small %}<h6>{% else %}<h4>{% endif %}Description{% if small %}</h6>{% else %}</h4>{% endif %}
-       {% if proc.parent and proc.visible %}
-       {{ meta_list(proc.meta) }}
-       {% endif %}
-       {{ proc.meta['summary'] }}
-    {% endif %}    
 {% endmacro %}
 
 
@@ -452,7 +452,7 @@
 <div class="panel panel-default">
   <div class="panel-heading codesum"><span class="anchor" id="{{ intr.anchor }}"></span><h3>{% if intr.parobj == 'module' and intr.generic %}{{ intr.permission }} {% endif %}interface {% if intr.generic %}{% if intr.visible %}{{ intr }}{% else %}{{ intr.name }}{% endif %}{% endif %}
     {% if intr.meta['deprecated'] and intr.meta['deprecated'].lower() == 'true' %}
-	 <span class="label label-danger depwarn">Deprecated</span>
+      <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
   </h3></div>
   {% if intr.doc or (meta_list(intr.meta)|trim|length > 0 and not intr.visible) %}
@@ -546,6 +546,12 @@
     {% endif %}
   </h3></div>
   <div class="panel-body">
+    {% if dtype.doc or (meta_list(dtype.meta)|trim|length > 0 and not dtype.visible) %}
+    {% if not dtype.visible %}
+    {{ meta_list(dtype.meta) }}
+    {% endif %}
+    {{ dtype.meta['summary'] }}
+    {% endif %}
      {% if dtype.variables|length > 0 %}
      <h4>Components</h4>
     {{ var_list(dtype.variables,permission=True,summary=True) }}
@@ -586,18 +592,11 @@
       <table class="table table-striped varlist">
       <tbody>
       {% for tb in dtype.boundprocs %}
-       <tr><td>{% if tb.generic -%}generic,{% else %}procedure{% if tb.proto -%}({% if not tb.protomatch -%}{{ tb.proto }}{% else %}{{ tb.proto.name }}{%- endif %}){%- endif %},{%- endif %} {{ tb.permission }}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {% for bind in tb.bindings -%}{{ bind.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}</td>
+       <tr><td>{% if tb.generic -%}generic,{% else %}procedure{% if tb.proto -%}({% if not tb.protomatch -%}{{ tb.proto }}{% else %}{{ tb.proto.name }}{%- endif %}){%- endif %},{%- endif %} {{ tb.permission }}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb }}</strong> {% if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {% for bind in tb.bindings -%}{{ bind.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}</td>
        <td>{{ tb.meta['summary'] }}</td></tr>
       {% endfor %}
        </tbody>
        </table>
-     {% endif %}
-     {% if dtype.doc or (meta_list(dtype.meta)|trim|length > 0 and not dtype.visible) %}
-     <h4>Description</h4>
-       {% if not dtype.visible %}
-       {{ meta_list(dtype.meta) }}
-       {% endif %}
-       {{ dtype.meta['summary'] }}
      {% endif %}
   </div>
 </div>
