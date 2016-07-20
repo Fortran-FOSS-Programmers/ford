@@ -7,6 +7,7 @@ author: John Doe
 author_description: I program stuff in Fortran.
 github: https://github.com/cmacmackin
 email: john.doe@address.com
+fpp_extensions: fpp
 predocmark: >
 media_dir: ./media
 docmark_alt: #
@@ -21,6 +22,8 @@ extra_mods: json_module: http://jacobwilliams.github.io/json-fortran/
             futility: http://cmacmackin.github.io
 license: by-nc
 extra_filetypes: sh #
+
+Hi, my name is ${USER}.
 
 This is a project which I wrote. This file will provide the documents. I'm
 writing the body of the text here. It contains an overall description of the

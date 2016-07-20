@@ -110,7 +110,7 @@ def initialize():
     args = parser.parse_args()
     # Set up Markdown reader
     md_ext = ['markdown.extensions.meta','markdown.extensions.codehilite',
-              'markdown.extensions.extra',MathJaxExtension()]
+              'markdown.extensions.extra',MathJaxExtension(),'md_environ.environ']
     md = markdown.Markdown(extensions=md_ext, output_format="html5",
     extension_configs={})
     # Read in the project-file. This will contain global documentation (which
@@ -131,7 +131,7 @@ def initialize():
     proj_data = md.Meta
     md.reset()
     # Get the default options, and any over-rides, straightened out
-    options = ['project_dir','extensions','output_dir','css','exclude',
+    options = ['project_dir','extensions','fpp_extensions','output_dir','css','exclude',
                'project','author','author_description','author_pic',
                'summary','github','bitbucket','facebook','twitter',
                'google_plus','linkedin','email','website','project_github',
@@ -145,8 +145,8 @@ def initialize():
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar']
     defaults = {'project_dir':         ['./src'],
-                'extensions':          ['f90','f95','f03','f08','f15','F90',
-                                        'F95','F03','F08','F15'],
+                'extensions':          ['f90','f95','f03','f08','f15'],
+                'fpp_extensions':      ['F90','F95','F03','F08','F15'],
                 'output_dir':          './doc',
                 'project':             'Fortran Program',
                 'project_url':         '',
@@ -181,9 +181,9 @@ def initialize():
                 'coloured_edges':      'false',
                 'graph_dir':           '',
                }
-    listopts = ['extensions','display','extra_vartypes','project_dir',
-                'exclude','exclude_dir','macro','include','extra_mods',
-                'extra_filetypes']
+    listopts = ['extensions','fpp_extensions','display','extra_vartypes',
+                'project_dir','exclude','exclude_dir','macro','include',
+                'extra_mods','extra_filetypes']
     if args.warn:
         args.warn = 'true'
     else:
@@ -210,6 +210,7 @@ def initialize():
     proj_data['creation_date'] = datetime.now().strftime(proj_data['creation_date'])
     relative = (proj_data['project_url'] == '')
     proj_data['relative'] = relative
+    proj_data['extensions'] += proj_data['fpp_extensions']
     # Parse file extensions and comment characters for extra filetypes
     extdict = {}
     for ext in proj_data['extra_filetypes']:

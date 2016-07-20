@@ -53,12 +53,6 @@ class Project(object):
         self.extensions = settings['extensions']
         self.extra_filetypes = settings['extra_filetypes']
         self.display = settings['display']
-
-        if settings['preprocess'] == 'true':
-            fpp_ext = [ext for ext in self.extensions 
-                       if ext == ext.upper() and ext != ext.lower()]
-        else:
-            fpp_ext = []
         
         self.files = []
         self.modules = []
@@ -87,7 +81,7 @@ class Project(object):
                     if item.split('.')[-1] in self.extensions and not item in settings['exclude']:
                         # Get contents of the file
                         print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
-                        if item.split('.')[-1] in fpp_ext:
+                        if item.split('.')[-1] in settings['fpp_extensions']:
                             preprocessor = settings['preprocessor']
                         else:
                             preprocessor = None
