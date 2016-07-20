@@ -1268,7 +1268,7 @@ class FortranFunction(FortranCodeUnit):
         var_type_re = re.compile(VAR_TYPE_STRING + typestr,re.IGNORECASE)
         if var_type_re.search(attribstr):
             rettype, retkind, retlen, retproto, rest =  parse_type(attribstr,self.strings,self.settings)
-            self.retvar = FortranVariable(self.retvar,rettype,self.parent,
+            self.retvar = FortranVariable(self.retvar,rettype,self,
                                           kind=retkind,strlen=retlen,
                                           proto=retproto)
         self.args = [] # Set this in the correlation step
@@ -1491,16 +1491,24 @@ class FortranType(FortranContainer):
         if self.extends and type(self.extends) is not str:
             for bp in self.extends.boundprocs:
                 if all([bp.name.lower() != b.name.lower() for b in self.boundprocs]):
-                    inherited.append(bp)
-                elif bp.generic: inherited_generic.append(bp)
+                    if bp.generic:
+                        gen = copy.copy(bp)
+                        gen.parent = self
+                        inherited.append(gen)
+                    else:
+                        inherited.append(bp)
+                elif bp.generic:
+                    gen = copy.copy(bp)
+                    gen.parent = self
+                    inherited_generic.append(gen)
         self.boundprocs = inherited + self.boundprocs
         # Match up generic type-bound procedures to their particular bindings
-        for proc in self.boundprocs[len(inherited):]:
-            if proc.generic: proc.correlate(project)
+        for proc in self.boundprocs:
             for bp in inherited_generic:
                 if bp.name.lower() == proc.name.lower():
                     proc.bindings = bp.bindings + proc.bindings
                     break
+            if proc.generic: proc.correlate(project)
         # Match finalprocs
         for fp in self.finalprocs:
             fp.correlate(project)
@@ -1692,7 +1700,6 @@ class FortranVariable(FortranBase):
 
     def correlate(self,project):
         if (self.vartype == "type" or self.vartype == "class") and self.proto and self.proto[0] != '*':
-            print(self)
             if self.proto[0].lower() in self.parent.all_types:
                 self.proto[0] = self.parent.all_types[self.proto[0].lower()]
         elif self.vartype == "procedure" and self.proto and self.proto[0] != '*':
@@ -1754,9 +1761,14 @@ class FortranBoundProcedure(FortranBase):
         if self.generic:
             for i in range(len(self.bindings)):
                 for proc in self.parent.boundprocs:
-                    if proc.name and proc.name.lower() == self.bindings[i].lower():
-                        self.bindings[i] = proc
-                        break
+                    if type(self.bindings[i]) is str:
+                        if proc.name and proc.name.lower() == self.bindings[i].lower():
+                            self.bindings[i] = proc
+                            break
+                    else:
+                        if proc.name and proc.name.lower() == self.bindings[i].name.lower():
+                            self.bindings[i] = proc
+                            break
                 #else:
                 #    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
         elif not self.deferred:
