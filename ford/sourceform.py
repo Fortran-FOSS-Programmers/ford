@@ -37,7 +37,7 @@ else:
 
 import toposort
 from pygments import highlight
-from pygments.lexers import FortranLexer, guess_lexer_for_filename
+from pygments.lexers import FortranLexer, FortranFixedLexer, guess_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
 import ford.reader
@@ -960,10 +960,11 @@ class FortranSourceFile(FortranContainer):
     will consist of a list of these objects. In turn, SourceFile objects will
     contains lists of all of that file's contents
     """
-    def __init__(self,filepath,settings,preprocessor=None):
+    def __init__(self,filepath,settings,preprocessor=None,fixed=False):
         self.path = filepath.strip()
         self.name = os.path.basename(self.path)
         self.settings = settings
+        self.fixed = fixed
         self.parent = None
         self.modules = []
         self.submodules = []
@@ -977,14 +978,18 @@ class FortranSourceFile(FortranContainer):
                 
         source = ford.reader.FortranReader(self.path,settings['docmark'],
                     settings['predocmark'],settings['docmark_alt'],
-                    settings['predocmark_alt'],preprocessor,
+                    settings['predocmark_alt'],fixed,preprocessor,
                     settings['macro'],settings['include'])
         
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
         self.raw_src = readobj.read()
-        self.src = highlight(self.raw_src,FortranLexer(),
-                             HtmlFormatter(lineanchors='ln', cssclass='hl'))
+        if self.fixed:
+            self.src = highlight(self.raw_src,FortranFixedLexer(),
+                                 HtmlFormatter(lineanchors='ln', cssclass='hl'))
+        else:
+            self.src = highlight(self.raw_src,FortranLexer(),
+                                 HtmlFormatter(lineanchors='ln', cssclass='hl'))
 
 
 

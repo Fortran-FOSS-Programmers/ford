@@ -51,6 +51,7 @@ class Project(object):
         self.name = settings['project']
         self.topdirs = settings['project_dir']
         self.extensions = settings['extensions']
+        self.fixed_extensions = settings['fixed_extensions']
         self.extra_filetypes = settings['extra_filetypes']
         self.display = settings['display']
         
@@ -78,7 +79,9 @@ class Project(object):
                 if excluded: continue
                 curdir = srcdir[0]
                 for item in srcdir[2]:
-                    if item.split('.')[-1] in self.extensions and not item in settings['exclude']:
+                    ext = item.split('.')[-1]
+                    if (ext in self.extensions or ext in self.fixed_extensions) and \
+                      not item in settings['exclude']:
                         # Get contents of the file
                         print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
                         if item.split('.')[-1] in settings['fpp_extensions']:
@@ -87,10 +90,10 @@ class Project(object):
                             preprocessor = None
                         if settings['dbg']:
                             self.files.append(
-                                ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings, preprocessor))
+                                ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings, preprocessor, ext in self.fixed_extensions))
                         else:
                             try:
-                                self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,preprocessor))
+                                self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,preprocessor, ext in self.fixed_extensions))
                             except Exception as e:
                                 print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
                                 continue

@@ -131,7 +131,8 @@ def initialize():
     proj_data = md.Meta
     md.reset()
     # Get the default options, and any over-rides, straightened out
-    options = ['project_dir','extensions','fpp_extensions','output_dir','css','exclude',
+    options = ['project_dir','extensions','fpp_extensions','fixed_extensions',
+               'output_dir','css','exclude',
                'project','author','author_description','author_pic',
                'summary','github','bitbucket','facebook','twitter',
                'google_plus','linkedin','email','website','project_github',
@@ -146,7 +147,8 @@ def initialize():
                'graph_dir','gitter_sidecar']
     defaults = {'project_dir':         ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
-                'fpp_extensions':      ['F90','F95','F03','F08','F15'],
+                'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
+                'fixed_extensions':    ['f','for'],
                 'output_dir':          './doc',
                 'project':             'Fortran Program',
                 'project_url':         '',
@@ -180,9 +182,9 @@ def initialize():
                 'print_creation_date': False,
                 'coloured_edges':      'false',
                }
-    listopts = ['extensions','fpp_extensions','display','extra_vartypes',
-                'project_dir','exclude','exclude_dir','macro','include',
-                'extra_mods','extra_filetypes']
+    listopts = ['extensions','fpp_extensions','fixed_extensions','display',
+                'extra_vartypes','project_dir','exclude','exclude_dir',
+                'macro','include','extra_mods','extra_filetypes']
     if args.warn:
         args.warn = 'true'
     else:
@@ -209,7 +211,7 @@ def initialize():
     proj_data['creation_date'] = datetime.now().strftime(proj_data['creation_date'])
     relative = (proj_data['project_url'] == '')
     proj_data['relative'] = relative
-    proj_data['extensions'] += proj_data['fpp_extensions']
+    proj_data['extensions'] += [ext for ext in proj_data['fpp_extensions'] if ext not in proj_data['extensions']]
     # Parse file extensions and comment characters for extra filetypes
     extdict = {}
     for ext in proj_data['extra_filetypes']:

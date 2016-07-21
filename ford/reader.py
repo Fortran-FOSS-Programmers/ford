@@ -35,6 +35,8 @@ else:
     from StringIO import StringIO
 import os.path
 
+from ford.fixed2free2 import convertToFree
+
 class FortranReader(object):
     """
     An iterator which will convert a free-form Fortran source file into
@@ -56,7 +58,8 @@ class FortranReader(object):
     SC_RE = re.compile("^([^;]*);(.*)$")
 
     def __init__(self,filename,docmark='!',predocmark='',docmark_alt='',
-                 predocmark_alt='',preprocessor=None,macros=[],inc_dirs=[]):
+                 predocmark_alt='',fixed=False,preprocessor=None,macros=[],
+                 inc_dirs=[]):
         self.name = filename
         
         # Check that none of the docmarks are the same
@@ -91,6 +94,10 @@ class FortranReader(object):
         else:
             self.reader = open(filename,'r')
         
+        if fixed:
+            self.reader = convertToFree(self.reader)
+        
+        self.fixed = fixed
         self.inc_dirs = inc_dirs
         self.docbuffer = []
         self.pending = []
@@ -298,7 +305,7 @@ class FortranReader(object):
             raise Exception('Can not find include file "{}".'.format(name))
         self.pending = list(FortranReader(name, self.docmark, self.predocmark, 
                                           self.docmark_alt, self.predocmark_alt,
-                                          inc_dirs=self.inc_dirs)) \
+                                          self.fixed, inc_dirs=self.inc_dirs)) \
                        + self.pending
 
 
