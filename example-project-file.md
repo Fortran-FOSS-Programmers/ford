@@ -34,6 +34,22 @@ history and/or motivation for this software.
 @Note
 You can include any notes (or bugs, warnings, or todos) like so.
 
+@Bug
+You can have multi-paragraph versions of these too! That means you can
+include
+
+- ordered lists
+- unordered lists
+- images
+- etc.
+
+Isn't that cool?
+@endbug
+
+@Bug Hey I'm doing it again...
+
+This ones ends mid...@endbug ...paragraph.
+
 You can have as many paragraphs as you like here and can use headlines, links,
 images, etc. Basically, you can use anything in Markdown and Markdown-Extra.
 Furthermore, you can insert LaTeX into your documentation. So, for example,
