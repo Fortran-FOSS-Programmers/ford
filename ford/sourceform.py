@@ -490,8 +490,9 @@ class FortranContainer(FortranBase):
     A class on which any classes requiring further parsing are based.
     """
     ATTRIB_RE = re.compile("^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",re.IGNORECASE)
-    END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface|enum|block)(?:\s+(\w.*))?)?$",re.IGNORECASE)
+    END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface|enum|block|associate)(?:\s+(\w.*))?)?$",re.IGNORECASE)
     BLOCK_RE = re.compile("^(\w+\s*:)?\s*block\s*$",re.IGNORECASE)
+    ASSOCIATE_RE = re.compile("^(\w+\s*:)?\s*associate\s*\((.+)\)\s*$",re.IGNORECASE)
     ENUM_RE = re.compile("^enum\s*,\s*bind\s*\(.*\)\s*$",re.IGNORECASE)
     MODPROC_RE = re.compile("^(module\s+)?procedure\s*(?:::|\s)\s*(\w.*)$",re.IGNORECASE)
     MODULE_RE = re.compile("^module(?:\s+(\w+))?$",re.IGNORECASE)
@@ -528,6 +529,7 @@ class FortranContainer(FortranBase):
         self.VARIABLE_RE = re.compile(self.VARIABLE_STRING.format(typestr),re.IGNORECASE)
         
         blocklevel = 0
+        associatelevel = 0
         for line in source:
             if line[0:2] == "!" + self.settings['docmark']: 
                 self.doc.append(line[2:])
@@ -606,6 +608,8 @@ class FortranContainer(FortranBase):
                 endtype = self.END_RE.match(line).group(1)
                 if endtype and endtype.lower() == 'block':
                     blocklevel -= 1
+                elif endtype and endtype.lower() == 'associate':
+                    associatelevel -= 1
                 else:
                     self._cleanup()
                     return
@@ -623,6 +627,8 @@ class FortranContainer(FortranBase):
                     raise Exception("Found module procedure in {}".format(type(self).__name__[7:].upper()))
             elif self.BLOCK_RE.match(line):
                 blocklevel += 1
+            elif self.ASSOCIATE_RE.match(line):
+                associatelevel += 1
             elif self.MODULE_RE.match(line):
                 if hasattr(self,'modules'):
                     self.modules.append(FortranModule(source,
@@ -1187,6 +1193,7 @@ class FortranSubroutine(FortranCodeUnit):
         self.async_list = []
         self.attr_dict = dict()
         self.param_dict = dict()
+        self.associate_blocks = []
 
     def set_permission(self, value):
         self._permission = value
@@ -1306,6 +1313,7 @@ class FortranFunction(FortranCodeUnit):
         self.async_list = []
         self.attr_dict = dict()
         self.param_dict = dict()
+        self.associate_blocks = []
 
     def set_permission(self, value):
         self._permission = value
@@ -1385,6 +1393,7 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.attr_dict = dict()
         self.mp = True
         self.param_dict = dict()
+        self.associate_blocks = []
 
     def _cleanup(self):
         self.process_attribs()
@@ -1417,6 +1426,7 @@ class FortranProgram(FortranCodeUnit):
         self.async_list = []
         self.attr_dict = dict()
         self.param_dict = dict()
+        self.associate_blocks = []
     
     def _cleanup(self):
         self.all_procs = {}
@@ -2029,7 +2039,7 @@ def line_to_variables(source, line, inherit_permission, parent):
         doc.append(docline[2:])
         docline = source.__next__()
     source.pass_back(docline)
-    varlist[-1].doc = doc
+    for var in varlist: var.doc = doc
     return varlist
     
     
