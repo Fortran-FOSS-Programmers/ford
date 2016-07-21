@@ -179,7 +179,6 @@ def initialize():
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': False,
                 'coloured_edges':      'false',
-                'graph_dir':           '',
                }
     listopts = ['extensions','fpp_extensions','display','extra_vartypes',
                 'project_dir','exclude','exclude_dir','macro','include',

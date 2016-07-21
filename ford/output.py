@@ -67,7 +67,8 @@ class Documentation(object):
             data['project_url'] = '..'
         if graphviz_installed:
             self.graphs = GraphManager(self.data['project_url'],self.data['output_dir'],
-                                       self.data['graph_dir'], self.data['coloured_edges'].lower() == 'true')
+                                       self.data.get('graph_dir',''),
+                                       self.data['coloured_edges'].lower() == 'true')
             for item in project.types:
                 self.graphs.register(item)
             for item in project.procedures + project.submodprocedures:
@@ -150,7 +151,7 @@ class Documentation(object):
         copytree(os.path.join(loc,'css'), os.path.join(out_dir,'css'))
         copytree(os.path.join(loc,'fonts'), os.path.join(out_dir,'fonts'))
         copytree(os.path.join(loc,'js'), os.path.join(out_dir,'js'))
-        self.graphs.output_graphs()
+        if self.data['graph'].lower() == 'true': self.graphs.output_graphs()
         if self.data['search'].lower() == 'true':
             copytree(os.path.join(loc,'tipuesearch'),os.path.join(out_dir,'tipuesearch'))
             self.tipue.print_output()
