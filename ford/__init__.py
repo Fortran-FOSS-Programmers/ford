@@ -167,7 +167,7 @@ def initialize():
                 'include':             [],
                 'preprocess':          'true',
                 'preprocessor':        '',
-                'proc_internals':      'true',
+                'proc_internals':      'false',
                 'warn':                'false',
                 'quiet':               'false',
                 'search':              'true',
