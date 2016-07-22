@@ -49,7 +49,7 @@ class Project(object):
     def __init__(self, settings):
         self.settings = settings        
         self.name = settings['project']
-        self.topdirs = settings['project_dir']
+        self.topdirs = settings['src_dir']
         self.extensions = settings['extensions']
         self.fixed_extensions = settings['fixed_extensions']
         self.extra_filetypes = settings['extra_filetypes']

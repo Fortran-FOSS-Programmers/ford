@@ -86,7 +86,7 @@ def initialize():
     parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
     parser.add_argument("project_file",help="file containing the description and settings for the project",
                         type=argparse.FileType('r'))
-    parser.add_argument("-d","--project_dir",action="append",help='directories containing all source files for the project')
+    parser.add_argument("-d","--src_dir",action="append",help='directories containing all source files for the project')
     parser.add_argument("-p","--page_dir",help="directory containing the optional page tree describing the project")
     parser.add_argument("-o","--output_dir",help="directory in which to place output files")
     parser.add_argument("-s","--css",help="custom style-sheet for the output")
@@ -131,7 +131,7 @@ def initialize():
     proj_data = md.Meta
     md.reset()
     # Get the default options, and any over-rides, straightened out
-    options = ['project_dir','extensions','fpp_extensions','fixed_extensions',
+    options = ['src_dir','extensions','fpp_extensions','fixed_extensions',
                'output_dir','css','exclude',
                'project','author','author_description','author_pic',
                'summary','github','bitbucket','facebook','twitter',
@@ -145,7 +145,7 @@ def initialize():
                'extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar']
-    defaults = {'project_dir':         ['./src'],
+    defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
                 'fixed_extensions':    ['f','for'],
@@ -183,7 +183,7 @@ def initialize():
                 'coloured_edges':      'false',
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
-                'extra_vartypes','project_dir','exclude','exclude_dir',
+                'extra_vartypes','src_dir','exclude','exclude_dir',
                 'macro','include','extra_mods','extra_filetypes']
     if args.warn:
         args.warn = 'true'
@@ -219,8 +219,8 @@ def initialize():
         if len(sp) < 2: continue
         extdict[sp[0]] = sp[1]
     proj_data['extra_filetypes'] = extdict
-    # Make sure no project_dir is contained within output_dir
-    for projdir in proj_data['project_dir']:
+    # Make sure no src_dir is contained within output_dir
+    for projdir in proj_data['src_dir']:
         proj_path = ford.utils.split_path(projdir)
         out_path  = ford.utils.split_path(proj_data['output_dir'])
         for directory in out_path:
@@ -263,7 +263,7 @@ def initialize():
         '''.format(proj_data['gitter_sidecar'].strip())
     # Evaluate paths relative to project file location
     base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
-    for var in ['project_dir','page_dir','output_dir','exclude_dir','graph_dir','media_dir','include']:
+    for var in ['src_dir','page_dir','output_dir','exclude_dir','graph_dir','media_dir','include']:
         if var in proj_data:
             if var in listopts:
                 proj_data[var] = [os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(p)))) for p in proj_data[var]]
