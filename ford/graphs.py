@@ -310,9 +310,9 @@ class FileNode(BaseNode):
             for mod in obj.modules:
                 for dep in mod.deplist:
                     if dep.hierarchy[0] == obj:
-                        n = self
-                    elif dep in hist:
-                        n = hist[dep]
+                        continue
+                    elif dep.hierarchy[0] in hist:
+                        n = hist[dep.hierarchy[0]]
                     else:
                         n = gd.get_node(dep.hierarchy[0],FortranSourceFile,newdict(hist,obj,self))
                     n.afferent.add(self)
@@ -320,9 +320,9 @@ class FileNode(BaseNode):
             for mod in obj.submodules:
                 for dep in mod.deplist:
                     if dep.hierarchy[0] == obj:
-                        n = self
-                    elif dep in hist:
-                        n = hist[dep]
+                        continue
+                    elif dep.hierarchy[0] in hist:
+                        n = hist[dep.hierarchy[0]]
                     else:
                         n = gd.get_node(dep.hierarchy[0],FortranSourceFile,newdict(hist,obj,self))
                     n.afferent.add(self)
@@ -330,9 +330,9 @@ class FileNode(BaseNode):
             for proc in obj.functions + obj.subroutines:
                 for dep in proc.deplist:
                     if dep.hierarchy[0] == obj:
-                        n = self
-                    elif dep in hist:
-                        n = hist[dep]
+                        continue
+                    elif dep.hierarchy[0] in hist:
+                        n = hist[dep.hierarchy[0]]
                     else:
                         n = gd.get_node(dep.hierarchy[0],FortranSourceFile,newdict(hist,obj,self))
                     n.afferent.add(self)
@@ -340,9 +340,9 @@ class FileNode(BaseNode):
             for prog in obj.programs:
                 for dep in prog.deplist:
                     if dep.hierarchy[0] == obj:
-                        n = self
-                    elif dep in hist:
-                        n = hist[dep]
+                        continue
+                    elif dep.hierarchy[0] in hist:
+                        n = hist[dep.hierarchy[0]]
                     else:
                         n = gd.get_node(dep.hierarchy[0],FortranSourceFile,newdict(hist,obj,self))
                     n.afferent.add(self)
