@@ -357,89 +357,42 @@ class FortranBase(object):
             else:
                 self.meta['proc_internals'] = self.meta['proc_internals'].lower()
         
-        def sort_items(items,args=False):
-            if self.settings['sort'].lower() == 'src': return
-            def alpha(i):
-                return i.name
-            def permission(i):
-                if args:
-                    if i.intent == 'in': return 'b'
-                    if i.intent == 'inout': return 'c'
-                    if i.intent == 'out': return 'd'
-                    if i.intent == '': return 'e'
-                if i.permission == 'public': return 'b'
-                if i.permission == 'protected': return 'c'
-                if i.permission == 'private': return 'd'
-                return 'a'
-            def permission_alpha(i):
-                return permission(i) + '-' + i.name
-            def itype(i):
-                if i.obj == 'variable':
-                    retstr = i.vartype
-                    if retstr == 'class': retstr = 'type'
-                    if i.kind: retstr = retstr + '-' + str(i.kind)
-                    if i.strlen: retstr = retstr + '-' + str(i.strlen)
-                    if i.proto:
-                        retstr = retstr + '-' + i.proto[0]
-                    return retstr
-                elif i.obj == 'proc':
-                    if i.proctype != 'Function':
-                        return i.proctype.lower()
-                    else:
-                        return i.proctype.lower() + '-' + itype(i.retvar)
-                else:
-                    return i.obj
-            def itype_alpha(i):
-                return itype(i) + '-' + i.name
-            
-            if self.settings['sort'].lower() == 'alpha':
-                items.sort(key=alpha)
-            elif self.settings['sort'].lower() == 'permission':
-                items.sort(key=permission)
-            elif self.settings['sort'].lower() == 'permission-alpha':
-                items.sort(key=permission_alpha)
-            elif self.settings['sort'].lower() == 'type':
-                items.sort(key=itype)
-            elif self.settings['sort'].lower() == 'type-alpha':
-                items.sort(key=itype_alpha)
-        
         md_list = []
         if hasattr(self,'variables'):
             md_list.extend(self.variables)
-            sort_items(self.variables)
+            sort_items(self,self.variables)
         if hasattr(self,'types'):
             md_list.extend(self.types)
-            sort_items(self.types)
+            sort_items(self,self.types)
         if hasattr(self,'modules'):
             md_list.extend(self.modules)
-            sort_items(self.modules)
+            sort_items(self,self.modules)
         if hasattr(self,'submodules'):
             md_list.extend(self.submodules)
-            sort_items(self.submodules)
+            sort_items(self,self.submodules)
         if hasattr(self,'subroutines'):
             md_list.extend(self.subroutines)
-            sort_items(self.subroutines)
+            sort_items(self,self.subroutines)
         if hasattr(self,'modprocedures'):
             md_list.extend(self.modprocedures)
-            sort_items(self.modprocedures)
+            sort_items(self,self.modprocedures)
         if hasattr(self,'functions'):
             md_list.extend(self.functions)
-            sort_items(self.functions)
+            sort_items(self,self.functions)
         if hasattr(self,'interfaces'):
             md_list.extend(self.interfaces)
-            sort_items(self.interfaces)
+            sort_items(self,self.interfaces)
         if hasattr(self,'absinterfaces'):
             md_list.extend(self.absinterfaces)
-            sort_items(self.absinterfaces)
+            sort_items(self,self.absinterfaces)
         if hasattr(self,'programs'):
             md_list.extend(self.programs)
-            sort_items(self.programs)
-        if hasattr(self,'boundprocs'):
-            md_list.extend(self.boundprocs)
-            sort_items(self.boundprocs)
+            sort_items(self,self.programs)
+        # Type-bound procedures sorted at the end of correlation step, once
+        # any inherited ones have been added.
         if hasattr(self,'finalprocs'):
             md_list.extend(self.finalprocs)
-            sort_items(self.finalprocs)
+            sort_items(self,self.finalprocs)
         if hasattr(self,'args'):
             md_list.extend(self.args)
             #sort_items(self.args,args=True)
@@ -1531,6 +1484,8 @@ class FortranType(FortranContainer):
         if self.name.lower() in self.all_procs:
             self.constructor = self.all_procs[self.name.lower()]
             self.constructor.permission = self.permission
+        # Sort boundprocs, now that any inherited ones have been added.
+        sort_items(self.boundprocs)
         
     def prune(self):
         """
@@ -2132,6 +2087,57 @@ def get_mod_procs(source,line,parent):
     retlist[-1].doc = doc
     
     return retlist
+
+        
+def sort_items(self,items,args=False):
+    """
+    Sort the `self`'s contents, as contained in the list `items` as
+    specified in `self`'s meta-data.
+    """
+    if self.settings['sort'].lower() == 'src': return
+    def alpha(i):
+        return i.name
+    def permission(i):
+        if args:
+            if i.intent == 'in': return 'b'
+            if i.intent == 'inout': return 'c'
+            if i.intent == 'out': return 'd'
+            if i.intent == '': return 'e'
+        if i.permission == 'public': return 'b'
+        if i.permission == 'protected': return 'c'
+        if i.permission == 'private': return 'd'
+        return 'a'
+    def permission_alpha(i):
+        return permission(i) + '-' + i.name
+    def itype(i):
+        if i.obj == 'variable':
+            retstr = i.vartype
+            if retstr == 'class': retstr = 'type'
+            if i.kind: retstr = retstr + '-' + str(i.kind)
+            if i.strlen: retstr = retstr + '-' + str(i.strlen)
+            if i.proto:
+                retstr = retstr + '-' + i.proto[0]
+            return retstr
+        elif i.obj == 'proc':
+            if i.proctype != 'Function':
+                return i.proctype.lower()
+            else:
+                return i.proctype.lower() + '-' + itype(i.retvar)
+        else:
+            return i.obj
+    def itype_alpha(i):
+        return itype(i) + '-' + i.name
+    
+    if self.settings['sort'].lower() == 'alpha':
+        items.sort(key=alpha)
+    elif self.settings['sort'].lower() == 'permission':
+        items.sort(key=permission)
+    elif self.settings['sort'].lower() == 'permission-alpha':
+        items.sort(key=permission_alpha)
+    elif self.settings['sort'].lower() == 'type':
+        items.sort(key=itype)
+    elif self.settings['sort'].lower() == 'type-alpha':
+        items.sort(key=itype_alpha)
 
 
 class NameSelector(object):
