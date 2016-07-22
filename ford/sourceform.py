@@ -388,8 +388,10 @@ class FortranBase(object):
         if hasattr(self,'programs'):
             md_list.extend(self.programs)
             sort_items(self,self.programs)
-        # Type-bound procedures sorted at the end of correlation step, once
-        # any inherited ones have been added.
+        if hasattr(self,'boundprocs'):
+            # Type-bound procedures sorted at the end of correlation
+            # step, once any inherited ones have been added.
+            md_list.extend(self.boundprocs)
         if hasattr(self,'finalprocs'):
             md_list.extend(self.finalprocs)
             sort_items(self,self.finalprocs)
@@ -1485,7 +1487,7 @@ class FortranType(FortranContainer):
             self.constructor = self.all_procs[self.name.lower()]
             self.constructor.permission = self.permission
         # Sort boundprocs, now that any inherited ones have been added.
-        sort_items(self.boundprocs)
+        sort_items(self,self.boundprocs)
         
     def prune(self):
         """
