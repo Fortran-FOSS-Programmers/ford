@@ -38,7 +38,7 @@ import colorsys
 
 from graphviz import Digraph
 
-from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure
+from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure, FortranSourceFile
 
 _coloured_edges = False
 def set_coloured_edges(val):
@@ -85,6 +85,9 @@ def is_proc(obj,cls):
 
 def is_program(obj, cls):
     return isinstance(obj,FortranProgram) or issubclass(cls,FortranProgram)
+
+def is_sourcefile(obj, cls):
+    return isinstance(obj,FortranSourceFile) or issubclass(cls,FortranSourceFile)
     
     
 class GraphData(object):
@@ -97,13 +100,14 @@ class GraphData(object):
         self.types = {}
         self.procedures = {}
         self.programs = {}
+        self.sourcefiles = {}
 
     def register(self,obj,cls=type(None),hist={}):
         """
         Takes a FortranObject and adds it to the appropriate list, if
         not already present.
         """
-        ident = getattr(obj,'ident',obj)
+        #~ ident = getattr(obj,'ident',obj)
         if is_submodule(obj,cls):
             if obj not in self.submodules: self.submodules[obj] = SubmodNode(obj,self)
         elif is_module(obj,cls):
@@ -114,6 +118,8 @@ class GraphData(object):
             if obj not in self.procedures: self.procedures[obj] = ProcNode(obj,self,hist)
         elif is_program(obj,cls):
             if obj not in self.programs: self.programs[obj] = ProgNode(obj,self)
+        elif is_sourcefile(obj,cls):
+            if obj not in self.sourcefiles: self.sourcefiles[obj] = FileNode(obj,self)
         else:
             raise BadType("Object type {} not recognized by GraphData".format(type(obj).__name__))
     
@@ -122,7 +128,7 @@ class GraphData(object):
         Returns the node corresponding to obj. If does not already exist
         then it will create it.
         """
-        ident = getattr(obj,'ident',obj)
+        #~ ident = getattr(obj,'ident',obj)
         if obj in self.modules and is_module(obj,cls):
             return self.modules[obj]
         elif obj in self.submodules and is_submodule(obj,cls):
@@ -133,6 +139,8 @@ class GraphData(object):
             return self.procedures[obj]
         elif obj in self.programs and is_program(obj,cls):
             return self.programs[obj]
+        elif obj in self.sourcefiles and is_sourcefile(obj,cls):
+            return self.sourcefiles[obj]
         else:
             self.register(obj,cls,hist)
             return self.get_node(obj,cls,hist)
@@ -290,6 +298,55 @@ class ProgNode(BaseNode):
                     n = gd.get_node(c,FortranSubroutine)
                     n.called_by.add(self)
                     self.calls.add(n)
+
+
+class FileNode(BaseNode):
+    colour = '#ac4df0'
+    def __init__(self,obj,gd,hist={}):
+        super(FileNode,self).__init__(obj)
+        self.afferent = set() # Things depending on this file
+        self.efferent = set() # Things this file depends on
+        if not self.fromstr:
+            for mod in obj.modules:
+                for dep in mod.deplist:
+                    if dep.hierarchy[0] == obj:
+                        n = self
+                    elif dep in hist:
+                        n = hist[dep]
+                    else:
+                        n = gd.get_node(dep.hierarchy[0],FortranSourceFile,newdict(hist,obj,self))
+                    n.afferent.add(self)
+                    self.efferent.add(n)
+            for mod in obj.submodules:
+                for dep in mod.deplist:
+                    if dep.hierarchy[0] == obj:
+                        n = self
+                    elif dep in hist:
+                        n = hist[dep]
+                    else:
+                        n = gd.get_node(dep.hierarchy[0],FortranSourceFile,newdict(hist,obj,self))
+                    n.afferent.add(self)
+                    self.efferent.add(n)
+            for proc in obj.functions + obj.subroutines:
+                for dep in proc.deplist:
+                    if dep.hierarchy[0] == obj:
+                        n = self
+                    elif dep in hist:
+                        n = hist[dep]
+                    else:
+                        n = gd.get_node(dep.hierarchy[0],FortranSourceFile,newdict(hist,obj,self))
+                    n.afferent.add(self)
+                    self.efferent.add(n)
+            for prog in obj.programs:
+                for dep in prog.deplist:
+                    if dep.hierarchy[0] == obj:
+                        n = self
+                    elif dep in hist:
+                        n = hist[dep]
+                    else:
+                        n = gd.get_node(dep.hierarchy[0],FortranSourceFile,newdict(hist,obj,self))
+                    n.afferent.add(self)
+                    self.efferent.add(n)
 
 
 class FortranGraph(object):
@@ -494,11 +551,53 @@ class UsedByGraph(FortranGraph):
                 self.dot.edge(n.ident,c.ident,color=colour)
 
 
+class FileGraph(FortranGraph):
+    def add_more_nodes(self,nodes):
+        """
+        Adds edges showing dependencies between source files listed in
+        the nodes.
+        """
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
+            self.add_node([x for x in n.efferent if x.ident not in self.added])
+            for ne in n.efferent:
+                self.dot.edge(ne.ident,n.ident,color=colour)
+
+
+class EfferentGraph(FortranGraph):
+    def add_more_nodes(self,nodes):
+        """
+        Adds nodes for the files which this one depends on. Adds
+        edges between them.
+        """
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
+            self.add_node([x for x in n.efferent if x.ident not in self.added])
+            for ne in n.efferent:
+                self.dot.edge(ne.ident,n.ident,style='dashed',color=colour)
+
+
+class AfferentGraph(FortranGraph):
+    def add_more_nodes(self,nodes):
+        """
+        Adds nodes for files which depend upon this one. Adds appropriate
+        edges between them.
+        """
+        for i,n in zip(range(len(nodes)),nodes):
+            r,g,b = rainbowcolour(i,len(nodes))
+            colour = '#%02X%02X%02X' % (r,g,b)
+            self.add_node([x for x in n.afferent if x.ident not in self.added])
+            for na in n.afferent:
+                self.dot.edge(n.ident,na.ident,style='dashed',color=colour)
+
+
 class TypeGraph(FortranGraph):
     def add_more_nodes(self,nodes):
         """
-        Adds nodes for modules using or descended from those listed in
-        nodes. Adds appropriate edges between them.
+        Adds edges showing inheritance and composition relationships 
+        between derived types listed in the nodes.
         """
         self.dot.attr('graph',size='11.875,1000.0')
         for i,n in zip(range(len(nodes)),nodes):
@@ -555,8 +654,8 @@ class InheritedByGraph(FortranGraph):
 class CallGraph(FortranGraph):
     def add_more_nodes(self,nodes):
         """
-        Adds nodes for modules using or descended from those listed in
-        nodes. Adds appropriate edges between them.
+        Adds edges indicating the call-tree for the procedures listed in
+        the nodes.
         """
         self.dot.attr('graph',size='11.875,1000.0')
         self.dot.attr('graph',concentrate='false')
@@ -648,6 +747,7 @@ gd.register(func,FortranFunction)
 gd.register(intr,FortranInterface)
 gd.register('Unknown Procedure Type',FortranSubroutine)
 gd.register('Program',FortranProgram)
+gd.register('Source File',FortranSourceFile)
 dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
                                       'concentrate':'false'},
                           node_attr={'shape':'box',
@@ -658,7 +758,7 @@ dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
                           edge_attr={'fontname':'Helvetica',
                                      'fontsize':'9.5'},
                           format='svg', engine='dot')
-for n in [('Module',FortranModule),('Submodule',FortranSubmodule),('Type',FortranType),(sub,FortranSubroutine),(func,FortranFunction),(intr, FortranInterface),('Unknown Procedure Type',FortranFunction),('Program', FortranProgram)]:
+for n in [('Module',FortranModule),('Submodule',FortranSubmodule),('Type',FortranType),(sub,FortranSubroutine),(func,FortranFunction),(intr, FortranInterface),('Unknown Procedure Type',FortranFunction),('Program', FortranProgram),('Source File',FortranSourceFile)]:
     dot.node(getattr(n[0],'name',n[0]),**gd.get_node(n[0],cls=n[1]).attribs)
 dot.node('This Page\'s Entity')
 try:
@@ -687,5 +787,9 @@ said component(s).</p>
 arrows point from an interface to procedures which implement that interface.
 This could include the module procedures in a generic interface or the
 implementation in a submodule of an interface in a parent module.</p>
+<h5>File Graph</h5>
+<p>Solid arrows point from a file to a file which depends upon it. A file 
+is dependent upon another if the latter must be compiled before the former
+can be.</p>
 """.format(svg)
 

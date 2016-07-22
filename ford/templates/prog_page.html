@@ -19,7 +19,6 @@
     
     <div class="col-md-9" id='text'>
     {{ macros.use_list(program) }}
-    {{ program.usesgraph }}
     {% if program.usesgraph %}<br><br>{% endif %}
     {{ program.doc }}
     {% if program.callsgraph %}

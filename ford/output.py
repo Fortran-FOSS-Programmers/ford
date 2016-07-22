@@ -65,7 +65,8 @@ class Documentation(object):
             ford.sourceform.set_base_url('..')
             ford.pagetree.set_base_url('..')
             data['project_url'] = '..'
-        if graphviz_installed:
+        if graphviz_installed and data['graph'].lower() == 'true':
+            print('Generating graphs...')
             self.graphs = GraphManager(self.data['project_url'],self.data['output_dir'],
                                        self.data.get('graph_dir',''),
                                        self.data['coloured_edges'].lower() == 'true')
@@ -77,14 +78,19 @@ class Documentation(object):
                 self.graphs.register(item)
             for item in project.programs:
                 self.graphs.register(item)
+            for item in project.files:
+                self.graphs.register(item)
             self.graphs.graph_all()
             project.callgraph = self.graphs.callgraph
             project.typegraph = self.graphs.typegraph
             project.usegraph = self.graphs.usegraph
+            project.filegraph = self.graphs.filegraph
         else:
             project.callgraph = ''
             project.typegraph = ''
             project.usegraph = ''
+            project.filegraph = ''
+        print("Creating HTML documentation...")
         try:
             for item in project.allfiles:
                 self.docs.append(FilePage(data,project,item))

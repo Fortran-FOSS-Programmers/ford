@@ -26,7 +26,7 @@
 from __future__ import print_function
 import os
 
-from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure
+from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure, FortranSourceFile
 import ford.graphs
 
 class GraphManager(object):
@@ -51,11 +51,13 @@ class GraphManager(object):
         self.programs = set()
         self.procedures = set()
         self.types = set()
+        self.sourcefiles = set()
         self.graphdir = graphdir
         self.webdir = base_url + '/' + graphdir
         self.usegraph = None
         self.typegraph = None
         self.callgraph = None
+        self.filegraph = None
         ford.graphs.set_coloured_edges(coloured_edges)
 
     def register(self,obj):
@@ -76,19 +78,27 @@ class GraphManager(object):
             elif isinstance(obj,(FortranFunction,FortranSubroutine,FortranInterface,FortranSubmoduleProcedure)):
                 obj.callsgraph = ford.graphs.CallsGraph(obj,self.webdir)
                 obj.calledbygraph = ford.graphs.CalledByGraph(obj,self.webdir)
+                obj.usesgraph = ford.graphs.UsesGraph(obj,self.webdir)
                 self.procedures.add(obj)
             elif isinstance(obj,FortranProgram):
                 obj.usesgraph = ford.graphs.UsesGraph(obj,self.webdir)
                 obj.callsgraph = ford.graphs.CallsGraph(obj,self.webdir)
                 self.programs.add(obj)
+            elif isinstance(obj,FortranSourceFile):
+                obj.afferentgraph = ford.graphs.AfferentGraph(obj,self.webdir)
+                obj.efferentgraph = ford.graphs.EfferentGraph(obj,self.webdir)
+                self.sourcefiles.add(obj)
         usenodes = list(self.modules)
         callnodes = list(self.procedures)
         for p in self.programs:
             if p.usesgraph.numnodes > 1: usenodes.append(p)
             if p.callsgraph.numnodes > 1: callnodes.append(p)
+        for p in self.procedures:
+            if p.usesgraph.numnodes > 1: usenodes.append(p)
         self.usegraph = ford.graphs.ModuleGraph(usenodes,self.webdir,'module~~graph')
         self.typegraph = ford.graphs.TypeGraph(self.types,self.webdir,'type~~graph')
         self.callgraph = ford.graphs.CallGraph(callnodes,self.webdir,'call~~graph')
+        self.filegraph = ford.graphs.FileGraph(self.sourcefiles,self.webdir,'file~~graph')
 
     def output_graphs(self):
         if not self.graphdir: return
@@ -108,10 +118,14 @@ class GraphManager(object):
         for p in self.programs:
             p.callsgraph.create_svg(self.graphdir)
             p.usesgraph.create_svg(self.graphdir)
+        for f in self.sourcefiles:
+            f.afferentgraph.create_svg(self.graphdir)
+            f.efferentgraph.create_svg(self.graphdir)
         if self.usegraph:
             self.usegraph.create_svg(self.graphdir)
         if self.typegraph:
             self.typegraph.create_svg(self.graphdir)
         if self.callgraph:
             self.callgraph.create_svg(self.graphdir)
-
+        if self.filegraph:
+            self.filegraph.create_svg(self.graphdir)

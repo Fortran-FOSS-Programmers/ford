@@ -165,6 +165,7 @@ class Project(object):
             uselist = get_deps(mod)
             uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
             deplist[mod] = set(uselist)
+            mod.deplist = uselist
         for mod in self.submodules:
             if type(mod.ancestor_mod) is ford.sourceform.FortranModule:
                 uselist = get_deps(mod)
@@ -176,9 +177,17 @@ class Project(object):
                         print('Warning: could not identify parent SUBMODULE of SUBMODULE ' + mod.name)
                 else:
                     uselist.insert(0,mod.ancestor_mod)
+                mod.deplist = uselist
                 deplist[mod] = set(uselist)
             elif self.settings['warn'].lower() == 'true':
                 print('Warning: could not identify parent MODULE of SUBMODULE ' + mod.name)
+        # Get dependencies for programs and top-level procedures as well,
+        # if dependency graphs are to be produced
+        if self.settings['graph'].lower() == 'true':
+            for proc in self.procedures:
+                proc.deplist = set([m for m in get_deps(proc) if type(m) == ford.sourceform.FortranModule])
+            for prog in self.programs:
+                prog.deplist = set([m for m in get_deps(prog) if type(m) == ford.sourceform.FortranModule])
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:
             if proc.parobj == 'sourcefile': ranklist.append(proc)

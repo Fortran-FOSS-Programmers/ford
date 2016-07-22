@@ -343,7 +343,6 @@ def main(proj_data,proj_docs,md):
     # Produce the documentation using Jinja2. Output it to the desired location
     # and copy any files that are needed (CSS, JS, images, fonts, source files,
     # etc.)
-    print("Creating HTML documentation...")
     docs = ford.output.Documentation(proj_data,proj_docs_,project,page_tree)
     docs.writeout()
     print('')

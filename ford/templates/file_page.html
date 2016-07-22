@@ -17,7 +17,15 @@
     </div>
     <div class="col-md-9" id='text'>
     {{ src.doc }}
-    {% if src.doc %}<br>{% endif %}
+    {% if src.efferentgraph %}
+    <h3>This File Depends On</h3>
+    {{ src.efferentgraph }}
+    {% endif %}
+      {% if src.afferentgraph %}
+      <h3>Files Dependent On This One</h3>
+      {{ src.afferentgraph }}
+      {% endif %}
+      {% if src.doc or src.efferentgraph or src.afferentgraph%}<br>{% endif %}
 
     <section class="visible-xs visible-sm hidden-md">
       {{ macros.content_list(src,1) }}
