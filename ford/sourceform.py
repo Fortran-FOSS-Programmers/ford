@@ -216,6 +216,21 @@ class FortranBase(object):
         else:
             return None
     
+    def lines_description(self,total,total_all=0,obj=None):
+        if not obj: obj = self.obj
+        pretty_obj = {'proc': 'procedures',
+                      'type': 'derived types',
+                      'sourcefile': 'source files',
+                      'program': 'programs',
+                      'module': 'modules and submodules',
+                      'submodule': 'modules and submodules',
+                      'interface': 'abstract interfaces'
+                     }
+        description = "{:4.1f}% of total for {}.".format(float(self.num_lines)/total*100,pretty_obj[obj])
+        if total_all:
+            description = "<p>" + description + "</p>Including implementation: {} statements, {:4.1f}% of total for {}.".format(self.num_lines_all,float(self.num_lines_all)/total_all*100,pretty_obj[obj])
+        return description
+    
     @property
     def ident(self):
         if ( type(self) in [FortranSubroutine,FortranFunction] and
@@ -319,7 +334,8 @@ class FortranBase(object):
                 self.meta[key] = self.meta[key][0]
             elif key == 'summary':
                 self.meta[key] = '\n'.join(self.meta[key])
-            
+        if hasattr(self,'num_lines'): self.meta['num_lines'] = self.num_lines
+        
         self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url)
     
         if 'summary' in self.meta:
@@ -361,9 +377,6 @@ class FortranBase(object):
         if hasattr(self,'variables'):
             md_list.extend(self.variables)
             sort_items(self,self.variables)
-        if hasattr(self,'types'):
-            md_list.extend(self.types)
-            sort_items(self,self.types)
         if hasattr(self,'modules'):
             md_list.extend(self.modules)
             sort_items(self,self.modules)
@@ -385,6 +398,9 @@ class FortranBase(object):
         if hasattr(self,'absinterfaces'):
             md_list.extend(self.absinterfaces)
             sort_items(self,self.absinterfaces)
+        if hasattr(self,'types'):
+            md_list.extend(self.types)
+            sort_items(self,self.types)
         if hasattr(self,'programs'):
             md_list.extend(self.programs)
             sort_items(self,self.programs)
@@ -468,7 +484,8 @@ class FortranContainer(FortranBase):
             
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
-        
+        self.num_lines = 0
+        if not isinstance(self,FortranSourceFile): self.num_lines += 1
         if type(self) != FortranSourceFile:
             FortranBase.__init__(self,source,first_line,parent,inherited_permission,
                              strings)
@@ -489,6 +506,7 @@ class FortranContainer(FortranBase):
             if line[0:2] == "!" + self.settings['docmark']: 
                 self.doc.append(line[2:])
                 continue
+            if line.strip() != '': self.num_lines += 1
 
             # Temporarily replace all strings to make the parsing simpler
             self.strings = []
@@ -578,6 +596,7 @@ class FortranContainer(FortranBase):
                     self.modprocedures.append(FortranSubmoduleProcedure(source,
                                               self.MODPROC_RE.match(line),self,
                                               permission))
+                    self.num_lines += self.modprocedures[-1].num_lines - 1
                 else:
                     raise Exception("Found module procedure in {}".format(type(self).__name__[7:].upper()))
             elif self.BLOCK_RE.match(line):
@@ -588,18 +607,22 @@ class FortranContainer(FortranBase):
                 if hasattr(self,'modules'):
                     self.modules.append(FortranModule(source,
                                         self.MODULE_RE.match(line),self))
+                    self.num_lines += self.modules[-1].num_lines - 1
+                    print(self.name,self.num_lines)
                 else:
                     raise Exception("Found MODULE in {}".format(type(self).__name__[7:].upper()))
             elif self.SUBMODULE_RE.match(line):
                 if hasattr(self,'submodules'):
                     self.submodules.append(FortranSubmodule(source,
                                            self.SUBMODULE_RE.match(line),self))
+                    self.num_lines += self.submodules[-1].num_lines - 1
                 else:
                     raise Exception("Found SUBMODULE in {}".format(type(self).__name__[7:].upper()))
             elif self.PROGRAM_RE.match(line):
                 if hasattr(self,'programs'):
                     self.programs.append(FortranProgram(source,
                                          self.PROGRAM_RE.match(line),self))
+                    self.num_lines += self.programs[-1].num_lines - 1
                 else:
                     raise Exception("Found PROGRAM in {}".format(type(self).__name__[7:].upper()))
                 if len(self.programs) > 1:
@@ -610,6 +633,7 @@ class FortranContainer(FortranBase):
                     self.subroutines.append(FortranSubroutine(source,
                                             self.SUBROUTINE_RE.match(line),self,
                                             permission))
+                    self.num_lines += self.subroutines[-1].num_lines - 1
                 else:
                     raise Exception("Found SUBROUTINE in {}".format(type(self).__name__[7:].upper()))
             elif self.FUNCTION_RE.match(line):
@@ -618,18 +642,21 @@ class FortranContainer(FortranBase):
                     self.functions.append(FortranFunction(source,
                                           self.FUNCTION_RE.match(line),self,
                                           permission))
+                    self.num_lines += self.functions[-1].num_lines - 1
                 else:
                     raise Exception("Found FUNCTION in {}".format(type(self).__name__[7:].upper()))
             elif self.TYPE_RE.match(line) and blocklevel == 0:
                 if hasattr(self,'types'):
                     self.types.append(FortranType(source,self.TYPE_RE.match(line),
                                       self,permission))
+                    self.num_lines += self.types[-1].num_lines - 1
                 else:
                     raise Exception("Found derived TYPE in {}".format(type(self).__name__[7:].upper()))
             elif self.INTERFACE_RE.match(line) and blocklevel == 0:
                 if hasattr(self,'interfaces'):
                     intr = FortranInterface(source,self.INTERFACE_RE.match(line),
                                             self,permission)
+                    self.num_lines += intr.num_lines - 1
                     if intr.abstract:
                         self.absinterfaces.extend(intr.contents)
                     elif intr.generic:
@@ -642,6 +669,7 @@ class FortranContainer(FortranBase):
                 if hasattr(self,'enums'):
                     self.enums.append(FortranEnum(source,self.ENUM_RE.match(line),self,
                                       permission))
+                    self.num_lines += self.enums[-1].num_lines - 1
                 else:
                     raise Exception("Found ENUM in {}".format(type(self).__name__[7:].upper()))
             elif self.BOUNDPROC_RE.match(line) and incontains:
@@ -951,7 +979,6 @@ class FortranSourceFile(FortranContainer):
         else:
             self.src = highlight(self.raw_src,FortranLexer(),
                                  HtmlFormatter(lineanchors='ln', cssclass='hl'))
-
 
 
 class FortranModule(FortranCodeUnit):
@@ -1445,6 +1472,7 @@ class FortranType(FortranContainer):
         self.all_absinterfaces = self.parent.all_absinterfaces
         self.all_types = self.parent.all_types
         self.all_procs = self.parent.all_procs
+        self.num_lines_all = self.num_lines
 
         # Match variables as needed (recurse)
         #~ for i in range(len(self.variables)-1,-1,-1):
@@ -1486,9 +1514,18 @@ class FortranType(FortranContainer):
         if self.name.lower() in self.all_procs:
             self.constructor = self.all_procs[self.name.lower()]
             self.constructor.permission = self.permission
+            self.num_lines += getattr(self.constructor,'num_lines_all',self.constructor.num_lines)
         # Sort boundprocs, now that any inherited ones have been added.
         sort_items(self,self.boundprocs)
-        
+        # Get total num_lines, including implementations
+        for proc in self.finalprocs:
+            self.num_lines_all += proc.procedure.num_lines
+        for proc in self.boundprocs:
+            for bind in proc.bindings:
+                if isinstance(bind,(FortranFunction,FortranSubroutine)): self.num_lines_all += bind.num_lines
+                elif isinstance(bind,FortranBoundProcedure):
+                    for b in bind.bindings:
+                        if isinstance(b,(FortranFunction,FortranSubroutine)): self.num_lines_all += b.num_lines
     def prune(self):
         """
         Remove anything which shouldn't be displayed.
@@ -1537,10 +1574,12 @@ class FortranInterface(FortranContainer):
         self.all_absinterfaces = self.parent.all_absinterfaces
         self.all_types = self.parent.all_types
         self.all_procs = self.parent.all_procs
+        self.num_lines_all = self.num_lines
         if self.generic:
             for modproc in self.modprocs:
                 if modproc.name.lower() in self.all_procs:
                     modproc.procedure = self.all_procs[modproc.name.lower()]
+                    self.num_lines_all += modproc.procedure.num_lines
             for subrtn in self.subroutines:
                 subrtn.correlate(project)
             for func in self.functions:
@@ -1825,6 +1864,7 @@ class GenericSource(FortranBase):
         self.parent = None
         self.hierarchy = []
         self.settings = settings
+        self.num_lines = 0
         comchar = settings['extra_filetypes'][filename.split('.')[-1]]
         docmark = settings['docmark']
         predocmark = settings['predocmark']
@@ -1906,6 +1946,9 @@ class GenericSource(FortranBase):
                 self.doc.append('')
                 prevdoc = False
             docalt = False
+    
+    def lines_description(self,total,total_all=0):
+        return ''
         
 
 _can_have_contains = [FortranModule,FortranProgram,FortranFunction,

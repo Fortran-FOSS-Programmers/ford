@@ -9,12 +9,12 @@
     <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
-	 {{ macros.info_bar(interface.name,interface.meta,project_url,interface.hierarchy) }}    
+    {{ macros.info_bar(interface.name,interface.meta,project_url,interface.hierarchy,interface.lines_description(project.proc_lines,project.proc_lines,'proc')) }}
   </div>
   
   <div class="row">
     <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
-    {{ macros.sidebar(project,interface) }}
+      {{ macros.sidebar(project,interface) }}
     </div>
     
     <div class="col-md-9" id='text'>

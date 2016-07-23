@@ -9,7 +9,7 @@
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
-	 {{ macros.info_bar(program.name,program.meta,project_url,program.hierarchy) }}    
+    {{ macros.info_bar(program.name,program.meta,project_url,program.hierarchy,program.lines_description(project.prog_lines)) }} 
   </div>
   
   <div class="row">

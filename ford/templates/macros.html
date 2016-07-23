@@ -1,11 +1,11 @@
 
-{% macro info_bar(name,meta,base_url,hierarchy) %}
+{% macro info_bar(name,meta,base_url,hierarchy,line_info="") %}
 <div class="row">
 <div class="col-lg-12">
 <div class="well well-sm">
   <ul class="list-inline" style="margin-bottom:0px;display:inline">
      {% if meta['author'] %}
-    <li><i class="fa fa-pencil"></i> {{ meta['author'] }}</li>
+     <li><i class="fa fa-pencil"></i> {{ meta['author'] }}</li>
      {% endif %}
      {% if meta['date'] %}
     <li><i class="fa fa-calendar-o"></i> {{ meta['date'] }}</li>
@@ -19,7 +19,14 @@
     {% if meta['category'] %}
     <li><i class="fa fa-folder-open"></i> {{ meta['category'] }}</li>
     {% endif %}
-    {% if hierarchy[0] %}
+    {% if line_info %}
+     <li><i class="fa fa-list-ol"></i>
+       <a data-toggle="tooltip"
+	  data-placement="bottom" data-html="true"
+	  title="{{line_info}}">{{meta['num_lines']}} statements</a>
+     </li> 
+     {% endif %}
+     {% if hierarchy[0] %}
     <li><i class="fa fa-code"></i><a href="{{ base_url }}/src/{{ hierarchy[0].name }}"> Source File</a></li>
      {% else %}
     <li><i class="fa fa-code"></i><a href="{{ base_url }}/src/{{ name }}"> Source File</a></li>
@@ -34,6 +41,11 @@
 </div>
 </div>
 </div>
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+</script>
 {% endmacro %}
 
 
@@ -513,7 +525,7 @@
     {% if proc.module and proc.module != True and proc.parobj == 'submodule' and proc.module.visible %}
 	 <a href='{{ proc.module.get_url() }}'><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
     {% endif %}
-    {% if proc.module and proc.module != True and proc.parobj == 'interface' and proc.module.visible %}
+	 {% if proc.module and proc.module != True and proc.parobj == 'interface' and proc.module.visible %}
 	 <a href='{{ proc.module.get_url() }}'><button type="button" class="btn btn-info depwarn">Implementation &rarr;</button></a>
     {% endif %}
 {% endmacro %}
@@ -670,13 +682,13 @@
       {% endfor %}
     </ul>
     {{ obj.usesgraph }}
-  {% endif %}
+    {% endif %}
 {% endmacro %}
 
 
 {% macro meta_list(meta) %}
 {% if meta['author'] or meta['date'] or meta['license'] or meta['version'] or meta['category'] %}
-<dl class="dl-horizontal">
+  <dl class="dl-horizontal">
     {% if meta['author'] %}
     <dt>Author</dt><dd>{{ meta['author'] }}</dd>
     {% endif %}

@@ -246,6 +246,13 @@ class Project(object):
                     self.absinterfaces.append(absint)
                 for dtype in program.types:
                     self.types.append(dtype)
+        self.mod_lines = sum([m.num_lines for m in self.modules + self.submodules])
+        self.proc_lines = sum([p.num_lines for p in self.procedures])
+        self.file_lines = sum([p.num_lines for p in self.programs])
+        self.type_lines = sum([t.num_lines for t in self.types])
+        self.type_lines_all = sum([t.num_lines_all for t in self.types])
+        self.absint_lines = sum([a.num_lines for a in self.absinterfaces])
+        self.prog_lines = sum([a.num_lines for a in self.programs])
         print()
 
     def markdown(self,md,base_url='..'):

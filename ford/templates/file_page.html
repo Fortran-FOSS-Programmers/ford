@@ -9,7 +9,7 @@
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
-    {{ macros.info_bar(src.name,src.meta,project_url,src.hierarchy) }}
+    {{ macros.info_bar(src.name,src.meta,project_url,src.hierarchy,src.lines_description(project.file_lines)) }}
   </div>
   <div class="row">
     <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
@@ -33,7 +33,7 @@
     <br>
 
     <section>
-    <h2><span class="anchor" id="src"></span>Source Code</h2>
+      <h2><span class="anchor" id="src"></span>Source Code</h2>
     {{ src.src }}
     </section>
     </div>

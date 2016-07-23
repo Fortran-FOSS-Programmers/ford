@@ -9,7 +9,8 @@
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
-	 {{ macros.info_bar(procedure.name,procedure.meta,project_url,procedure.hierarchy) }}    
+    {{
+    macros.info_bar(procedure.name,procedure.meta,project_url,procedure.hierarchy,procedure.lines_description(project.proc_lines)) }}
   </div>
   
   <div class="row">

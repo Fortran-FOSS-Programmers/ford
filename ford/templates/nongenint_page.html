@@ -10,7 +10,15 @@
     <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
-	 {{ macros.info_bar(interface.name,interface.meta,project_url,interface.hierarchy) }}    
+    {% if interface.abstract %}
+    {{
+    macros.info_bar(interface.name,interface.meta,project_url,interface.hierarchy,interface.lines_description(project.absint_lines))
+    }}
+    {% else %}
+    {{
+    macros.info_bar(interface.name,interface.meta,project_url,interface.hierarchy,interface.lines_description(project.proc_lines,obj='proc'))
+    }}
+    {% endif %}
   </div>
   
   <div class="row">
