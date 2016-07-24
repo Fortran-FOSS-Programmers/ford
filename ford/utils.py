@@ -32,8 +32,8 @@ NOTE_TYPE = {'note':'info',
              'warning':'warning',
              'todo':'success',
              'bug':'danger'}
-NOTE_RE = [re.compile(r"@({})\s*(((?!@\1).)*?)@end\1\s*(</p>)?".format(note),
-                      re.IGNORECASE|re.DOTALL) for note in NOTE_TYPE] \
+NOTE_RE = [re.compile(r"@({})\s*(((?!@({})).)*?)@end\1\s*(</p>)?".format(note,
+           '|'.join(NOTE_TYPE.keys())), re.IGNORECASE|re.DOTALL) for note in NOTE_TYPE] \
         + [re.compile(r"@({})\s*(.*?)\s*</p>".format(note),
                       re.IGNORECASE|re.DOTALL) for note in NOTE_TYPE]
 LINK_RE = re.compile(r"\[\[(\w+(?:\.\w+)?)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)?\]\]")
