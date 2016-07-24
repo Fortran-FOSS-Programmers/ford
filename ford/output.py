@@ -104,6 +104,8 @@ class Documentation(object):
                 self.docs.append(ModulePage(data,project,item))
             for item in project.programs:
                 self.docs.append(ProgPage(data,project,item))
+            for item in project.blockdata:
+                self.docs.append(BlockPage(data,project,item))
             if len(project.procedures) > 0:
                 self.lists.append(ProcList(data,project))
             if len(project.allfiles) > 1:
@@ -116,6 +118,8 @@ class Documentation(object):
                 self.lists.append(TypeList(data,project))
             if len(project.absinterfaces) > 0:
                 self.lists.append(AbsIntList(data,project))
+            if len(project.blockdata) > 1:
+                self.lists.append(BlockList(data,project))
             if pagetree:
                 for item in pagetree:
                     self.pagetree.append(PagetreePage(data,project,item))
@@ -155,6 +159,7 @@ class Documentation(object):
         os.mkdir(os.path.join(out_dir,'module'), 0o755)
         os.mkdir(os.path.join(out_dir,'program'), 0o755)
         os.mkdir(os.path.join(out_dir,'src'), 0o755)
+        os.mkdir(os.path.join(out_dir,'blockdata'), 0o755)
         copytree(os.path.join(loc,'css'), os.path.join(out_dir,'css'))
         copytree(os.path.join(loc,'fonts'), os.path.join(out_dir,'fonts'))
         copytree(os.path.join(loc,'js'), os.path.join(out_dir,'js'))
@@ -290,6 +295,16 @@ class AbsIntList(BasePage):
         return template.render(data,project=proj)
 
 
+class BlockList(BasePage):
+    @property
+    def outfile(self):
+        return os.path.join(self.out_dir,'lists','blockdata.html')
+
+    def render(self,data,proj,obj):
+        template = env.get_template('block_list.html')
+        return template.render(data,project=proj)
+
+
 class DocPage(BasePage):
     """
     Abstract class to be inherited by all pages for items in the code.
@@ -344,6 +359,11 @@ class ProgPage(DocPage):
     def render(self,data,proj,obj):
         template = env.get_template('prog_page.html')
         return template.render(data,program=obj,project=proj)
+
+class BlockPage(DocPage):
+    def render(self,data,proj,obj):
+        template = env.get_template('block_page.html')
+        return template.render(data,blockdat=obj,project=proj)
 
 
 class PagetreePage(BasePage):

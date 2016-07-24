@@ -197,11 +197,12 @@ class FortranBase(object):
         elif type(self) is FortranSubmodule:
             return 'module'
         elif ( type(self) in [FortranSourceFile,FortranProgram,FortranModule,
-                              GenericSource]
+                              GenericSource,FortranBlockData]
                or ( type(self) in [FortranType,FortranInterface,FortranFunction,
                                    FortranSubroutine, FortranSubmoduleProcedure]
                     and type(self.parent) in [FortranSourceFile,FortranProgram,
-                                              FortranModule, FortranSubmodule] ) ):
+                                              FortranModule, FortranSubmodule, 
+                                              FortranBlockData] ) ):
             return self.obj
         else:
             return None
@@ -224,7 +225,8 @@ class FortranBase(object):
                       'program': 'programs',
                       'module': 'modules and submodules',
                       'submodule': 'modules and submodules',
-                      'interface': 'abstract interfaces'
+                      'interface': 'abstract interfaces',
+                      'blockdata': 'block data units',
                      }
         description = "{:4.1f}% of total for {}.".format(float(self.num_lines)/total*100,pretty_obj[obj])
         if total_all:
@@ -404,6 +406,9 @@ class FortranBase(object):
         if hasattr(self,'programs'):
             md_list.extend(self.programs)
             sort_items(self,self.programs)
+        if hasattr(self,'blockdata'):
+            md_list.extend(self.blockdata)
+            sort_items(self,self.blockdata)
         if hasattr(self,'boundprocs'):
             # Type-bound procedures sorted at the end of correlation
             # step, once any inherited ones have been added.
@@ -461,8 +466,9 @@ class FortranContainer(FortranBase):
     A class on which any classes requiring further parsing are based.
     """
     ATTRIB_RE = re.compile("^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",re.IGNORECASE)
-    END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface|enum|block|associate)(?:\s+(\w.*))?)?$",re.IGNORECASE)
+    END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface|enum|block\sdata|block|associate)(?:\s+(\w.*))?)?$",re.IGNORECASE)
     BLOCK_RE = re.compile("^(\w+\s*:)?\s*block\s*$",re.IGNORECASE)
+    BLOCK_DATA_RE = re.compile('^block\s*data\s*(\w+)?\s*$',re.IGNORECASE)
     ASSOCIATE_RE = re.compile("^(\w+\s*:)?\s*associate\s*\((.+)\)\s*$",re.IGNORECASE)
     ENUM_RE = re.compile("^enum\s*,\s*bind\s*\(.*\)\s*$",re.IGNORECASE)
     MODPROC_RE = re.compile("^(module\s+)?procedure\s*(?:::|\s)\s*(\w.*)$",re.IGNORECASE)
@@ -599,6 +605,12 @@ class FortranContainer(FortranBase):
                     self.num_lines += self.modprocedures[-1].num_lines - 1
                 else:
                     raise Exception("Found module procedure in {}".format(type(self).__name__[7:].upper()))
+            elif self.BLOCK_DATA_RE.match(line):
+                if hasattr(self,'blockdata'):
+                    self.blockdata.append(FortranBlockData(source,self.BLOCK_DATA_RE.match(line),self))
+                    self.num_lines += self.blockdata[-1].num_lines - 1
+                else:
+                    raise Exception("Found BLOCK DATA in {}".format(type(self).__name__[7:].upper()))
             elif self.BLOCK_RE.match(line):
                 blocklevel += 1
             elif self.ASSOCIATE_RE.match(line):
@@ -957,6 +969,7 @@ class FortranSourceFile(FortranContainer):
         self.functions = []
         self.subroutines = []
         self.programs = []
+        self.blockdata = []
         self.doc = []
         self.hierarchy = []
         self.obj = 'sourcefile'
@@ -995,9 +1008,6 @@ class FortranModule(FortranCodeUnit):
         self.public_list = []
         self.private_list = []
         self.protected_list = []
-        self.external_list = []
-        self.volatile_list = []
-        self.async_list = []
         self.subroutines = []
         self.functions = []
         self.interfaces = []
@@ -1167,9 +1177,6 @@ class FortranSubroutine(FortranCodeUnit):
         self.interfaces = []
         self.absinterfaces = []
         self.types = []
-        self.external_list = []
-        self.volatile_list = []
-        self.async_list = []
         self.attr_dict = dict()
         self.param_dict = dict()
         self.associate_blocks = []
@@ -1287,9 +1294,6 @@ class FortranFunction(FortranCodeUnit):
         self.interfaces = []
         self.absinterfaces = []
         self.types = []
-        self.external_list = []
-        self.volatile_list = []
-        self.async_list = []
         self.attr_dict = dict()
         self.param_dict = dict()
         self.associate_blocks = []
@@ -1366,9 +1370,6 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.interfaces = []
         self.absinterfaces = []
         self.types = []
-        self.external_list = []
-        self.volatile_list = []
-        self.async_list = []
         self.attr_dict = dict()
         self.mp = True
         self.param_dict = dict()
@@ -1400,9 +1401,6 @@ class FortranProgram(FortranCodeUnit):
         self.uses = []
         self.calls = []
         self.absinterfaces = []
-        self.external_list = []
-        self.volatile_list = []
-        self.async_list = []
         self.attr_dict = dict()
         self.param_dict = dict()
         self.associate_blocks = []
@@ -1485,6 +1483,7 @@ class FortranType(FortranContainer):
         inherited_generic = []
         if self.extends and type(self.extends) is not str:
             for bp in self.extends.boundprocs:
+                if bp.permission == 'private': continue
                 if all([bp.name.lower() != b.name.lower() for b in self.boundprocs]):
                     if bp.generic:
                         gen = copy.copy(bp)
@@ -1787,6 +1786,7 @@ class FortranBoundProcedure(FortranBase):
             #else:
             #    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
 
+
 class FortranModuleProcedure(FortranBase):
     """
     An object representing a module procedure in an interface. Not to be
@@ -1816,6 +1816,66 @@ class FortranModuleProcedure(FortranBase):
             cur = cur.parent
         self.hierarchy.reverse()
 
+
+class FortranBlockData(FortranContainer):
+    """
+    An object representing a block-data unit. Now obsolete due to modules,
+    block data units allowed variables held in common blocks to be initialized
+    outside of an executing program unit.
+    """
+    def _initialize(self,line):
+        self.name = line.group(1)
+        if not self.name: self.name = '<em>unnamed</em>'
+        self.uses = []
+        self.variables = []
+        self.types = []
+        self.visible = True
+        self.attr_dict = dict()
+        self.param_dict = dict()
+
+    def correlate(self,project):
+        # Add procedures, interfaces and types from parent to our lists
+        self.all_types = {}
+        for dt in self.types:
+            self.all_types[dt.name.lower()] = dt
+        self.all_vars = {}
+        for var in self.variables:
+            self.all_vars[var.name.lower()] = var
+        self.all_absinterfaces = {}
+        self.all_procs = {}
+
+        # Add procedures and types from USED modules to our lists
+        for mod, extra in self.uses:
+            if type(mod) is str: continue
+            procs, absints, types, variables = mod.get_used_entities(extra)
+            self.all_procs.update(procs)
+            self.all_absinterfaces.update(absints)
+            self.all_types.update(types)
+            self.all_vars.update(variables)
+        self.uses = [m[0] for m in self.uses]
+        
+        typelist = {}
+        for dtype in self.types:
+            if  dtype.extends and dtype.extends.lower() in self.all_types:
+                dtype.extends = self.all_types[dtype.extends.lower()]
+                typelist[dtype] = set([dtype.extends])
+            else:
+                typelist[dtype] = set([])
+        typeorder = toposort.toposort_flatten(typelist)
+
+        for dtype in typeorder:
+            dtype.visible = True
+            if dtype in self.types: dtype.correlate(project)
+        for var in self.variables:
+            var.correlate(project)
+
+    def proon(self):
+        self.types = [obj for obj in self.types if obj.permission in self.display]
+        self.variables = [obj for obj in self.variables if obj.permission in self.display]
+        for dtype in self.types:
+            dtype.visible = True
+        for dtype in self.types:
+            dtype.proon()
 
 class FortranSpoof(object):
     """
@@ -2213,6 +2273,8 @@ class NameSelector(object):
             else:
                 num = 1
             self._counts[item.get_dir()][item.name] = num
+            name = item.name.lower().replace('<','lt')
+            name = item.name.lower().replace('>','gt')
             name = item.name.lower().replace('/','SLASH')
             if num > 1:
                 name = name + '~' + str(num)

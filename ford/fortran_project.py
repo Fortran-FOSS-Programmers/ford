@@ -64,6 +64,7 @@ class Project(object):
         self.submodules = []
         self.submodprocedures = []
         self.extra_files = []
+        self.blockdata = []
                 
         # Get all files within topdir, recursively
         srctree = []
@@ -110,6 +111,8 @@ class Project(object):
                         for program in self.files[-1].programs:
                             program.visible = True
                             self.programs.append(program)
+                        for block in self.files[-1].blockdata:
+                            self.blockdata.append(block)
                     elif item.split('.')[-1] in self.extra_filetypes and not item in settings['exclude']:
                         print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
                         if settings['dbg']:
@@ -144,7 +147,7 @@ class Project(object):
             non_local_mods[name.lower()] = '<a href="{}">{}</a>'.format(url,name)
         
         # Match USE statements up with the right modules
-        containers = self.modules + self.procedures + self.programs + self.submodules
+        containers = self.modules + self.procedures + self.programs + self.submodules + self.blockdata
         for container in containers:
             id_mods(container,self.modules,non_local_mods,self.submodules)
             
@@ -153,9 +156,9 @@ class Project(object):
         
         def get_deps(item):
             uselist = [m[0] for m in item.uses]
-            for proc in item.subroutines:
+            for proc in getattr(item,'subroutines',[]):
                 uselist.extend(get_deps(proc))
-            for proc in item.functions:
+            for proc in getattr(item,'functions',[]):
                 uselist.extend(get_deps(proc))
             for proc in getattr(item,'modprocedures',[]):
                 uselist.extend(get_deps(proc))
@@ -188,10 +191,13 @@ class Project(object):
                 proc.deplist = set([m for m in get_deps(proc) if type(m) == ford.sourceform.FortranModule])
             for prog in self.programs:
                 prog.deplist = set([m for m in get_deps(prog) if type(m) == ford.sourceform.FortranModule])
+            for block in self.blockdata:
+                block.deplist = set([m for m in get_deps(block) if type(m) == ford.sourceform.FortranModule])
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:
             if proc.parobj == 'sourcefile': ranklist.append(proc)
         ranklist.extend(self.programs)
+        ranklist.extend(self.blockdata)
         
         # Perform remaining correlations for the project
         for container in ranklist:
@@ -246,6 +252,11 @@ class Project(object):
                     self.absinterfaces.append(absint)
                 for dtype in program.types:
                     self.types.append(dtype)
+                    
+            for block in sfile.blockdata:
+                for dtype in block.types:
+                    self.types.append(dtype)
+        
         self.mod_lines = sum([m.num_lines for m in self.modules + self.submodules])
         self.proc_lines = sum([p.num_lines for p in self.procedures])
         self.file_lines = sum([p.num_lines for p in self.programs])
@@ -253,6 +264,7 @@ class Project(object):
         self.type_lines_all = sum([t.num_lines_all for t in self.types])
         self.absint_lines = sum([a.num_lines for a in self.absinterfaces])
         self.prog_lines = sum([a.num_lines for a in self.programs])
+        self.block_lines = sum([b.num_lines for b in self.blockdata])
         print()
 
     def markdown(self,md,base_url='..'):
@@ -304,8 +316,8 @@ def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
                 break
     for modproc in getattr(obj,'modprocedures',[]):
         id_mods(modproc,modlist,intrinsic_mods)
-    for func in obj.functions:
+    for func in getattr(obj,'functions',[]):
         id_mods(func,modlist,intrinsic_mods)
-    for subroutine in obj.subroutines:
+    for subroutine in getattr(obj,'subroutines',[]):
         id_mods(subroutine,modlist,intrinsic_mods)
     return
