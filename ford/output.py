@@ -80,6 +80,8 @@ class Documentation(object):
                 self.graphs.register(item)
             for item in project.files:
                 self.graphs.register(item)
+            for item in project.blockdata:
+                self.graphs.register(item)
             self.graphs.graph_all()
             project.callgraph = self.graphs.callgraph
             project.typegraph = self.graphs.typegraph

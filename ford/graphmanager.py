@@ -26,7 +26,7 @@
 from __future__ import print_function
 import os
 
-from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure, FortranSourceFile
+from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure, FortranSourceFile, FortranBlockData
 import ford.graphs
 
 class GraphManager(object):
@@ -52,6 +52,7 @@ class GraphManager(object):
         self.procedures = set()
         self.types = set()
         self.sourcefiles = set()
+        self.blockdata = set()
         self.graphdir = graphdir
         self.webdir = base_url + '/' + graphdir
         self.usegraph = None
@@ -88,6 +89,9 @@ class GraphManager(object):
                 obj.afferentgraph = ford.graphs.AfferentGraph(obj,self.webdir)
                 obj.efferentgraph = ford.graphs.EfferentGraph(obj,self.webdir)
                 self.sourcefiles.add(obj)
+            elif isinstance(obj,FortranBlockData):
+                obj.usesgraph = ford.graphs.UsesGraph(obj,self.webdir)
+                self.blockdata.add(obj)
         usenodes = list(self.modules)
         callnodes = list(self.procedures)
         for p in self.programs:
@@ -95,6 +99,8 @@ class GraphManager(object):
             if p.callsgraph.numnodes > 1: callnodes.append(p)
         for p in self.procedures:
             if p.usesgraph.numnodes > 1: usenodes.append(p)
+        for b in self.blockdata:
+            if b.usesgraph.numnodes > 1: usenodes.append(b)
         self.usegraph = ford.graphs.ModuleGraph(usenodes,self.webdir,'module~~graph')
         self.typegraph = ford.graphs.TypeGraph(self.types,self.webdir,'type~~graph')
         self.callgraph = ford.graphs.CallGraph(callnodes,self.webdir,'call~~graph')
@@ -121,6 +127,8 @@ class GraphManager(object):
         for f in self.sourcefiles:
             f.afferentgraph.create_svg(self.graphdir)
             f.efferentgraph.create_svg(self.graphdir)
+        for b in self.blockdata:
+            b.usesgraph.create_svg(self.graphdir)
         if self.usegraph:
             self.usegraph.create_svg(self.graphdir)
         if self.typegraph:

@@ -38,7 +38,7 @@ import colorsys
 
 from graphviz import Digraph
 
-from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure, FortranSourceFile
+from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure, FortranSourceFile, FortranBlockData
 
 _coloured_edges = False
 def set_coloured_edges(val):
@@ -60,6 +60,7 @@ def rainbowcolour(depth, maxd):
 HYPERLINK_RE = re.compile("^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$",re.IGNORECASE)
 WIDTH_RE = re.compile('width="(.*?)pt"',re.IGNORECASE)
 HEIGHT_RE = re.compile('height="(.*?)pt"',re.IGNORECASE)
+EM_RE = re.compile('<em>(.*)</em>',re.IGNORECASE)
 
 graphviz_installed = True
 
@@ -89,6 +90,9 @@ def is_program(obj, cls):
 def is_sourcefile(obj, cls):
     return isinstance(obj,FortranSourceFile) or issubclass(cls,FortranSourceFile)
     
+def is_blockdata(obj, cls):
+    return isinstance(obj,FortranBlockData) or issubclass(cls,FortranBlockData)
+
     
 class GraphData(object):
     """
@@ -101,6 +105,7 @@ class GraphData(object):
         self.procedures = {}
         self.programs = {}
         self.sourcefiles = {}
+        self.blockdata = {}
 
     def register(self,obj,cls=type(None),hist={}):
         """
@@ -120,6 +125,8 @@ class GraphData(object):
             if obj not in self.programs: self.programs[obj] = ProgNode(obj,self)
         elif is_sourcefile(obj,cls):
             if obj not in self.sourcefiles: self.sourcefiles[obj] = FileNode(obj,self)
+        elif is_blockdata(obj,cls):
+            if obj not in self.blockdata: self.blockdata[obj] = BlockNode(obj,self)
         else:
             raise BadType("Object type {} not recognized by GraphData".format(type(obj).__name__))
     
@@ -141,6 +148,8 @@ class GraphData(object):
             return self.programs[obj]
         elif obj in self.sourcefiles and is_sourcefile(obj,cls):
             return self.sourcefiles[obj]
+        elif obj in self.blockdata and is_blockdata(obj,cls):
+            return self.blockdata[obj]
         else:
             self.register(obj,cls,hist)
             return self.get_node(obj,cls,hist)
@@ -167,6 +176,8 @@ class BaseNode(object):
             if not d: d = 'none'
             self.ident = d + '~' + obj.ident
             self.name = obj.name
+            m = EM_RE.search(self.name)
+            if m: self.name = '<<i>'+m.group(1).strip()+'</i>>'
             self.url = obj.get_url()
         self.attribs['label'] = self.name
         if self.url and getattr(obj,'visible',True): self.attribs['URL'] = self.url
@@ -308,8 +319,20 @@ class ProgNode(BaseNode):
                     self.calls.add(n)
 
 
+class BlockNode(BaseNode):
+    colour = '#5cb85c'
+    def __init__(self,obj,gd):
+        super(BlockNode,self).__init__(obj)
+        self.uses = set()
+        if not self.fromstr:
+            for u in obj.uses:
+                n = gd.get_node(u,FortranModule)
+                n.used_by.add(self)
+                self.uses.add(n)
+
+
 class FileNode(BaseNode):
-    colour = '#ac4df0'
+    colour = '#f0ad4e'
     def __init__(self,obj,gd,hist={}):
         super(FileNode,self).__init__(obj)
         self.afferent = set() # Things depending on this file
