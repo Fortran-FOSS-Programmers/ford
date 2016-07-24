@@ -355,6 +355,16 @@ class FileNode(BaseNode):
                         n = gd.get_node(dep.hierarchy[0],FortranSourceFile,newdict(hist,obj,self))
                     n.afferent.add(self)
                     self.efferent.add(n)
+            for block in obj.blockdata:
+                for dep in block.deplist:
+                    if dep.hierarchy[0] == obj:
+                        continue
+                    elif dep.hierarchy[0] in hist:
+                        n = hist[dep.hierarchy[0]]
+                    else:
+                        n = gd.get_node(dep.hierarchy[0],FortranSourceFile,newdict(hist,obj,self))
+                    n.afferent.add(self)
+                    self.efferent.add(n)
 
 
 class FortranGraph(object):
@@ -478,7 +488,7 @@ class FortranGraph(object):
         wdir = self.webdir.strip()
         if wdir[-1] == '/': wdir = wdir[0:-1]
         link = quote(wdir + '/' + self.imgfile + '.' + self.dot.format)
-        return rettext.format(self.svg_src,re.sub('[^\w]','',self.ident),GRAPH_KEY)
+        return rettext.format(self.svg_src,re.sub('[^\w]','',self.ident),self.get_key())
     
     def __nonzero__(self):
         return self.__bool__()
@@ -502,6 +512,10 @@ class FortranGraph(object):
 
 
 class ModuleGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return MOD_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds edges showing the relationship between modules and submodules
@@ -526,6 +540,10 @@ class ModuleGraph(FortranGraph):
 
 
 class UsesGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return MOD_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds nodes for the modules used by those listed in nodes. Adds
@@ -543,6 +561,10 @@ class UsesGraph(FortranGraph):
         
 
 class UsedByGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return MOD_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds nodes for modules using or descended from those listed in
@@ -560,6 +582,10 @@ class UsedByGraph(FortranGraph):
 
 
 class FileGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return FILE_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds edges showing dependencies between source files listed in
@@ -574,6 +600,10 @@ class FileGraph(FortranGraph):
 
 
 class EfferentGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return FILE_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds nodes for the files which this one depends on. Adds
@@ -588,6 +618,10 @@ class EfferentGraph(FortranGraph):
 
 
 class AfferentGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return FILE_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds nodes for files which depend upon this one. Adds appropriate
@@ -602,6 +636,10 @@ class AfferentGraph(FortranGraph):
 
 
 class TypeGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return TYPE_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds edges showing inheritance and composition relationships 
@@ -628,6 +666,10 @@ class TypeGraph(FortranGraph):
 
 
 class InheritsGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return TYPE_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds nodes for modules using or descended from those listed in
@@ -645,6 +687,10 @@ class InheritsGraph(FortranGraph):
 
 
 class InheritedByGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return TYPE_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds nodes for modules using or descended from those listed in
@@ -662,6 +708,10 @@ class InheritedByGraph(FortranGraph):
 
 
 class CallGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return CALL_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds edges indicating the call-tree for the procedures listed in
@@ -687,6 +737,10 @@ class CallGraph(FortranGraph):
                 
 
 class CallsGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return CALL_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds nodes for modules using or descended from those listed in
@@ -705,6 +759,10 @@ class CallsGraph(FortranGraph):
 
 
 class CalledByGraph(FortranGraph):
+    def get_key(self):
+        colour_notice = COLOURED_NOTICE if _coloured_edges else ''
+        return CALL_GRAPH_KEY.format(colour_notice)
+    
     def add_more_nodes(self,nodes):
         """
         Adds nodes for modules using or descended from those listed in
@@ -734,7 +792,7 @@ class BadType(Exception):
         return repr(self.value)
     
 
-# Generate GRAPH_KEY
+# Generate graph keys
 gd = GraphData()
 class Proc(object):
     def __init__(self,name,proctype):
@@ -758,48 +816,119 @@ gd.register(intr,FortranInterface)
 gd.register('Unknown Procedure Type',FortranSubroutine)
 gd.register('Program',FortranProgram)
 gd.register('Source File',FortranSourceFile)
-dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
-                                      'concentrate':'false'},
-                          node_attr={'shape':'box',
-                                     'height':'0.0',
-                                     'margin':'0.08',
-                                     'fontname':'Helvetica',
-                                     'fontsize':'10.5'},
-                          edge_attr={'fontname':'Helvetica',
-                                     'fontsize':'9.5'},
-                          format='svg', engine='dot')
-for n in [('Module',FortranModule),('Submodule',FortranSubmodule),('Type',FortranType),(sub,FortranSubroutine),(func,FortranFunction),(intr, FortranInterface),('Unknown Procedure Type',FortranFunction),('Program', FortranProgram),('Source File',FortranSourceFile)]:
-    dot.node(getattr(n[0],'name',n[0]),**gd.get_node(n[0],cls=n[1]).attribs)
-dot.node('This Page\'s Entity')
+
 try:
-    svg = dot.pipe().decode('utf-8')
+    # Generate key for module graph
+    dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
+                                          'concentrate':'false'},
+                              node_attr={'shape':'box',
+                                         'height':'0.0',
+                                         'margin':'0.08',
+                                         'fontname':'Helvetica',
+                                         'fontsize':'10.5'},
+                              edge_attr={'fontname':'Helvetica',
+                                         'fontsize':'9.5'},
+                              format='svg', engine='dot')
+    for n in [('Module',FortranModule),('Submodule',FortranSubmodule),(sub,FortranSubroutine),(func,FortranFunction),('Program', FortranProgram)]:
+        dot.node(getattr(n[0],'name',n[0]),**gd.get_node(n[0],cls=n[1]).attribs)
+    dot.node('This Page\'s Entity')
+    mod_svg = dot.pipe().decode('utf-8')
+
+    # Generate key for type graph
+    dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
+                                          'concentrate':'false'},
+                              node_attr={'shape':'box',
+                                         'height':'0.0',
+                                         'margin':'0.08',
+                                         'fontname':'Helvetica',
+                                         'fontsize':'10.5'},
+                              edge_attr={'fontname':'Helvetica',
+                                         'fontsize':'9.5'},
+                              format='svg', engine='dot')
+    dot.node('Type',**gd.get_node('Type',cls=FortranType).attribs)
+    dot.node('This Page\'s Entity')
+    type_svg = dot.pipe().decode('utf-8')
+
+    # Generate key for call graph
+    dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
+                                          'concentrate':'false'},
+                              node_attr={'shape':'box',
+                                         'height':'0.0',
+                                         'margin':'0.08',
+                                         'fontname':'Helvetica',
+                                         'fontsize':'10.5'},
+                              edge_attr={'fontname':'Helvetica',
+                                         'fontsize':'9.5'},
+                              format='svg', engine='dot')
+    for n in [(sub,FortranSubroutine),(func,FortranFunction),(intr, FortranInterface),('Unknown Procedure Type',FortranFunction),('Program', FortranProgram)]:
+        dot.node(getattr(n[0],'name',n[0]),**gd.get_node(n[0],cls=n[1]).attribs)
+    dot.node('This Page\'s Entity')
+    call_svg = dot.pipe().decode('utf-8')
+
+    # Generate key for file graph
+    dot = Digraph('Graph Key',graph_attr={'size':'8.90625,1000.0',
+                                          'concentrate':'false'},
+                              node_attr={'shape':'box',
+                                         'height':'0.0',
+                                         'margin':'0.08',
+                                         'fontname':'Helvetica',
+                                         'fontsize':'10.5'},
+                              edge_attr={'fontname':'Helvetica',
+                                         'fontsize':'9.5'},
+                              format='svg', engine='dot')
+    dot.node('Source File',**gd.get_node('Source File',cls=FortranSourceFile).attribs)
+    dot.node('This Page\'s Entity')
+    file_svg = dot.pipe().decode('utf-8')
+
 except RuntimeError:
     print("Warning: Will not be able to generate graphs. Graphviz not installed.")
     graphviz_installed = False
     svg = None
 
-GRAPH_KEY = """
-Nodes of different colours represent the following:
+NODE_DIAGRAM = """
+<p>Nodes of different colours represent the following: </p>
 {}
-Where possible, edges connecting nodes are given different colours to make them
-easier to distinguish in large graphs.
-<h5>Module Graph</h5>
+"""
+
+MOD_GRAPH_KEY = (NODE_DIAGRAM + """
 <p>Solid arrows point from a parent (sub)module to the submodule which is
 descended from it. Dashed arrows point from a module being used to the
-module using it.</p>
-<h5>Type Graph</h5>
+module or program unit using it.{{}}
+</p>
+""").format(mod_svg)
+
+TYPE_GRAPH_KEY = (NODE_DIAGRAM + """
 <p>Solid arrows point from one derived type to another which extends
 (inherits from) it. Dashed arrows point from a derived type to another
 type containing it as a components, with a label listing the name(s) of
-said component(s).</p>
-<h5>Call Graph</h5>
+said component(s).{{}}
+</p>
+""").format(type_svg)
+
+CALL_GRAPH_KEY = (NODE_DIAGRAM + """
 <p>Solid arrows point from a procedure to one which it calls. Dashed 
 arrows point from an interface to procedures which implement that interface.
 This could include the module procedures in a generic interface or the
-implementation in a submodule of an interface in a parent module.</p>
-<h5>File Graph</h5>
+implementation in a submodule of an interface in a parent module.{{}}
+</p>
+""").format(call_svg)
+
+FILE_GRAPH_KEY = (NODE_DIAGRAM + """
 <p>Solid arrows point from a file to a file which depends upon it. A file 
 is dependent upon another if the latter must be compiled before the former
-can be.</p>
-""".format(svg)
+can be.{{}}
+</p>
+""").format(file_svg)
 
+COLOURED_NOTICE = " Where possible, edges connecting nodes are given " \
+                  "different colours to make them easier to distinguish " \
+                  "in large graphs."
+
+del call_svg
+del file_svg
+del type_svg
+del mod_svg
+del dot
+del sub
+del func
+del intr
