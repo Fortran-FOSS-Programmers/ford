@@ -170,6 +170,8 @@ class BaseNode(object):
             self.url = obj.get_url()
         self.attribs['label'] = self.name
         if self.url and getattr(obj,'visible',True): self.attribs['URL'] = self.url
+        self.afferent = 0
+        self.efferent = 0
 
 
 class ModNode(BaseNode):
@@ -183,7 +185,9 @@ class ModNode(BaseNode):
             for u in obj.uses:
                 n = gd.get_node(u,FortranModule)
                 n.used_by.add(self)
+                n.afferent += 1
                 self.uses.add(n)
+                self.efferent += n.efferent
 
 
 class SubmodNode(ModNode):
@@ -197,6 +201,8 @@ class SubmodNode(ModNode):
             else:
                 self.ancestor = gd.get_node(obj.ancestor_mod,FortranModule)
             self.ancestor.children.add(self)
+            self.efferent += 1
+            self.ancestor.afferent += 1
 
 
 class TypeNode(BaseNode):
@@ -208,15 +214,17 @@ class TypeNode(BaseNode):
         self.comp_types = dict()
         self.comp_of = dict()
         if not self.fromstr:
-            if obj.extends and getattr(obj.extends,'visible',True):
+            if obj.extends:
                 self.ancestor = gd.get_node(obj.extends,FortranType)
                 self.ancestor.children.add(self)
+                self.ancestor.visible = getattr(obj.extends,'visible',True)
             for var in obj.variables:
-                if (var.vartype == 'type' or var.vartype == 'class') and var.proto[0] != '*' and getattr(var.proto[0],'visible',True):
+                if (var.vartype == 'type' or var.vartype == 'class') and var.proto[0] != '*':
                     if var.proto[0] == obj:
                         n = self
                     else:
                         n = gd.get_node(var.proto[0],FortranType)
+                    n.visible = getattr(var.proto[0],'visible',True)
                     if self in n.comp_of:
                         n.comp_of[self] += ', ' + var.name
                     else:
@@ -603,6 +611,7 @@ class TypeGraph(FortranGraph):
         for i,n in zip(range(len(nodes)),nodes):
             r,g,b = rainbowcolour(i,len(nodes))
             colour = '#%02X%02X%02X' % (r,g,b)
+            self.add_node([x for x in n.comp_types.keys() if x.ident not in self.added])
             for c in n.comp_types:
                 if c not in nodes and c.ident not in self.added:
                     self.dot.node(c.ident,**c.attribs)
@@ -611,6 +620,7 @@ class TypeGraph(FortranGraph):
                 self.dot.edge(c.ident,n.ident,style='dashed',label=n.comp_types[c],color=colour)
             if n.ancestor:
                 if n.ancestor not in nodes and n.ancestor.ident not in self.added:
+                    self.add_node([n.ancestor])
                     self.dot.node(n.ancestor.ident,**n.ancestor.attribs)
                     self.numnodes += 1
                     self.added.append(n.ancestor.ident)

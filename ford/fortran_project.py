@@ -197,7 +197,7 @@ class Project(object):
         for container in ranklist:
             if type(container) != str: container.correlate(self)
         for container in ranklist:
-            if type(container) != str: container.prune()
+            if type(container) != str: container.proon()
         
         if self.settings['project_url'] == '.':
             url = '..'

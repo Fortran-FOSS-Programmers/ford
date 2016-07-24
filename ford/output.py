@@ -126,6 +126,7 @@ class Documentation(object):
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
         if data['search'].lower() == 'true':
+            print('Creating search index...')
             if data['relative']:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],'')
             else:

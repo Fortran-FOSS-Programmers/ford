@@ -247,7 +247,7 @@ class FortranBase(object):
     def __str__(self):
         outstr = "<a href='{0}'>{1}</a>"
         url = self.get_url()
-        if url:
+        if url and getattr(self,'visible',True):
             return outstr.format(url,self.name)
         elif self.name:
             return self.name
@@ -608,7 +608,6 @@ class FortranContainer(FortranBase):
                     self.modules.append(FortranModule(source,
                                         self.MODULE_RE.match(line),self))
                     self.num_lines += self.modules[-1].num_lines - 1
-                    print(self.name,self.num_lines)
                 else:
                     raise Exception("Found MODULE in {}".format(type(self).__name__[7:].upper()))
             elif self.SUBMODULE_RE.match(line):
@@ -908,39 +907,37 @@ class FortranCodeUnit(FortranContainer):
         del self.attr_dict
 
 
-    def prune(self):
+    def proon(self):
         """
         Remove anything which shouldn't be displayed.
         """
-        self.functions = [obj for obj in self.functions if obj.permission in self.display]
-        self.subroutines = [obj for obj in self.subroutines if obj.permission in self.display]
-        self.types = [obj for obj in self.types if obj.permission in self.display]
-        self.interfaces = [obj for obj in self.interfaces if obj.permission in self.display]
-        self.absinterfaces = [obj for obj in self.absinterfaces if obj.permission in self.display]
-        self.variables = [obj for obj in self.variables if obj.permission in self.display]
-        if hasattr(self,'modprocedures'):
-            self.modprocedures = [obj for obj in self.modprocedures if obj.permission in self.display]
-        if hasattr(self,'modsubroutines'):
-            self.modsubroutines = [obj for obj in self.modsubroutines if obj.permission in self.display]
-        if hasattr(self,'modfunctions'):
-            self.modfunctions = [obj for obj in self.modfunctions if obj.permission in self.display]
-        
-        if self.obj == 'proc':
-            if self.meta['proc_internals'] == 'false':
-                self.functions = []
-                self.subroutines = []
-                self.types = []
-                self.interfaces = []
-                self.absinterfaces = []
-                self.variables = []
-        
+        if self.obj == 'proc' and self.meta['proc_internals'] == 'false':
+            self.functions = []
+            self.subroutines = []
+            self.types = []
+            self.interfaces = []
+            self.absinterfaces = []
+            self.variables = []
+        else:
+            self.functions = [obj for obj in self.functions if obj.permission in self.display]
+            self.subroutines = [obj for obj in self.subroutines if obj.permission in self.display]
+            self.types = [obj for obj in self.types if obj.permission in self.display]
+            self.interfaces = [obj for obj in self.interfaces if obj.permission in self.display]
+            self.absinterfaces = [obj for obj in self.absinterfaces if obj.permission in self.display]
+            self.variables = [obj for obj in self.variables if obj.permission in self.display]
+            if hasattr(self,'modprocedures'):
+                self.modprocedures = [obj for obj in self.modprocedures if obj.permission in self.display]
+            if hasattr(self,'modsubroutines'):
+                self.modsubroutines = [obj for obj in self.modsubroutines if obj.permission in self.display]
+            if hasattr(self,'modfunctions'):
+                self.modfunctions = [obj for obj in self.modfunctions if obj.permission in self.display]
         # Recurse
         for obj in self.absinterfaces:
             obj.visible = True
         for obj in self.functions + self.subroutines + self.types + self.interfaces + getattr(self,'modprocedures',[]) + getattr(self,'modfunctions',[]) + getattr(self,'modsubroutines',[]):
             obj.visible = True
         for obj in self.functions + self.subroutines + self.types + getattr(self,'modprocedures',[]) + getattr(self,'modfunctions',[]) + getattr(self,'modsubroutines',[]):
-            obj.prune()
+            obj.proon()
 
         
 class FortranSourceFile(FortranContainer):
@@ -1526,7 +1523,7 @@ class FortranType(FortranContainer):
                 elif isinstance(bind,FortranBoundProcedure):
                     for b in bind.bindings:
                         if isinstance(b,(FortranFunction,FortranSubroutine)): self.num_lines_all += b.num_lines
-    def prune(self):
+    def proon(self):
         """
         Remove anything which shouldn't be displayed.
         """
