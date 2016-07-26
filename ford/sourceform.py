@@ -382,7 +382,7 @@ class FortranBase(object):
         md_list = []
         if hasattr(self,'variables'):
             md_list.extend(self.variables)
-            sort_items(self,self.variables)
+            if not isinstance(self,FortranType): sort_items(self,self.variables)
         if hasattr(self,'modules'):
             md_list.extend(self.modules)
             sort_items(self,self.modules)
@@ -1523,6 +1523,12 @@ class FortranType(FortranContainer):
             #~ self.variables[i].correlate(project)
         for v in self.variables:
             v.correlate(project)
+        # Get inherited public components
+        inherited = [var for var in getattr(self.extends,'variables',[]) 
+                     if var.permission == "public"]
+        self.variables = inherited + self.variables
+        sort_items(self,self.variables)        
+
         # Match boundprocs with procedures
         # FIXME: This is not at all modular because must process non-generic bound procs first--could there be a better way to do it
         for proc in self.boundprocs:
@@ -1571,6 +1577,7 @@ class FortranType(FortranContainer):
                 elif isinstance(bind,FortranBoundProcedure):
                     for b in bind.bindings:
                         if isinstance(b,(FortranFunction,FortranSubroutine)): self.num_lines_all += b.num_lines
+
     def prune(self):
         """
         Remove anything which shouldn't be displayed.

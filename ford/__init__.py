@@ -47,7 +47,7 @@ __appname__    = "FORD"
 __author__     = "Chris MacMackin, Jacob Williams, Marco Restelli, Iain Barrass, Jérémie Burgalat, Stephen J. Turnbull, Balint Aradi"
 __credits__    = ["Stefano Zhagi", "Izaak Beekman", "Gavin Huttley"]
 __license__    = "GPLv3"
-__version__    = "5.0.0"
+__version__    = "5.0.1"
 __maintainer__ = "Chris MacMackin"
 __status__     = "Production"
 
@@ -148,7 +148,7 @@ def initialize():
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
-                'fixed_extensions':    ['f','for'],
+                'fixed_extensions':    ['f','for','F','FOR'],
                 'output_dir':          './doc',
                 'project':             'Fortran Program',
                 'project_url':         '',
