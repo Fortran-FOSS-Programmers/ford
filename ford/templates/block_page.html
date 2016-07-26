@@ -45,7 +45,7 @@
     {% if blockdat.variables|length > 0 %}
     <section>
     <h2>Variables</h2>
-    {{ macros.var_list(blockdat.variables,permission=True) }}
+    {{ macros.var_list(blockdat.variables) }}
     </section>
     <br>
     {% endif %}

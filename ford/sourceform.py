@@ -770,7 +770,7 @@ class FortranContainer(FortranBase):
             raise Exception("File ended while still nested.")
     
     def _cleanup(self):
-        return
+        raise NotImplementedError()
         
              
     
@@ -829,10 +829,10 @@ class FortranCodeUnit(FortranContainer):
             if type(mod) is str: continue
             procs, absints, types, variables = mod.get_used_entities(extra)
             if self.obj == 'module': #FIXME: These shouldn't necessarily be listed as public
-                self.pub_procs.update(procs)
-                self.pub_absints.update(absints)
-                self.pub_types.update(types)
-                self.pub_vars.update(variables)
+                self.pub_procs.update([p for p in procs if p in self.public_list])
+                self.pub_absints.update([a for a in absints if a in self.public_list])
+                self.pub_types.update([t for t in types if t in self.public_list])
+                self.pub_vars.update([v for v in variables if v in self.public_list])
             self.all_procs.update(procs)
             self.all_absinterfaces.update(absints)
             self.all_types.update(types)
@@ -913,29 +913,36 @@ class FortranCodeUnit(FortranContainer):
             self.functions = [func for func in self.functions if not func.module]
             self.modsubroutines = [sub for sub in self.subroutines if sub.module]
             self.subroutines = [sub for sub in self.subroutines if not sub.module]
+        
+        del self.public_list
 
 
     def process_attribs(self):
+        # IMPORTANT: Make sure types processed before interfaces--import when
+        # determining permissions of derived types and overridden constructors
         for item in self.functions + self.subroutines + self.types + self.interfaces + self.absinterfaces:
-            if item.name.lower() in self.attr_dict:
-                if 'public' in self.attr_dict[item.name.lower()]:
-                    item.permission = 'public'
-                elif 'private' in self.attr_dict[item.name.lower()]:
-                    item.permission = 'private'
+            for attr in self.attr_dict.get(item.name.lower(),[]):
+                if attr == 'public' or attr == 'private' or attr == 'protected':
+                    item.permission = attr
                 elif attr[0:4] == 'bind':
                     if hasattr(item,'bindC'):
                         item.bindC = attr[5:-1]
                     elif getattr(item,'procedure',None):
                         item.procedure.bindC = attr[5:-1]
                     else:
-                        item.attribs.append(attr[5:-1])
+                        item.attribs.append(attr)
+                else:
+                    item.attribs.append(attr)
+            try: del self.attr_dict[item.name.lower()]
+            except KeyError: pass
         for var in self.variables:
             for attr in self.attr_dict.get(var.name.lower(),[]):
                 if attr == 'public' or attr == 'private' or attr == 'protected':
                     var.permission = attr
+                    self.attr_dict.get[var.name.lower()]
                 elif attr[0:6] == 'intent':
                     var.intent = attr[7:-1]
-                elif DIM_RE.match(attr) and ('dimension' in attr or 'pointer' in attr or 'allocatable' in attr):
+                elif DIM_RE.match(attr) and ('pointer' in attr or 'allocatable' in attr):
                     i = attr.index('(')
                     var.attribs.append(attr[0:i])
                     var.dimension = attr[i:]
@@ -944,6 +951,12 @@ class FortranCodeUnit(FortranContainer):
                     var.initial = self.param_dict[var.name.lower()]
                 else:
                     var.attribs.append(attr)
+            try: del self.attr_dict[var.name.lower()]
+            except KeyError: pass
+        self.public_list = []
+        for item, attrs in self.attr_dict.items():
+            if 'public' in attrs:
+                self.public_list.append(item)
         del self.attr_dict
 
 
@@ -1916,6 +1929,41 @@ class FortranBlockData(FortranContainer):
         for dtype in self.types:
             dtype.prune()
 
+    def _cleanup(self):
+        self.process_attribs()
+
+    def process_attribs(self):
+        for item in self.types:
+            if item.name.lower() in self.attr_dict:
+                if 'public' in self.attr_dict[item.name.lower()]:
+                    item.permission = 'public'
+                elif 'private' in self.attr_dict[item.name.lower()]:
+                    item.permission = 'private'
+                elif attr[0:4] == 'bind':
+                    if hasattr(item,'bindC'):
+                        item.bindC = attr[5:-1]
+                    elif getattr(item,'procedure',None):
+                        item.procedure.bindC = attr[5:-1]
+                    else:
+                        item.attribs.append(attr[5:-1])
+        for var in self.variables:
+            for attr in self.attr_dict.get(var.name.lower(),[]):
+                if attr == 'public' or attr == 'private' or attr == 'protected':
+                    var.permission = attr
+                elif attr[0:6] == 'intent':
+                    var.intent = attr[7:-1]
+                elif DIM_RE.match(attr) and ('pointer' in attr or 'allocatable' in attr):
+                    i = attr.index('(')
+                    var.attribs.append(attr[0:i])
+                    var.dimension = attr[i:]
+                elif attr == 'parameter':
+                    var.attribs.append(attr)
+                    var.initial = self.param_dict[var.name.lower()]
+                else:
+                    var.attribs.append(attr)
+        del self.attr_dict
+
+
 
 class FortranCommon(FortranBase):
     """
@@ -2195,8 +2243,7 @@ def parse_type(string,capture_strings,settings):
     kindstr = ford.utils.get_parens(rest)
     rest = rest[len(kindstr):].strip()
 
-    # FIXME: This won't work for old-fashioned REAL*8 type notations
-    if len(kindstr) < 3 and vartype != "type" and vartype != "class":
+    if len(kindstr) < 3 and vartype != "type" and vartype != "class" and not kindstr.startswith('*'):
         return (vartype, None, None, None, rest)
     match = VARKIND_RE.search(kindstr)
     if match:
