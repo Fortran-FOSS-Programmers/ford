@@ -65,6 +65,7 @@ class Project(object):
         self.submodprocedures = []
         self.extra_files = []
         self.blockdata = []
+        self.common = {}
                 
         # Get all files within topdir, recursively
         srctree = []
@@ -203,7 +204,7 @@ class Project(object):
         for container in ranklist:
             if type(container) != str: container.correlate(self)
         for container in ranklist:
-            if type(container) != str: container.proon()
+            if type(container) != str: container.prune()
         
         if self.settings['project_url'] == '.':
             url = '..'

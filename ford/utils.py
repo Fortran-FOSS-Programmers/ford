@@ -183,7 +183,8 @@ def sub_links(string,project):
                       'file': 'allfiles',
                       'interface': 'absinterfaces',
                       'absinterface': 'absinterfaces',
-                      'program': 'programs' }
+                      'program': 'programs',
+                      'block': 'blockdata' }
         
     SUBLINK_TYPES = { 'variable': 'variables',
                       'type': 'types',
@@ -194,7 +195,8 @@ def sub_links(string,project):
                       'function': 'functions',
                       'final': 'finalprocs',
                       'bound': 'boundprocs',
-                      'modproc': 'modprocs' }
+                      'modproc': 'modprocs',
+                      'common': 'common' }
         
     
     def convert_link(match):

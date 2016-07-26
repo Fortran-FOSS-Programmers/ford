@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% block title %}{{ program.name }} &ndash; {{ project }}{% endblock title %}
+{% block title %}{% if program.name %}{{ program.name }}{% else %}unnamed{% endif %} &ndash; {{ project }}{% endblock title %}
 {% block body %}
   {% import 'macros.html' as macros %}
   <div class="row">
-    <h1>{{ program.name }} 
+    <h1>{% if program.name -%}{{ program.name }}{% else %}<em>unnamed</em>{% endif %}
     <small>Program</small>
     {% if program.meta['deprecated'] and program.meta['deprecated'].lower() == 'true' %}
 	 <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
-    {{ macros.info_bar(program.name,program.meta,project_url,program.hierarchy,program.lines_description(project.prog_lines)) }} 
+    {{ macros.info_bar(program.name,program.meta,project_url,program.hierarchy,program.lines_description(project.prog_lines)) }}
   </div>
   
   <div class="row">
@@ -31,6 +31,21 @@
        {{ macros.content_list(program,1) }}
      </section>
      <br class="visible-xs visible-sm hidden-md">
+
+     {% if program.common|length > 0 %}
+     <section>
+       <h2>Common Blocks</h2>
+       {% for com in program.common %}
+       {{ macros.common_block(com) }}
+       {% endfor %}
+     </section>
+     <br>
+     <script>
+       $(function () {
+       $('[data-toggle="popover"]').popover()
+       })
+     </script>
+     {% endif %}
 
     {% if program.variables|length > 0 %}
     <section>

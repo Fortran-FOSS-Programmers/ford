@@ -50,6 +50,20 @@
 
 
 {% macro content_list(self,panelnum=0) %}
+{% if self.common %}
+<div class="panel panel-primary">
+  <div class="panel-heading
+  text-left"><h3 class="panel-title"><a data-toggle="collapse"
+  href="#common-{{ panelnum }}">Common Blocks</a></h3></div>
+  <div id="common-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for com in self.common %}
+      <a class="list-group-item" href="{{ self.get_url() }}#{{ com.anchor }}">{% if com.name -%}{{ com.name }}{% else -%}<em>unnamed</em>{%- endif %}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
 {% if self.variables %}
 <div class="panel panel-primary">
   <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-{{ panelnum }}">Variables</a></h3></div>
@@ -90,7 +104,7 @@
   <div id="progs-{{ panelnum }}" class="panel-collapse collapse">
     <div class="list-group">
       {% for prog in self.programs %}
-      <a class="list-group-item" href="{{ prog.get_url() }}">{{ prog.name }}</a>
+      <a class="list-group-item" href="{{ prog.get_url() }}">{% if prog.name -%}{{ prog.name }}{% else -%}<em>unnammed</em>{%-	endif %}</a>
       {% endfor %}
     </div>
   </div>
@@ -115,6 +129,20 @@
     <div class="list-group">
       {% for mod in self.submodules %}
       <a class="list-group-item" href="{{ mod.get_url() }}">{{ mod.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if self.blockdata %}
+<div class="panel panel-primary">
+  <div class="panel-heading
+  text-left"><h3 class="panel-title"><a data-toggle="collapse"
+  href="#blocks-{{ panelnum }}">Block Data Units</a></h3></div>
+  <div id="blocks-{{ panelnum }}" class="panel-collapse collapse">
+    <div class="list-group">
+      {% for block in self.blockdata %}
+      <a class="list-group-item" href="{{ block.get_url() }}">{{ block.name }}</a>
       {% endfor %}
     </div>
   </div>
@@ -270,7 +298,7 @@
   <div id="allprogs-{{ panelnum }}" class="panel-collapse collapse">
     <div class="list-group">
       {% for prog in project.programs|sort(attribute='name') %}
-      <a class="list-group-item" href="{{ prog.get_url() }}">{{ prog.name }}</a>
+      <a class="list-group-item" href="{{ prog.get_url() }}">{% if prog.name -%}{{ prog.name }}{% else -%}<em>unnammed</em>{%- endif %}</a>
       {% endfor %}
     </div>
   </div>
@@ -334,8 +362,8 @@
 <div class="panel panel-default">
   <div class="panel-heading
   text-left"><h3 class="panel-title"><a data-toggle="collapse"
-  href="#allfiles-{{ panelnum }}">All Block Data Units</a></h3></div>
-  <div id="allfiles-{{ panelnum }}" class="panel-collapse collapse">
+  href="#allblocks-{{ panelnum }}">All Block Data Units</a></h3></div>
+  <div id="allblocks-{{ panelnum }}" class="panel-collapse collapse">
     <div class="list-group">
       {% for blockdat in project.blockdata|sort(attribute='name') %}
       <a class="list-group-item" href="{{ blockdat.get_url() }}">{{ blockdat.name }}</a>
@@ -626,6 +654,29 @@
   </div>
 </div>
 {% endmacro %}
+
+{% macro common_block(com) %}
+<div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="{{ com.anchor }}"></span><h3>
+      <a data-toggle="popover" data-html="true" tabindex="0" 
+	   data-trigger="focus"
+	 data-content="<h4>Used Elsewhere:</h4>{% for item in com.other_uses %}{% if item != com %}<a href='{{ item.get_url() }}'>{% if item.parent.name -%}{{ item.parent.name }}{%- else -%}<em>unnamed</em>{%- endif %}</a> ({% if item.parobj == 'proc' -%}{{ item.parent.proctype|lower }}{%- else -%}{{ item.parobj }}{%- endif %})<br>{% endif %}{% endfor %}">common{% if com.name %} /{{ com.name }}/{% endif %}</a>
+      {% if com.meta['deprecated'] and com.meta['deprecated'].lower() == 'true' %}
+      <span class="label label-danger depwarn">Deprecated</span>
+      {% endif %}
+  </h3></div>
+  <div class="panel-body">
+    {% if meta_list(com.meta)|trim|length > 0 %}
+    {{ meta_list(com.meta) }}
+    {% endif %}
+    {{ com.doc }}
+    {% if com.variables|length > 0 %}
+    {{ var_list(com.variables) }}
+    {% endif %}
+</div>
+</div>
+{% endmacro %}
+
 
 {% macro enum_entry(enum) %}
   <div class="panel panel-default">

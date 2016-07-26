@@ -34,6 +34,21 @@
     </section>
     <br class="visible-xs visible-sm hidden-md">
 
+    {% if module.common|length > 0 %}
+    <section>
+      <h2>Common Blocks</h2>
+      {% for com in module.common %}
+      {{ macros.common_block(com) }}
+      {% endfor %}
+    </section>
+    <br>
+    <script>
+    $(function () {
+    $('[data-toggle="popover"]').popover()
+    })
+    </script>
+    {% endif %}
+
     {% if module.variables|length > 0 %}
     <section>
     <h2>Variables</h2>

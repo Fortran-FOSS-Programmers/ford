@@ -212,7 +212,7 @@ class FortranBase(object):
         loc = self.get_dir()
         if loc:
             return outstr.format(self.base_url,loc,quote(self.ident))
-        elif isinstance(self,FortranBoundProcedure):
+        elif isinstance(self,(FortranBoundProcedure,FortranCommon)):
             return self.parent.get_url() + '#' + self.anchor
         else:
             return None
@@ -250,7 +250,11 @@ class FortranBase(object):
         outstr = "<a href='{0}'>{1}</a>"
         url = self.get_url()
         if url and getattr(self,'visible',True):
-            return outstr.format(url,self.name)
+            if self.name:
+                name = self.name
+            else:
+                name = '<em>unnamed</em>'
+            return outstr.format(url,name)
         elif self.name:
             return self.name
         else:
@@ -385,6 +389,9 @@ class FortranBase(object):
         if hasattr(self,'submodules'):
             md_list.extend(self.submodules)
             sort_items(self,self.submodules)
+        if hasattr(self,'common'):
+            md_list.extend(self.common)
+            sort_items(self,self.common)
         if hasattr(self,'subroutines'):
             md_list.extend(self.subroutines)
             sort_items(self,self.subroutines)
@@ -481,6 +488,8 @@ class FortranContainer(FortranBase):
     INTERFACE_RE = re.compile("^(abstract\s+)?interface(?:\s+(\S.+))?$",re.IGNORECASE)
     #~ ABS_INTERFACE_RE = re.compile("^abstract\s+interface(?:\s+(\S.+))?$",re.IGNORECASE)
     BOUNDPROC_RE = re.compile("^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)",re.IGNORECASE)
+    COMMON_RE = re.compile("^common\s*(?:/\s*(\w+)\s*/)?\s*(\w+.*)",re.IGNORECASE)
+    COMMON_SPLIT_RE = re.compile("\s*(/\s*\w+\s*/)\s*",re.IGNORECASE)
     FINAL_RE = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
     USE_RE = re.compile("^use(?:\s*(?:,\s*(?:non_)?intrinsic\s*)?::\s*|\s+)(\w+)\s*($|,.*)",re.IGNORECASE)
     CALL_RE = re.compile("(?:^|(?<=[^a-zA-Z0-9_%]))\w+(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
@@ -700,6 +709,23 @@ class FortranContainer(FortranBase):
                                                    self,permission))
                 else:
                     raise Exception("Found type-bound procedure in {}".format(type(self).__name__[7:].upper()))
+            elif self.COMMON_RE.match(line):
+                if hasattr(self,'common'):
+                    split = self.COMMON_SPLIT_RE.split(line)
+                    if len(split) > 1:
+                        for i in range(len(split)/2):
+                            pseudo_line = split[0] + ' ' + split[2*i+1] + ' ' + split[2*i+2].strip()
+                            if pseudo_line[-1] == ',': pseudo_line = pseudo_line[:-1]
+                            self.common.append(FortranCommon(source,
+                                               self.COMMON_RE.match(pseudo_line),self,
+                                               'public'))
+                        for i in range(len(split)/2):
+                            self.common[-i-1].doc = self.common[-len(split)/2+1].doc
+                    else:
+                        self.common.append(FortranCommon(source,
+                                           self.COMMON_RE.match(line),self,'public'))
+                else:
+                    raise Exception("Found common statement in {}".format(type(self).__name__[7:].upper()))
             elif self.FINAL_RE.match(line) and incontains:
                 if hasattr(self,'finalprocs'):
                     procedures = self.SPLIT_RE.split(self.FINAL_RE.match(line).group(1).strip())
@@ -870,6 +896,8 @@ class FortranCodeUnit(FortranContainer):
             absint.correlate(project)
         for var in self.variables:
             var.correlate(project)
+        for com in self.common:
+            com.correlate(project)
         if hasattr(self,'modprocedures'):
             for mp in self.modprocedures:
                 mp.correlate(project)
@@ -919,7 +947,7 @@ class FortranCodeUnit(FortranContainer):
         del self.attr_dict
 
 
-    def proon(self):
+    def prune(self):
         """
         Remove anything which shouldn't be displayed.
         """
@@ -949,7 +977,7 @@ class FortranCodeUnit(FortranContainer):
         for obj in self.functions + self.subroutines + self.types + self.interfaces + getattr(self,'modprocedures',[]) + getattr(self,'modfunctions',[]) + getattr(self,'modsubroutines',[]):
             obj.visible = True
         for obj in self.functions + self.subroutines + self.types + getattr(self,'modprocedures',[]) + getattr(self,'modfunctions',[]) + getattr(self,'modsubroutines',[]):
-            obj.proon()
+            obj.prune()
 
         
 class FortranSourceFile(FortranContainer):
@@ -1014,6 +1042,7 @@ class FortranModule(FortranCodeUnit):
         self.absinterfaces = []
         self.types = []
         self.descendants = []
+        self.common = []
         self.visible = True
         self.attr_dict = dict()
         self.param_dict = dict()
@@ -1177,6 +1206,7 @@ class FortranSubroutine(FortranCodeUnit):
         self.interfaces = []
         self.absinterfaces = []
         self.types = []
+        self.common = []
         self.attr_dict = dict()
         self.param_dict = dict()
         self.associate_blocks = []
@@ -1220,6 +1250,7 @@ class FortranSubroutine(FortranCodeUnit):
                 else:
                     vartype = 'real'
                 self.args[i] = FortranVariable(self.args[i],vartype,self)
+                self.args[i].doc = ''
         self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
     
@@ -1294,6 +1325,7 @@ class FortranFunction(FortranCodeUnit):
         self.interfaces = []
         self.absinterfaces = []
         self.types = []
+        self.common = []
         self.attr_dict = dict()
         self.param_dict = dict()
         self.associate_blocks = []
@@ -1337,6 +1369,7 @@ class FortranFunction(FortranCodeUnit):
                 else:
                     vartype = 'real'
                 self.args[i] = FortranVariable(self.args[i],vartype,self)
+                self.args[i].doc = ''
         if type(self.retvar) != FortranVariable:
             for var in self.variables:
                 if var.name.lower() == self.retvar.lower():
@@ -1374,6 +1407,7 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.mp = True
         self.param_dict = dict()
         self.associate_blocks = []
+        self.common = []
 
     def _cleanup(self):
         self.process_attribs()
@@ -1392,6 +1426,7 @@ class FortranProgram(FortranCodeUnit):
     """
     def _initialize(self,line):
         self.name = line.group(1)
+        if self.name == None: self.name = ''
         self.variables = []
         self.enums = []
         self.subroutines = []
@@ -1404,6 +1439,7 @@ class FortranProgram(FortranCodeUnit):
         self.attr_dict = dict()
         self.param_dict = dict()
         self.associate_blocks = []
+        self.common = []
     
     def _cleanup(self):
         self.all_procs = {}
@@ -1522,7 +1558,7 @@ class FortranType(FortranContainer):
                 elif isinstance(bind,FortranBoundProcedure):
                     for b in bind.bindings:
                         if isinstance(b,(FortranFunction,FortranSubroutine)): self.num_lines_all += b.num_lines
-    def proon(self):
+    def prune(self):
         """
         Remove anything which shouldn't be displayed.
         """
@@ -1829,6 +1865,7 @@ class FortranBlockData(FortranContainer):
         self.uses = []
         self.variables = []
         self.types = []
+        self.common = []
         self.visible = True
         self.attr_dict = dict()
         self.param_dict = dict()
@@ -1868,14 +1905,53 @@ class FortranBlockData(FortranContainer):
             if dtype in self.types: dtype.correlate(project)
         for var in self.variables:
             var.correlate(project)
+        for com in self.common:
+            com.correlate(project)
 
-    def proon(self):
+    def prune(self):
         self.types = [obj for obj in self.types if obj.permission in self.display]
         self.variables = [obj for obj in self.variables if obj.permission in self.display]
         for dtype in self.types:
             dtype.visible = True
         for dtype in self.types:
-            dtype.proon()
+            dtype.prune()
+
+
+class FortranCommon(FortranBase):
+    """
+    An object representing a common block. This is a legacy feature.
+    """
+    def _initialize(self,line):
+        self.name = line.group(1)
+        if not self.name: self.name = ''
+        self.other_uses = []
+        self.variables = [v.strip() for v in ford.utils.paren_split(',',line.group(2))]
+        self.visible = True
+    
+    def correlate(self,project):
+        for i in range(len(self.variables)):
+            if self.variables[i] in self.parent.all_vars:
+                self.variables[i] = self.parent.all_vars[self.variables[i]]
+                try:
+                    self.parent.variables.remove(self.variables[i])
+                except ValueError:
+                    pass
+            else:
+                if self.variables[i][0].lower() in 'ijklmn':
+                    vartype = 'integer'
+                else:
+                    vartype = 'real'
+                self.variables[i] = FortranVariable(self.variables[i],vartype,self)
+                self.variables[i].doc = ''
+        
+        if self.name in project.common:
+            self.other_uses = project.common[self.name]
+            self.other_uses.append(self)
+        else:
+            lst = [self,]
+            project.common[self.name] = lst
+            self.other_uses = lst
+
 
 class FortranSpoof(object):
     """
@@ -2276,6 +2352,7 @@ class NameSelector(object):
             name = item.name.lower().replace('<','lt')
             name = item.name.lower().replace('>','gt')
             name = item.name.lower().replace('/','SLASH')
+            if name == '': name = '__unnamed__'
             if num > 1:
                 name = name + '~' + str(num)
             self._items[item] = name

@@ -57,6 +57,21 @@
     </section>
     <br class="visible-xs visible-sm hidden-md">
 
+    {% if procedure.common|length > 0 %}
+    <section>
+      <h2>Common Blocks</h2>
+      {% for com in procedure.common %}
+      {{ macros.common_block(com) }}
+      {% endfor %}
+    </section>
+    <br>
+    <script>
+      $(function () {
+      $('[data-toggle="popover"]').popover()
+      })
+    </script>
+    {% endif %}
+
     {% if procedure.variables|length > 0 %}
     <section>    
       <h2>Variables</h2>
