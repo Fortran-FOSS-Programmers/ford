@@ -713,14 +713,14 @@ class FortranContainer(FortranBase):
                 if hasattr(self,'common'):
                     split = self.COMMON_SPLIT_RE.split(line)
                     if len(split) > 1:
-                        for i in range(len(split)/2):
+                        for i in range(len(split)//2):
                             pseudo_line = split[0] + ' ' + split[2*i+1] + ' ' + split[2*i+2].strip()
                             if pseudo_line[-1] == ',': pseudo_line = pseudo_line[:-1]
                             self.common.append(FortranCommon(source,
                                                self.COMMON_RE.match(pseudo_line),self,
                                                'public'))
-                        for i in range(len(split)/2):
-                            self.common[-i-1].doc = self.common[-len(split)/2+1].doc
+                        for i in range(len(split)//2):
+                            self.common[-i-1].doc = self.common[-len(split)//2+1].doc
                     else:
                         self.common.append(FortranCommon(source,
                                            self.COMMON_RE.match(line),self,'public'))

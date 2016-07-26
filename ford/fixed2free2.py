@@ -34,6 +34,7 @@ python fixed2free2.py file.f > file.f90
 # TODO:
 # *) Improve command line usage
 
+from __future__ import print_function
 import sys
 
 class FortranLine:
@@ -130,7 +131,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         infile = open(sys.argv[1], 'r')
         for line in convertToFree(infile):
-            print line,
+            print(line),
     
         infile.close()
     else:
