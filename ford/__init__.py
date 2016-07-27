@@ -187,7 +187,7 @@ def initialize():
                 'macro','include','extra_mods','extra_filetypes']
     # Evaluate paths relative to project file location
     base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
-    for var in ['src_dir','page_dir','output_dir','exclude_dir','graph_dir','media_dir','include']:
+    for var in ['src_dir','page_dir','output_dir','exclude_dir','graph_dir','media_dir','include','favicon','css']:
         if var in proj_data:
             proj_data[var] = [os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(p)))) for p in proj_data[var]]
     if args.warn:
