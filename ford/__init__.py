@@ -47,7 +47,7 @@ __appname__    = "FORD"
 __author__     = "Chris MacMackin, Jacob Williams, Marco Restelli, Iain Barrass, Jérémie Burgalat, Stephen J. Turnbull, Balint Aradi"
 __credits__    = ["Stefano Zhagi", "Izaak Beekman", "Gavin Huttley"]
 __license__    = "GPLv3"
-__version__    = "5.0.2"
+__version__    = "5.0.3"
 __maintainer__ = "Chris MacMackin"
 __status__     = "Production"
 
@@ -185,6 +185,11 @@ def initialize():
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
                 'macro','include','extra_mods','extra_filetypes']
+    # Evaluate paths relative to project file location
+    base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
+    for var in ['src_dir','page_dir','output_dir','exclude_dir','graph_dir','media_dir','include']:
+        if var in proj_data:
+            proj_data[var] = [os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(p)))) for p in proj_data[var]]
     if args.warn:
         args.warn = 'true'
     else:
@@ -261,14 +266,6 @@ def initialize():
         </script>
         <script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
         '''.format(proj_data['gitter_sidecar'].strip())
-    # Evaluate paths relative to project file location
-    base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
-    for var in ['src_dir','page_dir','output_dir','exclude_dir','graph_dir','media_dir','include']:
-        if var in proj_data:
-            if var in listopts:
-                proj_data[var] = [os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(p)))) for p in proj_data[var]]
-            else:
-                proj_data[var] = os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(proj_data[var]))))
     # Handle preprocessor:
     if proj_data['preprocess'].lower() == 'true':
         if proj_data['preprocessor']:
