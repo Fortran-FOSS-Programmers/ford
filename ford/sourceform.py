@@ -228,7 +228,9 @@ class FortranBase(object):
                       'interface': 'abstract interfaces',
                       'blockdata': 'block data units',
                      }
-        description = "{:4.1f}% of total for {}.".format(float(self.num_lines)/total*100,pretty_obj[obj])
+        description = ''
+        if total:
+            description = "{:4.1f}% of total for {}.".format(float(self.num_lines)/total*100,pretty_obj[obj])
         if total_all:
             description = "<p>" + description + "</p>Including implementation: {} statements, {:4.1f}% of total for {}.".format(self.num_lines_all,float(self.num_lines_all)/total_all*100,pretty_obj[obj])
         return description
