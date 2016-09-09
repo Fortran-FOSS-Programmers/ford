@@ -5,10 +5,23 @@
           real (real64) :: global_pi = acos(-1)
           !! a global variable, initialized to the value of pi
 
-          write(output_unit,'(A)') 'Small test program'
-          call do_stuff(20)
+         type foo
+           integer :: foo_stuff
+         contains
+           procedure :: do_foo_stuff
+         end type
+
+         type, extends(foo) :: bar
+         end type
+
+         write(output_unit,'(A)') 'Small test program'
+         call do_stuff(20)
 
         contains
+          subroutine do_foo_stuff(this)
+            class(foo) :: this
+          end subroutine
+
           subroutine do_stuff(repeat)
             !! This is documentation for our subroutine that does stuff and things.
             !! This text is captured by ford
@@ -34,4 +47,4 @@
 
             !! do some stuff, ensure proper bounds etc.
           end subroutine linalg
-        end program
+        end program ford_test_program
