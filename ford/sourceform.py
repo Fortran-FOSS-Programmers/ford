@@ -153,6 +153,15 @@ class FortranBase(object):
     #~ this regex is not working for the LINK and DOUBLE_LINK types
     
     base_url = ''
+    pretty_obj = {'proc': 'procedures',
+                  'type': 'derived types',
+                  'sourcefile': 'source files',
+                  'program': 'programs',
+                  'module': 'modules and submodules',
+                  'submodule': 'modules and submodules',
+                  'interface': 'abstract interfaces',
+                  'blockdata': 'block data units',
+    }
     
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
@@ -219,18 +228,9 @@ class FortranBase(object):
     
     def lines_description(self,total,total_all=0,obj=None):
         if not obj: obj = self.obj
-        pretty_obj = {'proc': 'procedures',
-                      'type': 'derived types',
-                      'sourcefile': 'source files',
-                      'program': 'programs',
-                      'module': 'modules and submodules',
-                      'submodule': 'modules and submodules',
-                      'interface': 'abstract interfaces',
-                      'blockdata': 'block data units',
-                     }
-        description = "{:4.1f}% of total for {}.".format(float(self.num_lines)/total*100,pretty_obj[obj])
+        description = "{:4.1f}% of total for {}.".format(float(self.num_lines)/total*100,self.pretty_obj[obj])
         if total_all:
-            description = "<p>" + description + "</p>Including implementation: {} statements, {:4.1f}% of total for {}.".format(self.num_lines_all,float(self.num_lines_all)/total_all*100,pretty_obj[obj])
+            description = "<p>" + description + "</p>Including implementation: {} statements, {:4.1f}% of total for {}.".format(self.num_lines_all,float(self.num_lines_all)/total_all*100,self.pretty_obj[obj])
         return description
     
     @property

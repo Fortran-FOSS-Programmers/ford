@@ -55,6 +55,9 @@ class Project(object):
         self.extra_filetypes = settings['extra_filetypes']
         self.display = settings['display']
         
+        if settings['preprocess'].lower() != 'true': settings['fpp_extensions'] = []
+            
+        
         self.files = []
         self.modules = []
         self.programs = []
@@ -257,10 +260,10 @@ class Project(object):
             for block in sfile.blockdata:
                 for dtype in block.types:
                     self.types.append(dtype)
-        
+
         self.mod_lines = sum([m.num_lines for m in self.modules + self.submodules])
         self.proc_lines = sum([p.num_lines for p in self.procedures])
-        self.file_lines = sum([p.num_lines for p in self.programs])
+        self.file_lines = sum([f.num_lines for f in self.files])
         self.type_lines = sum([t.num_lines for t in self.types])
         self.type_lines_all = sum([t.num_lines_all for t in self.types])
         self.absint_lines = sum([a.num_lines for a in self.absinterfaces])
