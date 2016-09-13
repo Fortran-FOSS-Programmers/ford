@@ -829,10 +829,10 @@ class FortranCodeUnit(FortranContainer):
             if type(mod) is str: continue
             procs, absints, types, variables = mod.get_used_entities(extra)
             if self.obj == 'module': #FIXME: These shouldn't necessarily be listed as public
-                self.pub_procs.update([p for p in procs if p in self.public_list])
-                self.pub_absints.update([a for a in absints if a in self.public_list])
-                self.pub_types.update([t for t in types if t in self.public_list])
-                self.pub_vars.update([v for v in variables if v in self.public_list])
+                self.pub_procs.update([(name, proc) for name, proc in procs.iteritems() if name in self.public_list])
+                self.pub_absints.update([(name, absint) for name, absint in absints.iteritems() if name in self.public_list])
+                self.pub_types.update([(name, dtype) for name, dtype in types.iteritems() if name in self.public_list])
+                self.pub_vars.update([(name, var) for name, var in variables.iteritems() if name in self.public_list])
             self.all_procs.update(procs)
             self.all_absinterfaces.update(absints)
             self.all_types.update(types)
