@@ -75,13 +75,10 @@ class Project(object):
         for topdir in self.topdirs:
             srctree = os.walk(os.path.relpath(topdir))
             for srcdir in srctree:
-                excluded = False
-                for ex in settings['exclude_dir']:
-                    fragment = srcdir[0]
-                    while fragment:
-                        excluded = excluded or fragment.endswith(ex)
-                        fragment = os.path.split(fragment)[0]
-                if excluded: continue
+                abs_dir = os.path.normpath(os.path.join(settings['base_dir'],
+                              os.path.expanduser(os.path.expandvars(srcdir[0]))))
+                exclude = [abs_dir==ex for ex in settings['exclude_dir']]
+                if any(exclude): continue
                 curdir = srcdir[0]
                 for item in srcdir[2]:
                     ext = item.split('.')[-1]
