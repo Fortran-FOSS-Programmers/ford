@@ -65,9 +65,12 @@ class Documentation(object):
             ford.sourceform.set_base_url('..')
             ford.pagetree.set_base_url('..')
             data['project_url'] = '..'
+        if not graphviz_installed and data['graph'].lower() == 'true':
+            print("Warning: Will not be able to generate graphs. Graphviz not installed.")
         if graphviz_installed and data['graph'].lower() == 'true':
             print('Generating graphs...')
-            self.graphs = GraphManager(self.data['project_url'],self.data['output_dir'],
+            self.graphs = GraphManager(self.data['project_url'],
+                                       self.data['output_dir'],
                                        self.data.get('graph_dir',''),
                                        self.data['coloured_edges'].lower() == 'true')
             for item in project.types:
@@ -88,6 +91,10 @@ class Documentation(object):
             project.usegraph = self.graphs.usegraph
             project.filegraph = self.graphs.filegraph
         else:
+            self.graphs = GraphManager(self.data['project_url'],
+                                       self.data['output_dir'],
+                                       self.data.get('graph_dir',''),
+                                       self.data['coloured_edges'].lower() == 'true')
             project.callgraph = ''
             project.typegraph = ''
             project.usegraph = ''

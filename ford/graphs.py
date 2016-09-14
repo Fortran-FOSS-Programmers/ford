@@ -904,54 +904,54 @@ try:
     file_svg = dot.pipe().decode('utf-8')
 
 except RuntimeError:
-    print("Warning: Will not be able to generate graphs. Graphviz not installed.")
     graphviz_installed = False
-    svg = None
 
-NODE_DIAGRAM = """
-<p>Nodes of different colours represent the following: </p>
-{}
-"""
 
-MOD_GRAPH_KEY = (NODE_DIAGRAM + """
-<p>Solid arrows point from a parent (sub)module to the submodule which is
-descended from it. Dashed arrows point from a module being used to the
-module or program unit using it.{{}}
-</p>
-""").format(mod_svg)
-
-TYPE_GRAPH_KEY = (NODE_DIAGRAM + """
-<p>Solid arrows point from one derived type to another which extends
-(inherits from) it. Dashed arrows point from a derived type to another
-type containing it as a components, with a label listing the name(s) of
-said component(s).{{}}
-</p>
-""").format(type_svg)
-
-CALL_GRAPH_KEY = (NODE_DIAGRAM + """
-<p>Solid arrows point from a procedure to one which it calls. Dashed 
-arrows point from an interface to procedures which implement that interface.
-This could include the module procedures in a generic interface or the
-implementation in a submodule of an interface in a parent module.{{}}
-</p>
-""").format(call_svg)
-
-FILE_GRAPH_KEY = (NODE_DIAGRAM + """
-<p>Solid arrows point from a file to a file which depends upon it. A file 
-is dependent upon another if the latter must be compiled before the former
-can be.{{}}
-</p>
-""").format(file_svg)
-
-COLOURED_NOTICE = " Where possible, edges connecting nodes are given " \
-                  "different colours to make them easier to distinguish " \
-                  "in large graphs."
-
-del call_svg
-del file_svg
-del type_svg
-del mod_svg
-del dot
-del sub
-del func
-del intr
+if graphviz_installed:
+    NODE_DIAGRAM = """
+    <p>Nodes of different colours represent the following: </p>
+    {}
+    """
+    
+    MOD_GRAPH_KEY = (NODE_DIAGRAM + """
+    <p>Solid arrows point from a parent (sub)module to the submodule which is
+    descended from it. Dashed arrows point from a module being used to the
+    module or program unit using it.{{}}
+    </p>
+    """).format(mod_svg)
+    
+    TYPE_GRAPH_KEY = (NODE_DIAGRAM + """
+    <p>Solid arrows point from one derived type to another which extends
+    (inherits from) it. Dashed arrows point from a derived type to another
+    type containing it as a components, with a label listing the name(s) of
+    said component(s).{{}}
+    </p>
+    """).format(type_svg)
+    
+    CALL_GRAPH_KEY = (NODE_DIAGRAM + """
+    <p>Solid arrows point from a procedure to one which it calls. Dashed 
+    arrows point from an interface to procedures which implement that interface.
+    This could include the module procedures in a generic interface or the
+    implementation in a submodule of an interface in a parent module.{{}}
+    </p>
+    """).format(call_svg)
+    
+    FILE_GRAPH_KEY = (NODE_DIAGRAM + """
+    <p>Solid arrows point from a file to a file which depends upon it. A file 
+    is dependent upon another if the latter must be compiled before the former
+    can be.{{}}
+    </p>
+    """).format(file_svg)
+    
+    COLOURED_NOTICE = " Where possible, edges connecting nodes are given " \
+                      "different colours to make them easier to distinguish " \
+                      "in large graphs."
+    
+    del call_svg
+    del file_svg
+    del type_svg
+    del mod_svg
+    del dot
+    del sub
+    del func
+    del intr
