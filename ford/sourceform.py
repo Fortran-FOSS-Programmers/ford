@@ -3,25 +3,25 @@
 #
 #  sourceform.py
 #  This file is part of FORD.
-#  
+#
 #  Copyright 2014 Christopher MacMackin <cmacmackin@gmail.com>
-#  
+#
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 3 of the License, or
 #  (at your option) any later version.
-#  
+#
 #  This program is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
-#  
-#  
+#
+#
 
 from __future__ import print_function
 
@@ -143,15 +143,15 @@ class FortranBase(object):
     An object containing the data common to all of the classes used to represent
     Fortran data.
     """
-    
+
     IS_SPOOF = False
-    
+
     POINTS_TO_RE = re.compile("\s*=>\s*",re.IGNORECASE)
     SPLIT_RE = re.compile("\s*,\s*",re.IGNORECASE)
     SRC_CAPTURE_STR = r"^[ \t]*([\w(),*: \t]+?[ \t]+)?{0}([\w(),*: \t]+?)?[ \t]+{1}[ \t\n,(].*?end[ \t]*{0}[ \t]+{1}[ \t]*?(!.*?)?$"
-    
+
     #~ this regex is not working for the LINK and DOUBLE_LINK types
-    
+
     base_url = ''
     pretty_obj = {'proc': 'procedures',
                   'type': 'derived types',
@@ -162,7 +162,7 @@ class FortranBase(object):
                   'interface': 'abstract interfaces',
                   'blockdata': 'block data units',
     }
-    
+
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
         self.visible = False
@@ -200,7 +200,7 @@ class FortranBase(object):
 
     def get_dir(self):
         if ( type(self) in [FortranSubroutine,FortranFunction] and
-             type(self.parent) is FortranInterface and 
+             type(self.parent) is FortranInterface and
              not self.parent.generic ):
             return 'interface'
         elif type(self) is FortranSubmodule:
@@ -210,12 +210,12 @@ class FortranBase(object):
                or ( type(self) in [FortranType,FortranInterface,FortranFunction,
                                    FortranSubroutine, FortranSubmoduleProcedure]
                     and type(self.parent) in [FortranSourceFile,FortranProgram,
-                                              FortranModule, FortranSubmodule, 
+                                              FortranModule, FortranSubmodule,
                                               FortranBlockData] ) ):
             return self.obj
         else:
             return None
-            
+
     def get_url(self):
         outstr = "{0}/{1}/{2}.html"
         loc = self.get_dir()
@@ -225,18 +225,18 @@ class FortranBase(object):
             return self.parent.get_url() + '#' + self.anchor
         else:
             return None
-    
+
     def lines_description(self,total,total_all=0,obj=None):
         if not obj: obj = self.obj
         description = "{:4.1f}% of total for {}.".format(float(self.num_lines)/total*100,self.pretty_obj[obj])
         if total_all:
             description = "<p>" + description + "</p>Including implementation: {} statements, {:4.1f}% of total for {}.".format(self.num_lines_all,float(self.num_lines_all)/total_all*100,self.pretty_obj[obj])
         return description
-    
+
     @property
     def ident(self):
         if ( type(self) in [FortranSubroutine,FortranFunction] and
-             type(self.parent) == FortranInterface and 
+             type(self.parent) == FortranInterface and
              not self.parent.generic ):
             return namelist.get_name(self.parent)
         else:
@@ -245,7 +245,7 @@ class FortranBase(object):
     @property
     def anchor(self):
         return self.obj + '-' + quote(self.ident)
-        
+
     def __str__(self):
         outstr = "<a href='{0}'>{1}</a>"
         url = self.get_url()
@@ -259,7 +259,7 @@ class FortranBase(object):
             return self.name
         else:
             return ''
-    
+
     @property
     def contents_size(self):
         '''
@@ -294,7 +294,7 @@ class FortranBase(object):
         Compare two Fortran objects. Needed to make toposort work.
         '''
         return (self.ident < other.ident)
-    
+
     def markdown(self,md,project):
         """
         Process the documentation with Markdown to produce HTML.
@@ -341,9 +341,9 @@ class FortranBase(object):
             elif key == 'summary':
                 self.meta[key] = '\n'.join(self.meta[key])
         if hasattr(self,'num_lines'): self.meta['num_lines'] = self.num_lines
-        
+
         self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url)
-    
+
         if 'summary' in self.meta:
             self.meta['summary'] = md.convert(self.meta['summary'])
             self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url)
@@ -372,13 +372,13 @@ class FortranBase(object):
                     self.src = ''
                     if self.settings['warn'].lower() == 'true':
                         print('Warning: Could not extract source code for {} {} in file {}'.format(self.obj, self.name, self.hierarchy[0].name))
-        
+
         if self.obj == 'proc':
             if 'proc_internals' not in self.meta:
                 self.meta['proc_internals'] = self.settings['proc_internals'].lower()
             else:
                 self.meta['proc_internals'] = self.meta['proc_internals'].lower()
-        
+
         md_list = []
         if hasattr(self,'variables'):
             md_list.extend(self.variables)
@@ -430,13 +430,13 @@ class FortranBase(object):
             md_list.extend(self.enums)
         if hasattr(self,'retvar') and self.retvar: md_list.append(self.retvar)
         if hasattr(self,'procedure'): md_list.append(self.procedure)
-        
+
         for item in md_list:
             if isinstance(item, FortranBase): item.markdown(md,project)
 
         return
-    
-    
+
+
     def make_links(self,project):
         """
         Process intra-site links to documentation of other parts of the program.
@@ -445,7 +445,7 @@ class FortranBase(object):
         if 'summary' in self.meta:
             self.meta['summary'] = ford.utils.sub_links(self.meta['summary'],project)
         recurse_list = []
-        
+
         if hasattr(self,'variables'): recurse_list.extend(self.variables)
         if hasattr(self,'types'): recurse_list.extend(self.types)
         if hasattr(self,'enums'): recurse_list.extend(self.enums)
@@ -463,7 +463,7 @@ class FortranBase(object):
         if hasattr(self,'bindings'): recurse_list.extend(self.bindings)
         if hasattr(self,'retvar') and self.retvar: recurse_list.append(self.retvar)
         if hasattr(self,'procedure'): recurse_list.append(self.procedure)
-        
+
         for item in recurse_list:
             if isinstance(item, FortranBase): item.make_links(project)
 
@@ -494,9 +494,9 @@ class FortranContainer(FortranBase):
     USE_RE = re.compile("^use(?:\s*(?:,\s*(?:non_)?intrinsic\s*)?::\s*|\s+)(\w+)\s*($|,.*)",re.IGNORECASE)
     CALL_RE = re.compile("(?:^|(?<=[^a-zA-Z0-9_%]))\w+(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
     SUBCALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
-    
+
     VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
-            
+
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
         self.num_lines = 0
@@ -509,16 +509,16 @@ class FortranContainer(FortranBase):
             permission = "private"
         else:
             permission = "public"
-        
+
         typestr = ''
         for vtype in self.settings['extra_vartypes']:
             typestr = typestr + '|' + vtype
         self.VARIABLE_RE = re.compile(self.VARIABLE_STRING.format(typestr),re.IGNORECASE)
-        
+
         blocklevel = 0
         associatelevel = 0
         for line in source:
-            if line[0:2] == "!" + self.settings['docmark']: 
+            if line[0:2] == "!" + self.settings['docmark']:
                 self.doc.append(line[2:])
                 continue
             if line.strip() != '': self.num_lines += 1
@@ -741,7 +741,7 @@ class FortranContainer(FortranBase):
                 else:
                     raise Exception("Found variable in {}".format(type(self).__name__[7:].upper()))
             elif self.USE_RE.match(line):
-                if hasattr(self,'uses'): 
+                if hasattr(self,'uses'):
                     self.uses.append(self.USE_RE.match(line).groups())
                 else:
                     raise Exception("Found USE statemnt in {}".format(type(self).__name__[7:].upper()))
@@ -760,20 +760,20 @@ class FortranContainer(FortranBase):
                 # Need this to catch any subroutines called without argument lists
                 if hasattr(self,'calls'):
                     callval = self.SUBCALL_RE.match(line).group(1)
-                    if callval.lower() not in self.calls and callval.lower() not in INTRINSICS: 
+                    if callval.lower() not in self.calls and callval.lower() not in INTRINSICS:
                         self.calls.append(callval.lower())
                 else:
                     raise ("Found procedure call in {}".format(type(self).__name__[7:].upper()))
-            
+
 
         if not isinstance(self,FortranSourceFile):
             raise Exception("File ended while still nested.")
-    
+
     def _cleanup(self):
         raise NotImplementedError()
-        
-             
-    
+
+
+
 class FortranCodeUnit(FortranContainer):
     """
     A class on which programs, modules, functions, and subroutines are based.
@@ -790,7 +790,7 @@ class FortranCodeUnit(FortranContainer):
         self.all_vars = getattr(self.parent,'all_vars',{})
         for var in self.variables:
             self.all_vars[var.name.lower()] = var
-        
+
         if type(getattr(self,'ancestor','')) not in [str, type(None)]:
             self.ancestor.descendants.append(self)
             self.all_procs.update(self.ancestor.all_procs)
@@ -801,7 +801,7 @@ class FortranCodeUnit(FortranContainer):
             self.all_procs.update(self.ancestor_mod.all_procs)
             self.all_absinterfaces.update(self.ancestor_mod.all_absinterfaces)
             self.all_types.update(self.ancestor_mod.all_types)
-        
+
         if isinstance(self,FortranSubmodule):
             for proc in self.functions + self.subroutines:
                 if proc.module and proc.name.lower() in self.all_procs:
@@ -809,7 +809,7 @@ class FortranCodeUnit(FortranContainer):
                     if intr.proctype.lower() == 'interface' and not intr.generic and not intr.abstract and intr.procedure.module == True:
                         proc.module = intr
                         intr.procedure.module = proc
-        
+
         if hasattr(self,'modprocedures'):
             tmplist = []
             for proc in self.modprocedures:
@@ -829,16 +829,22 @@ class FortranCodeUnit(FortranContainer):
             if type(mod) is str: continue
             procs, absints, types, variables = mod.get_used_entities(extra)
             if self.obj == 'module': #FIXME: These shouldn't necessarily be listed as public
-                self.pub_procs.update([(name, proc) for name, proc in procs.iteritems() if name in self.public_list])
-                self.pub_absints.update([(name, absint) for name, absint in absints.iteritems() if name in self.public_list])
-                self.pub_types.update([(name, dtype) for name, dtype in types.iteritems() if name in self.public_list])
-                self.pub_vars.update([(name, var) for name, var in variables.iteritems() if name in self.public_list])
+                if (sys.version_info[0]>2):
+                    self.pub_procs.update([(name, proc) for name, proc in procs.items() if name in self.public_list])
+                    self.pub_absints.update([(name, absint) for name, absint in absints.items() if name in self.public_list])
+                    self.pub_types.update([(name, dtype) for name, dtype in types.items() if name in self.public_list])
+                    self.pub_vars.update([(name, var) for name, var in variables.items() if name in self.public_list])
+                else:
+                    self.pub_procs.update([(name, proc) for name, proc in procs.iteritems() if name in self.public_list])
+                    self.pub_absints.update([(name, absint) for name, absint in absints.iteritems() if name in self.public_list])
+                    self.pub_types.update([(name, dtype) for name, dtype in types.iteritems() if name in self.public_list])
+                    self.pub_vars.update([(name, var) for name, var in variables.iteritems() if name in self.public_list])
             self.all_procs.update(procs)
             self.all_absinterfaces.update(absints)
             self.all_types.update(types)
             self.all_vars.update(variables)
         self.uses = [m[0] for m in self.uses]
-        
+
         typelist = {}
         for dtype in self.types:
             if  dtype.extends and dtype.extends.lower() in self.all_types:
@@ -906,14 +912,14 @@ class FortranCodeUnit(FortranContainer):
                 arg.correlate(project)
         if hasattr(self,'retvar') and not getattr(self,'mp',False):
             self.retvar.correlate(project)
-        
+
         # Separate module subroutines/functions from normal ones
         if self.obj == 'submodule':
             self.modfunctions = [func for func in self.functions if func.module]
             self.functions = [func for func in self.functions if not func.module]
             self.modsubroutines = [sub for sub in self.subroutines if sub.module]
             self.subroutines = [sub for sub in self.subroutines if not sub.module]
-        
+
         del self.public_list
 
 
@@ -991,7 +997,7 @@ class FortranCodeUnit(FortranContainer):
         for obj in self.functions + self.subroutines + self.types + getattr(self,'modprocedures',[]) + getattr(self,'modfunctions',[]) + getattr(self,'modsubroutines',[]):
             obj.prune()
 
-        
+
 class FortranSourceFile(FortranContainer):
     """
     An object representing individual files containing Fortran code. A project
@@ -1014,12 +1020,12 @@ class FortranSourceFile(FortranContainer):
         self.hierarchy = []
         self.obj = 'sourcefile'
         self.display = settings['display']
-                
+
         source = ford.reader.FortranReader(self.path,settings['docmark'],
                     settings['predocmark'],settings['docmark_alt'],
                     settings['predocmark_alt'],fixed,preprocessor,
                     settings['macro'],settings['include'])
-        
+
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
         self.raw_src = readobj.read()
@@ -1034,12 +1040,12 @@ class FortranSourceFile(FortranContainer):
 class FortranModule(FortranCodeUnit):
     """
     An object representing individual modules within your source code. These
-    objects contains lists of all of the module's contents, as well as its 
+    objects contains lists of all of the module's contents, as well as its
     dependencies.
     """
     ONLY_RE = re.compile('^\s*,\s*only\s*:\s*(?=[^,])',re.IGNORECASE)
     RENAME_RE = re.compile('(\w+)\s*=>\s*(\w+)',re.IGNORECASE)
-    
+
     def _initialize(self,line):
         self.name = line.group(1)
         self.uses = []
@@ -1087,7 +1093,7 @@ class FortranModule(FortranCodeUnit):
             if ai.permission == "public":
                 self.pub_absints[ai.name] = ai
 
-        
+
     def get_used_entities(self,use_specs):
         """
         Returns the entities which are imported by a use statement. These
@@ -1114,7 +1120,7 @@ class FortranModule(FortranCodeUnit):
             if only:
                 if name in uspecs: ret_procs[uspecs[name]] = obj
             else:
-                if name in uspecs: 
+                if name in uspecs:
                     ret_procs[uspecs[name]] = obj
                 else:
                     ret_procs[name] = obj
@@ -1122,7 +1128,7 @@ class FortranModule(FortranCodeUnit):
             if only:
                 if name in uspecs: ret_absints[uspecs[name]] = obj
             else:
-                if name in uspecs: 
+                if name in uspecs:
                     ret_absints[uspecs[name]] = obj
                 else:
                     ret_absints[name] = obj
@@ -1130,7 +1136,7 @@ class FortranModule(FortranCodeUnit):
             if only:
                 if name in uspecs: ret_types[uspecs[name]] = obj
             else:
-                if name in uspecs: 
+                if name in uspecs:
                     ret_types[uspecs[name]] = obj
                 else:
                     ret_types[name] = obj
@@ -1138,7 +1144,7 @@ class FortranModule(FortranCodeUnit):
             if only:
                 if name in uspecs: ret_vars[uspecs[name]] = obj
             else:
-                if name in uspecs: 
+                if name in uspecs:
                     ret_vars[uspecs[name]] = obj
                 else:
                     ret_vars[name] = obj
@@ -1167,11 +1173,11 @@ class FortranSubmodule(FortranModule):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
-    
-    
+
+
 class FortranSubroutine(FortranCodeUnit):
     """
-    An object representing a Fortran subroutine and holding all of said 
+    An object representing a Fortran subroutine and holding all of said
     subroutine's contents.
     """
     def _initialize(self,line):
@@ -1233,7 +1239,7 @@ class FortranSubroutine(FortranCodeUnit):
             return self._permission
 
     permission = property(get_permission, set_permission)
-    
+
     def _cleanup(self):
         self.all_procs = {}
         for p in self.functions + self.subroutines:
@@ -1265,7 +1271,7 @@ class FortranSubroutine(FortranCodeUnit):
                 self.args[i].doc = ''
         self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
-    
+
 class FortranFunction(FortranCodeUnit):
     """
     An object representing a Fortran function and holding all of said function's
@@ -1302,7 +1308,7 @@ class FortranFunction(FortranCodeUnit):
             self.retvar = line.group(4)
         else:
             self.retvar = self.name
-            
+
         typestr = ''
         for vtype in self.settings['extra_vartypes']:
             typestr = typestr + '|' + vtype
@@ -1313,7 +1319,7 @@ class FortranFunction(FortranCodeUnit):
                                           kind=retkind,strlen=retlen,
                                           proto=retproto)
         self.args = [] # Set this in the correlation step
-        
+
         for arg in self.SPLIT_RE.split(line.group(3)[1:-1]):
             # FIXME: This is to avoid a problem whereby sometimes an empty argument list will appear to contain the argument ''. I didn't know why it would do this (especially since sometimes it works fine) and just put this in as a quick fix. However, at some point I should try to figure out the actual root of the problem.
             if arg.strip() != '': self.args.append(arg.strip())
@@ -1352,7 +1358,7 @@ class FortranFunction(FortranCodeUnit):
             return self._permission
 
     permission = property(get_permission, set_permission)
-    
+
     def _cleanup(self):
         self.all_procs = {}
         for p in self.functions + self.subroutines:
@@ -1452,7 +1458,7 @@ class FortranProgram(FortranCodeUnit):
         self.param_dict = dict()
         self.associate_blocks = []
         self.common = []
-    
+
     def _cleanup(self):
         self.all_procs = {}
         for p in self.functions + self.subroutines:
@@ -1462,9 +1468,9 @@ class FortranProgram(FortranCodeUnit):
                 self.all_procs[interface.name.lower()] = interface
         self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
-        
-    
-    
+
+
+
 class FortranType(FortranContainer):
     """
     An object representing a Fortran derived type and holding all of said type's
@@ -1499,8 +1505,8 @@ class FortranType(FortranContainer):
         self.boundprocs = []
         self.finalprocs = []
         self.constructor = None
-        
-        
+
+
     def _cleanup(self):
         # Match parameters with variables
         for i in range(len(self.parameters)):
@@ -1510,7 +1516,7 @@ class FortranType(FortranContainer):
                     self.variables.remove(var)
                     break
 
-        
+
     def correlate(self,project):
         self.all_absinterfaces = self.parent.all_absinterfaces
         self.all_types = self.parent.all_types
@@ -1523,10 +1529,10 @@ class FortranType(FortranContainer):
         for v in self.variables:
             v.correlate(project)
         # Get inherited public components
-        inherited = [var for var in getattr(self.extends,'variables',[]) 
+        inherited = [var for var in getattr(self.extends,'variables',[])
                      if var.permission == "public"]
         self.variables = inherited + self.variables
-        sort_items(self,self.variables)        
+        sort_items(self,self.variables)
 
         # Match boundprocs with procedures
         # FIXME: This is not at all modular because must process non-generic bound procs first--could there be a better way to do it
@@ -1593,8 +1599,8 @@ class FortranEnum(FortranContainer):
     enumerators as variables.
     """
     def _initialize(self,line):
-        self.variables = []        
-        
+        self.variables = []
+
     def _cleanup(self):
         prev_val = -1
         for var in self.variables:
@@ -1702,8 +1708,8 @@ class FortranFinalProc(FortranBase):
         if self.name.lower() in self.all_procs:
             self.procedure = self.all_procs[self.name.lower()]
 
-    
-    
+
+
 class FortranVariable(FortranBase):
     """
     An object representing a variable within Fortran.
@@ -1736,7 +1742,7 @@ class FortranVariable(FortranBase):
         self.dimension = ''
         self.meta = {}
         self.visible = False
-        
+
         indexlist = []
         indexparen = self.name.find('(')
         if indexparen > 0:
@@ -1747,11 +1753,11 @@ class FortranVariable(FortranBase):
         indexstar = self.name.find('*')
         if indexstar > 0:
             indexlist.append(indexstar)
-            
+
         if len(indexlist) > 0:
             self.dimension = self.name[min(indexlist):]
             self.name = self.name[0:min(indexlist)]
-        
+
         self.hierarchy = []
         cur = self.parent
         while cur:
@@ -1909,7 +1915,7 @@ class FortranBlockData(FortranContainer):
             self.all_types.update(types)
             self.all_vars.update(variables)
         self.uses = [m[0] for m in self.uses]
-        
+
         typelist = {}
         for dtype in self.types:
             if  dtype.extends and dtype.extends.lower() in self.all_types:
@@ -1981,7 +1987,7 @@ class FortranCommon(FortranBase):
         self.other_uses = []
         self.variables = [v.strip() for v in ford.utils.paren_split(',',line.group(2))]
         self.visible = True
-    
+
     def correlate(self,project):
         for i in range(len(self.variables)):
             if self.variables[i] in self.parent.all_vars:
@@ -1997,7 +2003,7 @@ class FortranCommon(FortranBase):
                     vartype = 'real'
                 self.variables[i] = FortranVariable(self.variables[i],vartype,self)
                 self.variables[i].doc = ''
-        
+
         if self.name in project.common:
             self.other_uses = project.common[self.name]
             self.other_uses.append(self)
@@ -2022,16 +2028,16 @@ class FortranSpoof(object):
                   'corresponding item in code (file {}).'.format(self.obj.upper(),
                   self.name, self.parent.obj.upper(),self.parent.name,
                   self.parent.hierarchy[0].name))
-    
+
     def __getitem__(self, key):
         return []
-    
+
     def __len__(self):
         return 0
-    
+
     def __contains__(self, item):
         return False
-    
+
     def __getattr__(self, name):
         return []
 
@@ -2044,7 +2050,7 @@ class GenericSource(FortranBase):
     Represent a non-Fortran source file. The contents of the file will
     not be analyzed, but documentation can be extracted.
     """
-    
+
     def __init__(self, filename, settings):
         self.obj = 'sourcefile'
         self.parobj = None
@@ -2133,14 +2139,14 @@ class GenericSource(FortranBase):
                 self.doc.append('')
                 prevdoc = False
             docalt = False
-    
+
     def lines_description(self,total,total_all=0):
         return ''
-        
+
 
 _can_have_contains = [FortranModule,FortranProgram,FortranFunction,
                       FortranSubroutine,FortranType,FortranSubmodule]
-        
+
 def line_to_variables(source, line, inherit_permission, parent):
     """
     Returns a list of variables declared in the provided line of code. The
@@ -2152,7 +2158,7 @@ def line_to_variables(source, line, inherit_permission, parent):
     optional = False
     permission = inherit_permission
     parameter = False
-    
+
     attribmatch = ATTRIBSPLIT_RE.match(rest)
     if attribmatch:
         attribstr = attribmatch.group(1).strip()
@@ -2192,7 +2198,7 @@ def line_to_variables(source, line, inherit_permission, parent):
             name = dec.strip()
             initial = None
             points = False
-            
+
         if initial:
             initial = COMMA_RE.sub(', ',initial)
             search_from = 0
@@ -2210,7 +2216,7 @@ def line_to_variables(source, line, inherit_permission, parent):
                         string += old_string[i]
                 initial = initial[0:search_from] + QUOTES_RE.sub(string,initial[search_from:],count=1)
                 search_from += QUOTES_RE.search(initial[search_from:]).end(0)
-        
+
         if proto:
             varlist.append(FortranVariable(name,vartype,parent,copy.copy(attribs),intent,
                            optional,permission,parameter,kind,strlen,list(proto),
@@ -2219,7 +2225,7 @@ def line_to_variables(source, line, inherit_permission, parent):
             varlist.append(FortranVariable(name,vartype,parent,copy.copy(attribs),intent,
                            optional,permission,parameter,kind,strlen,proto,
                            [],points,initial))
-        
+
     doc = []
     docline = source.__next__()
     while docline[0:2] == "!" + parent.settings['docmark']:
@@ -2228,12 +2234,12 @@ def line_to_variables(source, line, inherit_permission, parent):
     source.pass_back(docline)
     for var in varlist: var.doc = doc
     return varlist
-    
-    
+
+
 
 def parse_type(string,capture_strings,settings):
     """
-    Gets variable type, kind, length, and/or derived-type attributes from a 
+    Gets variable type, kind, length, and/or derived-type attributes from a
     variable declaration.
     """
     typestr = ''
@@ -2242,7 +2248,7 @@ def parse_type(string,capture_strings,settings):
     var_type_re = re.compile(VAR_TYPE_STRING + typestr,re.IGNORECASE)
     match = var_type_re.match(string)
     if not match: raise Exception("Invalid variable declaration: {}".format(string))
-    
+
     vartype = match.group().lower()
     if DOUBLE_PREC_RE.match(vartype): vartype = "double precision"
     rest = string[match.end():].strip()
@@ -2288,7 +2294,7 @@ def parse_type(string,capture_strings,settings):
                 else:
                     length = args
                 return (vartype, kind, length, None, rest)
-        else: 
+        else:
             kind = KIND_RE.sub("",args)
             return (vartype, kind, None, None, rest)
 
@@ -2308,7 +2314,7 @@ def get_mod_procs(source,line,parent):
             retlist.append(FortranModuleProcedure(item,parent,inherit_permission))
     else:
         retlist.append(FortranModuleProcedure(line.group(1),parent,inherit_permission))
-    
+
     doc = []
     docline = source.__next__()
     while docline[0:2] == "!" + parent.settings['docmark']:
@@ -2316,10 +2322,10 @@ def get_mod_procs(source,line,parent):
         docline = source.__next__()
     source.pass_back(docline)
     retlist[-1].doc = doc
-    
+
     return retlist
 
-        
+
 def sort_items(self,items,args=False):
     """
     Sort the `self`'s contents, as contained in the list `items` as
@@ -2358,7 +2364,7 @@ def sort_items(self,items,args=False):
             return i.obj
     def itype_alpha(i):
         return itype(i) + '-' + i.name
-    
+
     if self.settings['sort'].lower() == 'alpha':
         items.sort(key=alpha)
     elif self.settings['sort'].lower() == 'permission':
@@ -2381,8 +2387,8 @@ class NameSelector(object):
     def __init__(self):
         self._items = {}
         self._counts = {}
-                       
-    
+
+
     def get_name(self,item):
         """
         Return the name for this item registered with this NameSelector.
@@ -2391,7 +2397,7 @@ class NameSelector(object):
         """
         if not isinstance(item,ford.sourceform.FortranBase):
             raise Exception('{} is not of a type derived from FortranBase'.format(str(item)))
-        
+
         if item in self._items:
             return self._items[item]
         else:
@@ -2410,6 +2416,5 @@ class NameSelector(object):
                 name = name + '~' + str(num)
             self._items[item] = name
             return name
-            
-namelist = NameSelector()
 
+namelist = NameSelector()
