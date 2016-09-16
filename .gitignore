@@ -16,4 +16,4 @@ venv/
 venv-lxml/
 #*#
 .#*
-venv3/
+venv-py3/
