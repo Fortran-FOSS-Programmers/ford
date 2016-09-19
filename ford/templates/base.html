@@ -31,13 +31,6 @@
     <script src="{{ project_url }}/js/jquery-2.1.3.min.js"></script>
     <script src="{{ project_url }}/js/svg-pan-zoom.min.js"></script>
 
-    {% if search|lower == 'true' %}
-    <script src="{{ project_url }}/tipuesearch/tipuesearch_content.js"></script>
-    <link  href="{{ project_url }}/tipuesearch/tipuesearch.css" rel="stylesheet">
-    <script src="{{ project_url }}/tipuesearch/tipuesearch_set.js"></script>
-    <script src="{{ project_url }}/tipuesearch/tipuesearch.js"></script>
-    {% endif %}
-
   </head>
 
   <body>
@@ -180,5 +173,13 @@
       });
     </script>
     <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    {% if search|lower == 'true' %}
+    <script src="{{ project_url }}/tipuesearch/tipuesearch_content.js"></script>
+    <link  href="{{ project_url }}/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <script src="{{ project_url }}/tipuesearch/tipuesearch_set.js"></script>
+    <script src="{{ project_url }}/tipuesearch/tipuesearch.js"></script>
+    {% endif %}
+    
   </body>
 </html>
