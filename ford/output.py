@@ -144,7 +144,7 @@ class Documentation(object):
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],'')
             else:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],data['project_url'])
-            self.tipue.create_node(self.index.html,'index.html', {'categroy': 'home'})
+            self.tipue.create_node(self.index.html,'index.html', {'category': 'home'})
             for p in self.docs:
                 self.tipue.create_node(p.html,p.loc,p.obj.meta)
             for p in self.pagetree:
