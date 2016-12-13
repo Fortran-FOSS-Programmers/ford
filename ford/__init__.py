@@ -144,7 +144,7 @@ def initialize():
                'search','lower','sort','extra_mods','dbg','graph', 'license',
                'extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
-               'graph_dir','gitter_sidecar']
+               'graph_dir','gitter_sidecar','parallel']
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
@@ -181,6 +181,7 @@ def initialize():
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': False,
                 'coloured_edges':      'false',
+                'parallel':            0,
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
@@ -338,9 +339,11 @@ def main(proj_data,proj_docs,md):
     else:
         page_tree = None
     proj_data['pages'] = page_tree
+
     # Produce the documentation using Jinja2. Output it to the desired location
     # and copy any files that are needed (CSS, JS, images, fonts, source files,
     # etc.)
+
     docs = ford.output.Documentation(proj_data,proj_docs_,project,page_tree)
     docs.writeout()
     print('')

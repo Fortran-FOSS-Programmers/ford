@@ -2382,7 +2382,6 @@ class NameSelector(object):
         self._items = {}
         self._counts = {}
 
-
     def get_name(self,item):
         """
         Return the name for this item registered with this NameSelector.
@@ -2410,5 +2409,19 @@ class NameSelector(object):
                 name = name + '~' + str(num)
             self._items[item] = name
             return name
+
+    def get_backup(self):
+        """
+        Return the current _items and _counts values in order to allow
+        us to restore the current state at a later time.
+        """
+        return [self._items.copy(), self._counts.copy()]
+
+    def restore_backup(self,state):
+        """
+        Restore the state from a backup.
+        """
+        self._items  = state[0].copy()
+        self._counts = state[1].copy()
 
 namelist = NameSelector()

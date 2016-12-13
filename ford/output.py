@@ -30,6 +30,7 @@ import os
 import shutil
 import time
 import traceback
+from multiprocessing import Pool
 
 import jinja2
 if (sys.version_info[0]>2):
@@ -40,6 +41,19 @@ import ford.tipue_search
 import ford.utils
 from ford.graphmanager import GraphManager
 from ford.graphs import graphviz_installed
+
+#Wrapper function for generating html -- needed to allow multiprocessing to
+#pickle the function (must be at top level)
+def poolHtmlFuncWrap(args):
+    return args[0](*args[1:])
+
+#Wrapper function for generating search data -- needed to allow multiprocessing to
+#pickle the function (must be at top level)
+def poolSearchFuncWrap(args):
+    return args[0].tipue.create_node(*args[1:])
+
+#Following may be needed in some cases -- May need to increase further
+sys.setrecursionlimit(50000)
 
 loc = os.path.dirname(__file__)
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
@@ -55,6 +69,9 @@ class Documentation(object):
         self.pagetree = []
         self.lists = []
         self.docs = []
+        self.njobs = int(self.data['parallel'])
+        self.parallel = self.njobs>0
+
         if data['relative']:
             ford.sourceform.set_base_url('.')
             ford.pagetree.set_base_url('.')
@@ -68,11 +85,13 @@ class Documentation(object):
         if not graphviz_installed and data['graph'].lower() == 'true':
             print("Warning: Will not be able to generate graphs. Graphviz not installed.")
         if graphviz_installed and data['graph'].lower() == 'true':
+            t1 = time.time()
             print('Generating graphs...')
             self.graphs = GraphManager(self.data['project_url'],
                                        self.data['output_dir'],
                                        self.data.get('graph_dir',''),
                                        self.data['coloured_edges'].lower() == 'true')
+
             for item in project.types:
                 self.graphs.register(item)
             for item in project.procedures + project.submodprocedures:
@@ -85,11 +104,15 @@ class Documentation(object):
                 self.graphs.register(item)
             for item in project.blockdata:
                 self.graphs.register(item)
+            #The following is typically the expensive step
             self.graphs.graph_all()
             project.callgraph = self.graphs.callgraph
             project.typegraph = self.graphs.typegraph
             project.usegraph = self.graphs.usegraph
             project.filegraph = self.graphs.filegraph
+            t2 = time.time()
+            if self.data['dbg']:
+                print('\tTime taken : {t}s'.format(t=t2-t1)) 
         else:
             self.graphs = GraphManager(self.data['project_url'],
                                        self.data['output_dir'],
@@ -101,20 +124,58 @@ class Documentation(object):
             project.filegraph = ''
         print("Creating HTML documentation...")
         try:
-            for item in project.allfiles:
-                self.docs.append(FilePage(data,project,item))
-            for item in project.types:
-                self.docs.append(TypePage(data,project,item))
-            for item in project.absinterfaces:
-                self.docs.append(AbsIntPage(data,project,item))
-            for item in project.procedures + project.submodprocedures:
-                self.docs.append(ProcPage(data,project,item))
-            for item in project.modules + project.submodules:
-                self.docs.append(ModulePage(data,project,item))
-            for item in project.programs:
-                self.docs.append(ProgPage(data,project,item))
-            for item in project.blockdata:
-                self.docs.append(BlockPage(data,project,item))
+            t1 = time.time()
+
+            #Disable the following because it currently generates files/objs with
+            #inconsistent names. Does correct work but leads to incorrect file names.
+            #Possibly due to differing memory locations of instances in pool processes
+            #or possibly due to namelist state issues -- not clear.
+            if self.parallel and False:
+                nameBak =ford.sourceform.namelist.get_backup()
+
+                #Create a list of (function, args) tuples to be used in the
+                #multiprocessing pool function wrapper
+                args = []
+                args.extend([(FilePage,data,project,x) for x in project.allfiles])
+                args.extend([(TypePage,data,project,x) for x in project.types])
+                args.extend([(AbsIntPage,data,project,x) for x in project.absinterfaces])
+                args.extend([(ProcPage,data,project,x) for x in project.procedures])
+                args.extend([(ProcPage,data,project,x) for x in project.submodprocedures])
+                args.extend([(ModulePage,data,project,x) for x in project.modules])
+                args.extend([(ModulePage,data,project,x) for x in project.submodules])
+                args.extend([(ProgPage,data,project,x) for x in project.programs])
+                args.extend([(BlockPage,data,project,x) for x in project.blockdata])
+                np = min(self.njobs,len(args))
+                pool = Pool(processes=np)
+                results = pool.map(poolHtmlFuncWrap,args,len(args)/np)
+                pool.close()
+                pool.join()
+
+                self.docs = results
+                #Magic to register objects with names, reset namelist and then
+                #iterate over all docs entries in order to access ident for each,
+                #thereby adding them to the namelist if not there.
+                #Doesn't seem to quite do the correct thing -- getting "inverted"
+                #behaviour
+                ford.sourceform.namelist.restore_backup(nameBak)
+                map(lambda x: x.obj.ident, self.docs)
+
+            else:
+                for item in project.allfiles:
+                    self.docs.append(FilePage(data,project,item))
+                for item in project.types:
+                    self.docs.append(TypePage(data,project,item))
+                for item in project.absinterfaces:
+                    self.docs.append(AbsIntPage(data,project,item))
+                for item in project.procedures + project.submodprocedures:
+                    self.docs.append(ProcPage(data,project,item))
+                for item in project.modules + project.submodules:
+                    self.docs.append(ModulePage(data,project,item))
+                for item in project.programs:
+                    self.docs.append(ProgPage(data,project,item))
+                for item in project.blockdata:
+                    self.docs.append(BlockPage(data,project,item))
+            #Not worth parallelising the following -- cheap
             if len(project.procedures) > 0:
                 self.lists.append(ProcList(data,project))
             if len(project.allfiles) > 1:
@@ -132,6 +193,9 @@ class Documentation(object):
             if pagetree:
                 for item in pagetree:
                     self.pagetree.append(PagetreePage(data,project,item))
+            t2 = time.time()
+            if self.data['dbg']:
+                print('\tTime taken : {t}s'.format(t=t2-t1))
         except Exception as e:
             if data['dbg']:
                 traceback.print_exc()
@@ -139,18 +203,59 @@ class Documentation(object):
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
         if data['search'].lower() == 'true':
+            t1 = time.time()
             print('Creating search index...')
             if data['relative']:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],'')
             else:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],data['project_url'])
             self.tipue.create_node(self.index.html,'index.html', {'category': 'home'})
-            for p in self.docs:
-                self.tipue.create_node(p.html,p.loc,p.obj.meta)
-            for p in self.pagetree:
-                self.tipue.create_node(p.html,p.loc)
-            
+
+            #Disable the following for now as the returned data is too large,
+            #clogging the multiprocessing pipes and hence putting all processes
+            #into an infinite sleep. Could avoid this using an async_map as we can
+            #then supply a timeout to results.get(). Note this doesn't provide us the result
+            #but just raises an exception after a given time.
+            #Another option are to write results to file and then read in the data from file
+            #after map. This is likely quite inefficient, unless we could instead move the
+            #search writeout phase to this point -- i.e. we actually write out the final data
+            #rather than storing results and then writing later. This would be quite a large change
+            #to the program flow however I think. Alternatively if we can define a c_types
+            #structure to represent the node result then we could created a shared memory
+            #array using multiprocessing.Array into which we can allow each process to insert
+            #its results thereby avoiding the need to return data from each process. Defining
+            #such a structure may well be non-trivial(/impossible?).
+            #Note: These problems may well arise in the other locations in which pools are used
+            #for large projects (any pool usage where we need to return results), so coming up 
+            #with a flexible solution would be very helpful. The joblib module provides some way
+            #to automate some of the memory mapping sharing of data but I think is focussed on numpy
+            #arrays. 
+            #According to https://bugs.python.org/issue17560 this may cease to be an issue with 
+            #python 3.5 but I don't have access to this to test out yet.
+            #Note currently return disabled so you could try this out to get an idea of the speedup
+            if self.parallel and False:
+                #Create a list of (function, args) tuples to be used in the
+                #multiprocessing pool function wrapper
+                args = [(self,p.html,p.loc,p.obj.meta) for p in self.docs]
+                args.extend([(self,p.html,p.loc) for p in self.pagetree])
+                np = min(self.njobs,len(args))
+                pool = Pool(processes=np)
+                results = pool.map(poolSearchFuncWrap,args,len(args)/np)
+                pool.close()
+                pool.join()
+                #Update the internal data with the reduced results -- breaks encapsulation
+                self.tipue.json_nodes = results
+            else:
+                for p in self.docs:
+                    self.tipue.create_node(p.html,p.loc,p.obj.meta)
+                for p in self.pagetree:
+                    self.tipue.create_node(p.html,p.loc)
+            t2 = time.time()
+            if self.data['dbg']:
+                print('\tTime taken : {t}s'.format(t=t2-t1))
+
     def writeout(self):
+        t1=time.time()
         out_dir = self.data['output_dir']
         try:
             if os.path.isfile(out_dir):
@@ -172,7 +277,7 @@ class Documentation(object):
         copytree(os.path.join(loc,'css'), os.path.join(out_dir,'css'))
         copytree(os.path.join(loc,'fonts'), os.path.join(out_dir,'fonts'))
         copytree(os.path.join(loc,'js'), os.path.join(out_dir,'js'))
-        if self.data['graph'].lower() == 'true': self.graphs.output_graphs()
+        if self.data['graph'].lower() == 'true': self.graphs.output_graphs(self.njobs)
         if self.data['search'].lower() == 'true':
             copytree(os.path.join(loc,'tipuesearch'),os.path.join(out_dir,'tipuesearch'))
             self.tipue.print_output()
@@ -191,7 +296,9 @@ class Documentation(object):
             shutil.copy(src.path,os.path.join(out_dir,'src',src.name))
         for p in self.docs + self.lists + self.pagetree + [self.index, self.search]:
             p.writeout()
-
+        t2 = time.time()
+        if self.data['dbg']:
+            print("Time to do writeout was {t}s".format(t=t2-t1))
 
 class BasePage(object):
     """
@@ -209,7 +316,7 @@ class BasePage(object):
         self.out_dir = data['output_dir']
         self.obj = obj
         self.data = data
-    
+
     def writeout(self):
         out = open(self.outfile,'wb')
         out.write(self.html.encode('utf8'))
