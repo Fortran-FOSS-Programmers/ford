@@ -2403,8 +2403,9 @@ class NameSelector(object):
                 num = 1
             self._counts[item.get_dir()][item.name] = num
             name = item.name.lower().replace('<','lt')
-            name = item.name.lower().replace('>','gt')
-            name = item.name.lower().replace('/','SLASH')
+            # name is already lower
+            name = name.replace('>','gt')
+            name = name.replace('/','SLASH')
             if name == '': name = '__unnamed__'
             if num > 1:
                 name = name + '~' + str(num)
