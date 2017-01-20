@@ -219,7 +219,7 @@ class BasePage(object):
       obj
         The object/item in the code which this page is documenting
     """    
-    def __init__(self,data, proj, obj=None):
+    def __init__(self, data, proj, obj=None):
         self.data = data
         self.proj = proj
         self.obj = obj
