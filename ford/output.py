@@ -75,9 +75,13 @@ class Documentation(object):
                                        self.data['coloured_edges'].lower() == 'true')
             for item in project.types:
                 self.graphs.register(item)
-            for item in project.procedures + project.submodprocedures:
+            for item in project.procedures:
                 self.graphs.register(item)
-            for item in project.modules + project.submodules:
+            for item in project.submodprocedures:
+                self.graphs.register(item)
+            for item in project.modules:
+                self.graphs.register(item)
+            for item in project.submodules:
                 self.graphs.register(item)
             for item in project.programs:
                 self.graphs.register(item)
@@ -107,9 +111,13 @@ class Documentation(object):
                 self.docs.append(TypePage(data,project,item))
             for item in project.absinterfaces:
                 self.docs.append(AbsIntPage(data,project,item))
-            for item in project.procedures + project.submodprocedures:
+            for item in project.procedures:
                 self.docs.append(ProcPage(data,project,item))
-            for item in project.modules + project.submodules:
+            for item in project.submodprocedures:
+                self.docs.append(ProcPage(data,project,item))
+            for item in project.modules:
+                self.docs.append(ModulePage(data,project,item))
+            for item in project.submodules:
                 self.docs.append(ModulePage(data,project,item))
             for item in project.programs:
                 self.docs.append(ProgPage(data,project,item))
@@ -117,9 +125,9 @@ class Documentation(object):
                 self.docs.append(BlockPage(data,project,item))
             if len(project.procedures) > 0:
                 self.lists.append(ProcList(data,project))
-            if len(project.allfiles) > 1:
+            if len(project.files) + len(project.extra_files) > 1:
                 self.lists.append(FileList(data,project))
-            if len(project.modules + project.submodules) > 0:
+            if len(project.modules) + len(project.submodules) > 0:
                 self.lists.append(ModList(data,project))
             if len(project.programs) > 1:
                 self.lists.append(ProgList(data,project))
@@ -189,8 +197,15 @@ class Documentation(object):
             shutil.copy(self.data['favicon'],os.path.join(out_dir,'favicon.png'))
         for src in self.project.allfiles:
             shutil.copy(src.path,os.path.join(out_dir,'src',src.name))
-        for p in self.docs + self.lists + self.pagetree + [self.index, self.search]:
+        # By doing this we omit a duplication of data.
+        for p in self.docs:
             p.writeout()
+        for p in self.lists:
+            p.writeout()
+        for p in self.pagetree:
+            p.writeout()
+        self.index.writeout()
+        self.search.writeout()
 
 
 class BasePage(object):
