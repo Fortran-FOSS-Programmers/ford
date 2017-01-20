@@ -213,30 +213,40 @@ class BasePage(object):
     Abstract class for representation of pages in the documentation.
     
       data
-        Dictionary containing project_directory
+        Dictionary containing project information (to be used when rendering)
       proj
         FortranProject object
       obj
         The object/item in the code which this page is documenting
     """    
-    def __init__(self,data,proj,obj=None):
-        self.html = self.render(data,proj,obj)
-        self.out_dir = data['output_dir']
-        self.obj = obj
+    def __init__(self,data, proj, obj=None):
         self.data = data
+        self.proj = proj
+        self.obj = obj
+
+    @property
+    def out_dir(self):
+        """ Returns the output directory of the project """
+        return self.data['output_dir']
+
+    @property
+    def html(self):
+        """ Wrapper for only doing the rendering on request (drastically reduces memory) """
+        return self.render(self.data, self.proj, self.obj)
     
     def writeout(self):
         out = open(self.outfile,'wb')
         out.write(self.html.encode('utf8'))
         out.close()
     
-    def render(self,data,proj,obj):
+    def render(self, data, proj, obj):
         """
         Get the HTML for the page. This method must be overridden. Arguments
         are proj_data, project object, and item in the code which the
         page documents.
         """
-        raise Exception("Should not instantiate BasePage type")
+        raise NotImplementedError("Should not instantiate BasePage type")
+
 
 
 class IndexPage(BasePage):
