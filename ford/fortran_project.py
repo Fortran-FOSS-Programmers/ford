@@ -71,16 +71,10 @@ class Project(object):
         self.common = {}
                 
         # Get all files within topdir, recursively
-        srctree = []
-        for topdir in self.topdirs:
-            srctree = os.walk(os.path.relpath(topdir))
-            for srcdir in srctree:
-                abs_dir = os.path.normpath(os.path.join(settings['base_dir'],
-                              os.path.expanduser(os.path.expandvars(srcdir[0]))))
-                exclude = [abs_dir==ex for ex in settings['exclude_dir']]
-                if any(exclude): continue
-                curdir = srcdir[0]
-                for item in srcdir[2]:
+        srcdir_list = self.make_srcdir_list(settings['exclude_dir'])
+        for curdir in srcdir_list:
+                for item in [ f for f in os.listdir(curdir) \
+                               if not os.path.isdir(os.path.join(curdir,f))]:
                     ext = item.split('.')[-1]
                     if (ext in self.extensions or ext in self.fixed_extensions) and \
                       not item in settings['exclude']:
@@ -290,6 +284,28 @@ class Project(object):
             src.make_links(self)
         return
 
+    def make_srcdir_list(self,exclude_dirs):
+        """
+        Like os.walk, except that:
+        a) directories listed in exclude_dir are excluded with all
+          their subdirectories
+        b) absolute paths are returned
+        """
+        srcdir_list = []
+        for topdir in self.topdirs:
+            srcdir_list.append(topdir)
+            srcdir_list += self.recursive_dir_list(topdir,exclude_dirs)
+        return srcdir_list
+
+    def recursive_dir_list(self,topdir,skip):
+        dir_list = []
+        for entry in os.listdir(topdir):
+            abs_entry = os.path.join(topdir,entry)
+            if os.path.isdir(abs_entry) and (abs_entry not in skip):
+                dir_list.append( abs_entry )
+                dir_list += self.recursive_dir_list(abs_entry,skip)
+        return dir_list
+          
 
 
 def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
