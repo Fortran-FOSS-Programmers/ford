@@ -43,6 +43,7 @@ from ford.graphs import graphviz_installed
 
 loc = os.path.dirname(__file__)
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
+env.globals['path'] = os.path # this lets us call path.* in templates
 
 class Documentation(object):
     """
@@ -189,6 +190,10 @@ class Documentation(object):
             shutil.copy(self.data['favicon'],os.path.join(out_dir,'favicon.png'))
         for src in self.project.allfiles:
             shutil.copy(src.path,os.path.join(out_dir,'src',src.name))
+        if self.data['mathjax_config'] is not None:
+          shutil.copy( self.data['mathjax_config'] ,                   \
+            os.path.join( out_dir, os.path.join( 'js/MathJax-config' , \
+            os.path.basename(self.data['mathjax_config']) ) ) )
         for p in self.docs + self.lists + self.pagetree + [self.index, self.search]:
             p.writeout()
 

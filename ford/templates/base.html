@@ -172,6 +172,9 @@
         }
       });
     </script>
+    {% if mathjax_config is not none %}
+    <script src="{{ project_url }}/js/MathJax-config/{{ path.basename(mathjax_config) }}"></script>
+    {% endif %}
     <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
     {% if search|lower == 'true' %}
