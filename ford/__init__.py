@@ -141,8 +141,8 @@ def initialize():
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'source','exclude_dir','macro','include','preprocess','quiet',
-               'search','lower','sort','extra_mods','dbg','graph', 'license',
-               'extra_filetypes','preprocessor','creation_date',
+               'search','lower','sort','extra_mods','dbg','graph','graph_maxdepth',
+               'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar']
     defaults = {'src_dir':             ['./src'],
@@ -176,6 +176,7 @@ def initialize():
                 'extra_mods':          [],
                 'dbg':                 False,
                 'graph':               'false',
+                'graph_maxdepth':      '10000',
                 'license':             '',
                 'extra_filetypes':     [],
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',

@@ -353,6 +353,8 @@ class FortranBase(object):
             self.meta['graph'] = self.settings['graph']
         else:
             self.meta['graph'] = self.meta['graph'].lower()
+        if 'graph_maxdepth' not in self.meta:
+            self.meta['graph_maxdepth'] = self.settings['graph_maxdepth']
 
         if self.obj == 'proc' or self.obj == 'type' or self.obj == 'program':
             if 'source' not in self.meta:
