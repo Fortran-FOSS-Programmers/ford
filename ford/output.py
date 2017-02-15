@@ -55,16 +55,8 @@ class Documentation(object):
         self.pagetree = []
         self.lists = []
         self.docs = []
-        if data['relative']:
-            ford.sourceform.set_base_url('.')
-            ford.pagetree.set_base_url('.')
-            data['project_url'] = '.'
         self.index = IndexPage(data,project,proj_docs)
         self.search = SearchPage(data,project)
-        if data['relative']:
-            ford.sourceform.set_base_url('..')
-            ford.pagetree.set_base_url('..')
-            data['project_url'] = '..'
         if not graphviz_installed and data['graph'].lower() == 'true':
             print("Warning: Will not be able to generate graphs. Graphviz not installed.")
         if graphviz_installed and data['graph'].lower() == 'true':
@@ -255,6 +247,10 @@ class IndexPage(BasePage):
         return os.path.join(self.out_dir,'index.html')
 
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '.'
+            ford.sourceform.set_base_url('.')
+            ford.pagetree.set_base_url('.')
         template = env.get_template('index.html')
         return template.render(data,project=proj,proj_docs=obj)
 
@@ -265,6 +261,10 @@ class SearchPage(BasePage):
         return os.path.join(self.out_dir,'search.html')
 
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '.'
+            ford.sourceform.set_base_url('.')
+            ford.pagetree.set_base_url('.')
         template = env.get_template('search.html')
         return template.render(data,project=proj)
 
@@ -275,6 +275,10 @@ class ProcList(BasePage):
         return os.path.join(self.out_dir,'lists','procedures.html')
 
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('proc_list.html')
         return template.render(data,project=proj)
 
@@ -285,6 +289,10 @@ class FileList(BasePage):
         return os.path.join(self.out_dir,'lists','files.html')
 
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('file_list.html')
         return template.render(data,project=proj)
 
@@ -295,6 +303,10 @@ class ModList(BasePage):
         return os.path.join(self.out_dir,'lists','modules.html')
 
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('mod_list.html')
         return template.render(data,project=proj)
 
@@ -305,6 +317,10 @@ class ProgList(BasePage):
         return os.path.join(self.out_dir,'lists','programs.html')
 
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('prog_list.html')
         return template.render(data,project=proj)
 
@@ -315,6 +331,10 @@ class TypeList(BasePage):
         return os.path.join(self.out_dir,'lists','types.html')
 
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('types_list.html')
         return template.render(data,project=proj)
 
@@ -325,6 +345,10 @@ class AbsIntList(BasePage):
         return os.path.join(self.out_dir,'lists','absint.html')
 
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('absint_list.html')
         return template.render(data,project=proj)
 
@@ -335,6 +359,10 @@ class BlockList(BasePage):
         return os.path.join(self.out_dir,'lists','blockdata.html')
 
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('block_list.html')
         return template.render(data,project=proj)
 
@@ -354,24 +382,40 @@ class DocPage(BasePage):
 
 class FilePage(DocPage):
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('file_page.html')
         return template.render(data,src=obj,project=proj)
 
 
 class TypePage(DocPage):
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('type_page.html')
         return template.render(data,dtype=obj,project=proj)
 
 
 class AbsIntPage(DocPage):
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('nongenint_page.html')
         return template.render(data,interface=obj,project=proj)
 
 
 class ProcPage(DocPage):
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         if obj.obj == 'proc':
             template = env.get_template('proc_page.html')
             return template.render(data,procedure=obj,project=proj)
@@ -385,17 +429,29 @@ class ProcPage(DocPage):
 
 class ModulePage(DocPage):
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('mod_page.html')
         return template.render(data,module=obj,project=proj)
 
 
 class ProgPage(DocPage):
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('prog_page.html')
         return template.render(data,program=obj,project=proj)
 
 class BlockPage(DocPage):
     def render(self,data,proj,obj):
+        if data['relative']:
+            data['project_url'] = '..'
+            ford.sourceform.set_base_url('..')
+            ford.pagetree.set_base_url('..')
         template = env.get_template('block_page.html')
         return template.render(data,blockdat=obj,project=proj)
 
