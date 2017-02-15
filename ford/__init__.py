@@ -174,7 +174,7 @@ def initialize():
                 'lower':               'false',
                 'sort':                'src',
                 'extra_mods':          [],
-                'dbg':                 False,
+                'dbg':                 True,
                 'graph':               'false',
                 'graph_maxdepth':      '10000',
                 'license':             '',
