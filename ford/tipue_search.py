@@ -35,6 +35,7 @@ https://github.com/getpelican/pelican-plugins/tree/master/tipue_search
 """
 
 from __future__ import unicode_literals
+
 import os.path
 import json
 from bs4 import BeautifulSoup, FeatureNotFound
@@ -86,9 +87,8 @@ class Tipue_Search_JSON_Generator(object):
                 'loc': page_url}
         
         self.json_nodes.append(node)
-        #Want to return the node here for multiprocessing but it becomes too large 
-        #leading to the pool.map processes entering an infinite sleep -- need some way to avoid this.
-        #return node
+
+
 
     def print_output(self):
         path = os.path.join(self.output_path, 'tipuesearch', 'tipuesearch_content.js')
