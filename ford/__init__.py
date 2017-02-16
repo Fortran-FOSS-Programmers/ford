@@ -82,6 +82,12 @@ def initialize():
     Method to parse and check configurations of FORD, get the project's 
     global documentation, and create the Markdown reader.
     """
+    try:
+        import multiprocessing
+        ncpus = '{0}'.format(multiprocessing.cpu_count())
+    except (ImportError, NotImplementedError):
+        ncpus = '0'
+
     # Setup the command-line options and parse them.
     parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
     parser.add_argument("project_file",help="file containing the description and settings for the project",
@@ -182,7 +188,7 @@ def initialize():
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': False,
                 'coloured_edges':      'false',
-                'parallel':            0,
+                'parallel':            ncpus,
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
