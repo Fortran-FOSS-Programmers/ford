@@ -31,11 +31,11 @@ import toposort
 
 import ford.sourceform
 
-INTRINSIC_MODS = {'iso_fortran_env': '<a href="https://software.intel.com/en-us/node/511041">iso_fortran_env</a>',
-                  'iso_c_binding': '<a href="https://software.intel.com/en-us/node/511038">iso_c_binding</a>',
-                  'ieee_arithmetic': '<a href="https://software.intel.com/en-us/node/511043">ieee_arithmetic</a>',
-                  'ieee_exceptions': '<a href="https://software.intel.com/en-us/node/511044">ieee_exceptions</a>',
-                  'ieee_features': '<a href="https://software.intel.com/en-us/node/511045">ieee_features</a>',
+INTRINSIC_MODS = {'iso_fortran_env': '<a href="http://fortranwiki.org/fortran/show/ISO_FORTRAN_ENV">iso_fortran_env</a>',
+                  'iso_c_binding': '<a href="http://fortranwiki.org/fortran/show/ISO_C_BINDING">iso_c_binding</a>',
+                  'ieee_arithmetic': '<a href="http://fortranwiki.org/fortran/show/IEEE_ARITHMETIC">ieee_arithmetic</a>',
+                  'ieee_exceptions': '<a href="http://fortranwiki.org/fortran/show/IEEE+arithmetic">ieee_exceptions</a>',
+                  'ieee_features': '<a href="http://fortranwiki.org/fortran/show/IEEE+arithmetic">ieee_features</a>',
                   'openacc': '<a href="http://www.openacc.org/sites/default/files/OpenACC.2.0a_1.pdf#page=49">openacc</a>',
                   'omp_lib': '<a href="https://gcc.gnu.org/onlinedocs/gcc-4.4.3/libgomp/Runtime-Library-Routines.html">omp_lib</a>',
                   'mpi': '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node410.htm">mpi</a>',
@@ -124,8 +124,15 @@ class Project(object):
                             except Exception as e:
                                 print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
                                 continue
-        self.allfiles = self.files + self.extra_files                
 
+
+    @property
+    def allfiles(self):
+        """ Instead of duplicating files, it is much more efficient to create the itterator on the fly """
+        for f in self.files:
+            yield f
+        for f in self.extra_files:
+            yield f
 
     def __str__(self):
         return self.name
@@ -148,9 +155,16 @@ class Project(object):
             non_local_mods[name.lower()] = '<a href="{}">{}</a>'.format(url,name)
         
         # Match USE statements up with the right modules
-        containers = self.modules + self.procedures + self.programs + self.submodules + self.blockdata
-        for container in containers:
-            id_mods(container,self.modules,non_local_mods,self.submodules)
+        for s in self.modules:
+            id_mods(s, self.modules, non_local_mods, self.submodules)
+        for s in self.procedures:
+            id_mods(s, self.modules, non_local_mods, self.submodules)
+        for s in self.programs:
+            id_mods(s, self.modules, non_local_mods, self.submodules)
+        for s in self.submodules:
+            id_mods(s, self.modules, non_local_mods, self.submodules)
+        for s in self.blockdata:
+            id_mods(s, self.modules, non_local_mods, self.submodules)
             
         # Get the order to process other correlations with
         deplist = {}
@@ -258,14 +272,22 @@ class Project(object):
                 for dtype in block.types:
                     self.types.append(dtype)
 
-        self.mod_lines = sum([m.num_lines for m in self.modules + self.submodules])
-        self.proc_lines = sum([p.num_lines for p in self.procedures])
-        self.file_lines = sum([f.num_lines for f in self.files])
-        self.type_lines = sum([t.num_lines for t in self.types])
-        self.type_lines_all = sum([t.num_lines_all for t in self.types])
-        self.absint_lines = sum([a.num_lines for a in self.absinterfaces])
-        self.prog_lines = sum([a.num_lines for a in self.programs])
-        self.block_lines = sum([b.num_lines for b in self.blockdata])
+        def sum_lines(*argv, **kwargs):
+            """ Wrapper for minimizing memory consumption """
+            routine = kwargs.get('func', 'num_lines')
+            n = 0
+            for arg in argv:
+                for item in arg:
+                    n += getattr(item, routine)
+            return n
+        self.mod_lines = sum_lines(self.modules, self.submodules)
+        self.proc_lines = sum_lines(self.procedures)
+        self.file_lines = sum_lines(self.files)
+        self.type_lines = sum_lines(self.types)
+        self.type_lines_all = sum_lines(self.types, func='num_lines_all')
+        self.absint_lines = sum_lines(self.absinterfaces)
+        self.prog_lines = sum_lines(self.programs)
+        self.block_lines = sum_lines(self.blockdata)
         print()
 
     def markdown(self,md,base_url='..'):
@@ -275,20 +297,17 @@ class Project(object):
         print("\nProcessing documentation comments...")
         ford.sourceform.set_base_url(base_url)        
         if self.settings['warn'].lower() == 'true': print()
-        for src in self.files + self.extra_files:
-            src.markdown(md,self)
-        return
+        for src in self.allfiles:
+            src.markdown(md, self)
 
     def make_links(self,base_url='..'):
         """
         Substitute intrasite links to documentation for other parts of 
         the program.
         """
-        
         ford.sourceform.set_base_url(base_url)        
-        for src in self.files + self.extra_files:
+        for src in self.allfiles:
             src.make_links(self)
-        return
 
 
 
@@ -321,4 +340,3 @@ def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
         id_mods(func,modlist,intrinsic_mods)
     for subroutine in getattr(obj,'subroutines',[]):
         id_mods(subroutine,modlist,intrinsic_mods)
-    return

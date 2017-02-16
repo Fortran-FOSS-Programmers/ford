@@ -353,6 +353,8 @@ class FortranBase(object):
             self.meta['graph'] = self.settings['graph']
         else:
             self.meta['graph'] = self.meta['graph'].lower()
+        if 'graph_maxdepth' not in self.meta:
+            self.meta['graph_maxdepth'] = self.settings['graph_maxdepth']
 
         if self.obj == 'proc' or self.obj == 'type' or self.obj == 'program':
             if 'source' not in self.meta:
@@ -379,93 +381,100 @@ class FortranBase(object):
             else:
                 self.meta['proc_internals'] = self.meta['proc_internals'].lower()
 
-        md_list = []
+        # Create Markdown
+        for item in self.itterator('variables', 'modules', 'submodules', 'common',
+                                   'subroutines', 'modprocedures', 'functions',
+                                   'interfaces', 'absinterfaces', 'types',
+                                   'programs', 'blockdata', 'boundprocs',
+                                   'finalprocs', 'args', 'enums'):
+            if isinstance(item, FortranBase):
+                item.markdown(md, project)
+
         if hasattr(self,'variables'):
-            md_list.extend(self.variables)
-            if not isinstance(self,FortranType): sort_items(self,self.variables)
+            if not isinstance(self,FortranType):
+                sort_items(self,self.variables)
         if hasattr(self,'modules'):
-            md_list.extend(self.modules)
             sort_items(self,self.modules)
         if hasattr(self,'submodules'):
-            md_list.extend(self.submodules)
             sort_items(self,self.submodules)
         if hasattr(self,'common'):
-            md_list.extend(self.common)
             sort_items(self,self.common)
         if hasattr(self,'subroutines'):
-            md_list.extend(self.subroutines)
             sort_items(self,self.subroutines)
         if hasattr(self,'modprocedures'):
-            md_list.extend(self.modprocedures)
             sort_items(self,self.modprocedures)
         if hasattr(self,'functions'):
-            md_list.extend(self.functions)
             sort_items(self,self.functions)
         if hasattr(self,'interfaces'):
-            md_list.extend(self.interfaces)
             sort_items(self,self.interfaces)
         if hasattr(self,'absinterfaces'):
-            md_list.extend(self.absinterfaces)
             sort_items(self,self.absinterfaces)
         if hasattr(self,'types'):
-            md_list.extend(self.types)
             sort_items(self,self.types)
         if hasattr(self,'programs'):
-            md_list.extend(self.programs)
             sort_items(self,self.programs)
         if hasattr(self,'blockdata'):
-            md_list.extend(self.blockdata)
             sort_items(self,self.blockdata)
         if hasattr(self,'boundprocs'):
             # Type-bound procedures sorted at the end of correlation
             # step, once any inherited ones have been added.
-            md_list.extend(self.boundprocs)
+            pass
         if hasattr(self,'finalprocs'):
-            md_list.extend(self.finalprocs)
             sort_items(self,self.finalprocs)
         if hasattr(self,'args'):
-            md_list.extend(self.args)
             #sort_items(self.args,args=True)
-        if hasattr(self,'enums'):
-            md_list.extend(self.enums)
-        if hasattr(self,'retvar') and self.retvar: md_list.append(self.retvar)
-        if hasattr(self,'procedure'): md_list.append(self.procedure)
-
-        for item in md_list:
-            if isinstance(item, FortranBase): item.markdown(md,project)
+            pass
+        if hasattr(self,'retvar'):
+            if self.retvar:
+                if isinstance(self.retvar, FortranBase):
+                    self.retvar.markdown(md, project)
+        if hasattr(self,'procedure'):
+            if isinstance(self.procedure, FortranBase):
+                self.procedure.markdown(md, project)
 
         return
 
 
-    def make_links(self,project):
+    def make_links(self, project):
         """
         Process intra-site links to documentation of other parts of the program.
         """
         self.doc = ford.utils.sub_links(self.doc,project)
         if 'summary' in self.meta:
             self.meta['summary'] = ford.utils.sub_links(self.meta['summary'],project)
-        recurse_list = []
 
-        if hasattr(self,'variables'): recurse_list.extend(self.variables)
-        if hasattr(self,'types'): recurse_list.extend(self.types)
-        if hasattr(self,'enums'): recurse_list.extend(self.enums)
-        if hasattr(self,'modules'): recurse_list.extend(self.modules)
-        if hasattr(self,'submodules'): recurse_list.extend(self.submodules)
-        if hasattr(self,'subroutines'): recurse_list.extend(self.subroutines)
-        if hasattr(self,'functions'): recurse_list.extend(self.functions)
-        if hasattr(self,'interfaces'): recurse_list.extend(self.interfaces)
-        if hasattr(self,'absinterfaces'): recurse_list.extend(self.absinterfaces)
-        if hasattr(self,'programs'): recurse_list.extend(self.programs)
-        if hasattr(self,'boundprocs'): recurse_list.extend(self.boundprocs)
+        # Create links in the project
+        for item in self.itterator('variables', 'types', 'enums', 'modules',
+                                   'submodules', 'subroutines', 'functions',
+                                   'interfaces', 'absinterfaces', 'programs',
+                                   'boundprocs', 'args', 'bindings'):
+            if isinstance(item, FortranBase):
+                item.make_links(project)
+        if hasattr(self, 'retvar'):
+            if self.retvar:
+                if isinstance(self.retvar, FortranBase):
+                    self.retvar.make_links(project)
+        if hasattr(self, 'procedure'):
+            if isinstance(self.procedure, FortranBase):
+                self.procedure.make_links(project)
+
         # if hasattr(self,'finalprocs'): recurse_list.extend(self.finalprocs)
         # if hasattr(self,'constructor') and self.constructor: recurse_list.append(self.constructor)
-        if hasattr(self,'args'): recurse_list.extend(self.args)
-        if hasattr(self,'bindings'): recurse_list.extend(self.bindings)
-        if hasattr(self,'retvar') and self.retvar: recurse_list.append(self.retvar)
-        if hasattr(self,'procedure'): recurse_list.append(self.procedure)
 
-        for item in recurse_list:
-            if isinstance(item, FortranBase): item.make_links(project)
+    @property
+    def routines(self):
+        """ Itterator returning *both* functions and subroutines, in that order """
+        for item in self.itterator('functions', 'subroutines'):
+            yield item
+
+    def itterator(self, *argv):
+        """ Itterator returning any list of elements via attribute lookup in `self`
+
+        This itterator retains the order of the arguments """
+        for arg in argv:
+            if hasattr(self, arg):
+                for item in getattr(self, arg):
+                    yield item
 
 
 class FortranContainer(FortranBase):
@@ -773,7 +782,6 @@ class FortranContainer(FortranBase):
         raise NotImplementedError()
 
 
-
 class FortranCodeUnit(FortranContainer):
     """
     A class on which programs, modules, functions, and subroutines are based.
@@ -803,7 +811,7 @@ class FortranCodeUnit(FortranContainer):
             self.all_types.update(self.ancestor_mod.all_types)
 
         if isinstance(self,FortranSubmodule):
-            for proc in self.functions + self.subroutines:
+            for proc in self.routines:
                 if proc.module and proc.name.lower() in self.all_procs:
                     intr = self.all_procs[proc.name.lower()]
                     if intr.proctype.lower() == 'interface' and not intr.generic and not intr.abstract and intr.procedure.module == True:
@@ -920,7 +928,7 @@ class FortranCodeUnit(FortranContainer):
     def process_attribs(self):
         # IMPORTANT: Make sure types processed before interfaces--import when
         # determining permissions of derived types and overridden constructors
-        for item in self.functions + self.subroutines + self.types + self.interfaces + self.absinterfaces:
+        for item in self.itterator('functions', 'subroutines', 'types', 'interfaces', 'absinterfaces'):
             for attr in self.attr_dict.get(item.name.lower(),[]):
                 if attr == 'public' or attr == 'private' or attr == 'protected':
                     item.permission = attr
@@ -986,9 +994,9 @@ class FortranCodeUnit(FortranContainer):
         # Recurse
         for obj in self.absinterfaces:
             obj.visible = True
-        for obj in self.functions + self.subroutines + self.types + self.interfaces + getattr(self,'modprocedures',[]) + getattr(self,'modfunctions',[]) + getattr(self,'modsubroutines',[]):
+        for obj in self.itterator('functions', 'subroutines', 'types', 'interfaces', 'modprocedures', 'modfunctions', 'modsubroutines'):
             obj.visible = True
-        for obj in self.functions + self.subroutines + self.types + getattr(self,'modprocedures',[]) + getattr(self,'modfunctions',[]) + getattr(self,'modsubroutines',[]):
+        for obj in self.itterator('functions', 'subroutines', 'types', 'modprocedures', 'modfunctions', 'modsubroutines'):
             obj.prune()
 
 
@@ -1063,7 +1071,7 @@ class FortranModule(FortranCodeUnit):
         # Create list of all local procedures. Ones coming from other modules
         # will be added later, during correlation.
         self.all_procs = {}
-        for p in self.functions + self.subroutines:
+        for p in self.routines:
             self.all_procs[p.name.lower()] = p
         for interface in self.interfaces:
             if not interface.abstract:
@@ -1162,7 +1170,7 @@ class FortranSubmodule(FortranModule):
         self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
         self.all_procs = {}
-        for p in self.functions + self.subroutines:
+        for p in self.routines:
             self.all_procs[p.name.lower()] = p
         for interface in self.interfaces:
             if not interface.abstract:
@@ -1236,7 +1244,7 @@ class FortranSubroutine(FortranCodeUnit):
 
     def _cleanup(self):
         self.all_procs = {}
-        for p in self.functions + self.subroutines:
+        for p in self.routines:
             self.all_procs[p.name.lower()] = p
         for interface in self.interfaces:
             if not interface.abstract:
@@ -1355,7 +1363,7 @@ class FortranFunction(FortranCodeUnit):
 
     def _cleanup(self):
         self.all_procs = {}
-        for p in self.functions + self.subroutines:
+        for p in self.routines:
             self.all_procs[p.name.lower()] = p
         for interface in self.interfaces:
             if not interface.abstract:
@@ -1424,7 +1432,7 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
     def _cleanup(self):
         self.process_attribs()
         self.all_procs = {}
-        for p in self.functions + self.subroutines:
+        for p in self.routines:
             self.all_procs[p.name.lower()] = p
         for interface in self.interfaces:
             if not interface.abstract:
@@ -1455,7 +1463,7 @@ class FortranProgram(FortranCodeUnit):
 
     def _cleanup(self):
         self.all_procs = {}
-        for p in self.functions + self.subroutines:
+        for p in self.routines:
             self.all_procs[p.name.lower()] = p
         for interface in self.interfaces:
             if not interface.abstract:
@@ -1655,7 +1663,7 @@ class FortranInterface(FortranContainer):
             self.contents = contents
         elif not self.generic:
             contents = []
-            for proc in (self.functions + self.subroutines):
+            for proc in self.routines:
                 proc.visible = True
                 item = copy.copy(self)
                 item.procedure = proc
@@ -2403,8 +2411,9 @@ class NameSelector(object):
                 num = 1
             self._counts[item.get_dir()][item.name] = num
             name = item.name.lower().replace('<','lt')
-            name = item.name.lower().replace('>','gt')
-            name = item.name.lower().replace('/','SLASH')
+            # name is already lower
+            name = name.replace('>','gt')
+            name = name.replace('/','SLASH')
             if name == '': name = '__unnamed__'
             if num > 1:
                 name = name + '~' + str(num)

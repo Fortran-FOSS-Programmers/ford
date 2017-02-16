@@ -402,11 +402,14 @@ class FortranGraph(object):
         self.numnodes = 0
         self.added = []
         self.root = []
+        self.max_nesting = 0
         try:
             for r in root:
                 self.root.append(self.data.get_node(r))
+                self.max_nesting = max(self.max_nesting, eval(r.meta['graph_maxdepth']))
         except:
             self.root.append(self.data.get_node(root))
+            self.max_nesting = eval(root.meta['graph_maxdepth'])
         self.webdir = webdir
         if ident:
             self.ident = ident + '~~' + self.__class__.__name__
@@ -441,7 +444,7 @@ class FortranGraph(object):
             self.scaled = False
 
 
-    def add_node(self,nodes,root=False):
+    def add_node(self,nodes,root=False,nesting=0):
         """
         Adds nodes to the graph. nodes is a list of node-type objects, 
         and root is a boolean indicating whether this is the root of the
@@ -462,7 +465,8 @@ class FortranGraph(object):
                     self.numnodes += 1
                     self.added.append(n.ident)
                     recurse.append(n)
-        self.add_more_nodes(recurse)
+        if nesting < self.max_nesting:
+            self.add_more_nodes(recurse,nesting=nesting+1)
 
     def __str__(self):
         if self.numnodes <= 1 or not graphviz_installed: return ''
@@ -539,7 +543,7 @@ class ModuleGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return MOD_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds edges showing the relationship between modules and submodules
         listed in nodes.
@@ -567,7 +571,7 @@ class UsesGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return MOD_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds nodes for the modules used by those listed in nodes. Adds
         edges between them. Also does this for ancestor (sub)modules.
@@ -575,11 +579,11 @@ class UsesGraph(FortranGraph):
         for i,n in zip(range(len(nodes)),nodes):
             r,g,b = rainbowcolour(i,len(nodes))
             colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.uses if x.ident not in self.added])
+            self.add_node([x for x in n.uses if x.ident not in self.added],nesting=nesting)
             for nu in n.uses:
                 self.dot.edge(nu.ident,n.ident,style='dashed',color=colour)
             if hasattr(n,'ancestor'):
-                if n.ancestor.ident not in self.added: self.add_node([n.ancestor])
+                if n.ancestor.ident not in self.added: self.add_node([n.ancestor],nesting=nesting)
                 self.dot.edge(n.ancestor.ident,n.ident,color=colour)
         
 
@@ -588,7 +592,7 @@ class UsedByGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return MOD_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
@@ -596,10 +600,10 @@ class UsedByGraph(FortranGraph):
         for i,n in zip(range(len(nodes)),nodes):
             r,g,b = rainbowcolour(i,len(nodes))
             colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in getattr(n,'used_by',[]) if x.ident not in self.added])
+            self.add_node([x for x in getattr(n,'used_by',[]) if x.ident not in self.added],nesting=nesting)
             for nu in getattr(n,'used_by',[]):
                 self.dot.edge(n.ident,nu.ident,style='dashed',color=colour)
-            self.add_node([x for x in getattr(n,'children',[]) if x.ident not in self.added])
+            self.add_node([x for x in getattr(n,'children',[]) if x.ident not in self.added],nesting=nesting)
             for c in getattr(n,'children',[]):
                 self.dot.edge(n.ident,c.ident,color=colour)
 
@@ -609,7 +613,7 @@ class FileGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return FILE_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds edges showing dependencies between source files listed in
         the nodes.
@@ -617,7 +621,7 @@ class FileGraph(FortranGraph):
         for i,n in zip(range(len(nodes)),nodes):
             r,g,b = rainbowcolour(i,len(nodes))
             colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.efferent if x.ident not in self.added])
+            self.add_node([x for x in n.efferent if x.ident not in self.added],nesting=nesting)
             for ne in n.efferent:
                 self.dot.edge(ne.ident,n.ident,color=colour)
 
@@ -627,7 +631,7 @@ class EfferentGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return FILE_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds nodes for the files which this one depends on. Adds
         edges between them.
@@ -635,7 +639,7 @@ class EfferentGraph(FortranGraph):
         for i,n in zip(range(len(nodes)),nodes):
             r,g,b = rainbowcolour(i,len(nodes))
             colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.efferent if x.ident not in self.added])
+            self.add_node([x for x in n.efferent if x.ident not in self.added],nesting=nesting)
             for ne in n.efferent:
                 self.dot.edge(ne.ident,n.ident,style='dashed',color=colour)
 
@@ -645,7 +649,7 @@ class AfferentGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return FILE_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds nodes for files which depend upon this one. Adds appropriate
         edges between them.
@@ -653,7 +657,7 @@ class AfferentGraph(FortranGraph):
         for i,n in zip(range(len(nodes)),nodes):
             r,g,b = rainbowcolour(i,len(nodes))
             colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.afferent if x.ident not in self.added])
+            self.add_node([x for x in n.afferent if x.ident not in self.added],nesting=nesting)
             for na in n.afferent:
                 self.dot.edge(n.ident,na.ident,style='dashed',color=colour)
 
@@ -663,7 +667,7 @@ class TypeGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return TYPE_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds edges showing inheritance and composition relationships 
         between derived types listed in the nodes.
@@ -672,7 +676,7 @@ class TypeGraph(FortranGraph):
         for i,n in zip(range(len(nodes)),nodes):
             r,g,b = rainbowcolour(i,len(nodes))
             colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.comp_types.keys() if x.ident not in self.added])
+            self.add_node([x for x in n.comp_types.keys() if x.ident not in self.added],nesting=nesting)
             for c in n.comp_types:
                 if c not in nodes and c.ident not in self.added:
                     self.dot.node(c.ident,**c.attribs)
@@ -681,7 +685,7 @@ class TypeGraph(FortranGraph):
                 self.dot.edge(c.ident,n.ident,style='dashed',label=n.comp_types[c],color=colour)
             if n.ancestor:
                 if n.ancestor not in nodes and n.ancestor.ident not in self.added:
-                    self.add_node([n.ancestor])
+                    self.add_node([n.ancestor],nesting=nesting)
                     self.dot.node(n.ancestor.ident,**n.ancestor.attribs)
                     self.numnodes += 1
                     self.added.append(n.ancestor.ident)
@@ -693,7 +697,7 @@ class InheritsGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return TYPE_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
@@ -701,11 +705,11 @@ class InheritsGraph(FortranGraph):
         for i,n in zip(range(len(nodes)),nodes):
             r,g,b = rainbowcolour(i,len(nodes))
             colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.comp_types.keys() if x.ident not in self.added])
+            self.add_node([x for x in n.comp_types.keys() if x.ident not in self.added], nesting=nesting)
             for c in n.comp_types:
                 self.dot.edge(c.ident,n.ident,style='dashed',label=n.comp_types[c],color=colour)
             if n.ancestor:
-                if n.ancestor.ident not in self.added: self.add_node([n.ancestor])
+                if n.ancestor.ident not in self.added: self.add_node([n.ancestor],nesting=nesting)
                 self.dot.edge(n.ancestor.ident,n.ident,color=colour)
 
 
@@ -714,7 +718,7 @@ class InheritedByGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return TYPE_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
@@ -722,10 +726,10 @@ class InheritedByGraph(FortranGraph):
         for i,n in zip(range(len(nodes)),nodes):
             r,g,b = rainbowcolour(i,len(nodes))
             colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.comp_of.keys() if x.ident not in self.added])
+            self.add_node([x for x in n.comp_of.keys() if x.ident not in self.added],nesting=nesting)
             for c in n.comp_of:
                 self.dot.edge(n.ident,c.ident,style='dashed',label=n.comp_of[c],color=colour)
-            self.add_node([x for x in n.children if x.ident not in self.added])
+            self.add_node([x for x in n.children if x.ident not in self.added],nesting=nesting)
             for c in n.children:
                 self.dot.edge(n.ident,c.ident,color=colour)
 
@@ -735,7 +739,7 @@ class CallGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return CALL_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds edges indicating the call-tree for the procedures listed in
         the nodes.
@@ -764,7 +768,7 @@ class CallsGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return CALL_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
@@ -773,10 +777,10 @@ class CallsGraph(FortranGraph):
         for i,n in zip(range(len(nodes)),nodes):
             r,g,b = rainbowcolour(i,len(nodes))
             colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.calls if x.ident not in self.added])
+            self.add_node([x for x in n.calls if x.ident not in self.added], nesting=nesting)
             for p in n.calls:
                 self.dot.edge(n.ident,p.ident,color=colour)
-            self.add_node([x for x in getattr(n,'interfaces',[]) if x.ident not in self.added])
+            self.add_node([x for x in getattr(n,'interfaces',[]) if x.ident not in self.added], nesting=nesting)
             for p in getattr(n,'interfaces',[]):
                 self.dot.edge(n.ident,p.ident,style='dashed',color=colour)
 
@@ -786,7 +790,7 @@ class CalledByGraph(FortranGraph):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return CALL_GRAPH_KEY.format(colour_notice)
     
-    def add_more_nodes(self,nodes):
+    def add_more_nodes(self,nodes,nesting):
         """
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
@@ -796,10 +800,10 @@ class CalledByGraph(FortranGraph):
             r,g,b = rainbowcolour(i,len(nodes))
             colour = '#%02X%02X%02X' % (r,g,b)
             if isinstance(n,ProgNode): continue
-            self.add_node([x for x in n.called_by if x.ident not in self.added])
+            self.add_node([x for x in n.called_by if x.ident not in self.added],nesting=nesting)
             for p in n.called_by:
                 self.dot.edge(p.ident,n.ident,color=colour)
-            self.add_node([x for x in getattr(n,'interfaced_by',[]) if x.ident not in self.added])
+            self.add_node([x for x in getattr(n,'interfaced_by',[]) if x.ident not in self.added], nesting=nesting)
             for p in getattr(n,'interfaced_by',[]):
                 self.dot.edge(p.ident,n.ident,style='dashed',color=colour)
 
