@@ -64,9 +64,14 @@ class Documentation(object):
             print("Warning: Will not be able to generate graphs. Graphviz not installed.")
         if graphviz_installed and data['graph'].lower() == 'true':
             print('Generating graphs...')
+            if self.data['relative']:
+                graphparent = '../'
+            else:
+                graphparent = ''
             self.graphs = GraphManager(self.data['project_url'],
                                        self.data['output_dir'],
                                        self.data.get('graph_dir',''),
+                                       graphparent,
                                        self.data['coloured_edges'].lower() == 'true')
             for item in project.types:
                 self.graphs.register(item)
@@ -93,6 +98,7 @@ class Documentation(object):
             self.graphs = GraphManager(self.data['project_url'],
                                        self.data['output_dir'],
                                        self.data.get('graph_dir',''),
+                                       graphparent,
                                        self.data['coloured_edges'].lower() == 'true')
             project.callgraph = ''
             project.typegraph = ''

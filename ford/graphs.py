@@ -49,6 +49,15 @@ def set_coloured_edges(val):
     global _coloured_edges
     _coloured_edges = val
 
+_parentdir = ''
+def set_graphs_parentdir(val):
+    '''
+    Public accessor to set the parent directory of the graphs.
+    Needed for relative paths.
+    '''
+    global _parentdir
+    _parentdir = val
+
 def rainbowcolour(depth, maxd):
     if _coloured_edges:
         (r, g, b) = colorsys.hsv_to_rgb(float(depth) / maxd, 1.0, 1.0)
@@ -180,7 +189,7 @@ class BaseNode(object):
             if m: self.name = '<<i>'+m.group(1).strip()+'</i>>'
             self.url = obj.get_url()
         self.attribs['label'] = self.name
-        if self.url and getattr(obj,'visible',True): self.attribs['URL'] = self.url
+        if self.url and getattr(obj,'visible',True): self.attribs['URL'] = _parentdir + self.url
         self.afferent = 0
         self.efferent = 0
 
