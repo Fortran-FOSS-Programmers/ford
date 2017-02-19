@@ -154,12 +154,22 @@ class Documentation(object):
             else:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],data['project_url'])
             self.tipue.create_node(self.index.html,'index.html', {'category': 'home'})
-            for p in self.docs:
+            ndocs = len(self.docs)
+            percent = (ndocs+len(self.pagetree))//100
+            for i,p in enumerate(self.docs):
                 self.tipue.create_node(p.html,p.loc,p.obj.meta)
-            for p in self.pagetree:
+                if (i % percent == 0):
+                    sys.stdout.write('.')
+                    sys.stdout.flush()
+            for i,p in enumerate(self.pagetree):
                 self.tipue.create_node(p.html,p.loc)
+                if ((i+ndocs) % percent == 0):
+                    sys.stdout.write('.')
+                    sys.stdout.flush()
+            print('')
             
     def writeout(self):
+        print("Writing resulting documentation.")
         out_dir = self.data['output_dir']
         try:
             if os.path.isfile(out_dir):
