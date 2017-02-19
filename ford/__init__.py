@@ -96,7 +96,7 @@ def initialize():
     parser.add_argument("-p","--page_dir",help="directory containing the optional page tree describing the project")
     parser.add_argument("-o","--output_dir",help="directory in which to place output files")
     parser.add_argument("-s","--css",help="custom style-sheet for the output")
-    parser.add_argument("-r","--project_version",dest="version",help="Version of the project to document")
+    parser.add_argument("-r","--revision",dest="revision",help="Source code revision the project to document")
     parser.add_argument("--exclude",action="append",help="any files which should not be included in the documentation")
     parser.add_argument("--exclude_dir",action="append",help="any directories whose contents should not be included in the documentation")
     parser.add_argument("-e","--extensions",action="append",help="extensions which should be scanned for documentation (default: f90, f95, f03, f08)")
@@ -151,7 +151,7 @@ def initialize():
                'search','lower','sort','extra_mods','dbg','graph','graph_maxdepth',
                'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
-               'graph_dir','gitter_sidecar','parallel']
+               'graph_dir','gitter_sidecar','parallel','revision']
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
