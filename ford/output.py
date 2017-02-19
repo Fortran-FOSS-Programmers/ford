@@ -62,12 +62,12 @@ class Documentation(object):
         self.search = SearchPage(data,project)
         if not graphviz_installed and data['graph'].lower() == 'true':
             print("Warning: Will not be able to generate graphs. Graphviz not installed.")
+        if self.data['relative']:
+            graphparent = '../'
+        else:
+            graphparent = ''
         if graphviz_installed and data['graph'].lower() == 'true':
             print('Generating graphs...')
-            if self.data['relative']:
-                graphparent = '../'
-            else:
-                graphparent = ''
             self.graphs = GraphManager(self.data['project_url'],
                                        self.data['output_dir'],
                                        self.data.get('graph_dir',''),
