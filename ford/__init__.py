@@ -184,7 +184,7 @@ def initialize():
                 'extra_mods':          [],
                 'dbg':                 True,
                 'graph':               'false',
-                'graph_mindepth':      '1',
+                'graph_mindepth':      '0',
                 'graph_maxdepth':      '10000',
                 'graph_maxnodes':      '1000000000',
                 'license':             '',
