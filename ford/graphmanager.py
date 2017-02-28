@@ -106,12 +106,12 @@ class GraphManager(object):
         usenodes = list(self.modules)
         callnodes = list(self.procedures)
         for p in self.programs:
-            if p.usesgraph.numnodes > 1: usenodes.append(p)
-            if p.callsgraph.numnodes > 1: callnodes.append(p)
+            if len(p.usesgraph.added) > 1: usenodes.append(p)
+            if len(p.callsgraph.added) > 1: callnodes.append(p)
         for p in self.procedures:
-            if p.usesgraph.numnodes > 1: usenodes.append(p)
+            if len(p.usesgraph.added) > 1: usenodes.append(p)
         for b in self.blockdata:
-            if b.usesgraph.numnodes > 1: usenodes.append(b)
+            if len(b.usesgraph.added) > 1: usenodes.append(b)
         self.usegraph = ford.graphs.ModuleGraph(usenodes,self.webdir,'module~~graph')
         self.typegraph = ford.graphs.TypeGraph(self.types,self.webdir,'type~~graph')
         self.callgraph = ford.graphs.CallGraph(callnodes,self.webdir,'call~~graph')
