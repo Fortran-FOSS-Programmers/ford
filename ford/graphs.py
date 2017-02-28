@@ -193,6 +193,12 @@ class BaseNode(object):
         self.afferent = 0
         self.efferent = 0
 
+    def __eq__(self, other):
+        return self.ident == other.ident
+
+    def __hash__(self):
+        return hash(self.ident)
+
 
 class ModNode(BaseNode):
     colour = '#337AB7'
@@ -408,17 +414,25 @@ class FortranGraph(object):
         """
         root is the object for which the graph is being constructed
         """
-        self.numnodes = 0
-        self.added = []
         self.root = []
-        self.max_nesting = 0
+        self.added = set()    # nodes added to the graph
+        self.min_nesting = 0  # minimum numbers of hops allowed
+        self.max_nesting = 0  # maximum numbers of hops allowed
+        self.max_nodes = 0    # maximum numbers of nodes allowed
         try:
             for r in root:
                 self.root.append(self.data.get_node(r))
-                self.max_nesting = max(self.max_nesting, eval(r.meta['graph_maxdepth']))
+                self.min_nesting = max(self.min_nesting,
+                                       eval(r.meta['graph_mindepth']))
+                self.max_nesting = max(self.max_nesting,
+                                       eval(r.meta['graph_maxdepth']))
+                self.max_nodes = max(self.max_nodes,
+                                     eval(r.meta['graph_maxnodes']))
         except:
             self.root.append(self.data.get_node(root))
+            self.min_nesting = eval(root.meta['graph_mindepth'])
             self.max_nesting = eval(root.meta['graph_maxdepth'])
+            self.max_nodes = eval(root.meta['graph_maxnodes'])
         self.webdir = webdir
         if ident:
             self.ident = ident + '~~' + self.__class__.__name__
@@ -438,7 +452,15 @@ class FortranGraph(object):
                            edge_attr={'fontname':'Helvetica',
                                       'fontsize':'9.5'},
                            format='svg', engine='dot')
-        self.add_node(self.root,(len(self.root) == 1))
+        # add root nodes to the graph
+        for n in self.root:
+            if len(self.root) == 1:
+                self.dot.node(n.ident, label=n.name)
+            else:
+                self.dot.node(n.ident, **n.attribs)
+            self.added.add(n)
+        # add nodes and edges depnding of the root nodes to the graph
+        self.add_nodes(self.root)
         #~ self.linkmap = self.dot.pipe('cmapx').decode('utf-8')
         if graphviz_installed:
             self.svg_src = self.dot.pipe().decode('utf-8')
@@ -452,33 +474,30 @@ class FortranGraph(object):
             self.svg_src = ''
             self.scaled = False
 
-
-    def add_node(self,nodes,root=False,nesting=0):
+    def addToGraph(self, nodes, edges, nesting):
         """
-        Adds nodes to the graph. nodes is a list of node-type objects, 
-        and root is a boolean indicating whether this is the root of the
-        graph.
-        """    
-        recurse = []
-        if root:
-            for n in nodes:
-                if n.ident not in self.added:
-                    self.dot.node(n.ident,label=n.name)
-                    self.numnodes += 1
-                    self.added.append(n.ident)
-                    recurse.append(n)
+        Adds nodes and edges to the graph if maximum number of nodes is not
+        exceeded or minimum number of hops not reached.
+        """
+        if (len(nodes) + len(self.added) > self.max_nodes
+                and nesting > self.min_nesting):
+            return False
         else:
             for n in nodes:
-                if n.ident not in self.added:
-                    self.dot.node(n.ident,**n.attribs)
-                    self.numnodes += 1
-                    self.added.append(n.ident)
-                    recurse.append(n)
-        if nesting < self.max_nesting:
-            self.add_more_nodes(recurse,nesting=nesting+1)
+                self.dot.node(n.ident, **n.attribs)
+            for e in edges:
+                if len(e) == 5:
+                    self.dot.edge(e[0], e[1], style=e[2], color=e[3],
+                                  label=e[4])
+                else:
+                    self.dot.edge(e[0], e[1], style=e[2], color=e[3])
+            self.added.update(nodes)
+            return True
 
     def __str__(self):
-        if self.numnodes <= 1 or not graphviz_installed: return ''
+        # do not generate graph for 0 hops
+        if len(self.added) <= len(self.root) or not graphviz_installed:
+            return ''
         if self.scaled:
             rettext = """
                 <div class="depgraph">{0}</div>
@@ -537,7 +556,7 @@ class FortranGraph(object):
         cls.data = GraphData()
     
     def create_svg(self, out_location):
-        if self.numnodes > 1:
+        if len(self.added) > len(self.root):
             self._create_image_file(os.path.join(out_location, self.imgfile))
     
     def _create_image_file(self,filename):
@@ -551,270 +570,374 @@ class ModuleGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return MOD_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
-        Adds edges showing the relationship between modules and submodules
-        listed in nodes.
+        Adds nodes and edges for generating the graph showing the relationship
+        between modules and submodules listed in nodes.
         """
-        self.dot.attr('graph',size='11.875,1000.0')
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
             for nu in n.uses:
-                if nu not in nodes and nu.ident not in self.added:
-                    self.dot.node(nu.ident,**nu.attribs)
-                    self.numnodes += 1
-                    self.added.append(nu.ident)
-                self.dot.edge(nu.ident,n.ident,style='dashed',color=colour)
-            if hasattr(n,'ancestor'):
-                if n.ancestor not in nodes and n.ancestor.ident not in self.added:
-                    self.dot.node(n.ancestor.ident,**n.ancestor.attribs)
-                    self.numnodes += 1
-                    self.added.append(n.ancestor.ident)
-                self.dot.edge(n.ancestor.ident,n.ident,color=colour)
+                if nu not in self.added:
+                    hopNodes.add(nu)
+                hopEdges.append((nu.ident, n.ident, 'dashed', colour))
+            if hasattr(n, 'ancestor'):
+                if n.ancestor not in self.added:
+                    hopNodes.append(n.ancestor)
+                hopEdges.append((n.ancestor.ident, n.ident, 'solid', colour))
+        # add nodes, edges and attributes to the graph if maximum number of
+        # nodes is not exceeded
+        if self.addToGraph(hopNodes, hopEdges, self.max_nesting):
+            self.dot.attr('graph', size='11.875,1000.0')
 
 
 class UsesGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return MOD_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
         Adds nodes for the modules used by those listed in nodes. Adds
         edges between them. Also does this for ancestor (sub)modules.
         """
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.uses if x.ident not in self.added],nesting=nesting)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
             for nu in n.uses:
-                self.dot.edge(nu.ident,n.ident,style='dashed',color=colour)
-            if hasattr(n,'ancestor'):
-                if n.ancestor.ident not in self.added: self.add_node([n.ancestor],nesting=nesting)
-                self.dot.edge(n.ancestor.ident,n.ident,color=colour)
-        
+                if nu not in self.added:
+                    hopNodes.add(nu)
+                hopEdges.append((nu.ident, n.ident, 'dashed', colour))
+            if hasattr(n, 'ancestor'):
+                if n.ancestor not in self.added:
+                    hopNodes.add(n.ancestor)
+                hopEdges.append((n.ancestor.ident, n.ident, 'solid', colour))
+        # add nodes and edges for this hop to the graph if maximum number of
+        # nodes is not exceeded
+        if not self.addToGraph(hopNodes, hopEdges, nesting):
+            return
+        elif nesting < self.max_nesting and len(hopNodes) != 0:
+            self.add_nodes(hopNodes, nesting=nesting+1)
+
 
 class UsedByGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return MOD_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
         """
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in getattr(n,'used_by',[]) if x.ident not in self.added],nesting=nesting)
-            for nu in getattr(n,'used_by',[]):
-                self.dot.edge(n.ident,nu.ident,style='dashed',color=colour)
-            self.add_node([x for x in getattr(n,'children',[]) if x.ident not in self.added],nesting=nesting)
-            for c in getattr(n,'children',[]):
-                self.dot.edge(n.ident,c.ident,color=colour)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
+            for nu in getattr(n, 'used_by', []):
+                if nu not in self.added:
+                    hopNodes.add(nu)
+                hopEdges.append((n.ident, nu.ident, 'dashed', colour))
+            for c in getattr(n, 'children', []):
+                if c not in self.added:
+                    hopNodes.add(c)
+                hopEdges.append((n.ident, c.ident, 'solid', colour))
+        # add nodes and edges for this hop to the graph if maximum number of
+        # nodes is not exceeded
+        if not self.addToGraph(hopNodes, hopEdges, nesting):
+            return
+        elif nesting < self.max_nesting and len(hopNodes) != 0:
+            self.add_nodes(hopNodes, nesting=nesting+1)
 
 
 class FileGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return FILE_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
         Adds edges showing dependencies between source files listed in
         the nodes.
         """
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.efferent if x.ident not in self.added],nesting=nesting)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
             for ne in n.efferent:
-                self.dot.edge(ne.ident,n.ident,color=colour)
+                if ne not in self.added:
+                    hopNodes.add(ne)
+                hopEdges.append((ne.ident, n.ident, 'solid', colour))
+        # add nodes and edges to the graph if maximum number of nodes is not
+        # exceeded
+        self.addToGraph(hopNodes, hopEdges, self.max_nesting)
 
 
 class EfferentGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return FILE_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
         Adds nodes for the files which this one depends on. Adds
         edges between them.
         """
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.efferent if x.ident not in self.added],nesting=nesting)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
             for ne in n.efferent:
-                self.dot.edge(ne.ident,n.ident,style='dashed',color=colour)
+                if ne not in self.added:
+                    hopNodes.add(ne)
+                hopEdges.append((ne.ident, n.ident, 'dashed', colour))
+        # add nodes and edges for this hop to the graph if maximum number of
+        # nodes is not exceeded
+        if not self.addToGraph(hopNodes, hopEdges, nesting):
+            return
+        elif nesting < self.max_nesting and len(hopNodes) != 0:
+            self.add_nodes(hopNodes, nesting=nesting+1)
 
 
 class AfferentGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return FILE_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
         Adds nodes for files which depend upon this one. Adds appropriate
         edges between them.
         """
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.afferent if x.ident not in self.added],nesting=nesting)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
             for na in n.afferent:
-                self.dot.edge(n.ident,na.ident,style='dashed',color=colour)
+                if na not in self.added:
+                    hopNodes.add(na)
+                hopEdges.append((n.ident, na.ident, 'dashed', colour))
+        # add nodes and edges for this hop to the graph if maximum number of
+        # nodes is not exceeded
+        if not self.addToGraph(hopNodes, hopEdges, nesting):
+            return
+        elif nesting < self.max_nesting and len(hopNodes) != 0:
+            self.add_nodes(hopNodes, nesting=nesting+1)
 
 
 class TypeGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return TYPE_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
-        Adds edges showing inheritance and composition relationships 
+        Adds edges showing inheritance and composition relationships
         between derived types listed in the nodes.
         """
-        self.dot.attr('graph',size='11.875,1000.0')
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.comp_types.keys() if x.ident not in self.added],nesting=nesting)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
+            for keys in n.comp_types.keys():
+                if keys not in self.added:
+                    hopNodes.add(keys)
             for c in n.comp_types:
-                if c not in nodes and c.ident not in self.added:
-                    self.dot.node(c.ident,**c.attribs)
-                    self.numnodes += 1
-                    self.added.append(c.ident)
-                self.dot.edge(c.ident,n.ident,style='dashed',label=n.comp_types[c],color=colour)
+                if c not in self.added:
+                    hopNodes.add(c)
+                hopEdges.append((c.ident, n.ident, 'dashed', colour,
+                                 n.comp_types[c]))
             if n.ancestor:
-                if n.ancestor not in nodes and n.ancestor.ident not in self.added:
-                    self.add_node([n.ancestor],nesting=nesting)
-                    self.dot.node(n.ancestor.ident,**n.ancestor.attribs)
-                    self.numnodes += 1
-                    self.added.append(n.ancestor.ident)
-                self.dot.edge(n.ancestor.ident,n.ident,color=colour)
+                if n.ancestor not in self.added:
+                    hopNodes.add(n.ancestor)
+                hopEdges.append((n.ancestor.ident, n.ident, 'solid', colour))
+        # add nodes, edges and attributes to the graph if maximum number of
+        # nodes is not exceeded
+        if self.addToGraph(hopNodes, hopEdges, self.max_nesting):
+            self.dot.attr('graph', size='11.875,1000.0')
 
 
 class InheritsGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return TYPE_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
         """
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.comp_types.keys() if x.ident not in self.added], nesting=nesting)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
             for c in n.comp_types:
-                self.dot.edge(c.ident,n.ident,style='dashed',label=n.comp_types[c],color=colour)
+                if c not in self.added:
+                    hopNodes.add(c)
+                hopEdges.append((c.ident, n.ident, 'dashed', colour,
+                                 n.comp_types[c]))
             if n.ancestor:
-                if n.ancestor.ident not in self.added: self.add_node([n.ancestor],nesting=nesting)
-                self.dot.edge(n.ancestor.ident,n.ident,color=colour)
+                if n.ancestor not in self.added:
+                    hopNodes.add(n.ancestor)
+                hopEdges.append((n.ancestor.ident, n.ident, colour))
+        # add nodes and edges for this hop to the graph if maximum number of
+        # nodes is not exceeded
+        if not self.addToGraph(hopNodes, hopEdges, nesting):
+            return
+        elif nesting < self.max_nesting and len(hopNodes) != 0:
+            self.add_nodes(hopNodes, nesting=nesting+1)
 
 
 class InheritedByGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return TYPE_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
         """
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.comp_of.keys() if x.ident not in self.added],nesting=nesting)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
             for c in n.comp_of:
-                self.dot.edge(n.ident,c.ident,style='dashed',label=n.comp_of[c],color=colour)
-            self.add_node([x for x in n.children if x.ident not in self.added],nesting=nesting)
+                if c not in self.added:
+                    hopNodes.add(c)
+                hopEdges.append((n.ident, c.ident, 'dashed', colour,
+                                 n.comp_of[c]))
             for c in n.children:
-                self.dot.edge(n.ident,c.ident,color=colour)
+                if c not in self.added:
+                    hopNodes.add(c)
+                hopEdges.append((n.ident, c.ident, 'solid', colour))
+        # add nodes and edges for this hop to the graph if maximum number of
+        # nodes is not exceeded
+        if not self.addToGraph(hopNodes, hopEdges, nesting):
+            return
+        elif nesting < self.max_nesting and len(hopNodes) != 0:
+            self.add_nodes(hopNodes, nesting=nesting+1)
 
 
 class CallGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return CALL_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
         Adds edges indicating the call-tree for the procedures listed in
         the nodes.
         """
-        self.dot.attr('graph',size='11.875,1000.0')
-        self.dot.attr('graph',concentrate='false')
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
             for p in n.calls:
-                if p not in nodes and p.ident not in self.added:
-                    self.dot.node(p.ident,**p.attribs)
-                    self.numnodes += 1
-                    self.added.append(p.ident)
-                self.dot.edge(n.ident,p.ident,color=colour)
-            for p in getattr(n,'interfaces',[]):
-                if p not in nodes and p.ident not in self.added:
-                    self.dot.node(p.ident,**p.attribs)
-                    self.numnodes += 1
-                    self.added.append(p.ident)
-                self.dot.edge(n.ident,p.ident,style='dashed',color=colour)
-                
+                if p not in hopNodes:
+                    hopNodes.add(p)
+                hopEdges.append((n.ident, p.ident, 'solid', colour))
+            for p in getattr(n, 'interfaces', []):
+                if p not in hopNodes:
+                    hopNodes.add(p)
+                hopEdges.append((n.ident, p.ident, 'dashed', colour))
+        # add nodes, edges and attributes to the graph if maximum number of
+        # nodes is not exceeded
+        if self.addToGraph(hopNodes, hopEdges, self.max_nesting):
+            self.dot.attr('graph', size='11.875,1000.0')
+            self.dot.attr('graph', concentrate='false')
+
 
 class CallsGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return CALL_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
         """
-        self.dot.attr('graph',concentrate='false')
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
-            self.add_node([x for x in n.calls if x.ident not in self.added], nesting=nesting)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
             for p in n.calls:
-                self.dot.edge(n.ident,p.ident,color=colour)
-            self.add_node([x for x in getattr(n,'interfaces',[]) if x.ident not in self.added], nesting=nesting)
-            for p in getattr(n,'interfaces',[]):
-                self.dot.edge(n.ident,p.ident,style='dashed',color=colour)
+                if p not in self.added:
+                    hopNodes.add(p)
+                hopEdges.append((n.ident, p.ident, 'solid', colour))
+            for p in getattr(n, 'interfaces', []):
+                if p not in self.added:
+                    hopNodes.add(p)
+                hopEdges.append((n.ident, p.ident, 'dashed', colour))
+        # add nodes, edges and atrributes for this hop to the graph if
+        # maximum number of nodes is not exceeded
+        if not self.addToGraph(hopNodes, hopEdges, nesting):
+            return
+        elif nesting < self.max_nesting and len(hopNodes) != 0:
+            self.dot.attr('graph', concentrate='false')
+            self.add_nodes(hopNodes, nesting=nesting+1)
 
 
 class CalledByGraph(FortranGraph):
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return CALL_GRAPH_KEY.format(colour_notice)
-    
-    def add_more_nodes(self,nodes,nesting):
+
+    def add_nodes(self, nodes, nesting=1):
         """
         Adds nodes for modules using or descended from those listed in
         nodes. Adds appropriate edges between them.
         """
-        self.dot.attr('graph',concentrate='false')
-        for i,n in zip(range(len(nodes)),nodes):
-            r,g,b = rainbowcolour(i,len(nodes))
-            colour = '#%02X%02X%02X' % (r,g,b)
-            if isinstance(n,ProgNode): continue
-            self.add_node([x for x in n.called_by if x.ident not in self.added],nesting=nesting)
+        hopNodes = set()  # nodes in this hop
+        hopEdges = []     # edges in this hop
+        # get nodes and edges for this hop
+        for i, n in zip(range(len(nodes)), nodes):
+            r, g, b = rainbowcolour(i, len(nodes))
+            colour = '#%02X%02X%02X' % (r, g, b)
+            if isinstance(n, ProgNode):
+                continue
             for p in n.called_by:
-                self.dot.edge(p.ident,n.ident,color=colour)
-            self.add_node([x for x in getattr(n,'interfaced_by',[]) if x.ident not in self.added], nesting=nesting)
-            for p in getattr(n,'interfaced_by',[]):
-                self.dot.edge(p.ident,n.ident,style='dashed',color=colour)
+                if p not in self.added:
+                    hopNodes.add(p)
+                hopEdges.append((p.ident, n.ident, 'solid', colour))
+            for p in getattr(n, 'interfaced_by', []):
+                if p not in self.added:
+                    hopNodes.add(p)
+                hopEdges.append((p.ident, n.ident, 'dashed', colour))
+        # add nodes, edges and atrributes for this hop to the graph if
+        # maximum number of nodes is not exceeded
+        if not self.addToGraph(hopNodes, hopEdges, nesting):
+            return
+        elif nesting < self.max_nesting and len(hopNodes) != 0:
+            self.dot.attr('graph', concentrate='false')
+            self.add_nodes(hopNodes, nesting=nesting+1)
 
 
 class BadType(Exception):
