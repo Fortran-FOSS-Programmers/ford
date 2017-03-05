@@ -414,7 +414,9 @@ class FortranGraph(object):
         """
         root is the object for which the graph is being constructed
         """
-        self.root = []
+        self.root = []        # root nodes
+        self.hopNodes = []    # nodes of the hop which exceeded the maximum
+        self.hopEdges = []    # edges of the hop which exceeded the maximum
         self.added = set()    # nodes added to the graph
         self.min_nesting = 0  # minimum numbers of hops allowed
         self.max_nesting = 0  # maximum numbers of hops allowed
@@ -481,70 +483,93 @@ class FortranGraph(object):
         """
         if (len(nodes) + len(self.added) > self.max_nodes
                 and nesting > self.min_nesting):
+            self.hopNodes = nodes
+            self.hopEdges = edges
             return False
         else:
             for n in nodes:
                 self.dot.node(n.ident, **n.attribs)
             for e in edges:
                 if len(e) == 5:
-                    self.dot.edge(e[0], e[1], style=e[2], color=e[3],
-                                  label=e[4])
+                    self.dot.edge(e[0].ident, e[1].ident, style=e[2],
+                                  color=e[3], label=e[4])
                 else:
-                    self.dot.edge(e[0], e[1], style=e[2], color=e[3])
+                    self.dot.edge(e[0].ident, e[1].ident, style=e[2],
+                                  color=e[3])
             self.added.update(nodes)
             return True
 
     def __str__(self):
-        # do not generate graph for 0 hops
-        if len(self.added) <= len(self.root) or not graphviz_installed:
+        # do not generate overview graphs if maximum number of nodes gets
+        # exceeded
+        if ((len(self.added) <= len(self.root)
+                and isinstance(self, (ModuleGraph, FileGraph, TypeGraph,
+                                      CallGraph)))
+                or (len(self.added) + len(self.hopNodes) <= len(self.root))):
             return ''
-        if self.scaled:
-            rettext = """
-                <div class="depgraph">{0}</div>
-                <script>var pan{1} = svgPanZoom('#{1}', {{
-                    zoomEnabled: true,
-                    controlIconsEnabled: true,
-                    fit: true,
-                    center: true,}});
-                    </script>
-                <div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div>
-                <div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog">
-                  <div class="modal-dialog modal-lg" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
-                      </div>
-                      <div class="modal-body">
-                        {2}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                """
+        zoomName = ''
+        svgGraph = ''
+        rettext = ''
+        # generate a table graph is maximum number of nodes gets exceeded in
+        # the first hop
+        if len(self.added) <= len(self.root):
+            root = '<td class="root" rowspan="{0}">{1}</td>'.format(
+                len(self.hopNodes) * 2 + 1, self.root[0].attribs['label'])
+            # sort nodes in alphabetical order
+            if self.hopEdges[0][0].ident == self.root[0].ident:
+                key = 1
+                self.hopEdges.sort(key=lambda x: x[1].attribs['label'].lower())
+            else:
+                key = 0
+                self.hopEdges.sort(key=lambda x: x[0].attribs['label'].lower())
+            rows = ''
+            for i in range(len(self.hopEdges)):
+                e = self.hopEdges[i]
+                n = e[key]
+                arrow = ('<td class="{0}{1}">{2}</td><td rowspan="2"'
+                         'class="triangle"></td>')
+                if len(e) == 5:
+                    arrow = arrow.format(e[2], 'Text', e[4])
+                else:
+                    arrow = arrow.format(e[2], 'Bottom', 'w')
+                node = '<td rowspan="2" class="node" bgcolor="{0}">'.format(
+                    n.attribs['color'])
+                try:
+                    node += '<a href="{0}">{1}</a></td>'.format(
+                        n.attribs['URL'], n.attribs['label'])
+                except:
+                    node += n.attribs['label'] + '</td>'
+                if isinstance(self, (UsedByGraph, AfferentGraph,
+                              InheritedByGraph, CallsGraph)):
+                    rows += '<tr>' + root + arrow + node + '</tr>'
+                else:
+                    rows += '<tr>' + node + arrow + root + '</tr>'
+                rows += '<tr><td class="{0}Top">w</td></tr>'.format(e[2])
+                root = ''
+            rettext += '<table class="graph">' + rows + '</table>'
+        # generate svg graph
         else:
-            rettext = """
-                <div class="depgraph">{0}</div>
-                <div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div>
-                <div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog">
-                  <div class="modal-dialog modal-lg" role="document">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
-                      </div>
-                      <div class="modal-body">
-                        {2}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                """
-        wdir = self.webdir.strip()
-        if wdir[-1] == '/': wdir = wdir[0:-1]
-        link = quote(wdir + '/' + self.imgfile + '.' + self.dot.format)
-        return rettext.format(self.svg_src,re.sub('[^\w]','',self.ident),self.get_key())
-    
+            rettext += '<div class="depgraph">{0}</div>'
+            svgGraph = self.svg_src
+            # add zoom ability for big graphs
+            if self.scaled:
+                zoomName = re.sub('[^\w]', '', self.ident)
+                rettext += ('<script>var pan{1} = svgPanZoom(\'#{1}\', '
+                            '{{zoomEnabled: true,controlIconsEnabled: true, '
+                            'fit: true, center: true,}}); </script>')
+        rettext += ('<div><a type="button" class="graph-help" '
+                    'data-toggle="modal" href="#graph-help-text">Help</a>'
+                    '</div><div class="modal fade" id="graph-help-text" '
+                    'tabindex="-1" role="dialog"><div class="modal-dialog '
+                    'modal-lg" role="document"><div class="modal-content">'
+                    '<div class="modal-header"><button type="button" '
+                    'class="close" data-dismiss="modal" aria-label="Close">'
+                    '<span aria-hidden="true">&times;</span></button><h4 class'
+                    '="modal-title" id="-graph-help-label">Graph Key</h4>'
+                    '</div><div class="modal-body">{2}</div></div></div>'
+                    '</div>')
+        return rettext.format(svgGraph, zoomName, self.get_key())
+
     def __nonzero__(self):
         return self.__bool__()
     
@@ -585,11 +610,11 @@ class ModuleGraph(FortranGraph):
             for nu in n.uses:
                 if nu not in self.added:
                     hopNodes.add(nu)
-                hopEdges.append((nu.ident, n.ident, 'dashed', colour))
+                hopEdges.append((nu, n, 'dashed', colour))
             if hasattr(n, 'ancestor'):
                 if n.ancestor not in self.added:
                     hopNodes.append(n.ancestor)
-                hopEdges.append((n.ancestor.ident, n.ident, 'solid', colour))
+                hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
         if self.addToGraph(hopNodes, hopEdges, self.max_nesting):
@@ -615,11 +640,11 @@ class UsesGraph(FortranGraph):
             for nu in n.uses:
                 if nu not in self.added:
                     hopNodes.add(nu)
-                hopEdges.append((nu.ident, n.ident, 'dashed', colour))
+                hopEdges.append((nu, n, 'dashed', colour))
             if hasattr(n, 'ancestor'):
                 if n.ancestor not in self.added:
                     hopNodes.add(n.ancestor)
-                hopEdges.append((n.ancestor.ident, n.ident, 'solid', colour))
+                hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.addToGraph(hopNodes, hopEdges, nesting):
@@ -647,11 +672,11 @@ class UsedByGraph(FortranGraph):
             for nu in getattr(n, 'used_by', []):
                 if nu not in self.added:
                     hopNodes.add(nu)
-                hopEdges.append((n.ident, nu.ident, 'dashed', colour))
+                hopEdges.append((n, nu, 'dashed', colour))
             for c in getattr(n, 'children', []):
                 if c not in self.added:
                     hopNodes.add(c)
-                hopEdges.append((n.ident, c.ident, 'solid', colour))
+                hopEdges.append((n, c, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.addToGraph(hopNodes, hopEdges, nesting):
@@ -679,7 +704,7 @@ class FileGraph(FortranGraph):
             for ne in n.efferent:
                 if ne not in self.added:
                     hopNodes.add(ne)
-                hopEdges.append((ne.ident, n.ident, 'solid', colour))
+                hopEdges.append((ne, n, 'solid', colour))
         # add nodes and edges to the graph if maximum number of nodes is not
         # exceeded
         self.addToGraph(hopNodes, hopEdges, self.max_nesting)
@@ -704,7 +729,7 @@ class EfferentGraph(FortranGraph):
             for ne in n.efferent:
                 if ne not in self.added:
                     hopNodes.add(ne)
-                hopEdges.append((ne.ident, n.ident, 'dashed', colour))
+                hopEdges.append((ne, n, 'dashed', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.addToGraph(hopNodes, hopEdges, nesting):
@@ -732,7 +757,7 @@ class AfferentGraph(FortranGraph):
             for na in n.afferent:
                 if na not in self.added:
                     hopNodes.add(na)
-                hopEdges.append((n.ident, na.ident, 'dashed', colour))
+                hopEdges.append((n, na, 'dashed', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.addToGraph(hopNodes, hopEdges, nesting):
@@ -763,12 +788,11 @@ class TypeGraph(FortranGraph):
             for c in n.comp_types:
                 if c not in self.added:
                     hopNodes.add(c)
-                hopEdges.append((c.ident, n.ident, 'dashed', colour,
-                                 n.comp_types[c]))
+                hopEdges.append((c, n, 'dashed', colour, n.comp_types[c]))
             if n.ancestor:
                 if n.ancestor not in self.added:
                     hopNodes.add(n.ancestor)
-                hopEdges.append((n.ancestor.ident, n.ident, 'solid', colour))
+                hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
         if self.addToGraph(hopNodes, hopEdges, self.max_nesting):
@@ -794,12 +818,11 @@ class InheritsGraph(FortranGraph):
             for c in n.comp_types:
                 if c not in self.added:
                     hopNodes.add(c)
-                hopEdges.append((c.ident, n.ident, 'dashed', colour,
-                                 n.comp_types[c]))
+                hopEdges.append((c, n, 'dashed', colour, n.comp_types[c]))
             if n.ancestor:
                 if n.ancestor not in self.added:
                     hopNodes.add(n.ancestor)
-                hopEdges.append((n.ancestor.ident, n.ident, colour))
+                hopEdges.append((n.ancestor, n, colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.addToGraph(hopNodes, hopEdges, nesting):
@@ -827,12 +850,11 @@ class InheritedByGraph(FortranGraph):
             for c in n.comp_of:
                 if c not in self.added:
                     hopNodes.add(c)
-                hopEdges.append((n.ident, c.ident, 'dashed', colour,
-                                 n.comp_of[c]))
+                hopEdges.append((n, c, 'dashed', colour, n.comp_of[c]))
             for c in n.children:
                 if c not in self.added:
                     hopNodes.add(c)
-                hopEdges.append((n.ident, c.ident, 'solid', colour))
+                hopEdges.append((n, c, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.addToGraph(hopNodes, hopEdges, nesting):
@@ -860,11 +882,11 @@ class CallGraph(FortranGraph):
             for p in n.calls:
                 if p not in hopNodes:
                     hopNodes.add(p)
-                hopEdges.append((n.ident, p.ident, 'solid', colour))
+                hopEdges.append((n, p, 'solid', colour))
             for p in getattr(n, 'interfaces', []):
                 if p not in hopNodes:
                     hopNodes.add(p)
-                hopEdges.append((n.ident, p.ident, 'dashed', colour))
+                hopEdges.append((n, p, 'dashed', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
         if self.addToGraph(hopNodes, hopEdges, self.max_nesting):
@@ -891,11 +913,11 @@ class CallsGraph(FortranGraph):
             for p in n.calls:
                 if p not in self.added:
                     hopNodes.add(p)
-                hopEdges.append((n.ident, p.ident, 'solid', colour))
+                hopEdges.append((n, p, 'solid', colour))
             for p in getattr(n, 'interfaces', []):
                 if p not in self.added:
                     hopNodes.add(p)
-                hopEdges.append((n.ident, p.ident, 'dashed', colour))
+                hopEdges.append((n, p, 'dashed', colour))
         # add nodes, edges and atrributes for this hop to the graph if
         # maximum number of nodes is not exceeded
         if not self.addToGraph(hopNodes, hopEdges, nesting):
@@ -926,11 +948,11 @@ class CalledByGraph(FortranGraph):
             for p in n.called_by:
                 if p not in self.added:
                     hopNodes.add(p)
-                hopEdges.append((p.ident, n.ident, 'solid', colour))
+                hopEdges.append((p, n, 'solid', colour))
             for p in getattr(n, 'interfaced_by', []):
                 if p not in self.added:
                     hopNodes.add(p)
-                hopEdges.append((p.ident, n.ident, 'dashed', colour))
+                hopEdges.append((p, n, 'dashed', colour))
         # add nodes, edges and atrributes for this hop to the graph if
         # maximum number of nodes is not exceeded
         if not self.addToGraph(hopNodes, hopEdges, nesting):
