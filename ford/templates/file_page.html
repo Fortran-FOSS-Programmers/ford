@@ -18,11 +18,11 @@
     <div class="col-md-9" id='text'>
     {{ src.doc }}
     {% if src.efferentgraph %}
-    <h3>This File Depends On</h3>
+    <h2>This File Depends On</h2>
     {{ src.efferentgraph }}
     {% endif %}
       {% if src.afferentgraph %}
-      <h3>Files Dependent On This One</h3>
+      <h2>Files Dependent On This One</h2>
       {{ src.afferentgraph }}
       {% endif %}
       {% if src.doc or src.efferentgraph or src.afferentgraph%}<br>{% endif %}
