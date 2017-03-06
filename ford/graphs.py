@@ -189,7 +189,11 @@ class BaseNode(object):
             if m: self.name = '<<i>'+m.group(1).strip()+'</i>>'
             self.url = obj.get_url()
         self.attribs['label'] = self.name
-        if self.url and getattr(obj,'visible',True): self.attribs['URL'] = _parentdir + self.url
+        if self.url and getattr(obj,'visible',True):
+            if self.fromstr:
+                self.attribs['URL'] = self.url
+            else:
+                self.attribs['URL'] = _parentdir + self.url
         self.afferent = 0
         self.efferent = 0
 
