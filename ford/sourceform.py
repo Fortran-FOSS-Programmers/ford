@@ -1103,45 +1103,41 @@ class FortranModule(FortranCodeUnit):
         for item in ulist:
             match = self.RENAME_RE.search(item)
             if match:
-                uspecs[match.group(1)] = match.group(2)
+                uspecs[match.group(1).lower()] = match.group(2)
             else:
-                uspecs[item] = item
+                uspecs[item.lower()] = item
         ret_procs = {}
         ret_absints = {}
         ret_types = {}
         ret_vars = {}
         for name, obj in self.pub_procs.items():
+            name = name.lower()
             if only:
-                if name in uspecs: ret_procs[uspecs[name]] = obj
-            else:
                 if name in uspecs:
-                    ret_procs[uspecs[name]] = obj
-                else:
                     ret_procs[name] = obj
+            else:
+                ret_procs[name] = obj
         for name, obj in self.pub_absints.items():
+            name = name.lower()
             if only:
-                if name in uspecs: ret_absints[uspecs[name]] = obj
-            else:
                 if name in uspecs:
-                    ret_absints[uspecs[name]] = obj
-                else:
                     ret_absints[name] = obj
-        for name, obj in self.pub_types.items():
-            if only:
-                if name in uspecs: ret_types[uspecs[name]] = obj
             else:
+                ret_absints[name] = obj
+        for name, obj in self.pub_types.items():
+            name = name.lower()
+            if only:
                 if name in uspecs:
                     ret_types[uspecs[name]] = obj
-                else:
-                    ret_types[name] = obj
-        for name, obj in self.pub_vars.items():
-            if only:
-                if name in uspecs: ret_vars[uspecs[name]] = obj
             else:
+                ret_types[name] = obj
+        for name, obj in self.pub_vars.items():
+            name = name.lower()
+            if only:
                 if name in uspecs:
-                    ret_vars[uspecs[name]] = obj
-                else:
                     ret_vars[name] = obj
+            else:
+                ret_vars[name] = obj
         return (ret_procs,ret_absints,ret_types,ret_vars)
 
 
