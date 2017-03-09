@@ -176,14 +176,18 @@ def sub_links(string,project):
     for either or both of these parts.
     '''
     LINK_TYPES    = { 'module': 'modules',
+                      'extMods': 'extMods',
                       'type': 'types',
+                      'extTypes': 'extTypes',
                       'procedure': 'procedures',
                       'subroutine': 'procedures',
                       'function': 'procedures',
+                      'extProcedures': 'extProcedures',
                       'proc': 'procedures',
                       'file': 'allfiles',
                       'interface': 'absinterfaces',
                       'absinterface': 'absinterfaces',
+                      'extInterfaces': 'extInterfaces',
                       'program': 'programs',
                       'block': 'blockdata' }
         

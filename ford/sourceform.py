@@ -197,6 +197,7 @@ class FortranBase(object):
             self.hierarchy.append(cur)
             cur = cur.parent
         self.hierarchy.reverse()
+        self.isExt = False
 
     def get_dir(self):
         if ( type(self) in [FortranSubroutine,FortranFunction] and
@@ -1026,6 +1027,7 @@ class FortranSourceFile(FortranContainer):
         self.hierarchy = []
         self.obj = 'sourcefile'
         self.display = settings['display']
+        self.isExt = False
 
         source = ford.reader.FortranReader(self.path,settings['docmark'],
                     settings['predocmark'],settings['docmark_alt'],

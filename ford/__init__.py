@@ -35,6 +35,7 @@ import markdown
 import os
 import subprocess
 from datetime import date, datetime
+import pickle
 
 import ford.fortran_project
 import ford.sourceform
@@ -139,7 +140,7 @@ def initialize():
     md.reset()
     # Get the default options, and any over-rides, straightened out
     options = ['src_dir','extensions','fpp_extensions','fixed_extensions',
-               'output_dir','css','exclude',
+               'output_dir','css','exclude', 'external', 'externalize',
                'project','author','author_description','author_pic',
                'summary','github','bitbucket','facebook','twitter',
                'google_plus','linkedin','email','website','project_github',
@@ -164,6 +165,8 @@ def initialize():
                 'year':                date.today().year,
                 'exclude':             [],
                 'exclude_dir':         [],
+                'external':            [],
+                'externalize':         'false',
                 'docmark':             '!',
                 'docmark_alt':         '*',
                 'predocmark':          '>',
@@ -196,7 +199,7 @@ def initialize():
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
-                'macro','include','extra_mods','extra_filetypes']
+                'macro','include','extra_mods','extra_filetypes','external']
     # Evaluate paths relative to project file location
     base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
     proj_data['base_dir'] = base_dir
@@ -357,6 +360,13 @@ def main(proj_data,proj_docs,md):
 
     docs = ford.output.Documentation(proj_data,proj_docs_,project,page_tree)
     docs.writeout()
+
+    # save FortranModules to a file which then can be used as external modules
+    if proj_data['externalize']:
+        with open(proj_data['output_dir'] + '/modules.pkl', 'wb') as extPrj:
+            sys.setrecursionlimit(3000)
+            pickle.dump(project.modules, extPrj)
+
     print('')
     return 0
 

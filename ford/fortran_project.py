@@ -28,6 +28,8 @@ from __future__ import print_function
 
 import os
 import toposort
+import pickle
+from urllib.request import urlopen
 
 import ford.sourceform
 
@@ -49,6 +51,7 @@ class Project(object):
     def __init__(self, settings):
         self.settings = settings        
         self.name = settings['project']
+        self.external = settings['external']
         self.topdirs = settings['src_dir']
         self.extensions = settings['extensions']
         self.fixed_extensions = settings['fixed_extensions']
@@ -56,14 +59,16 @@ class Project(object):
         self.display = settings['display']
         
         if settings['preprocess'].lower() != 'true': settings['fpp_extensions'] = []
-            
-        
         self.files = []
         self.modules = []
+        self.extMods = []
         self.programs = []
         self.procedures = []
+        self.extProcedures = []
         self.absinterfaces = []
+        self.extInterfaces = []
         self.types = []
+        self.extTypes = []
         self.submodules = []
         self.submodprocedures = []
         self.extra_files = []
@@ -136,7 +141,7 @@ class Project(object):
 
     def __str__(self):
         return self.name
-    
+
     def correlate(self):
         """
         Associates various constructs with each other.
@@ -153,19 +158,56 @@ class Project(object):
             name = item[:i].strip()
             url = item[i+1:].strip()
             non_local_mods[name.lower()] = '<a href="{}">{}</a>'.format(url,name)
-        
+
+        # load external FORD FortranModules
+        for url in self.external:
+            mods = pickle.load(urlopen(url + '/modules.pkl'))
+            for module in mods:
+                for function in module.functions:
+                    function.base_url = url
+                    function.isExt = True
+                    function.calls = []
+                    function.uses = []
+                    self.extProcedures.append(function)
+                for subroutine in module.subroutines:
+                    subroutine.base_url = url
+                    subroutine.isExt = True
+                    subroutine.calls = []
+                    subroutine.uses = []
+                    self.extProcedures.append(subroutine)
+                for interface in module.interfaces:
+                    interface.base_url = url
+                    interface.isExt = True
+                    self.extInterfaces.append(interface)
+                for absint in module.absinterfaces:
+                    absint.base_url = url
+                    absint.isExt = True
+                    self.extInterfaces.append(absint)
+                for dtype in module.types:
+                    dtype.base_url = url
+                    dtype.isExt = True
+                    self.extTypes.append(dtype)
+                module.isExt = True
+                module.base_url = url
+                module.uses = []
+                self.extMods.append(module)
+
         # Match USE statements up with the right modules
         for s in self.modules:
-            id_mods(s, self.modules, non_local_mods, self.submodules)
+            id_mods(s, self.modules, non_local_mods, self.submodules,
+                    self.extMods)
         for s in self.procedures:
-            id_mods(s, self.modules, non_local_mods, self.submodules)
+            id_mods(s, self.modules, non_local_mods, self.submodules,
+                    self.extMods)
         for s in self.programs:
-            id_mods(s, self.modules, non_local_mods, self.submodules)
+            id_mods(s, self.modules, non_local_mods, self.submodules,
+                    self.extMods)
         for s in self.submodules:
-            id_mods(s, self.modules, non_local_mods, self.submodules)
+            id_mods(s, self.modules, non_local_mods, self.submodules,
+                    self.extMods)
         for s in self.blockdata:
-            id_mods(s, self.modules, non_local_mods, self.submodules)
-            
+            id_mods(s, self.modules, non_local_mods, self.submodules,
+                    self.extMods)
         # Get the order to process other correlations with
         deplist = {}
         
@@ -178,10 +220,10 @@ class Project(object):
             for proc in getattr(item,'modprocedures',[]):
                 uselist.extend(get_deps(proc))
             return uselist
-        
         for mod in self.modules:
             uselist = get_deps(mod)
-            uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
+            uselist = [m for m in uselist if type(m) ==
+                       ford.sourceform.FortranModule and m.isExt == False]
             deplist[mod] = set(uselist)
             mod.deplist = uselist
         for mod in self.submodules:
@@ -224,7 +266,6 @@ class Project(object):
             url = '..'
         else:
             url = self.settings['project_url']
-        
         for sfile in self.files:
             for module in sfile.modules:
                 for function in module.functions:
@@ -311,12 +352,12 @@ class Project(object):
 
 
 
-def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
+def id_mods(obj,modlist,intrinsic_mods={},submodlist=[],extMods=[]):
     """
     Match USE statements up with the right modules
     """
     for i in range(len(obj.uses)):
-        for candidate in modlist:
+        for candidate in modlist + extMods:
             if obj.uses[i][0].lower() == candidate.name.lower():
                 obj.uses[i] = [candidate, obj.uses[i][1]]
                 break
@@ -335,8 +376,8 @@ def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
                 obj.ancestor_mod = mod
                 break
     for modproc in getattr(obj,'modprocedures',[]):
-        id_mods(modproc,modlist,intrinsic_mods)
+        id_mods(modproc,modlist,intrinsic_mods,extMods)
     for func in getattr(obj,'functions',[]):
-        id_mods(func,modlist,intrinsic_mods)
+        id_mods(func,modlist,intrinsic_mods,extMods)
     for subroutine in getattr(obj,'subroutines',[]):
-        id_mods(subroutine,modlist,intrinsic_mods)
+        id_mods(subroutine,modlist,intrinsic_mods,extMods)

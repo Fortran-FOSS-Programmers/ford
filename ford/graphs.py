@@ -190,7 +190,7 @@ class BaseNode(object):
             self.url = obj.get_url()
         self.attribs['label'] = self.name
         if self.url and getattr(obj,'visible',True):
-            if self.fromstr:
+            if self.fromstr or obj.isExt:
                 self.attribs['URL'] = self.url
             else:
                 self.attribs['URL'] = _parentdir + self.url
