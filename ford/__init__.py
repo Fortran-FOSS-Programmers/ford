@@ -35,7 +35,6 @@ import markdown
 import os
 import subprocess
 from datetime import date, datetime
-import pickle
 
 import ford.fortran_project
 import ford.sourceform
@@ -166,7 +165,7 @@ def initialize():
                 'exclude':             [],
                 'exclude_dir':         [],
                 'external':            [],
-                'externalize':         'false',
+                'externalize':         False,
                 'docmark':             '!',
                 'docmark_alt':         '*',
                 'predocmark':          '>',
@@ -361,11 +360,11 @@ def main(proj_data,proj_docs,md):
     docs = ford.output.Documentation(proj_data,proj_docs_,project,page_tree)
     docs.writeout()
 
-    # save FortranModules to a file which then can be used as external modules
-    if proj_data['externalize']:
-        with open(proj_data['output_dir'] + '/modules.pkl', 'wb') as extPrj:
-            sys.setrecursionlimit(3000)
-            pickle.dump(project.modules, extPrj)
+    if proj_data['externalize'].lower() == 'true':
+        # save FortranModules to a JSON file which then can be used
+        # for external modules
+        ford.utils.make_external(project.modules,
+                                 proj_data['output_dir'] + '/modules.json')
 
     print('')
     return 0

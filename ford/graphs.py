@@ -38,7 +38,12 @@ import colorsys
 
 from graphviz import Digraph
 
-from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure, FortranSourceFile, FortranBlockData
+from ford.sourceform import (FortranFunction, ExtFunction, FortranSubroutine,
+                             ExtSubroutine, FortranInterface, ExtInterface,
+                             FortranProgram, FortranType, ExtType,
+                             FortranModule, ExtModule, FortranSubmodule,
+                             FortranSubmoduleProcedure, FortranSourceFile,
+                             FortranBlockData)
 
 _coloured_edges = False
 def set_coloured_edges(val):
@@ -79,19 +84,23 @@ def newdict(old,key,val):
     return new
 
 def is_module(obj,cls):
-    return isinstance(obj,FortranModule) or issubclass(cls,FortranModule)
+    return (isinstance(obj, (FortranModule, ExtModule))
+            or issubclass(cls, (FortranModule, ExtModule)))
 
 def is_submodule(obj,cls):
     return isinstance(obj,FortranSubmodule) or issubclass(cls,FortranSubmodule)
     
 def is_type(obj,cls):
-    return isinstance(obj,FortranType) or issubclass(cls,FortranType)
+    return (isinstance(obj, (FortranType, ExtType))
+            or issubclass(cls, (FortranType, ExtType)))
 
 def is_proc(obj,cls):
-    return (isinstance(obj,(FortranFunction,FortranSubroutine,
-                            FortranInterface,FortranSubmoduleProcedure))
-         or issubclass(cls,(FortranFunction,FortranSubroutine,
-                               FortranInterface,FortranSubmoduleProcedure)))
+    return (isinstance(obj,(FortranFunction, ExtFunction, FortranSubroutine,
+                            ExtSubroutine, FortranInterface, ExtInterface,
+                            FortranSubmoduleProcedure))
+         or issubclass(cls,(FortranFunction, ExtFunction, FortranSubroutine,
+                            ExtSubroutine, FortranInterface, ExtInterface,
+                            FortranSubmoduleProcedure)))
 
 def is_program(obj, cls):
     return isinstance(obj,FortranProgram) or issubclass(cls,FortranProgram)
@@ -190,7 +199,7 @@ class BaseNode(object):
             self.url = obj.get_url()
         self.attribs['label'] = self.name
         if self.url and getattr(obj,'visible',True):
-            if self.fromstr or obj.isExt:
+            if self.fromstr or getattr(obj, 'isExt', False):
                 self.attribs['URL'] = self.url
             else:
                 self.attribs['URL'] = _parentdir + self.url

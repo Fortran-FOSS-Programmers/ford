@@ -200,19 +200,22 @@ class FortranBase(object):
         self.isExt = False
 
     def get_dir(self):
-        if ( type(self) in [FortranSubroutine,FortranFunction] and
-             type(self.parent) is FortranInterface and
+        if ( type(self) in [FortranSubroutine, ExtSubroutine,
+                            FortranFunction, ExtFunction] and
+             type(self.parent) in [FortranInterface, ExtInterface] and
              not self.parent.generic ):
             return 'interface'
         elif type(self) is FortranSubmodule:
             return 'module'
         elif ( type(self) in [FortranSourceFile,FortranProgram,FortranModule,
-                              GenericSource,FortranBlockData]
-               or ( type(self) in [FortranType,FortranInterface,FortranFunction,
-                                   FortranSubroutine, FortranSubmoduleProcedure]
+                              GenericSource,FortranBlockData, ExtModule]
+               or ( type(self) in [FortranType, ExtType, FortranInterface,
+                                   ExtInterface, FortranFunction, ExtFunction,
+                                   FortranSubroutine, ExtSubroutine,
+                                   FortranSubmoduleProcedure]
                     and type(self.parent) in [FortranSourceFile,FortranProgram,
                                               FortranModule, FortranSubmodule,
-                                              FortranBlockData] ) ):
+                                              FortranBlockData, ExtModule] ) ):
             return self.obj
         else:
             return None
@@ -2423,3 +2426,51 @@ class NameSelector(object):
             return name
 
 namelist = NameSelector()
+
+
+class ExtModule(FortranModule):
+
+    def __init__(self):
+        self.name = ''
+        self.uses = []
+        self.pub_procs = {}
+        self.pub_absints = {}
+        self.pub_types = {}
+        self.pub_vars = {}
+        self.isExt = True
+
+
+class ExtFunction(FortranFunction):
+
+    def __init__(self):
+        self.name = ''
+        self.isExt = True
+
+
+class ExtSubroutine(FortranSubroutine):
+
+    def __init__(self):
+        self.name = ''
+        self.isExt = True
+
+
+class ExtInterface(FortranInterface):
+
+    def __init__(self):
+        self.name = ''
+        self.isExt = True
+
+
+class ExtType(FortranType):
+
+    def __init__(self):
+        self.name = ''
+        self.isExt = True
+        self.variables = []
+
+
+class ExtVariable(FortranVariable):
+
+    def __init__(self):
+        self.name = ''
+        self.isExt = True

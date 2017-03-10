@@ -27,6 +27,8 @@
 
 import re
 import os.path
+import json
+import ford.sourceform
 
 NOTE_TYPE = {'note':'info',
              'warning':'warning',
@@ -176,20 +178,20 @@ def sub_links(string,project):
     for either or both of these parts.
     '''
     LINK_TYPES    = { 'module': 'modules',
-                      'extMods': 'extMods',
                       'type': 'types',
-                      'extTypes': 'extTypes',
                       'procedure': 'procedures',
                       'subroutine': 'procedures',
                       'function': 'procedures',
-                      'extProcedures': 'extProcedures',
                       'proc': 'procedures',
                       'file': 'allfiles',
                       'interface': 'absinterfaces',
                       'absinterface': 'absinterfaces',
-                      'extInterfaces': 'extInterfaces',
                       'program': 'programs',
-                      'block': 'blockdata' }
+                      'block': 'blockdata',
+                      'extModules': 'extModules',
+                      'extProcedures': 'extProcedures',
+                      'extInterfaces': 'extInterfaces',
+                      'extTypes': 'extTypes'}
         
     SUBLINK_TYPES = { 'variable': 'variables',
                       'type': 'types',
@@ -290,3 +292,124 @@ def sub_macros(string,base_url):
     for key, val in macros.items():
         string = string.replace(key,val)
     return string
+
+
+def make_external(modules, fName):
+    '''
+    Converts a list of FortranModule objects (modules) to a JSON file called
+    fName.
+    '''
+    extModules = []  # list for the external modules
+    for module in modules:
+        extModule = {}
+        extModule['name'] = module.name
+        extModule['obj'] = module.obj
+        extProcedures = {}
+        # convert procedures of this module
+        for key, val in module.pub_procs.items():
+            if type(val) == ford.sourceform.FortranFunction:
+                extProcedures[key] = ('function', val.name, val.proctype,
+                                      val.obj)
+            elif type(val) == ford.sourceform.FortranSubroutine:
+                extProcedures[key] = ('subroutine', val.name, val.proctype,
+                                      val.obj)
+            elif type(val) == ford.sourceform.FortranInterface:
+                extProcedures[key] = ('interface', val.name, val.proctype,
+                                      val.obj)
+        extModule['procedures'] = extProcedures
+        # convert interfaces of this module
+        extInterfaces = {}
+        for key, val in module.pub_absints.items():
+            extInterfaces[key] = (val.name, val.obj)
+        extModule['interfaces'] = extInterfaces
+        # convert types of this module
+        extTypes = {}
+        for key, val in module.pub_types.items():
+            extTypes[key] = (val.name, val.obj, val.extends)
+        extModule['types'] = extTypes
+        # convert variables of this module
+        extVariables = {}
+        for key, val in module.pub_vars.items():
+            extVariables[key] = (val.name, val.obj)
+        extModule['variables'] = extVariables
+        extModules.append(extModule)
+    with open(fName, 'w') as modFile:
+        modFile.write(json.dumps(extModules))
+
+
+def get_external(project):
+    '''
+    Converts JSON file containing imformation about external modules
+    to ExtModule objects.
+    '''
+    from urllib.request import urlopen
+
+    # get the external modules from the external URLs
+    for url in project.external:
+        # get the external modules from the external URL
+        try:
+            extModules = json.loads(
+                urlopen(url + '/modules.json').read().decode('utf8'))
+        except:
+            extModules = []
+            print('Could not open external URL: {}.'.format(url))
+        for extModule in extModules:
+            module = ford.sourceform.ExtModule()
+            module.base_url = url
+            module.name = extModule['name']
+            module.obj = extModule['obj']
+            # get the procedures (functions, subroutines and interfaces) of
+            # the external module
+            extProcedures = {}
+            for key, val in extModule['procedures'].items():
+                if val[0] == 'function':
+                    extProcedure = ford.sourceform.ExtFunction()
+                elif val[0] == 'subroutine':
+                    extProcedure = ford.sourceform.ExtSubroutine()
+                elif val[0] == 'interface':
+                    extProcedure = ford.sourceform.ExtInterface()
+                else:
+                    print(('Unknown procedure type {} in external module {}'
+                           '/{}').format(val[0], module.base_url, module.name))
+                extProcedure.base_url = url
+                extProcedure.name = val[1]
+                extProcedure.proctype = val[2]
+                extProcedure.obj = val[3]
+                extProcedure.parent = module
+                extProcedures[key] = extProcedure
+                project.extProcedures.append(extProcedure)
+            module.pub_procs = extProcedures
+            # get the abstract interfaces of the external module
+            extInterfaces = {}
+            for key, val in extModule['interfaces'].items():
+                extInterface = ford.sourceform.ExtInterface()
+                extInterface.base_url = url
+                extInterface.name = val[0]
+                extInterface.obj = val[1]
+                extInterface.parent = module
+                extInterfaces[key] = extInterface
+                project.extInterfaces.append(extInterface)
+            module.pub_absints = extInterfaces
+            # get the types of the external module
+            extTypes = {}
+            for key, val in extModule['types'].items():
+                extType = ford.sourceform.ExtType()
+                extType.base_url = url
+                extType.name = val[0]
+                extType.obj = val[1]
+                extType.extends = val[2]
+                extType.parent = module
+                extTypes[key] = extType
+                project.extTypes.append(extType)
+            module.pub_types = extTypes
+            # get the variables of the external module
+            extVariables = {}
+            for key, val in extModule['variables'].items():
+                extVariable = ford.sourceform.ExtVariable()
+                extVariable.base_url = url
+                extVariable.name = val[0]
+                extVariable.obj = val[1]
+                extVariable.parent = module
+                extVariables[key] = extVariable
+            module.pub_vars = extVariables
+            project.extModules.append(module)

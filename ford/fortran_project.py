@@ -28,10 +28,7 @@ from __future__ import print_function
 
 import os
 import toposort
-import pickle
-from urllib.request import urlopen
-
-import ford.sourceform
+import ford.utils
 
 INTRINSIC_MODS = {'iso_fortran_env': '<a href="http://fortranwiki.org/fortran/show/ISO_FORTRAN_ENV">iso_fortran_env</a>',
                   'iso_c_binding': '<a href="http://fortranwiki.org/fortran/show/ISO_C_BINDING">iso_c_binding</a>',
@@ -61,19 +58,19 @@ class Project(object):
         if settings['preprocess'].lower() != 'true': settings['fpp_extensions'] = []
         self.files = []
         self.modules = []
-        self.extMods = []
         self.programs = []
         self.procedures = []
-        self.extProcedures = []
         self.absinterfaces = []
-        self.extInterfaces = []
         self.types = []
-        self.extTypes = []
         self.submodules = []
         self.submodprocedures = []
         self.extra_files = []
         self.blockdata = []
         self.common = {}
+        self.extModules = []
+        self.extProcedures = []
+        self.extInterfaces = []
+        self.extTypes = []
                 
         # Get all files within topdir, recursively
         srctree = []
@@ -160,54 +157,24 @@ class Project(object):
             non_local_mods[name.lower()] = '<a href="{}">{}</a>'.format(url,name)
 
         # load external FORD FortranModules
-        for url in self.external:
-            mods = pickle.load(urlopen(url + '/modules.pkl'))
-            for module in mods:
-                for function in module.functions:
-                    function.base_url = url
-                    function.isExt = True
-                    function.calls = []
-                    function.uses = []
-                    self.extProcedures.append(function)
-                for subroutine in module.subroutines:
-                    subroutine.base_url = url
-                    subroutine.isExt = True
-                    subroutine.calls = []
-                    subroutine.uses = []
-                    self.extProcedures.append(subroutine)
-                for interface in module.interfaces:
-                    interface.base_url = url
-                    interface.isExt = True
-                    self.extInterfaces.append(interface)
-                for absint in module.absinterfaces:
-                    absint.base_url = url
-                    absint.isExt = True
-                    self.extInterfaces.append(absint)
-                for dtype in module.types:
-                    dtype.base_url = url
-                    dtype.isExt = True
-                    self.extTypes.append(dtype)
-                module.isExt = True
-                module.base_url = url
-                module.uses = []
-                self.extMods.append(module)
+        ford.utils.get_external(self)
 
         # Match USE statements up with the right modules
         for s in self.modules:
             id_mods(s, self.modules, non_local_mods, self.submodules,
-                    self.extMods)
+                    self.extModules)
         for s in self.procedures:
             id_mods(s, self.modules, non_local_mods, self.submodules,
-                    self.extMods)
+                    self.extModules)
         for s in self.programs:
             id_mods(s, self.modules, non_local_mods, self.submodules,
-                    self.extMods)
+                    self.extModules)
         for s in self.submodules:
             id_mods(s, self.modules, non_local_mods, self.submodules,
-                    self.extMods)
+                    self.extModules)
         for s in self.blockdata:
             id_mods(s, self.modules, non_local_mods, self.submodules,
-                    self.extMods)
+                    self.extModules)
         # Get the order to process other correlations with
         deplist = {}
         
