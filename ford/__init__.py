@@ -165,7 +165,7 @@ def initialize():
                 'exclude':             [],
                 'exclude_dir':         [],
                 'external':            [],
-                'externalize':         False,
+                'externalize':         'false',
                 'docmark':             '!',
                 'docmark_alt':         '*',
                 'predocmark':          '>',
@@ -192,7 +192,7 @@ def initialize():
                 'license':             '',
                 'extra_filetypes':     [],
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
-                'print_creation_date': False,
+                'print_creation_date': 'false',
                 'coloured_edges':      'false',
                 'parallel':            ncpus,
                }
