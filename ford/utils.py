@@ -348,8 +348,8 @@ def get_external(project):
     for url in project.external:
         # get the external modules from the external URL
         try:
-            extModules = json.loads(
-                urlopen(url + '/modules.json').read().decode('utf8'))
+            extModules = json.loads(urlopen(
+                    os.path.join(url, 'modules.json')).read().decode('utf8'))
         except:
             extModules = []
             print('Could not open external URL: {}.'.format(url))
