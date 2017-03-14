@@ -1145,7 +1145,7 @@ class FortranModule(FortranCodeUnit):
             name = name.lower()
             if only:
                 if name in uspecs:
-                    ret_types[uspecs[name]] = obj
+                    ret_types[name] = obj
             else:
                 ret_types[name] = obj
         for name, obj in self.pub_vars.items():
