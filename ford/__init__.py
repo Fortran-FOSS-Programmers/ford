@@ -363,9 +363,7 @@ def main(proj_data,proj_docs,md):
     if proj_data['externalize'].lower() == 'true':
         # save FortranModules to a JSON file which then can be used
         # for external modules
-        ford.utils.make_external(project.modules,
-                                 os.path.join(proj_data['output_dir'],
-                                              'modules.json'))
+        ford.utils.external(project, make=True, path=proj_data['output_dir'])
 
     print('')
     return 0

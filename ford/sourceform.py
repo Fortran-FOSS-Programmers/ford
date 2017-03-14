@@ -197,7 +197,6 @@ class FortranBase(object):
             self.hierarchy.append(cur)
             cur = cur.parent
         self.hierarchy.reverse()
-        self.isExt = False
 
     def get_dir(self):
         if ( type(self) in [FortranSubroutine, ExtSubroutine,
@@ -221,6 +220,8 @@ class FortranBase(object):
             return None
 
     def get_url(self):
+        if hasattr(self, 'extURL'):
+            return self.extURL
         outstr = "{0}/{1}/{2}.html"
         loc = self.get_dir()
         if loc:
@@ -1030,7 +1031,6 @@ class FortranSourceFile(FortranContainer):
         self.hierarchy = []
         self.obj = 'sourcefile'
         self.display = settings['display']
-        self.isExt = False
 
         source = ford.reader.FortranReader(self.path,settings['docmark'],
                     settings['predocmark'],settings['docmark_alt'],
@@ -2437,40 +2437,39 @@ class ExtModule(FortranModule):
         self.pub_absints = {}
         self.pub_types = {}
         self.pub_vars = {}
-        self.isExt = True
+        self.extURL = ''
 
 
 class ExtFunction(FortranFunction):
 
     def __init__(self):
         self.name = ''
-        self.isExt = True
+        self.extURL = ''
 
 
 class ExtSubroutine(FortranSubroutine):
 
     def __init__(self):
         self.name = ''
-        self.isExt = True
+        self.extURL = ''
 
 
 class ExtInterface(FortranInterface):
 
     def __init__(self):
         self.name = ''
-        self.isExt = True
+        self.extURL = ''
 
 
 class ExtType(FortranType):
 
     def __init__(self):
         self.name = ''
-        self.isExt = True
-        self.variables = []
+        self.extURL = ''
 
 
 class ExtVariable(FortranVariable):
 
     def __init__(self):
         self.name = ''
-        self.isExt = True
+        self.extURL = ''

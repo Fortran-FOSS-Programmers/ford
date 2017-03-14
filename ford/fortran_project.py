@@ -71,7 +71,8 @@ class Project(object):
         self.extProcedures = []
         self.extInterfaces = []
         self.extTypes = []
-                
+        self.extVariables = []
+
         # Get all files within topdir, recursively
         srctree = []
         for topdir in self.topdirs:
@@ -157,7 +158,7 @@ class Project(object):
             non_local_mods[name.lower()] = '<a href="{}">{}</a>'.format(url,name)
 
         # load external FORD FortranModules
-        ford.utils.get_external(self)
+        ford.utils.external(self)
 
         # Match USE statements up with the right modules
         for s in self.modules:
@@ -190,7 +191,7 @@ class Project(object):
         for mod in self.modules:
             uselist = get_deps(mod)
             uselist = [m for m in uselist if type(m) ==
-                       ford.sourceform.FortranModule and m.isExt == False]
+                       ford.sourceform.FortranModule]
             deplist[mod] = set(uselist)
             mod.deplist = uselist
         for mod in self.submodules:
