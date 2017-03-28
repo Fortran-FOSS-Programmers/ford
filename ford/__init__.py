@@ -223,7 +223,10 @@ def initialize():
     for ext in proj_data['extra_filetypes']:
         sp = ext.split()
         if len(sp) < 2: continue
-        extdict[sp[0]] = sp[1]
+        if (len(sp)==2):
+            extdict[sp[0]] = (sp[1])        # (comment_char) only
+        else:
+            extdict[sp[0]] = (sp[1],sp[2])  # (comment_char and lexer_str)
     proj_data['extra_filetypes'] = extdict
     # Make sure no src_dir is contained within output_dir
     for projdir in proj_data['src_dir']:
