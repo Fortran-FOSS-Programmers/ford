@@ -1,4 +1,4 @@
-#FORD
+# FORD
 [![Latest Version](https://img.shields.io/pypi/v/ford.svg)](https://pypi.python.org/pypi/FORD)
 [![Latest homebrew version](https://img.shields.io/homebrew/v/ford.svg?maxAge=2592000)](http://braumeister.org/formula/ford)
 [![GitHub license](https://img.shields.io/badge/license-GPL_v3-blue.svg)](./LICENSE)
@@ -30,7 +30,7 @@ should be easy to write and non-obtrusive within the code. While it will never
 be as feature-rich as Doxygen, hopefully FORD will be able to provide a good
 alternative for documenting Fortran projects.
 
-##Capabilities
+## Capabilities
 Current features include:
 
 - the ability to extract information about variables, procedures, procedure
@@ -51,7 +51,7 @@ Current features include:
 - display an entry for non-Fortran source files with file-level documentation
   and syntax highlighted code.
 
-##Installation
+## Installation
 The simplest way to install FORD is using [pip](https://pip.pypa.io/en/latest/).
 This can be done with the commands:
 
@@ -80,7 +80,7 @@ simply add the `--HEAD` flag: `brew install --HEAD FORD`
 ##Documentation
 More complete documentation can be found in the [project wiki](https://github.com/cmacmackin/ford/wiki).
 
-##License
+## License
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
