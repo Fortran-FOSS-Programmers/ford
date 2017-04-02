@@ -43,6 +43,7 @@ from ford.graphs import graphviz_installed
 
 loc = os.path.dirname(__file__)
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
+env.globals['path'] = os.path # this lets us call path.* in templates
 
 class Documentation(object):
     """
@@ -144,7 +145,7 @@ class Documentation(object):
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],'')
             else:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],data['project_url'])
-            self.tipue.create_node(self.index.html,'index.html', {'categroy': 'home'})
+            self.tipue.create_node(self.index.html,'index.html', {'category': 'home'})
             for p in self.docs:
                 self.tipue.create_node(p.html,p.loc,p.obj.meta)
             for p in self.pagetree:
@@ -189,6 +190,10 @@ class Documentation(object):
             shutil.copy(self.data['favicon'],os.path.join(out_dir,'favicon.png'))
         for src in self.project.allfiles:
             shutil.copy(src.path,os.path.join(out_dir,'src',src.name))
+        if 'mathjax_config' in self.data:
+            shutil.copy(self.data['mathjax_config'],
+                        os.path.join(out_dir, os.path.join('js/MathJax-config',
+                              os.path.basename(self.data['mathjax_config']))))
         for p in self.docs + self.lists + self.pagetree + [self.index, self.search]:
             p.writeout()
 
@@ -203,7 +208,7 @@ class BasePage(object):
         FortranProject object
       obj
         The object/item in the code which this page is documenting
-    """    
+    """
     def __init__(self,data,proj,obj=None):
         self.html = self.render(data,proj,obj)
         self.out_dir = data['output_dir']
