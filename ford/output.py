@@ -190,10 +190,10 @@ class Documentation(object):
             shutil.copy(self.data['favicon'],os.path.join(out_dir,'favicon.png'))
         for src in self.project.allfiles:
             shutil.copy(src.path,os.path.join(out_dir,'src',src.name))
-        if self.data['mathjax_config'] is not None:
-          shutil.copy( self.data['mathjax_config'] ,                   \
-            os.path.join( out_dir, os.path.join( 'js/MathJax-config' , \
-            os.path.basename(self.data['mathjax_config']) ) ) )
+        if 'mathjax_config' in self.data:
+            shutil.copy(self.data['mathjax_config'],
+                        os.path.join(out_dir, os.path.join('js/MathJax-config',
+                              os.path.basename(self.data['mathjax_config']))))
         for p in self.docs + self.lists + self.pagetree + [self.index, self.search]:
             p.writeout()
 
@@ -208,7 +208,7 @@ class BasePage(object):
         FortranProject object
       obj
         The object/item in the code which this page is documenting
-    """    
+    """
     def __init__(self,data,proj,obj=None):
         self.html = self.render(data,proj,obj)
         self.out_dir = data['output_dir']

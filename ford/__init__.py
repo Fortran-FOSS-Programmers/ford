@@ -26,10 +26,6 @@
 from __future__ import print_function
 from contextlib import contextmanager
 import sys
-if (sys.version_info[0]>2):
-    from io import StringIO
-else:
-    from StringIO import StringIO
 import argparse
 import markdown
 import os
@@ -42,6 +38,11 @@ import ford.output
 from ford.mdx_mathjax import MathJaxExtension
 import ford.utils
 import ford.pagetree
+
+if (sys.version_info[0] > 2):
+    from io import StringIO
+else:
+    from StringIO import StringIO
 
 __appname__    = "FORD"
 __author__     = "Chris MacMackin, Jacob Williams, Marco Restelli, Iain Barrass, Jérémie Burgalat, Stephen J. Turnbull, Balint Aradi"
@@ -181,7 +182,6 @@ def initialize():
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': False,
                 'coloured_edges':      'false',
-                'mathjax_config':      None,
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
@@ -189,7 +189,7 @@ def initialize():
     # Evaluate paths relative to project file location
     base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
     proj_data['base_dir'] = base_dir
-    for var in ['src_dir','page_dir','output_dir','exclude_dir','graph_dir','media_dir','include','favicon','css']:
+    for var in ['src_dir','page_dir','output_dir','exclude_dir','graph_dir','media_dir','include','favicon','css','mathjax_config']:
         if var in proj_data:
             proj_data[var] = [os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(p)))) for p in proj_data[var]]
     if args.warn:
