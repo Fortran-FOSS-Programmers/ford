@@ -71,59 +71,53 @@ class Project(object):
         self.common = {}
                 
         # Get all files within topdir, recursively
-        srctree = []
-        for topdir in self.topdirs:
-            srctree = os.walk(os.path.relpath(topdir))
-            for srcdir in srctree:
-                abs_dir = os.path.normpath(os.path.join(settings['base_dir'],
-                              os.path.expanduser(os.path.expandvars(srcdir[0]))))
-                exclude = [abs_dir==ex for ex in settings['exclude_dir']]
-                if any(exclude): continue
-                curdir = srcdir[0]
-                for item in srcdir[2]:
-                    ext = item.split('.')[-1]
-                    if (ext in self.extensions or ext in self.fixed_extensions) and \
-                      not item in settings['exclude']:
-                        # Get contents of the file
-                        print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
-                        if item.split('.')[-1] in settings['fpp_extensions']:
-                            preprocessor = settings['preprocessor']
-                        else:
-                            preprocessor = None
-                        if settings['dbg']:
-                            self.files.append(
-                                ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings, preprocessor, ext in self.fixed_extensions))
-                        else:
-                            try:
-                                self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,preprocessor, ext in self.fixed_extensions))
-                            except Exception as e:
-                                print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
-                                continue
-                        for module in self.files[-1].modules:
-                            self.modules.append(module)
-                        for submod in self.files[-1].submodules:
-                            self.submodules.append(submod)
-                        for function in self.files[-1].functions:
-                            function.visible = True
-                            self.procedures.append(function)
-                        for subroutine in self.files[-1].subroutines:
-                            subroutine.visible = True
-                            self.procedures.append(subroutine)
-                        for program in self.files[-1].programs:
-                            program.visible = True
-                            self.programs.append(program)
-                        for block in self.files[-1].blockdata:
-                            self.blockdata.append(block)
-                    elif item.split('.')[-1] in self.extra_filetypes and not item in settings['exclude']:
-                        print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
-                        if settings['dbg']:
+        srcdir_list = self.make_srcdir_list(settings['exclude_dir'])
+        for curdir in srcdir_list:
+            for item in [ f for f in os.listdir(curdir) \
+                           if not os.path.isdir(os.path.join(curdir,f))]:
+                ext = item.split('.')[-1]
+                if (ext in self.extensions or ext in self.fixed_extensions) and \
+                  not item in settings['exclude']:
+                    # Get contents of the file
+                    print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
+                    if item.split('.')[-1] in settings['fpp_extensions']:
+                        preprocessor = settings['preprocessor']
+                    else:
+                        preprocessor = None
+                    if settings['dbg']:
+                        self.files.append(
+                            ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings, preprocessor, ext in self.fixed_extensions))
+                    else:
+                        try:
+                            self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,preprocessor, ext in self.fixed_extensions))
+                        except Exception as e:
+                            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
+                            continue
+                    for module in self.files[-1].modules:
+                        self.modules.append(module)
+                    for submod in self.files[-1].submodules:
+                        self.submodules.append(submod)
+                    for function in self.files[-1].functions:
+                        function.visible = True
+                        self.procedures.append(function)
+                    for subroutine in self.files[-1].subroutines:
+                        subroutine.visible = True
+                        self.procedures.append(subroutine)
+                    for program in self.files[-1].programs:
+                        program.visible = True
+                        self.programs.append(program)
+                    for block in self.files[-1].blockdata:
+                        self.blockdata.append(block)
+                elif item.split('.')[-1] in self.extra_filetypes and not item in settings['exclude']:
+                    print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
+                    if settings['dbg']:
+                        self.extra_files.append(ford.sourceform.GenericSource(os.path.join(curdir,item),settings))
+                    else:
+                        try:
                             self.extra_files.append(ford.sourceform.GenericSource(os.path.join(curdir,item),settings))
-                        else:
-                            try:
-                                self.extra_files.append(ford.sourceform.GenericSource(os.path.join(curdir,item),settings))
-                            except Exception as e:
-                                print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
-                                continue
+                        except Exception as e:
+                            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
+                            continue
         self.allfiles = self.files + self.extra_files                
 
 
@@ -290,6 +284,28 @@ class Project(object):
             src.make_links(self)
         return
 
+    def make_srcdir_list(self,exclude_dirs):
+        """
+        Like os.walk, except that:
+        a) directories listed in exclude_dir are excluded with all
+          their subdirectories
+        b) absolute paths are returned
+        """
+        srcdir_list = []
+        for topdir in self.topdirs:
+            srcdir_list.append(topdir)
+            srcdir_list += self.recursive_dir_list(topdir,exclude_dirs)
+        return srcdir_list
+
+    def recursive_dir_list(self,topdir,skip):
+        dir_list = []
+        for entry in os.listdir(topdir):
+            abs_entry = os.path.join(topdir,entry)
+            if os.path.isdir(abs_entry) and (abs_entry not in skip):
+                dir_list.append( abs_entry )
+                dir_list += self.recursive_dir_list(abs_entry,skip)
+        return dir_list
+          
 
 
 def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
