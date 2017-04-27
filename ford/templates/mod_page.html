@@ -18,13 +18,13 @@
     </div>
     
     <div class="col-md-9" id='text'>
+    {{ module.doc }}
       {% if module.obj == 'submodule' %}{{ macros.ancestry(module) }}{% endif %}
     {{ macros.use_list(module) }}
     {% if module.descendants|length > 0 %}{{ macros.descendants(module) }}{% endif %}
-    {{ module.doc }}
     {% if module.doc and not module.usedbygraph %}<br>{% endif %}
     {% if module.usedbygraph %}
-    <h3>Used By</h3>
+    <h2>Used By</h2>
     {{ module.usedbygraph }}
     <br>
     {% endif %}

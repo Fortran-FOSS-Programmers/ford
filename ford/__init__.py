@@ -83,6 +83,12 @@ def initialize():
     Method to parse and check configurations of FORD, get the project's 
     global documentation, and create the Markdown reader.
     """
+    try:
+        import multiprocessing
+        ncpus = '{0}'.format(multiprocessing.cpu_count())
+    except (ImportError, NotImplementedError):
+        ncpus = '0'
+
     # Setup the command-line options and parse them.
     parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
     parser.add_argument("project_file",help="file containing the description and settings for the project",
@@ -91,6 +97,7 @@ def initialize():
     parser.add_argument("-p","--page_dir",help="directory containing the optional page tree describing the project")
     parser.add_argument("-o","--output_dir",help="directory in which to place output files")
     parser.add_argument("-s","--css",help="custom style-sheet for the output")
+    parser.add_argument("-r","--revision",dest="revision",help="Source code revision the project to document")
     parser.add_argument("--exclude",action="append",help="any files which should not be included in the documentation")
     parser.add_argument("--exclude_dir",action="append",help="any directories whose contents should not be included in the documentation")
     parser.add_argument("-e","--extensions",action="append",help="extensions which should be scanned for documentation (default: f90, f95, f03, f08)")
@@ -142,10 +149,12 @@ def initialize():
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'source','exclude_dir','macro','include','preprocess','quiet',
-               'search','lower','sort','extra_mods','dbg','graph', 'license',
-               'extra_filetypes','preprocessor','creation_date',
+               'search','lower','sort','extra_mods','dbg','graph',
+               'graph_mindepth', 'graph_maxdepth', 'graph_maxnodes',
+               'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
-               'graph_dir','gitter_sidecar','mathjax_config']
+               'graph_dir','gitter_sidecar','mathjax_config','parallel',
+               'revision']
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
@@ -177,11 +186,15 @@ def initialize():
                 'extra_mods':          [],
                 'dbg':                 True,
                 'graph':               'false',
+                'graph_mindepth':      '0',
+                'graph_maxdepth':      '10000',
+                'graph_maxnodes':      '1000000000',
                 'license':             '',
                 'extra_filetypes':     [],
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': False,
                 'coloured_edges':      'false',
+                'parallel':            ncpus,
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
@@ -339,9 +352,11 @@ def main(proj_data,proj_docs,md):
     else:
         page_tree = None
     proj_data['pages'] = page_tree
+
     # Produce the documentation using Jinja2. Output it to the desired location
     # and copy any files that are needed (CSS, JS, images, fonts, source files,
     # etc.)
+
     docs = ford.output.Documentation(proj_data,proj_docs_,project,page_tree)
     docs.writeout()
     print('')

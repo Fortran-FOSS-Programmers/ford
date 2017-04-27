@@ -12,6 +12,13 @@ body {
       white-space:nowrap;
     }
 
+    :target:before {
+      content:"";
+      display:block;
+      height:60px;
+      margin:-60px 0 0;
+    }
+
     ol.hierarchy {
       min-height: 40px;
       background-color: #f5f5f5;
@@ -194,4 +201,74 @@ body {
     .gitter-chat-embed {
       z-index: 100000;
     }
-    
+
+table.graph {
+    text-align: center;
+}
+
+
+.graph td.root {
+  border:2px solid black;
+  padding:10px;
+}
+
+.graph td.triangle:after {
+    content: "";
+    display: block;
+    border-top: 7px solid  transparent;
+    border-bottom: 7px solid  transparent;
+    border-left: 7px solid black;
+}
+
+.graph td.node {
+  color: white;
+  padding:10px;
+  border-style: solid;
+  border-width: 3px 0px 3px 0px;
+  border-color: white;
+}
+
+.graph td.node a{
+  color: white;
+}
+
+.graph td.dashedText,
+.graph td.solidText {
+    padding: 0px 10px 0px 10px;
+    min-width: 40px;
+    color: black;
+    border-color: black;
+}
+
+.graph td.dashedText {
+    border-bottom-style: dashed;
+}
+
+.graph td.solidText {
+    border-bottom-style: solid;
+}
+
+.graph td.dashedBottom,
+.graph td.dashedTop,
+.graph td.solidTop,
+.graph td.solidBottom {
+    min-width: 40px;
+    color: transparent;
+    border-color: black;
+}
+
+.graph td.dashedBottom {
+    border-bottom-style: dashed;
+}
+
+.graph td.dashedTop {
+    border-top-style: dashed;
+}
+
+.graph td.solidBottom {
+    border-bottom-style: solid;
+}
+
+.graph td.solidTop {
+    border-top-style: solid;
+}

@@ -37,7 +37,7 @@
 
     {% if dtype.variables|length > 0 %}
     <section>
-    <h2>Components</h2>
+    <h3>Components</h3>
     {{ macros.var_list(dtype.variables,permission=True) }}
     </section>
     <br>
@@ -45,7 +45,7 @@
     
     {% if dtype.constructor %}
 	 <section>
-	 <h2>Constructor</h2>
+	 <h3>Constructor</h3>
 	   {% if dtype.constructor.obj == "interface" %}
 	   {{ macros.interface(dtype.constructor) }}
 	   {% elif dtype.constructor.obj == "subroutine" or dtype.constructor.obj == "function" %}
@@ -63,7 +63,7 @@
     
     {% if dtype.finalprocs|length > 0 %}
     <section>
-    <h2>Finalization Procedures</h2>
+    <h3>Finalization Procedures</h3>
 	   {% for proc in dtype.finalprocs %}
          {{ macros.final(proc) }}
        {% endfor %}  
@@ -73,7 +73,7 @@
     
     {% if dtype.boundprocs|length > 0 %} 
     <section>
-    <h2>Type-Bound Procedures</h2>
+    <h3>Type-Bound Procedures</h3>
     {% for bp in dtype.boundprocs %}
 	   {{ macros.bound_info(bp) }}
     {% endfor %}
@@ -82,7 +82,7 @@
     
     {% if dtype.src %}
     <section>
-    <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <h3><span class="anchor" id="src"></span>Source Code</h3>
     {{ dtype.src }}
     </section>
     {% endif %}

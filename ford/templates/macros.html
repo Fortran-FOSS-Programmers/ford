@@ -739,8 +739,8 @@
 
 {% macro use_list(obj) %}
   {% if obj.uses|length > 0 %}
+    <h2>Uses</h2>
     <ul class="list-inline">
-      <li><h4>Uses:</h4></li>
       {% for use in obj.uses %}
       <li>{{ use }}</li>
       {% endfor %}
