@@ -41,6 +41,9 @@ import ford.utils
 from ford.graphmanager import GraphManager
 from ford.graphs import graphviz_installed
 
+from ford.sourceform import FortranBase
+from ford.pagetree import PageNode
+
 loc = os.path.dirname(__file__)
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
 env.globals['path'] = os.path # this lets us call path.* in templates
@@ -225,9 +228,11 @@ class BasePage(object):
         The object/item in the code which this page is documenting
     """
     def __init__(self, data, proj, obj=None):
-        self.data = data
+        self.data = data.copy()
         self.proj = proj
         self.obj = obj
+        self.storeFortranBase_base_url = FortranBase.base_url
+        self.storePageNode_base_url    = PageNode.base_url
 
     @property
     def out_dir(self):
@@ -240,9 +245,17 @@ class BasePage(object):
         return self.render(self.data, self.proj, self.obj)
     
     def writeout(self):
+        tmp1 = FortranBase.base_url 
+        tmp2 = PageNode.base_url
+        FortranBase.base_url = self.storeFortranBase_base_url
+        PageNode.base_url    = self.storePageNode_base_url
+
         out = open(self.outfile,'wb')
         out.write(self.html.encode('utf8'))
         out.close()
+
+        FortranBase.base_url = tmp1
+        PageNode.base_url    = tmp2
     
     def render(self, data, proj, obj):
         """
