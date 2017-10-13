@@ -43,6 +43,7 @@ from ford.graphs import graphviz_installed
 
 loc = os.path.dirname(__file__)
 env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
+env.globals['path'] = os.path # this lets us call path.* in templates
 
 class Documentation(object):
     """
@@ -104,7 +105,6 @@ class Documentation(object):
             project.typegraph = ''
             project.usegraph = ''
             project.filegraph = ''
-        print("Creating HTML documentation...")
         try:
             for item in project.allfiles:
                 self.docs.append(FilePage(data,project,item))
@@ -169,7 +169,7 @@ class Documentation(object):
             print('')
             
     def writeout(self):
-        print("Writing resulting documentation.")
+        print("Writing HTML documentation...")
         out_dir = self.data['output_dir']
         try:
             if os.path.isfile(out_dir):
@@ -208,6 +208,10 @@ class Documentation(object):
             shutil.copy(self.data['favicon'],os.path.join(out_dir,'favicon.png'))
         for src in self.project.allfiles:
             shutil.copy(src.path,os.path.join(out_dir,'src',src.name))
+        if 'mathjax_config' in self.data:
+            shutil.copy(self.data['mathjax_config'],
+                        os.path.join(out_dir, os.path.join('js/MathJax-config',
+                              os.path.basename(self.data['mathjax_config']))))
         # By doing this we omit a duplication of data.
         for p in self.docs:
             p.writeout()
@@ -229,7 +233,7 @@ class BasePage(object):
         FortranProject object
       obj
         The object/item in the code which this page is documenting
-    """    
+    """
     def __init__(self, data, proj, obj=None):
         self.data = data
         self.proj = proj
