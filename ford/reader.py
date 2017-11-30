@@ -77,8 +77,13 @@ class FortranReader(object):
             raise Exception('Error: predocmark and predocmark_alt are the same.')
         
         if preprocessor:
-            macros = ['-D' + mac.strip() for mac in macros]
-            incdirs = ['-I' + d.strip() for d in inc_dirs]
+            # Populate the macro definition and include directory path from
+            # the input lists.  To define a macro we prepend '-D' and for an
+            # include path we prepend '-I'.  It's important that we do not
+            # prepend to an empty string as 'cpp ... -D file.F90' doesn't do
+            # what is desired; use filter to remove these.
+            macros = ['-D' + mac.strip() for mac in filter(None,macros)]
+            incdirs = ['-I' + d.strip() for d in filter(None,inc_dirs)]
             preprocessor = preprocessor + macros + incdirs + [filename]
             fpp = subprocess.Popen(preprocessor, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE, 
