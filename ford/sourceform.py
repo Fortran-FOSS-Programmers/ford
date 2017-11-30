@@ -499,6 +499,7 @@ class FortranContainer(FortranBase):
     COMMON_SPLIT_RE = re.compile("\s*(/\s*\w+\s*/)\s*",re.IGNORECASE)
     FINAL_RE = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
     USE_RE = re.compile("^use(?:\s*(?:,\s*(?:non_)?intrinsic\s*)?::\s*|\s+)(\w+)\s*($|,.*)",re.IGNORECASE)
+    ARITH_GOTO_RE = re.compile("go\s*to\s*\([0-9,\s]+\)",re.IGNORECASE)
     CALL_RE = re.compile("(?:^|(?<=[^a-zA-Z0-9_%]))\w+(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
     SUBCALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
 
@@ -754,10 +755,16 @@ class FortranContainer(FortranBase):
                     raise Exception("Found USE statemnt in {}".format(type(self).__name__[7:].upper()))
             elif self.CALL_RE.search(line):
                 if hasattr(self,'calls'):
-                    callvals = self.CALL_RE.findall(line)
-                    for val in callvals:
-                        if val.lower() not in self.calls and val.lower() not in INTRINSICS:
-                            self.calls.append(val.lower())
+                    # Arithmetic GOTOs looks little like function references:
+                    # "goto (1, 2, 3) i".  But even in free-form source we're
+                    # allowed to use a space: "go to (1, 2, 3) i".  Our CALL_RE
+                    # expression doesn't catch that so we first rule such a
+                    # GOTO out.
+                    if not self.ARITH_GOTO_RE.search(line):
+                        callvals = self.CALL_RE.findall(line)
+                        for val in callvals:
+                            if val.lower() not in self.calls and val.lower() not in INTRINSICS:
+                                self.calls.append(val.lower())
                 else:
                     pass
                     # Not raising an error here as too much possibility that something
