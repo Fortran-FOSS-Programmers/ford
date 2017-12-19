@@ -77,7 +77,7 @@ a terminal:
 If you would like to install the latest development (master) branch from github,
 simply add the `--HEAD` flag: `brew install --HEAD FORD`
 
-##Documentation
+## Documentation
 More complete documentation can be found in the [project wiki](https://github.com/cmacmackin/ford/wiki).
 
 ## License
@@ -97,7 +97,7 @@ along with this program.  If not, see the [GNU website](http://www.gnu.org/licen
 Documents produced by FORD are derivative works derived from the input used in their production;
 they are not affected by this license.
 <!--
-##Approach
+## Approach
 The basic algorithm for generating the documentation is as follows:
 
 - Get instructions from user. These are to be passes as command-line arguments
