@@ -822,7 +822,7 @@ class InheritsGraph(FortranGraph):
             if n.ancestor:
                 if n.ancestor not in self.added:
                     hopNodes.add(n.ancestor)
-                hopEdges.append((n.ancestor, n, colour))
+                hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.addToGraph(hopNodes, hopEdges, nesting):

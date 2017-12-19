@@ -386,7 +386,7 @@ class FortranBase(object):
                 self.meta['proc_internals'] = self.meta['proc_internals'].lower()
 
         # Create Markdown
-        for item in self.itterator('variables', 'modules', 'submodules', 'common',
+        for item in self.iterator('variables', 'modules', 'submodules', 'common',
                                    'subroutines', 'modprocedures', 'functions',
                                    'interfaces', 'absinterfaces', 'types',
                                    'programs', 'blockdata', 'boundprocs',
@@ -448,7 +448,7 @@ class FortranBase(object):
             self.meta['summary'] = ford.utils.sub_links(self.meta['summary'],project)
 
         # Create links in the project
-        for item in self.itterator('variables', 'types', 'enums', 'modules',
+        for item in self.iterator('variables', 'types', 'enums', 'modules',
                                    'submodules', 'subroutines', 'functions',
                                    'interfaces', 'absinterfaces', 'programs',
                                    'boundprocs', 'args', 'bindings'):
@@ -467,14 +467,14 @@ class FortranBase(object):
 
     @property
     def routines(self):
-        """ Itterator returning *both* functions and subroutines, in that order """
-        for item in self.itterator('functions', 'subroutines'):
+        """ Iterator returning *both* functions and subroutines, in that order """
+        for item in self.iterator('functions', 'subroutines'):
             yield item
 
-    def itterator(self, *argv):
-        """ Itterator returning any list of elements via attribute lookup in `self`
+    def iterator(self, *argv):
+        """ Iterator returning any list of elements via attribute lookup in `self`
 
-        This itterator retains the order of the arguments """
+        This iterator retains the order of the arguments """
         for arg in argv:
             if hasattr(self, arg):
                 for item in getattr(self, arg):
@@ -932,7 +932,7 @@ class FortranCodeUnit(FortranContainer):
     def process_attribs(self):
         # IMPORTANT: Make sure types processed before interfaces--import when
         # determining permissions of derived types and overridden constructors
-        for item in self.itterator('functions', 'subroutines', 'types', 'interfaces', 'absinterfaces'):
+        for item in self.iterator('functions', 'subroutines', 'types', 'interfaces', 'absinterfaces'):
             for attr in self.attr_dict.get(item.name.lower(),[]):
                 if attr == 'public' or attr == 'private' or attr == 'protected':
                     item.permission = attr
@@ -998,9 +998,9 @@ class FortranCodeUnit(FortranContainer):
         # Recurse
         for obj in self.absinterfaces:
             obj.visible = True
-        for obj in self.itterator('functions', 'subroutines', 'types', 'interfaces', 'modprocedures', 'modfunctions', 'modsubroutines'):
+        for obj in self.iterator('functions', 'subroutines', 'types', 'interfaces', 'modprocedures', 'modfunctions', 'modsubroutines'):
             obj.visible = True
-        for obj in self.itterator('functions', 'subroutines', 'types', 'modprocedures', 'modfunctions', 'modsubroutines'):
+        for obj in self.iterator('functions', 'subroutines', 'types', 'modprocedures', 'modfunctions', 'modsubroutines'):
             obj.prune()
 
 
