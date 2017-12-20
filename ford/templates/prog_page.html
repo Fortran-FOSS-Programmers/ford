@@ -19,11 +19,17 @@
     
     <div class="col-md-9" id='text'>
     {{ macros.use_list(program) }}
-    {% if program.usesgraph %}<br><br>{% endif %}
     {{ program.doc }}
     {% if program.callsgraph %}
-     <h2>Calls</h2>
-     {{ program.callsgraph }}
+    <br>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">Calls</h3>
+      </div>
+      <div class="panel-body">
+	{{ program.callsgraph }}
+      </div>
+    </div>
      {% endif %}
     {% if program.doc or program.callsgraph %}<br>{% endif %}
 
