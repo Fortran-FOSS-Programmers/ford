@@ -480,7 +480,7 @@ class FortranGraph(object):
             self.svg_src = ''
             self.scaled = False
 
-    def addToGraph(self, nodes, edges, nesting):
+    def add_to_graph(self, nodes, edges, nesting):
         """
         Adds nodes and edges to the graph if maximum number of nodes is not
         exceeded or minimum number of hops not reached.
@@ -617,11 +617,11 @@ class ModuleGraph(FortranGraph):
                 hopEdges.append((nu, n, 'dashed', colour))
             if hasattr(n, 'ancestor'):
                 if n.ancestor not in self.added:
-                    hopNodes.append(n.ancestor)
+                    hopNodes.add(n.ancestor)
                 hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
-        if self.addToGraph(hopNodes, hopEdges, self.max_nesting):
+        if self.add_to_graph(hopNodes, hopEdges, self.max_nesting):
             self.dot.attr('graph', size='11.875,1000.0')
 
 
@@ -651,7 +651,7 @@ class UsesGraph(FortranGraph):
                 hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
-        if not self.addToGraph(hopNodes, hopEdges, nesting):
+        if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
         elif nesting < self.max_nesting and len(hopNodes) != 0:
             self.add_nodes(hopNodes, nesting=nesting+1)
@@ -683,7 +683,7 @@ class UsedByGraph(FortranGraph):
                 hopEdges.append((n, c, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
-        if not self.addToGraph(hopNodes, hopEdges, nesting):
+        if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
         elif nesting < self.max_nesting and len(hopNodes) != 0:
             self.add_nodes(hopNodes, nesting=nesting+1)
@@ -711,7 +711,7 @@ class FileGraph(FortranGraph):
                 hopEdges.append((ne, n, 'solid', colour))
         # add nodes and edges to the graph if maximum number of nodes is not
         # exceeded
-        self.addToGraph(hopNodes, hopEdges, self.max_nesting)
+        self.add_to_graph(hopNodes, hopEdges, self.max_nesting)
 
 
 class EfferentGraph(FortranGraph):
@@ -736,7 +736,7 @@ class EfferentGraph(FortranGraph):
                 hopEdges.append((ne, n, 'dashed', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
-        if not self.addToGraph(hopNodes, hopEdges, nesting):
+        if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
         elif nesting < self.max_nesting and len(hopNodes) != 0:
             self.add_nodes(hopNodes, nesting=nesting+1)
@@ -764,7 +764,7 @@ class AfferentGraph(FortranGraph):
                 hopEdges.append((n, na, 'dashed', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
-        if not self.addToGraph(hopNodes, hopEdges, nesting):
+        if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
         elif nesting < self.max_nesting and len(hopNodes) != 0:
             self.add_nodes(hopNodes, nesting=nesting+1)
@@ -799,7 +799,7 @@ class TypeGraph(FortranGraph):
                 hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
-        if self.addToGraph(hopNodes, hopEdges, self.max_nesting):
+        if self.add_to_graph(hopNodes, hopEdges, self.max_nesting):
             self.dot.attr('graph', size='11.875,1000.0')
 
 
@@ -829,7 +829,7 @@ class InheritsGraph(FortranGraph):
                 hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
-        if not self.addToGraph(hopNodes, hopEdges, nesting):
+        if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
         elif nesting < self.max_nesting and len(hopNodes) != 0:
             self.add_nodes(hopNodes, nesting=nesting+1)
@@ -861,7 +861,7 @@ class InheritedByGraph(FortranGraph):
                 hopEdges.append((n, c, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
-        if not self.addToGraph(hopNodes, hopEdges, nesting):
+        if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
         elif nesting < self.max_nesting and len(hopNodes) != 0:
             self.add_nodes(hopNodes, nesting=nesting+1)
@@ -893,7 +893,7 @@ class CallGraph(FortranGraph):
                 hopEdges.append((n, p, 'dashed', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
-        if self.addToGraph(hopNodes, hopEdges, self.max_nesting):
+        if self.add_to_graph(hopNodes, hopEdges, self.max_nesting):
             self.dot.attr('graph', size='11.875,1000.0')
             self.dot.attr('graph', concentrate='false')
 
@@ -924,7 +924,7 @@ class CallsGraph(FortranGraph):
                 hopEdges.append((n, p, 'dashed', colour))
         # add nodes, edges and atrributes for this hop to the graph if
         # maximum number of nodes is not exceeded
-        if not self.addToGraph(hopNodes, hopEdges, nesting):
+        if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
         elif nesting < self.max_nesting and len(hopNodes) != 0:
             self.dot.attr('graph', concentrate='false')
@@ -959,7 +959,7 @@ class CalledByGraph(FortranGraph):
                 hopEdges.append((p, n, 'dashed', colour))
         # add nodes, edges and atrributes for this hop to the graph if
         # maximum number of nodes is not exceeded
-        if not self.addToGraph(hopNodes, hopEdges, nesting):
+        if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
         elif nesting < self.max_nesting and len(hopNodes) != 0:
             self.dot.attr('graph', concentrate='false')
