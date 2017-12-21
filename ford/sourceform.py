@@ -830,7 +830,6 @@ class FortranCodeUnit(FortranContainer):
                         intr.procedure.module = proc
 
         if hasattr(self,'modprocedures'):
-            tmplist = []
             for proc in self.modprocedures:
                 if proc.name.lower() in self.all_procs:
                     intr = self.all_procs[proc.name.lower()]

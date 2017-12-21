@@ -19,9 +19,9 @@
     
     <div class="col-md-9" id='text'>
     {{ module.doc }}
-      {% if obj.uses|length > 0 or (obj.ancestry and
-      obj.ancestry|length > 0) or obj.usedbygraph or (obj.descendants
-      and obj.descendants|length > 0) %}<br>{% endif %}
+      {% if module.uses|length > 0 or (module.ancestry and
+      module.ancestry|length > 0) or module.usedbygraph or (module.descendants
+      and module.descendants|length > 0) %}<br>{% endif %}
     {{ macros.use_list(module) }}
     {{ macros.usedby_list(module) }}
     <br>

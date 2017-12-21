@@ -214,18 +214,18 @@ class Project(object):
             if proc.parobj == 'sourcefile': ranklist.append(proc)
         ranklist.extend(self.programs)
         ranklist.extend(self.blockdata)
-        
+
         # Perform remaining correlations for the project
         for container in ranklist:
             if type(container) != str: container.correlate(self)
         for container in ranklist:
             if type(container) != str: container.prune()
-        
+
         if self.settings['project_url'] == '.':
             url = '..'
         else:
             url = self.settings['project_url']
-        
+
         for sfile in self.files:
             for module in sfile.modules:
                 for function in module.functions:
@@ -238,7 +238,7 @@ class Project(object):
                     self.absinterfaces.append(absint)
                 for dtype in module.types:
                     self.types.append(dtype)
-            
+
             for module in sfile.submodules:
                 for function in module.functions:
                     self.procedures.append(function)
@@ -268,7 +268,7 @@ class Project(object):
                     self.absinterfaces.append(absint)
                 for dtype in program.types:
                     self.types.append(dtype)
-                    
+
             for block in sfile.blockdata:
                 for dtype in block.types:
                     self.types.append(dtype)
@@ -349,12 +349,12 @@ def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
                 continue
     if getattr(obj,'ancestor',None):
         for submod in submodlist:
-            if obj.ancestor == submod.name.lower():
+            if obj.ancestor.lower() == submod.name.lower():
                 obj.ancestor = submod
                 break
     if hasattr(obj,'ancestor_mod'):
         for mod in modlist:
-            if obj.ancestor_mod == mod.name.lower():
+            if obj.ancestor_mod.lower() == mod.name.lower():
                 obj.ancestor_mod = mod
                 break
     for modproc in getattr(obj,'modprocedures',[]):
