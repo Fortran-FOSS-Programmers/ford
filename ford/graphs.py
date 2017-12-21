@@ -424,7 +424,7 @@ class FortranGraph(object):
         self.added = set()    # nodes added to the graph
         self.min_nesting = 0  # minimum numbers of hops allowed
         self.max_nesting = 0  # maximum numbers of hops allowed
-        self.max_nodes = 0    # maximum numbers of nodes allowed
+        self.max_nodes = 1    # maximum numbers of nodes allowed
         try:
             for r in root:
                 self.root.append(self.data.get_node(r))
@@ -438,7 +438,8 @@ class FortranGraph(object):
             self.root.append(self.data.get_node(root))
             self.min_nesting = eval(root.meta['graph_mindepth'])
             self.max_nesting = eval(root.meta['graph_maxdepth'])
-            self.max_nodes = eval(root.meta['graph_maxnodes'])
+            self.max_nodes = max(self.max_nodes,
+                                 eval(root.meta['graph_maxnodes']))
         self.webdir = webdir
         if ident:
             self.ident = ident + '~~' + self.__class__.__name__
@@ -504,19 +505,19 @@ class FortranGraph(object):
             return True
 
     def __str__(self):
-        # do not generate overview graphs if maximum number of nodes gets
-        # exceeded
-        if ((len(self.added) <= len(self.root)
-                and isinstance(self, (ModuleGraph, FileGraph, TypeGraph,
-                                      CallGraph)))
-                or (len(self.added) + len(self.hopNodes) <= len(self.root))):
+        # Do not render overly large graphs.
+        if len(self.added) > self.max_nodes:
             return ''
+        # Do not render incomplete graphs.
+        if len(self.added) < len(self.root):
+            return ''
+
         zoomName = ''
         svgGraph = ''
         rettext = ''
-        # generate a table graph is maximum number of nodes gets exceeded in
-        # the first hop
-        if len(self.added) <= len(self.root):
+        if len(self.hopNodes) > 0 and len(self.root) == 1:
+            # generate a table graph if maximum number of nodes gets exceeded in
+            # the first hop and there is only one root node.
             root = '<td class="root" rowspan="{0}">{1}</td>'.format(
                 len(self.hopNodes) * 2 + 1, self.root[0].attribs['label'])
             # sort nodes in alphabetical order
