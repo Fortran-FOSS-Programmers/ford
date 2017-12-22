@@ -428,19 +428,24 @@ class FortranGraph(object):
         self.hopNodes = []    # nodes of the hop which exceeded the maximum
         self.hopEdges = []    # edges of the hop which exceeded the maximum
         self.added = set()    # nodes added to the graph
-        self.min_nesting = 0  # minimum numbers of hops allowed
+        self.min_nesting = 0  # minimum numbers of hops for single root
+                              # graphs. Single root graphs will be shown with
+                              # at least this many hops, even if that exceeds
+                              # the number of configured max_nodes.
         self.max_nesting = 0  # maximum numbers of hops allowed
         self.max_nodes = 1    # maximum numbers of nodes allowed
         try:
+            if (len(root) == 1):
+                ir = iter(root)
+                self.min_nesting = max(self.min_nesting,
+                                       eval(next(ir).meta['graph_mindepth']))
             for r in root:
                 self.root.append(self.data.get_node(r))
-                self.min_nesting = max(self.min_nesting,
-                                       eval(r.meta['graph_mindepth']))
                 self.max_nesting = max(self.max_nesting,
                                        eval(r.meta['graph_maxdepth']))
                 self.max_nodes = max(self.max_nodes,
                                      eval(r.meta['graph_maxnodes']))
-        except:
+        except TypeError:
             self.root.append(self.data.get_node(root))
             self.min_nesting = eval(root.meta['graph_mindepth'])
             self.max_nesting = eval(root.meta['graph_maxdepth'])
@@ -472,7 +477,7 @@ class FortranGraph(object):
             else:
                 self.dot.node(n.ident, **n.attribs)
             self.added.add(n)
-        # add nodes and edges depending of the root nodes to the graph
+        # add nodes and edges depending on the root nodes to the graph
         self.add_nodes(self.root)
         #~ self.linkmap = self.dot.pipe('cmapx').decode('utf-8')
         if graphviz_installed:
@@ -493,15 +498,16 @@ class FortranGraph(object):
         of nodes is not exceeded or the minimum number of hops is not yet
         reached.
         All edges are expected to have a reference to an entry in nodes.
-        If the list of nodes is not added due to graph size limitations,
-        they are stored in hopNodes.
+        If the list of nodes is not added in the first hop due to graph
+        size limitations, they are stored in hopNodes.
         If the graph was extended the function returns True, otherwise the
         result will be False.
         """
         if (len(nodes) + len(self.added) > self.max_nodes
                 and nesting > self.min_nesting):
-            self.hopNodes = nodes
-            self.hopEdges = edges
+            if nesting <= 2:
+                self.hopNodes = nodes
+                self.hopEdges = edges
             return False
         else:
             for n in nodes:
@@ -514,6 +520,10 @@ class FortranGraph(object):
                     self.dot.edge(e[0].ident, e[1].ident, style=e[2],
                                   color=e[3])
             self.added.update(nodes)
+            if nesting <= self.min_nesting:
+                # Update the maximal allowed number of nodes for this graph
+                # if min_nesting enforces a larger graph.
+                self.max_nodes = max(self.max_nodes, len(self.added))
             return True
 
     def __str__(self):
@@ -535,7 +545,7 @@ class FortranGraph(object):
         zoomName = ''
         svgGraph = ''
         rettext = ''
-        if len(self.hopNodes) > 0 and len(self.root) == 1:
+        if len(self.hopNodes) > 0 and len(self.root) == 1 and self.min_nesting < 1:
             # generate a table graph if maximum number of nodes gets exceeded in
             # the first hop and there is only one root node.
             root = '<td class="root" rowspan="{0}">{1}</td>'.format(
