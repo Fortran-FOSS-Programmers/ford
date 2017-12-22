@@ -643,7 +643,7 @@ class ModuleGraph(FortranGraph):
                 hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
-        if self.add_to_graph(hopNodes, hopEdges, self.max_nesting):
+        if self.add_to_graph(hopNodes, hopEdges, nesting):
             self.dot.attr('graph', size='11.875,1000.0')
 
 
@@ -733,7 +733,7 @@ class FileGraph(FortranGraph):
                 hopEdges.append((ne, n, 'solid', colour))
         # add nodes and edges to the graph if maximum number of nodes is not
         # exceeded
-        self.add_to_graph(hopNodes, hopEdges, self.max_nesting)
+        self.add_to_graph(hopNodes, hopEdges, nesting)
 
 
 class EfferentGraph(FortranGraph):
@@ -821,7 +821,7 @@ class TypeGraph(FortranGraph):
                 hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
-        if self.add_to_graph(hopNodes, hopEdges, self.max_nesting):
+        if self.add_to_graph(hopNodes, hopEdges, nesting):
             self.dot.attr('graph', size='11.875,1000.0')
 
 
@@ -915,7 +915,7 @@ class CallGraph(FortranGraph):
                 hopEdges.append((n, p, 'dashed', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
-        if self.add_to_graph(hopNodes, hopEdges, self.max_nesting):
+        if self.add_to_graph(hopNodes, hopEdges, nesting):
             self.dot.attr('graph', size='11.875,1000.0')
             self.dot.attr('graph', concentrate='false')
 
