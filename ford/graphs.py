@@ -416,7 +416,13 @@ class FortranGraph(object):
     data = GraphData()
     def __init__(self,root,webdir='',ident=None):
         """
-        root is the object for which the graph is being constructed
+        Initialize the graph, root is the object or list of objects,
+        for which the graph is to be constructed.
+        The webdir is the url where the graph should be stored, and
+        ident can be provided to override the default identifacation
+        of the graph that will be used to construct the name of the
+        imagefile. It has to be provided if there are multiple root
+        nodes.
         """
         self.root = []        # root nodes
         self.hopNodes = []    # nodes of the hop which exceeded the maximum
@@ -466,7 +472,7 @@ class FortranGraph(object):
             else:
                 self.dot.node(n.ident, **n.attribs)
             self.added.add(n)
-        # add nodes and edges depnding of the root nodes to the graph
+        # add nodes and edges depending of the root nodes to the graph
         self.add_nodes(self.root)
         #~ self.linkmap = self.dot.pipe('cmapx').decode('utf-8')
         if graphviz_installed:
@@ -483,8 +489,14 @@ class FortranGraph(object):
 
     def add_to_graph(self, nodes, edges, nesting):
         """
-        Adds nodes and edges to the graph if maximum number of nodes is not
-        exceeded or minimum number of hops not reached.
+        Adds nodes and edges to the graph as long as the maximum number
+        of nodes is not exceeded or the minimum number of hops is not yet
+        reached.
+        All edges are expected to have a reference to an entry in nodes.
+        If the list of nodes is not added due to graph size limitations,
+        they are stored in hopNodes.
+        If the graph was extended the function returns True, otherwise the
+        result will be False.
         """
         if (len(nodes) + len(self.added) > self.max_nodes
                 and nesting > self.min_nesting):
@@ -505,6 +517,14 @@ class FortranGraph(object):
             return True
 
     def __str__(self):
+        """
+        The string of the graph is its HTML representation.
+        It will only be created if it is not too large.
+        If the graph is overly large but can represented by a single node
+        with many dependencies it will be shown as a table instead to ease
+        the rendering in browsers.
+        """
+
         # Do not render overly large graphs.
         if len(self.added) > self.max_nodes:
             return ''
@@ -552,6 +572,7 @@ class FortranGraph(object):
                 rows += '<tr><td class="{0}Top">w</td></tr>'.format(e[2])
                 root = ''
             rettext += '<table class="graph">' + rows + '</table>'
+
         # generate svg graph
         else:
             rettext += '<div class="depgraph">{0}</div>'
