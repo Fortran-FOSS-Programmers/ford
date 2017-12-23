@@ -16,14 +16,27 @@
     {{ macros.sidebar(project,src) }}
     </div>
     <div class="col-md-9" id='text'>
-    {{ src.doc }}
+      {{ src.doc }}
+      <br>
     {% if src.efferentgraph %}
-    <h2>This File Depends On</h2>
-    {{ src.efferentgraph }}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">This file depends on</h3>
+      </div>
+      <div class="panel-body">
+	{{ src.efferentgraph }}
+      </div>
+    </div>
     {% endif %}
       {% if src.afferentgraph %}
-      <h2>Files Dependent On This One</h2>
-      {{ src.afferentgraph }}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">Files dependent on this one</h3>
+      </div>
+      <div class="panel-body">
+	{{ src.afferentgraph }}
+      </div>
+    </div>
       {% endif %}
       {% if src.doc or src.efferentgraph or src.afferentgraph%}<br>{% endif %}
 

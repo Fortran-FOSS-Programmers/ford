@@ -153,7 +153,8 @@ def initialize():
                'graph_mindepth', 'graph_maxdepth', 'graph_maxnodes',
                'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
-               'graph_dir','gitter_sidecar','mathjax_config','parallel','revision']
+               'graph_dir','gitter_sidecar','mathjax_config','parallel',
+               'revision']
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],

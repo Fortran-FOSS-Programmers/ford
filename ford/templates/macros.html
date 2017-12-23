@@ -712,40 +712,69 @@
 {% endmacro %}
 
 
-{% macro ancestry(obj) %}
-  {% if obj.ancestry|length > 0 %}
-    <ul class="list-inline">
-      <li><h4>Ancestors:</h4></li>
-      {% for anc in obj.ancestry %}
-      <li>{{ anc }}</li>
-      {% if not loop.last -%}<li>:</li>{%- endif %}
-      {% endfor %}
-    </ul>
-  {% endif %}
-{% endmacro %}
-
-
-{% macro descendants(obj) %}
-  {% if obj.descendants|length > 0 %}
-    <ul class="list-inline">
-      <li><h4>Descendants:</h4></li>
-      {% for anc in obj.descendants %}
-      <li>{{ anc }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-{% endmacro %}
-
-
 {% macro use_list(obj) %}
-  {% if obj.uses|length > 0 %}
-    <h2>Uses</h2>
-    <ul class="list-inline">
-      {% for use in obj.uses %}
-      <li>{{ use }}</li>
-      {% endfor %}
-    </ul>
-    {{ obj.usesgraph }}
+  {% if obj.uses|length > 0 or (obj.ancestry and obj.ancestry|length >
+    0) %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">Uses</h3>
+      </div>
+      <ul class="list-group">
+      {% if obj.uses|length > 0 %}
+      <li class="list-group-item">
+	<ul class="list-inline">
+	  {% for use in obj.uses %}
+	  <li>{{ use }}</li>
+	  {% endfor %}
+	</ul>
+      </li>
+      {% endif %}
+      {% if obj.ancestry and obj.ancestry|length > 0 %}
+      <li class="list-group-item">
+	<ul class="list-inline">
+	  <li><h5>Ancestors:</h5></li>
+	  {% for anc in obj.ancestry %}
+	  <li>{{ anc }}</li>
+	  {% if not loop.last -%}<li>:</li>{%- endif %}
+	  {% endfor %}
+	</ul>
+      </li>
+      {% endif %}
+      {% if obj.usesgraph %}
+      <li class="list-group-item">
+	{{ obj.usesgraph }}
+      </li>
+      {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+{% endmacro %}
+
+    
+{% macro usedby_list(obj) %}
+    {% if obj.usedbygraph or (obj.descendants and obj.descendants|length > 0) %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">Used by</h3>
+      </div>
+      <ul class="list-group">
+	{% if obj.descendants|length > 0 %}
+	<li class="list-group-item">  
+	  <ul class="list-inline">
+	    <li><h5>Descendants:</h5></li>
+	    {% for anc in obj.descendants %}
+	    <li>{{ anc }}</li>
+	    {% endfor %}
+	  </ul>
+	</li>
+	{% endif %}
+	{% if obj.usedbygraph %}
+	<li class="list-group-item">
+	  {{ obj.usedbygraph }}
+	</li>
+	{% endif %}
+      </ul>
+    </div>
     {% endif %}
 {% endmacro %}
 

@@ -28,6 +28,8 @@ import os
 import time
 from multiprocessing import Pool
 
+from tqdm import tqdm
+
 from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure, FortranSourceFile, FortranBlockData
 import ford.graphs
 
@@ -78,7 +80,7 @@ class GraphManager(object):
             self.graph_objs.append(obj)
         
     def graph_all(self):
-        for obj in self.graph_objs:
+        for obj in tqdm(iter(self.graph_objs), total=len(self.graph_objs), unit=''):
             if isinstance(obj,FortranModule):
                 obj.usesgraph = ford.graphs.UsesGraph(obj,self.webdir)
                 obj.usedbygraph = ford.graphs.UsedByGraph(obj,self.webdir)

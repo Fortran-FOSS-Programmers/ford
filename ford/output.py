@@ -30,10 +30,12 @@ import os
 import shutil
 import time
 import traceback
+from itertools import chain
 
 import jinja2
 if (sys.version_info[0]>2):
     jinja2.utils.Cycler.next = jinja2.utils.Cycler.__next__
+from tqdm import tqdm
 
 import ford.sourceform
 import ford.tipue_search
@@ -67,44 +69,7 @@ class Documentation(object):
             graphparent = '../'
         else:
             graphparent = ''
-        if graphviz_installed and data['graph'].lower() == 'true':
-            print('Generating graphs...')
-            self.graphs = GraphManager(self.data['project_url'],
-                                       self.data['output_dir'],
-                                       self.data.get('graph_dir',''),
-                                       graphparent,
-                                       self.data['coloured_edges'].lower() == 'true')
-            for item in project.types:
-                self.graphs.register(item)
-            for item in project.procedures:
-                self.graphs.register(item)
-            for item in project.submodprocedures:
-                self.graphs.register(item)
-            for item in project.modules:
-                self.graphs.register(item)
-            for item in project.submodules:
-                self.graphs.register(item)
-            for item in project.programs:
-                self.graphs.register(item)
-            for item in project.files:
-                self.graphs.register(item)
-            for item in project.blockdata:
-                self.graphs.register(item)
-            self.graphs.graph_all()
-            project.callgraph = self.graphs.callgraph
-            project.typegraph = self.graphs.typegraph
-            project.usegraph = self.graphs.usegraph
-            project.filegraph = self.graphs.filegraph
-        else:
-            self.graphs = GraphManager(self.data['project_url'],
-                                       self.data['output_dir'],
-                                       self.data.get('graph_dir',''),
-                                       graphparent,
-                                       self.data['coloured_edges'].lower() == 'true')
-            project.callgraph = ''
-            project.typegraph = ''
-            project.usegraph = ''
-            project.filegraph = ''
+        print("Creating HTML documentation...")
         try:
             for item in project.allfiles:
                 self.docs.append(FilePage(data,project,item))
@@ -147,6 +112,44 @@ class Documentation(object):
                 sys.exit('Error encountered.')
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
+        if graphviz_installed and data['graph'].lower() == 'true':
+            print('Generating graphs...')
+            self.graphs = GraphManager(self.data['project_url'],
+                                       self.data['output_dir'],
+                                       self.data.get('graph_dir',''),
+                                       graphparent,
+                                       self.data['coloured_edges'].lower() == 'true')
+            for item in project.types:
+                self.graphs.register(item)
+            for item in project.procedures:
+                self.graphs.register(item)
+            for item in project.submodprocedures:
+                self.graphs.register(item)
+            for item in project.modules:
+                self.graphs.register(item)
+            for item in project.submodules:
+                self.graphs.register(item)
+            for item in project.programs:
+                self.graphs.register(item)
+            for item in project.files:
+                self.graphs.register(item)
+            for item in project.blockdata:
+                self.graphs.register(item)
+            self.graphs.graph_all()
+            project.callgraph = self.graphs.callgraph
+            project.typegraph = self.graphs.typegraph
+            project.usegraph = self.graphs.usegraph
+            project.filegraph = self.graphs.filegraph
+        else:
+            self.graphs = GraphManager(self.data['project_url'],
+                                       self.data['output_dir'],
+                                       self.data.get('graph_dir',''),
+                                       graphparent,
+                                       self.data['coloured_edges'].lower() == 'true')
+            project.callgraph = ''
+            project.typegraph = ''
+            project.usegraph = ''
+            project.filegraph = ''
         if data['search'].lower() == 'true':
             print('Creating search index...')
             if data['relative']:
@@ -154,22 +157,15 @@ class Documentation(object):
             else:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],data['project_url'])
             self.tipue.create_node(self.index.html,'index.html', {'category': 'home'})
-            ndocs = len(self.docs)
-            percent = (ndocs+len(self.pagetree))//100
-            for i,p in enumerate(self.docs):
-                self.tipue.create_node(p.html,p.loc,p.obj.meta)
-                if (i % percent == 0):
-                    sys.stdout.write('.')
-                    sys.stdout.flush()
-            for i,p in enumerate(self.pagetree):
-                self.tipue.create_node(p.html,p.loc)
-                if ((i+ndocs) % percent == 0):
-                    sys.stdout.write('.')
-                    sys.stdout.flush()
+            jobs = len(self.docs) + len(self.pagetree)
+            progbar = tqdm(chain(iter(self.docs), iter(self.pagetree)),
+                           total=jobs, unit='')
+            for i,p in enumerate(progbar):
+                self.tipue.create_node(p.html,p.loc,p.meta)
             print('')
             
     def writeout(self):
-        print("Writing HTML documentation...")
+        print("Writing resulting documentation.")
         out_dir = self.data['output_dir']
         try:
             if os.path.isfile(out_dir):
@@ -238,6 +234,7 @@ class BasePage(object):
         self.data = data
         self.proj = proj
         self.obj = obj
+        self.meta = getattr(obj, "meta", {})
 
     @property
     def out_dir(self):
@@ -548,3 +545,15 @@ def copytree(src, dst):
         for ff in files:
             shutil.copy(os.path.join(root, ff), os.path.join(dstdir, ff))
             touch(os.path.join(dstdir, ff))
+
+
+def truncate(string, width):
+    """
+    Truncates/pads the string to be the the specified length,
+    including ellipsis dots if truncation occurs.
+    """
+    if len(string) > width:
+        return string[:width-3] + '...'
+    else:
+        return string.ljust(width)
+    

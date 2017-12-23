@@ -21,12 +21,24 @@
       <h2>{{ interface.permission }} interface {{ interface.name }}</h2>
 	 {{ interface.doc }}
      {% if interface.callsgraph %}
-     <h3>Calls</h3>
-     {{ interface.callsgraph }}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">Calls</h3>
+      </div>
+      <div class="panel-body">
+	{{ interface.callsgraph }}
+      </div>
+    </div>
      {% endif %}
      {% if interface.calledbygraph %}
-     <h3>Called By</h3>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">Called by</h3>
+      </div>
+      <div class="panel-body">
      {{ interface.calledbygraph }}
+      </div>
+    </div>
      {% endif %}
     {% if interface.doc or interface.callsgraph or interface.calledbygraph %}<br>{% endif %}
 

@@ -391,7 +391,7 @@ class FortranBase(object):
                 self.meta['proc_internals'] = self.meta['proc_internals'].lower()
 
         # Create Markdown
-        for item in self.itterator('variables', 'modules', 'submodules', 'common',
+        for item in self.iterator('variables', 'modules', 'submodules', 'common',
                                    'subroutines', 'modprocedures', 'functions',
                                    'interfaces', 'absinterfaces', 'types',
                                    'programs', 'blockdata', 'boundprocs',
@@ -453,7 +453,7 @@ class FortranBase(object):
             self.meta['summary'] = ford.utils.sub_links(self.meta['summary'],project)
 
         # Create links in the project
-        for item in self.itterator('variables', 'types', 'enums', 'modules',
+        for item in self.iterator('variables', 'types', 'enums', 'modules',
                                    'submodules', 'subroutines', 'functions',
                                    'interfaces', 'absinterfaces', 'programs',
                                    'boundprocs', 'args', 'bindings'):
@@ -472,14 +472,14 @@ class FortranBase(object):
 
     @property
     def routines(self):
-        """ Itterator returning *both* functions and subroutines, in that order """
-        for item in self.itterator('functions', 'subroutines'):
+        """ Iterator returning *both* functions and subroutines, in that order """
+        for item in self.iterator('functions', 'subroutines'):
             yield item
 
-    def itterator(self, *argv):
-        """ Itterator returning any list of elements via attribute lookup in `self`
+    def iterator(self, *argv):
+        """ Iterator returning any list of elements via attribute lookup in `self`
 
-        This itterator retains the order of the arguments """
+        This iterator retains the order of the arguments """
         for arg in argv:
             if hasattr(self, arg):
                 for item in getattr(self, arg):
@@ -506,10 +506,11 @@ class FortranContainer(FortranBase):
     INTERFACE_RE = re.compile("^(abstract\s+)?interface(?:\s+(\S.+))?$",re.IGNORECASE)
     #~ ABS_INTERFACE_RE = re.compile("^abstract\s+interface(?:\s+(\S.+))?$",re.IGNORECASE)
     BOUNDPROC_RE = re.compile("^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)",re.IGNORECASE)
-    COMMON_RE = re.compile("^common\s*(?:/\s*(\w+)\s*/)?\s*(\w+.*)",re.IGNORECASE)
+    COMMON_RE = re.compile("^common(?:\s*/\s*(\w+)\s*/\s*|\s+)(\w+.*)",re.IGNORECASE)
     COMMON_SPLIT_RE = re.compile("\s*(/\s*\w+\s*/)\s*",re.IGNORECASE)
     FINAL_RE = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
     USE_RE = re.compile("^use(?:\s*(?:,\s*(?:non_)?intrinsic\s*)?::\s*|\s+)(\w+)\s*($|,.*)",re.IGNORECASE)
+    ARITH_GOTO_RE = re.compile("go\s*to\s*\([0-9,\s]+\)",re.IGNORECASE)
     CALL_RE = re.compile("(?:^|(?<=[^a-zA-Z0-9_%]))\w+(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
     SUBCALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
 
@@ -765,10 +766,16 @@ class FortranContainer(FortranBase):
                     raise Exception("Found USE statemnt in {}".format(type(self).__name__[7:].upper()))
             elif self.CALL_RE.search(line):
                 if hasattr(self,'calls'):
-                    callvals = self.CALL_RE.findall(line)
-                    for val in callvals:
-                        if val.lower() not in self.calls and val.lower() not in INTRINSICS:
-                            self.calls.append(val.lower())
+                    # Arithmetic GOTOs looks little like function references:
+                    # "goto (1, 2, 3) i".  But even in free-form source we're
+                    # allowed to use a space: "go to (1, 2, 3) i".  Our CALL_RE
+                    # expression doesn't catch that so we first rule such a
+                    # GOTO out.
+                    if not self.ARITH_GOTO_RE.search(line):
+                        callvals = self.CALL_RE.findall(line)
+                        for val in callvals:
+                            if val.lower() not in self.calls and val.lower() not in INTRINSICS:
+                                self.calls.append(val.lower())
                 else:
                     pass
                     # Not raising an error here as too much possibility that something
@@ -828,7 +835,6 @@ class FortranCodeUnit(FortranContainer):
                         intr.procedure.module = proc
 
         if hasattr(self,'modprocedures'):
-            tmplist = []
             for proc in self.modprocedures:
                 if proc.name.lower() in self.all_procs:
                     intr = self.all_procs[proc.name.lower()]
@@ -937,7 +943,7 @@ class FortranCodeUnit(FortranContainer):
     def process_attribs(self):
         # IMPORTANT: Make sure types processed before interfaces--import when
         # determining permissions of derived types and overridden constructors
-        for item in self.itterator('functions', 'subroutines', 'types', 'interfaces', 'absinterfaces'):
+        for item in self.iterator('functions', 'subroutines', 'types', 'interfaces', 'absinterfaces'):
             for attr in self.attr_dict.get(item.name.lower(),[]):
                 if attr == 'public' or attr == 'private' or attr == 'protected':
                     item.permission = attr
@@ -1003,9 +1009,9 @@ class FortranCodeUnit(FortranContainer):
         # Recurse
         for obj in self.absinterfaces:
             obj.visible = True
-        for obj in self.itterator('functions', 'subroutines', 'types', 'interfaces', 'modprocedures', 'modfunctions', 'modsubroutines'):
+        for obj in self.iterator('functions', 'subroutines', 'types', 'interfaces', 'modprocedures', 'modfunctions', 'modsubroutines'):
             obj.visible = True
-        for obj in self.itterator('functions', 'subroutines', 'types', 'modprocedures', 'modfunctions', 'modsubroutines'):
+        for obj in self.iterator('functions', 'subroutines', 'types', 'modprocedures', 'modfunctions', 'modsubroutines'):
             obj.prune()
 
 

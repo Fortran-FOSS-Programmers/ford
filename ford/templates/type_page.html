@@ -19,16 +19,29 @@
     
     <div class="col-md-9" id='text'>
       <h2>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% for attr in dtype.attributes%}, {{ attr }}{% endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {{ dtype.name }}{% if dtype.sequence%}<br>sequence{% endif %}</h2>
-    {% if dtype.inhergraph %}
-    {{ dtype.inhergraph }}
-    <br><br>
-    {% endif %}
     {{ dtype.doc }}
-    {% if dtype.doc and not dtype.inherbygraph %}<br>{% endif %}
-    {% if dtype.inherbygraph %}
-    <h3>Inherited By</h3>
-    {{ dtype.inherbygraph }}
+    {% if dtype.inherbygraph or dtype.inhergraph %}<br>{% endif %}
+    {% if dtype.inhergraph %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">Inherits</h3>
+      </div>
+      <div class="panel-body">
+    {{ dtype.inhergraph }}
+      </div>
+    </div>
     {% endif %}
+    {% if dtype.inherbygraph %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+	<h3 class="panel-title">Inherited by</h3>
+      </div>
+      <div class="panel-body">
+     {{ dtype.inherbygraph }}
+      </div>
+    </div>
+    {% endif %}
+    <br>
 
     <section class="visible-xs visible-sm hidden-md">
       {{ macros.content_list(dtype,1) }}
@@ -37,7 +50,7 @@
 
     {% if dtype.variables|length > 0 %}
     <section>
-    <h3>Components</h3>
+    <h2>Components</h2>
     {{ macros.var_list(dtype.variables,permission=True) }}
     </section>
     <br>
@@ -45,7 +58,7 @@
     
     {% if dtype.constructor %}
 	 <section>
-	 <h3>Constructor</h3>
+	 <h2>Constructor</h2>
 	   {% if dtype.constructor.obj == "interface" %}
 	   {{ macros.interface(dtype.constructor) }}
 	   {% elif dtype.constructor.obj == "subroutine" or dtype.constructor.obj == "function" %}
@@ -63,7 +76,7 @@
     
     {% if dtype.finalprocs|length > 0 %}
     <section>
-    <h3>Finalization Procedures</h3>
+    <h2>Finalization Procedures</h2>
 	   {% for proc in dtype.finalprocs %}
          {{ macros.final(proc) }}
        {% endfor %}  
@@ -73,7 +86,7 @@
     
     {% if dtype.boundprocs|length > 0 %} 
     <section>
-    <h3>Type-Bound Procedures</h3>
+    <h2>Type-Bound Procedures</h2>
     {% for bp in dtype.boundprocs %}
 	   {{ macros.bound_info(bp) }}
     {% endfor %}
