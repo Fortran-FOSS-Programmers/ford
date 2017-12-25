@@ -154,7 +154,7 @@ def initialize():
                'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar','mathjax_config','parallel',
-               'revision']
+               'revision', 'fixed_length_limit']
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
@@ -195,16 +195,12 @@ def initialize():
                 'print_creation_date': False,
                 'coloured_edges':      'false',
                 'parallel':            ncpus,
+                'fixed_length_limit':  'true',
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
                 'macro','include','extra_mods','extra_filetypes']
     # Evaluate paths relative to project file location
-    base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
-    proj_data['base_dir'] = base_dir
-    for var in ['src_dir','page_dir','output_dir','exclude_dir','graph_dir','media_dir','include','favicon','css','mathjax_config']:
-        if var in proj_data:
-            proj_data[var] = [os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(p)))) for p in proj_data[var]]
     if args.warn:
         args.warn = 'true'
     else:
@@ -227,6 +223,16 @@ def initialize():
                 proj_data[option] = '\n'.join(proj_data[option])
         elif option in defaults:
            proj_data[option] = defaults[option]
+    base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
+    proj_data['base_dir'] = base_dir
+    for var in ['src_dir','exclude_dir','include']:
+        if var in proj_data:
+            proj_data[var] = [os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(p)))) for p in proj_data[var]]
+    for var in ['page_dir','output_dir','graph_dir','media_dir','css','mathjax_config']:
+        if var in proj_data:
+            proj_data[var] = os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(proj_data[var]))))
+    if proj_data['favicon'].strip() != defaults['favicon']:
+        proj_data['favicon'] = os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(proj_data['favicon']))))
     proj_data['display'] = [ item.lower() for item in proj_data['display'] ]
     proj_data['creation_date'] = datetime.now().strftime(proj_data['creation_date'])
     relative = (proj_data['project_url'] == '')
@@ -244,7 +250,8 @@ def initialize():
         proj_path = ford.utils.split_path(projdir)
         out_path  = ford.utils.split_path(proj_data['output_dir'])
         for directory in out_path:
-            if len(proj_path) ==  0: break
+            if len(proj_path) == 0:
+                break
             if directory == proj_path[0]:
                 proj_path.remove(directory)
             else:
