@@ -492,7 +492,23 @@
             {{ proc_summary(bind.bindings[0]) }}
          {% endif %}
       {% else %}
-         {{ proc_summary(bind) }}
+        {% if bind.obj == 'interface' %}
+          <h3>interface
+          {% if bind.meta['deprecated'] and bind.meta['deprecated'].lower() == 'true' %}
+          <span class="label label-danger depwarn">Deprecated</span>
+          {% endif %}
+          </h3>
+  
+          {% if bind.doc or (meta_list(bind.meta)|trim|length > 0 and not bind.visible) %}
+            {% if not bind.visible %}
+              {{ meta_list(bind.meta) }}
+            {% endif %}
+            {{ bind.meta['summary'] }}
+          {% endif %}
+          {{ proc_summary(bind.procedure) }}
+        {% else %}
+          {{ proc_summary(bind) }}
+        {% endif %}
       {% endif %}
       </li>
     {% endfor %}

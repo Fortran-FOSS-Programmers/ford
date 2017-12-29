@@ -58,8 +58,8 @@ class FortranReader(object):
     SC_RE = re.compile("^([^;]*);(.*)$")
 
     def __init__(self,filename,docmark='!',predocmark='',docmark_alt='',
-                 predocmark_alt='',fixed=False,preprocessor=None,macros=[],
-                 inc_dirs=[]):
+                 predocmark_alt='',fixed=False,length_limit=True,
+                 preprocessor=None,macros=[],inc_dirs=[]):
         self.name = filename
         
         # Check that none of the docmarks are the same
@@ -86,7 +86,7 @@ class FortranReader(object):
             incdirs = ['-I' + d.strip() for d in filter(None,inc_dirs)]
             preprocessor = preprocessor + macros + incdirs + [filename]
             fpp = subprocess.Popen(preprocessor, stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE, 
+                                   stderr=subprocess.PIPE,
                                    universal_newlines=True)
             (out, err) = fpp.communicate()
 
@@ -100,9 +100,10 @@ class FortranReader(object):
             self.reader = open(filename,'r')
         
         if fixed:
-            self.reader = convertToFree(self.reader)
+            self.reader = convertToFree(self.reader, length_limit)
         
         self.fixed = fixed
+        self.length_limit = length_limit
         self.inc_dirs = inc_dirs
         self.docbuffer = []
         self.pending = []
@@ -310,8 +311,8 @@ class FortranReader(object):
             raise Exception('Can not find include file "{}".'.format(name))
         self.pending = list(FortranReader(name, self.docmark, self.predocmark, 
                                           self.docmark_alt, self.predocmark_alt,
-                                          self.fixed, inc_dirs=self.inc_dirs)) \
-                       + self.pending
+                                          self.fixed, self.length_limit,
+                                          inc_dirs=self.inc_dirs)) + self.pending
 
 
 if __name__ == '__main__':
