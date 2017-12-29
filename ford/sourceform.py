@@ -1659,7 +1659,7 @@ class FortranInterface(FortranContainer):
         if self.abstract:
             contents = []
             for proc in self.routines:
-                proc.visible = True
+                proc.visible = False
                 item = copy.copy(self)
                 item.procedure = proc
                 item.procedure.parent = item
@@ -1673,7 +1673,7 @@ class FortranInterface(FortranContainer):
         elif not self.generic:
             contents = []
             for proc in self.routines:
-                proc.visible = True
+                proc.visible = False
                 item = copy.copy(self)
                 item.procedure = proc
                 item.procedure.parent = item
