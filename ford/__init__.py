@@ -35,7 +35,7 @@ from datetime import date, datetime
 import ford.fortran_project
 import ford.sourceform
 import ford.output
-from ford.mdx_mathjax import MathJaxExtension
+from ford.mdx_math import MathExtension
 import ford.utils
 import ford.pagetree
 
@@ -118,7 +118,7 @@ def initialize():
     args = parser.parse_args()
     # Set up Markdown reader
     md_ext = ['markdown.extensions.meta','markdown.extensions.codehilite',
-              'markdown.extensions.extra',MathJaxExtension(),'md_environ.environ']
+              'markdown.extensions.extra',MathExtension(),'md_environ.environ']
     md = markdown.Markdown(extensions=md_ext, output_format="html5",
     extension_configs={})
     # Read in the project-file. This will contain global documentation (which
