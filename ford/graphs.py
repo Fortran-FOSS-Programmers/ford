@@ -3,37 +3,31 @@
 #
 #  graphs.py
 #  This file is part of FORD.
-#  
+#
 #  Copyright 2015 Christopher MacMackin <cmacmackin@gmail.com>
-#  
+#
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 3 of the License, or
 #  (at your option) any later version.
-#  
+#
 #  This program is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
-#  
-#  
+#
+#
 
 from __future__ import print_function
-import sys
 import os
 import shutil
 import re
 import copy
-#Python 2 or 3:
-if (sys.version_info[0]>2):
-    from urllib.parse import quote
-else:
-    from urllib import quote
 import colorsys
 
 from graphviz import Digraph
@@ -127,7 +121,7 @@ class GraphData(object):
         elif is_module(obj,cls):
             if obj not in self.modules: self.modules[obj] = ModNode(obj,self)
         elif is_type(obj,cls):
-            if obj not in self.types: self.types[obj] = TypeNode(obj,self)
+            if obj not in self.types: self.types[obj] = TypeNode(obj,self,hist)
         elif is_proc(obj,cls):
             if obj not in self.procedures: self.procedures[obj] = ProcNode(obj,self,hist)
         elif is_program(obj,cls):
@@ -237,7 +231,7 @@ class SubmodNode(ModNode):
 
 class TypeNode(BaseNode):
     colour = '#5cb85c'
-    def __init__(self,obj,gd):
+    def __init__(self,obj,gd,hist={}):
         super(TypeNode,self).__init__(obj)
         self.ancestor = None
         self.children = set()
@@ -245,15 +239,20 @@ class TypeNode(BaseNode):
         self.comp_of = dict()
         if not self.fromstr:
             if obj.extends:
-                self.ancestor = gd.get_node(obj.extends,FortranType)
+                if obj.extends in hist:
+                    self.ancestor = hist[obj.extends]
+                else:
+                    self.ancestor = gd.get_node(obj.extends,FortranType,newdict(hist,obj,self))
                 self.ancestor.children.add(self)
                 self.ancestor.visible = getattr(obj.extends,'visible',True)
-            for var in obj.variables:
+            for var in obj.local_variables:
                 if (var.vartype == 'type' or var.vartype == 'class') and var.proto[0] != '*':
                     if var.proto[0] == obj:
                         n = self
+                    elif var.proto[0] in hist:
+                        n = hist[var.proto[0]]
                     else:
-                        n = gd.get_node(var.proto[0],FortranType)
+                        n = gd.get_node(var.proto[0],FortranType,newdict(hist,obj,self))
                     n.visible = getattr(var.proto[0],'visible',True)
                     if self in n.comp_of:
                         n.comp_of[self] += ', ' + var.name

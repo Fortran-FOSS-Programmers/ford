@@ -1542,6 +1542,7 @@ class FortranType(FortranContainer):
         # Get inherited public components
         inherited = [var for var in getattr(self.extends,'variables',[])
                      if var.permission == "public"]
+        self.local_variables = self.variables
         self.variables = inherited + self.variables
         sort_items(self,self.variables)
 
