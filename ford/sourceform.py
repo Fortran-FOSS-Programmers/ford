@@ -1089,7 +1089,6 @@ class FortranModule(FortranCodeUnit):
                 self.all_procs[interface.name.lower()] = interface
             if interface.generic:
                 for proc in interface.iterator('subroutines', 'functions'):
-                    print(self.name, proc.name)
                     self.all_procs[proc.name.lower()] = proc
         self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
@@ -2108,7 +2107,7 @@ class GenericSource(FortranBase):
         else:
             import pygments.lexers
             lexer = getattr(pygments.lexers,self.lexer_str)
-        self.src = highlight(self.raw_src, lexer(),
+        self.src = highlight(self.raw_src, lexer,
                              HtmlFormatter(lineanchors='ln', cssclass='hl'))
         com_re = re.compile("^((?!{0}|[\"']).|(\'[^']*')|(\"[^\"]*\"))*({0}.*)$".format(re.escape(comchar)))
         if docmark == docmark_alt != '':
