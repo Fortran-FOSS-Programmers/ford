@@ -2088,7 +2088,12 @@ class GenericSource(FortranBase):
         self.hierarchy = []
         self.settings = settings
         self.num_lines = 0
-        comchar = settings['extra_filetypes'][filename.split('.')[-1]]
+        extra_filetypes = settings['extra_filetypes'][filename.split('.')[-1]]
+        comchar = extra_filetypes[0]
+        if (len(extra_filetypes)>1):
+            self.lexer_str = extra_filetypes[1]
+        else:
+            self.lexer_str = None
         docmark = settings['docmark']
         predocmark = settings['predocmark']
         docmark_alt = settings['docmark_alt']
@@ -2098,7 +2103,12 @@ class GenericSource(FortranBase):
         with open(filename, 'r') as r:
             self.raw_src = r.read()
         #TODO: Get line numbers to display properly
-        self.src = highlight(self.raw_src, guess_lexer_for_filename(self.name, self.raw_src),
+        if self.lexer_str is None:
+            lexer = guess_lexer_for_filename(self.name, self.raw_src)
+        else:
+            import pygments.lexers
+            lexer = getattr(pygments.lexers,self.lexer_str)
+        self.src = highlight(self.raw_src, lexer(),
                              HtmlFormatter(lineanchors='ln', cssclass='hl'))
         com_re = re.compile("^((?!{0}|[\"']).|(\'[^']*')|(\"[^\"]*\"))*({0}.*)$".format(re.escape(comchar)))
         if docmark == docmark_alt != '':
