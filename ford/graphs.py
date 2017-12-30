@@ -413,6 +413,7 @@ class FortranGraph(object):
     Object used to construct the graph for some particular entity in the code.
     """
     data = GraphData()
+    RANKDIR = 'RL'
     def __init__(self,root,webdir='',ident=None):
         """
         Initialize the graph, root is the object or list of objects,
@@ -454,7 +455,7 @@ class FortranGraph(object):
         self.imgfile = self.ident
         self.dot = Digraph(self.ident,
                            graph_attr={'size':'8.90625,1000.0',
-                                       'rankdir':'LR',
+                                       'rankdir':self.RANKDIR,
                                        'concentrate':'true',
                                        'id':self.ident},
                            node_attr={'shape':'box',
@@ -524,6 +525,10 @@ class FortranGraph(object):
         with many dependencies it will be shown as a table instead to ease
         the rendering in browsers.
         """
+
+        # Do not render empty graphs
+        if len(self.added) <= 1:
+            return ''
 
         # Do not render overly large graphs.
         if len(self.added) > self.max_nodes:
@@ -650,11 +655,11 @@ class ModuleGraph(FortranGraph):
             for nu in n.uses:
                 if nu not in self.added:
                     hopNodes.add(nu)
-                hopEdges.append((nu, n, 'dashed', colour))
+                hopEdges.append((n, nu, 'dashed', colour))
             if hasattr(n, 'ancestor'):
                 if n.ancestor not in self.added:
                     hopNodes.add(n.ancestor)
-                hopEdges.append((n.ancestor, n, 'solid', colour))
+                hopEdges.append((n, n.ancestor, 'solid', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
         if self.add_to_graph(hopNodes, hopEdges, nesting):
@@ -680,11 +685,11 @@ class UsesGraph(FortranGraph):
             for nu in n.uses:
                 if nu not in self.added:
                     hopNodes.add(nu)
-                hopEdges.append((nu, n, 'dashed', colour))
+                hopEdges.append((n, nu, 'dashed', colour))
             if hasattr(n, 'ancestor'):
                 if n.ancestor not in self.added:
                     hopNodes.add(n.ancestor)
-                hopEdges.append((n.ancestor, n, 'solid', colour))
+                hopEdges.append((n, n.ancestor, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
@@ -715,11 +720,11 @@ class UsedByGraph(FortranGraph):
             for nu in getattr(n, 'used_by', []):
                 if nu not in self.added:
                     hopNodes.add(nu)
-                hopEdges.append((n, nu, 'dashed', colour))
+                hopEdges.append((nu, n, 'dashed', colour))
             for c in getattr(n, 'children', []):
                 if c not in self.added:
                     hopNodes.add(c)
-                hopEdges.append((n, c, 'solid', colour))
+                hopEdges.append((c, n, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
@@ -775,7 +780,7 @@ class EfferentGraph(FortranGraph):
             for ne in n.efferent:
                 if ne not in self.added:
                     hopNodes.add(ne)
-                hopEdges.append((ne, n, 'dashed', colour))
+                hopEdges.append((n, ne, 'dashed', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
@@ -806,7 +811,7 @@ class AfferentGraph(FortranGraph):
             for na in n.afferent:
                 if na not in self.added:
                     hopNodes.add(na)
-                hopEdges.append((n, na, 'dashed', colour))
+                hopEdges.append((na, n, 'dashed', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
@@ -840,11 +845,11 @@ class TypeGraph(FortranGraph):
             for c in n.comp_types:
                 if c not in self.added:
                     hopNodes.add(c)
-                hopEdges.append((c, n, 'dashed', colour, n.comp_types[c]))
+                hopEdges.append((n, c, 'dashed', colour, n.comp_types[c]))
             if n.ancestor:
                 if n.ancestor not in self.added:
                     hopNodes.add(n.ancestor)
-                hopEdges.append((n.ancestor, n, 'solid', colour))
+                hopEdges.append((n, n.ancestor, 'solid', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
         if self.add_to_graph(hopNodes, hopEdges, nesting):
@@ -870,11 +875,11 @@ class InheritsGraph(FortranGraph):
             for c in n.comp_types:
                 if c not in self.added:
                     hopNodes.add(c)
-                hopEdges.append((c, n, 'dashed', colour, n.comp_types[c]))
+                hopEdges.append((n, c, 'dashed', colour, n.comp_types[c]))
             if n.ancestor:
                 if n.ancestor not in self.added:
                     hopNodes.add(n.ancestor)
-                hopEdges.append((n.ancestor, n, 'solid', colour))
+                hopEdges.append((n, n.ancestor, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
@@ -905,11 +910,11 @@ class InheritedByGraph(FortranGraph):
             for c in n.comp_of:
                 if c not in self.added:
                     hopNodes.add(c)
-                hopEdges.append((n, c, 'dashed', colour, n.comp_of[c]))
+                hopEdges.append((c, n, 'dashed', colour, n.comp_of[c]))
             for c in n.children:
                 if c not in self.added:
                     hopNodes.add(c)
-                hopEdges.append((n, c, 'solid', colour))
+                hopEdges.append((c, n, 'solid', colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
@@ -922,6 +927,7 @@ class InheritedByGraph(FortranGraph):
 
 
 class CallGraph(FortranGraph):
+    RANKDIR = 'LR'
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return CALL_GRAPH_KEY.format(colour_notice)
@@ -953,6 +959,7 @@ class CallGraph(FortranGraph):
 
 
 class CallsGraph(FortranGraph):
+    RANKDIR = 'LR'
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return CALL_GRAPH_KEY.format(colour_notice)
@@ -989,6 +996,7 @@ class CallsGraph(FortranGraph):
 
 
 class CalledByGraph(FortranGraph):
+    RANKDIR = 'LR'
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ''
         return CALL_GRAPH_KEY.format(colour_notice)
@@ -1136,16 +1144,16 @@ if graphviz_installed:
     """
     
     MOD_GRAPH_KEY = (NODE_DIAGRAM + """
-    <p>Solid arrows point from a parent (sub)module to the submodule which is
-    descended from it. Dashed arrows point from a module being used to the
-    module or program unit using it.{{}}
+    <p>Solid arrows point from a submodule to the (sub)module which it is
+    descended from. Dashed arrows point from a module or program unit to 
+    modules which it uses.{{}}
     </p>
     """).format(mod_svg)
     
     TYPE_GRAPH_KEY = (NODE_DIAGRAM + """
-    <p>Solid arrows point from one derived type to another which extends
-    (inherits from) it. Dashed arrows point from a derived type to another
-    type containing it as a components, with a label listing the name(s) of
+    <p>Solid arrows point from a derived type to the parent type which it
+    extends. Dashed arrows point from a derived type to the other
+    types it contains as a components, with a label listing the name(s) of
     said component(s).{{}}
     </p>
     """).format(type_svg)
@@ -1159,7 +1167,7 @@ if graphviz_installed:
     """).format(call_svg)
     
     FILE_GRAPH_KEY = (NODE_DIAGRAM + """
-    <p>Solid arrows point from a file to a file which depends upon it. A file 
+    <p>Solid arrows point from a file to a file which it depends on. A file
     is dependent upon another if the latter must be compiled before the former
     can be.{{}}
     </p>
