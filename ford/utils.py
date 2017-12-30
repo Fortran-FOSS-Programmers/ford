@@ -228,6 +228,8 @@ def sub_links(string,project):
                 break
         else:
             print(ERR.format(match.group(),'"{}" not found.'.format(match.group(1))))
+            url = ''
+            name = match.group(1)
         
         if found and match.group(3):
             searchlist = []
@@ -263,11 +265,11 @@ def sub_links(string,project):
                     break
             else:
                 print(ERR.format(match.group(),'"{0}" not found in "{1}", linking to page for "{1}" instead.'.format(match.group(3),name)))
-        
+
         if found:
             return '<a href="{}">{}</a>'.format(url,name)
         else:
-            return match.group()
+            return '<a>{}</a>'.format(name)
 
     # Get information from links (need to build an RE)
     string = LINK_RE.sub(convert_link,string)
