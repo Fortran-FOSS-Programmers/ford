@@ -353,8 +353,6 @@ class FortranBase(object):
             self.meta['graph'] = self.settings['graph']
         else:
             self.meta['graph'] = self.meta['graph'].lower()
-        if 'graph_mindepth' not in self.meta:
-            self.meta['graph_mindepth'] = self.settings['graph_mindepth']
         if 'graph_maxdepth' not in self.meta:
             self.meta['graph_maxdepth'] = self.settings['graph_maxdepth']
         if 'graph_maxnodes' not in self.meta:

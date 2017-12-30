@@ -415,29 +415,36 @@ class FortranGraph(object):
     data = GraphData()
     def __init__(self,root,webdir='',ident=None):
         """
-        root is the object for which the graph is being constructed
+        Initialize the graph, root is the object or list of objects,
+        for which the graph is to be constructed.
+        The webdir is the url where the graph should be stored, and
+        ident can be provided to override the default identifacation
+        of the graph that will be used to construct the name of the
+        imagefile. It has to be provided if there are multiple root
+        nodes.
         """
         self.root = []        # root nodes
         self.hopNodes = []    # nodes of the hop which exceeded the maximum
         self.hopEdges = []    # edges of the hop which exceeded the maximum
         self.added = set()    # nodes added to the graph
-        self.min_nesting = 0  # minimum numbers of hops allowed
         self.max_nesting = 0  # maximum numbers of hops allowed
-        self.max_nodes = 0    # maximum numbers of nodes allowed
+        self.max_nodes = 1    # maximum numbers of nodes allowed
+        self.warn = False     # should warnings be written?
+        self.truncated = -1   # nesting where the graph was truncated
         try:
             for r in root:
                 self.root.append(self.data.get_node(r))
-                self.min_nesting = max(self.min_nesting,
-                                       eval(r.meta['graph_mindepth']))
                 self.max_nesting = max(self.max_nesting,
                                        eval(r.meta['graph_maxdepth']))
                 self.max_nodes = max(self.max_nodes,
                                      eval(r.meta['graph_maxnodes']))
-        except:
+                self.warn = self.warn or (r.settings['warn'].lower() == 'true')
+        except TypeError:
             self.root.append(self.data.get_node(root))
-            self.min_nesting = eval(root.meta['graph_mindepth'])
             self.max_nesting = eval(root.meta['graph_maxdepth'])
-            self.max_nodes = eval(root.meta['graph_maxnodes'])
+            self.max_nodes = max(self.max_nodes,
+                                 eval(root.meta['graph_maxnodes']))
+            self.warn = self.warn or (root.settings['warn'].lower() == 'true')
         self.webdir = webdir
         if ident:
             self.ident = ident + '~~' + self.__class__.__name__
@@ -464,7 +471,7 @@ class FortranGraph(object):
             else:
                 self.dot.node(n.ident, **n.attribs)
             self.added.add(n)
-        # add nodes and edges depnding of the root nodes to the graph
+        # add nodes and edges depending on the root nodes to the graph
         self.add_nodes(self.root)
         #~ self.linkmap = self.dot.pipe('cmapx').decode('utf-8')
         if graphviz_installed:
@@ -481,13 +488,19 @@ class FortranGraph(object):
 
     def add_to_graph(self, nodes, edges, nesting):
         """
-        Adds nodes and edges to the graph if maximum number of nodes is not
-        exceeded or minimum number of hops not reached.
+        Adds nodes and edges to the graph as long as the maximum number
+        of nodes is not exceeded.
+        All edges are expected to have a reference to an entry in nodes.
+        If the list of nodes is not added in the first hop due to graph
+        size limitations, they are stored in hopNodes.
+        If the graph was extended the function returns True, otherwise the
+        result will be False.
         """
-        if (len(nodes) + len(self.added) > self.max_nodes
-                and nesting > self.min_nesting):
-            self.hopNodes = nodes
-            self.hopEdges = edges
+        if (len(nodes) + len(self.added)) > self.max_nodes:
+            if nesting <= 2:
+                self.hopNodes = nodes
+                self.hopEdges = edges
+            self.truncated = nesting
             return False
         else:
             for n in nodes:
@@ -503,19 +516,41 @@ class FortranGraph(object):
             return True
 
     def __str__(self):
-        # do not generate overview graphs if maximum number of nodes gets
-        # exceeded
-        if ((len(self.added) <= len(self.root)
-                and isinstance(self, (ModuleGraph, FileGraph, TypeGraph,
-                                      CallGraph)))
-                or (len(self.added) + len(self.hopNodes) <= len(self.root))):
+        """
+        The string of the graph is its HTML representation.
+        It will only be created if it is not too large.
+        If the graph is overly large but can represented by a single node
+        with many dependencies it will be shown as a table instead to ease
+        the rendering in browsers.
+        """
+
+        # Do not render overly large graphs.
+        if len(self.added) > self.max_nodes:
+            if self.warn:
+                print('Warning: Not showing graph {0} as it would exceed the maximal number of {1} nodes.'
+                      .format(self.ident,self.max_nodes))
+                # Only warn once about this
+                self.warn = False
             return ''
+        # Do not render incomplete graphs.
+        if len(self.added) < len(self.root):
+            if self.warn:
+                print('Warning: Not showing graph {0} as it would be incomplete.'.format(self.ident))
+                # Only warn once about this
+                self.warn = False
+            return ''
+
+        if self.warn and self.truncated > 0:
+            print('Warning: Graph {0} is truncated after {1} hops.'.format(self.ident,self.truncated))
+            # Only warn once about this
+            self.warn = False
+
         zoomName = ''
         svgGraph = ''
         rettext = ''
-        # generate a table graph is maximum number of nodes gets exceeded in
-        # the first hop
-        if len(self.added) <= len(self.root):
+        if len(self.hopNodes) > 0 and len(self.root) == 1:
+            # generate a table graph if maximum number of nodes gets exceeded in
+            # the first hop and there is only one root node.
             root = '<td class="root" rowspan="{0}">{1}</td>'.format(
                 len(self.hopNodes) * 2 + 1, self.root[0].attribs['label'])
             # sort nodes in alphabetical order
@@ -544,12 +579,13 @@ class FortranGraph(object):
                     node += n.attribs['label'] + '</td>'
                 if isinstance(self, (UsedByGraph, AfferentGraph,
                               InheritedByGraph, CallsGraph)):
-                    rows += '<tr>' + root + arrow + node + '</tr>'
+                    rows += '<tr>' + root + arrow + node + '</tr>\n'
                 else:
-                    rows += '<tr>' + node + arrow + root + '</tr>'
-                rows += '<tr><td class="{0}Top">w</td></tr>'.format(e[2])
+                    rows += '<tr>' + node + arrow + root + '</tr>\n'
+                rows += '<tr><td class="{0}Top">w</td></tr>\n'.format(e[2])
                 root = ''
-            rettext += '<table class="graph">' + rows + '</table>'
+            rettext += '<table class="graph">\n' + rows + '</table>\n'
+
         # generate svg graph
         else:
             rettext += '<div class="depgraph">{0}</div>'
@@ -620,7 +656,7 @@ class ModuleGraph(FortranGraph):
                 hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
-        if self.add_to_graph(hopNodes, hopEdges, self.max_nesting):
+        if self.add_to_graph(hopNodes, hopEdges, nesting):
             self.dot.attr('graph', size='11.875,1000.0')
 
 
@@ -652,8 +688,11 @@ class UsesGraph(FortranGraph):
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
-        elif nesting < self.max_nesting and len(hopNodes) != 0:
-            self.add_nodes(hopNodes, nesting=nesting+1)
+        elif len(hopNodes) > 0:
+            if nesting < self.max_nesting:
+                self.add_nodes(hopNodes, nesting=nesting+1)
+            else:
+                self.truncated = nesting
 
 
 class UsedByGraph(FortranGraph):
@@ -684,8 +723,11 @@ class UsedByGraph(FortranGraph):
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
-        elif nesting < self.max_nesting and len(hopNodes) != 0:
-            self.add_nodes(hopNodes, nesting=nesting+1)
+        elif len(hopNodes) > 0:
+            if nesting < self.max_nesting:
+                self.add_nodes(hopNodes, nesting=nesting+1)
+            else:
+                self.truncated = nesting
 
 
 class FileGraph(FortranGraph):
@@ -710,7 +752,7 @@ class FileGraph(FortranGraph):
                 hopEdges.append((ne, n, 'solid', colour))
         # add nodes and edges to the graph if maximum number of nodes is not
         # exceeded
-        self.add_to_graph(hopNodes, hopEdges, self.max_nesting)
+        self.add_to_graph(hopNodes, hopEdges, nesting)
 
 
 class EfferentGraph(FortranGraph):
@@ -737,8 +779,11 @@ class EfferentGraph(FortranGraph):
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
-        elif nesting < self.max_nesting and len(hopNodes) != 0:
-            self.add_nodes(hopNodes, nesting=nesting+1)
+        elif len(hopNodes) > 0:
+            if nesting < self.max_nesting:
+                self.add_nodes(hopNodes, nesting=nesting+1)
+            else:
+                self.truncated = nesting
 
 
 class AfferentGraph(FortranGraph):
@@ -765,8 +810,11 @@ class AfferentGraph(FortranGraph):
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
-        elif nesting < self.max_nesting and len(hopNodes) != 0:
-            self.add_nodes(hopNodes, nesting=nesting+1)
+        elif len(hopNodes) > 0:
+            if nesting < self.max_nesting:
+                self.add_nodes(hopNodes, nesting=nesting+1)
+            else:
+                self.truncated = nesting
 
 
 class TypeGraph(FortranGraph):
@@ -798,7 +846,7 @@ class TypeGraph(FortranGraph):
                 hopEdges.append((n.ancestor, n, 'solid', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
-        if self.add_to_graph(hopNodes, hopEdges, self.max_nesting):
+        if self.add_to_graph(hopNodes, hopEdges, nesting):
             self.dot.attr('graph', size='11.875,1000.0')
 
 
@@ -830,8 +878,11 @@ class InheritsGraph(FortranGraph):
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
-        elif nesting < self.max_nesting and len(hopNodes) != 0:
-            self.add_nodes(hopNodes, nesting=nesting+1)
+        elif len(hopNodes) > 0:
+            if nesting < self.max_nesting:
+                self.add_nodes(hopNodes, nesting=nesting+1)
+            else:
+                self.truncated = nesting
 
 
 class InheritedByGraph(FortranGraph):
@@ -862,8 +913,11 @@ class InheritedByGraph(FortranGraph):
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
-        elif nesting < self.max_nesting and len(hopNodes) != 0:
-            self.add_nodes(hopNodes, nesting=nesting+1)
+        elif len(hopNodes) > 0:
+            if nesting < self.max_nesting:
+                self.add_nodes(hopNodes, nesting=nesting+1)
+            else:
+                self.truncated = nesting
 
 
 class CallGraph(FortranGraph):
@@ -892,7 +946,7 @@ class CallGraph(FortranGraph):
                 hopEdges.append((n, p, 'dashed', colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
-        if self.add_to_graph(hopNodes, hopEdges, self.max_nesting):
+        if self.add_to_graph(hopNodes, hopEdges, nesting):
             self.dot.attr('graph', size='11.875,1000.0')
             self.dot.attr('graph', concentrate='false')
 
@@ -925,9 +979,12 @@ class CallsGraph(FortranGraph):
         # maximum number of nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
-        elif nesting < self.max_nesting and len(hopNodes) != 0:
-            self.dot.attr('graph', concentrate='false')
-            self.add_nodes(hopNodes, nesting=nesting+1)
+        elif len(hopNodes) > 0:
+            if nesting < self.max_nesting:
+                self.dot.attr('graph', concentrate='false')
+                self.add_nodes(hopNodes, nesting=nesting+1)
+            else:
+                self.truncated = nesting
 
 
 class CalledByGraph(FortranGraph):
@@ -960,9 +1017,12 @@ class CalledByGraph(FortranGraph):
         # maximum number of nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
             return
-        elif nesting < self.max_nesting and len(hopNodes) != 0:
-            self.dot.attr('graph', concentrate='false')
-            self.add_nodes(hopNodes, nesting=nesting+1)
+        elif len(hopNodes) > 0:
+            if nesting < self.max_nesting:
+                self.dot.attr('graph', concentrate='false')
+                self.add_nodes(hopNodes, nesting=nesting+1)
+            else:
+                self.truncated = nesting
 
 
 class BadType(Exception):
