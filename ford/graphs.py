@@ -580,12 +580,12 @@ class FortranGraph(object):
                     node += n.attribs['label'] + '</td>'
                 if isinstance(self, (UsedByGraph, AfferentGraph,
                               InheritedByGraph, CallsGraph)):
-                    rows += '<tr>' + root + arrow + node + '</tr>'
+                    rows += '<tr>' + root + arrow + node + '</tr>\n'
                 else:
-                    rows += '<tr>' + node + arrow + root + '</tr>'
-                rows += '<tr><td class="{0}Top">w</td></tr>'.format(e[2])
+                    rows += '<tr>' + node + arrow + root + '</tr>\n'
+                rows += '<tr><td class="{0}Top">w</td></tr>\n'.format(e[2])
                 root = ''
-            rettext += '<table class="graph">' + rows + '</table>'
+            rettext += '<table class="graph">\n' + rows + '</table>\n'
 
         # generate svg graph
         else:
