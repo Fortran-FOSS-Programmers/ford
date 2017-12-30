@@ -1087,6 +1087,10 @@ class FortranModule(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    print(self.name, proc.name)
+                    self.all_procs[proc.name.lower()] = proc
         self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
         self.pub_procs = {}
@@ -1182,6 +1186,10 @@ class FortranSubmodule(FortranModule):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    self.all_procs[proc.name.lower()] = proc
+
 
 
 class FortranSubroutine(FortranCodeUnit):
@@ -1256,6 +1264,9 @@ class FortranSubroutine(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    self.all_procs[proc.name.lower()] = proc
         for i in range(len(self.args)):
             for var in self.variables:
                 if self.args[i].lower() == var.name.lower():
@@ -1375,6 +1386,9 @@ class FortranFunction(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    self.all_procs[proc.name.lower()] = proc
         for i in range(len(self.args)):
             for var in self.variables:
                 if self.args[i].lower() == var.name.lower():
@@ -1444,6 +1458,9 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    self.all_procs[proc.name.lower()] = proc
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
 
 
@@ -1475,6 +1492,9 @@ class FortranProgram(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    self.all_procs[proc.name.lower()] = proc
         self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
 
