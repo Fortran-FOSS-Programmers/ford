@@ -499,7 +499,7 @@ class FortranGraph(object):
         result will be False.
         """
         if (len(nodes) + len(self.added)) > self.max_nodes:
-            if nesting <= 2:
+            if nesting < 2:
                 self.hopNodes = nodes
                 self.hopEdges = edges
             self.truncated = nesting
@@ -526,8 +526,10 @@ class FortranGraph(object):
         the rendering in browsers.
         """
 
+        graph_as_table = len(self.hopNodes) > 0 and len(self.root) == 1
+
         # Do not render empty graphs
-        if len(self.added) <= 1:
+        if len(self.added) <= 1 and not graph_as_table:
             return ''
 
         # Do not render overly large graphs.
@@ -554,37 +556,47 @@ class FortranGraph(object):
         zoomName = ''
         svgGraph = ''
         rettext = ''
-        if len(self.hopNodes) > 0 and len(self.root) == 1:
+        if graph_as_table:
             # generate a table graph if maximum number of nodes gets exceeded in
             # the first hop and there is only one root node.
             root = '<td class="root" rowspan="{0}">{1}</td>'.format(
                 len(self.hopNodes) * 2 + 1, self.root[0].attribs['label'])
-            # sort nodes in alphabetical order
             if self.hopEdges[0][0].ident == self.root[0].ident:
                 key = 1
-                self.hopEdges.sort(key=lambda x: x[1].attribs['label'].lower())
+                root_on_left = (self.RANKDIR == 'LR')
+                if root_on_left:
+                    arrowtemp = ('<td class="{0}{1}">{2}</td><td rowspan="2"'
+                                 + 'class="triangle-right"></td>')
+                else:
+                    arrowtemp = ('<td rowspan="2" class="triangle-left">'
+                                 + '</td><td class="{0}{1}">{2}</td>')
             else:
                 key = 0
-                self.hopEdges.sort(key=lambda x: x[0].attribs['label'].lower())
+                root_on_left = (self.RANKDIR == 'RL')
+                if root_on_left:
+                    arrowtemp = ('<td rowspan="2" class="triangle-left">'
+                                 + '</td><td class="{0}{1}">{2}</td>')
+                else:
+                    arrowtemp = ('<td class="{0}{1}">{2}</td><td rowspan="2"'
+                                 + 'class="triangle-right"></td>')
+            # sort nodes in alphabetical order
+            self.hopEdges.sort(key=lambda x: x[key].attribs['label'].lower())
             rows = ''
             for i in range(len(self.hopEdges)):
                 e = self.hopEdges[i]
                 n = e[key]
-                arrow = ('<td class="{0}{1}">{2}</td><td rowspan="2"'
-                         'class="triangle"></td>')
                 if len(e) == 5:
-                    arrow = arrow.format(e[2], 'Text', e[4])
+                    arrow = arrowtemp.format(e[2], 'Text', e[4])
                 else:
-                    arrow = arrow.format(e[2], 'Bottom', 'w')
+                    arrow = arrowtemp.format(e[2], 'Bottom', 'w')
                 node = '<td rowspan="2" class="node" bgcolor="{0}">'.format(
-                    n.attribs['color'])
+                       n.attribs['color'])
                 try:
                     node += '<a href="{0}">{1}</a></td>'.format(
                         n.attribs['URL'], n.attribs['label'])
                 except:
                     node += n.attribs['label'] + '</td>'
-                if isinstance(self, (UsedByGraph, AfferentGraph,
-                              InheritedByGraph, CallsGraph)):
+                if root_on_left:
                     rows += '<tr>' + root + arrow + node + '</tr>\n'
                 else:
                     rows += '<tr>' + node + arrow + root + '</tr>\n'
@@ -620,7 +632,7 @@ class FortranGraph(object):
     
     def __bool__(self):
         return(bool(self.__str__()))
-    
+
     @classmethod
     def reset(cls):
         cls.data = GraphData()
