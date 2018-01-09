@@ -358,8 +358,6 @@ class FortranBase(object):
             self.meta['graph'] = self.settings['graph']
         else:
             self.meta['graph'] = self.meta['graph'].lower()
-        if 'graph_mindepth' not in self.meta:
-            self.meta['graph_mindepth'] = self.settings['graph_mindepth']
         if 'graph_maxdepth' not in self.meta:
             self.meta['graph_maxdepth'] = self.settings['graph_maxdepth']
         if 'graph_maxnodes' not in self.meta:
@@ -511,7 +509,7 @@ class FortranContainer(FortranBase):
     FINAL_RE = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
     USE_RE = re.compile("^use(?:\s*(?:,\s*(?:non_)?intrinsic\s*)?::\s*|\s+)(\w+)\s*($|,.*)",re.IGNORECASE)
     ARITH_GOTO_RE = re.compile("go\s*to\s*\([0-9,\s]+\)",re.IGNORECASE)
-    CALL_RE = re.compile("(?:^|(?<=[^a-zA-Z0-9_%]))\w+(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
+    CALL_RE = re.compile("(?:^|[^a-zA-Z0-9_% ]\s*)(\w+)(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
     SUBCALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
 
     VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
@@ -842,7 +840,8 @@ class FortranCodeUnit(FortranContainer):
                     if intr.proctype.lower() =='interface' and not intr.generic and not intr.abstract and intr.procedure.module == True:
                         proc.attribs = intr.procedure.attribs
                         proc.args = intr.procedure.args
-                        proc.retvar = getattr(intr.procedure,'retvar',None)
+                        if hasattr(intr.procedure, 'retvar'):
+                            proc.retvar = intr.procedure.retvar
                         proc.proctype = intr.procedure.proctype
                         proc.module = intr
                         intr.procedure.module = proc
@@ -881,7 +880,8 @@ class FortranCodeUnit(FortranContainer):
                     argname = argname or call.lower() == a.name.lower()
                 if hasattr(self,'retvar'):
                     argname = argname or call.lower() == self.retvar.name.lower()
-                if call.lower() not in self.all_vars and (call.lower() not in self.all_types or call.lower() in self.all_procs) and not argname: tmplst.append(call)
+                if call.lower() not in self.all_vars and (call.lower() not in self.all_types or call.lower() in self.all_procs) and not argname:
+                    tmplst.append(call)
             self.calls = tmplst
             fileprocs = {}
             if self.parobj == 'sourcefile':
@@ -1040,7 +1040,8 @@ class FortranSourceFile(FortranContainer):
 
         source = ford.reader.FortranReader(self.path,settings['docmark'],
                     settings['predocmark'],settings['docmark_alt'],
-                    settings['predocmark_alt'],fixed,preprocessor,
+                    settings['predocmark_alt'],fixed,
+                    settings['fixed_length_limit'].lower()=='true',preprocessor,
                     settings['macro'],settings['include'])
 
         FortranContainer.__init__(self,source,"")
@@ -1091,6 +1092,9 @@ class FortranModule(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    self.all_procs[proc.name.lower()] = proc
         self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
         self.pub_procs = {}
@@ -1186,6 +1190,10 @@ class FortranSubmodule(FortranModule):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    self.all_procs[proc.name.lower()] = proc
+
 
 
 class FortranSubroutine(FortranCodeUnit):
@@ -1260,6 +1268,9 @@ class FortranSubroutine(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    self.all_procs[proc.name.lower()] = proc
         for i in range(len(self.args)):
             for var in self.variables:
                 if self.args[i].lower() == var.name.lower():
@@ -1379,6 +1390,9 @@ class FortranFunction(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    self.all_procs[proc.name.lower()] = proc
         for i in range(len(self.args)):
             for var in self.variables:
                 if self.args[i].lower() == var.name.lower():
@@ -1448,6 +1462,9 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    self.all_procs[proc.name.lower()] = proc
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
 
 
@@ -1479,6 +1496,9 @@ class FortranProgram(FortranCodeUnit):
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.iterator('subroutines', 'functions'):
+                    self.all_procs[proc.name.lower()] = proc
         self.process_attribs()
         self.variables = [v for v in self.variables if 'external' not in v.attribs]
 
@@ -1544,6 +1564,7 @@ class FortranType(FortranContainer):
         # Get inherited public components
         inherited = [var for var in getattr(self.extends,'variables',[])
                      if var.permission == "public"]
+        self.local_variables = self.variables
         self.variables = inherited + self.variables
         sort_items(self,self.variables)
 
@@ -1660,8 +1681,8 @@ class FortranInterface(FortranContainer):
     def _cleanup(self):
         if self.abstract:
             contents = []
-            for proc in (self.subroutines + self.functions):
-                proc.visible = True
+            for proc in self.routines:
+                proc.visible = False
                 item = copy.copy(self)
                 item.procedure = proc
                 item.procedure.parent = item
@@ -1675,7 +1696,7 @@ class FortranInterface(FortranContainer):
         elif not self.generic:
             contents = []
             for proc in self.routines:
-                proc.visible = True
+                proc.visible = False
                 item = copy.copy(self)
                 item.procedure = proc
                 item.procedure.parent = item
@@ -2071,7 +2092,12 @@ class GenericSource(FortranBase):
         self.hierarchy = []
         self.settings = settings
         self.num_lines = 0
-        comchar = settings['extra_filetypes'][filename.split('.')[-1]]
+        extra_filetypes = settings['extra_filetypes'][filename.split('.')[-1]]
+        comchar = extra_filetypes[0]
+        if (len(extra_filetypes)>1):
+            self.lexer_str = extra_filetypes[1]
+        else:
+            self.lexer_str = None
         docmark = settings['docmark']
         predocmark = settings['predocmark']
         docmark_alt = settings['docmark_alt']
@@ -2081,7 +2107,12 @@ class GenericSource(FortranBase):
         with open(filename, 'r') as r:
             self.raw_src = r.read()
         #TODO: Get line numbers to display properly
-        self.src = highlight(self.raw_src, guess_lexer_for_filename(self.name, self.raw_src),
+        if self.lexer_str is None:
+            lexer = guess_lexer_for_filename(self.name, self.raw_src)
+        else:
+            import pygments.lexers
+            lexer = getattr(pygments.lexers,self.lexer_str)
+        self.src = highlight(self.raw_src, lexer,
                              HtmlFormatter(lineanchors='ln', cssclass='hl'))
         com_re = re.compile("^((?!{0}|[\"']).|(\'[^']*')|(\"[^\"]*\"))*({0}.*)$".format(re.escape(comchar)))
         if docmark == docmark_alt != '':
@@ -2278,6 +2309,8 @@ def parse_type(string,capture_strings,settings):
         else:
             star = True
             args = match.group(2).strip()
+            if args.startswith('('):
+                args = args[1:-1].strip()
 
         args = re.sub("\s","",args)
         if vartype == "type" or vartype == "class" or vartype == "procedure":
@@ -2290,7 +2323,7 @@ def parse_type(string,capture_strings,settings):
             return (vartype, None, None, proto, rest)
         elif vartype == "character":
             if star:
-                return (vartype, None, args[1], None, rest)
+                return (vartype, None, args, None, rest)
             else:
                 kind = None
                 length = None

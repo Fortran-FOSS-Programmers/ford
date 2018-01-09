@@ -38,11 +38,12 @@ from __future__ import print_function
 import sys
 
 class FortranLine:
-    def __init__(self, line):
+    def __init__(self, line, length_limit=True):
         self.line = line
         self.line_conv = line
         self.isComment = False
         self.isContinuation = False
+        self.length_limit = length_limit
         self.__analyse()
         
     def __repr__(self):
@@ -64,7 +65,7 @@ class FortranLine:
         cont_char = line[5] if len(line) >= 6 else ''
         fivechars = line[1:5] if len(line) > 1 else ''
         self.isShort = (len(line) <= 6)
-        self.isLong  = (len(line) > 73)
+        self.isLong  = (len(line) > 73 and self.length_limit)
         
         self.isComment = firstchar in "cC*!"
         self.isNewComment = '!' in fivechars and not self.isComment
@@ -106,12 +107,12 @@ class FortranLine:
             self.line_conv = self.line_conv.rstrip().ljust(72) + self.excess_line
 
 
-def convertToFree(stream):
+def convertToFree(stream, length_limit=True):
     """Convert stream from fixed source form to free source form."""
     linestack = []
         
     for line in stream:
-        convline = FortranLine(line)
+        convline = FortranLine(line, length_limit)
         
         if convline.is_regular:
             if convline.isContinuation and linestack: 

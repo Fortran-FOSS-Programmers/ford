@@ -35,7 +35,7 @@ from datetime import date, datetime
 import ford.fortran_project
 import ford.sourceform
 import ford.output
-from ford.mdx_mathjax import MathJaxExtension
+from ford.mdx_math import MathExtension
 import ford.utils
 import ford.pagetree
 
@@ -118,7 +118,7 @@ def initialize():
     args = parser.parse_args()
     # Set up Markdown reader
     md_ext = ['markdown.extensions.meta','markdown.extensions.codehilite',
-              'markdown.extensions.extra',MathJaxExtension(),'md_environ.environ']
+              'markdown.extensions.extra',MathExtension(),'md_environ.environ']
     md = markdown.Markdown(extensions=md_ext, output_format="html5",
     extension_configs={})
     # Read in the project-file. This will contain global documentation (which
@@ -150,11 +150,11 @@ def initialize():
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
-               'graph_mindepth', 'graph_maxdepth', 'graph_maxnodes',
+               'graph_maxdepth', 'graph_maxnodes',
                'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar','mathjax_config','parallel',
-               'revision']
+               'revision', 'fixed_length_limit']
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
@@ -188,7 +188,6 @@ def initialize():
                 'extra_mods':          [],
                 'dbg':                 True,
                 'graph':               'false',
-                'graph_mindepth':      '0',
                 'graph_maxdepth':      '10000',
                 'graph_maxnodes':      '1000000000',
                 'license':             '',
@@ -197,16 +196,12 @@ def initialize():
                 'print_creation_date': 'false',
                 'coloured_edges':      'false',
                 'parallel':            ncpus,
+                'fixed_length_limit':  'true',
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
                 'macro','include','extra_mods','extra_filetypes','external']
     # Evaluate paths relative to project file location
-    base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
-    proj_data['base_dir'] = base_dir
-    for var in ['src_dir','page_dir','output_dir','exclude_dir','graph_dir','media_dir','include','favicon','css','mathjax_config']:
-        if var in proj_data:
-            proj_data[var] = [os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(p)))) for p in proj_data[var]]
     if args.warn:
         args.warn = 'true'
     else:
@@ -229,6 +224,16 @@ def initialize():
                 proj_data[option] = '\n'.join(proj_data[option])
         elif option in defaults:
            proj_data[option] = defaults[option]
+    base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
+    proj_data['base_dir'] = base_dir
+    for var in ['src_dir','exclude_dir','include']:
+        if var in proj_data:
+            proj_data[var] = [os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(p)))) for p in proj_data[var]]
+    for var in ['page_dir','output_dir','graph_dir','media_dir','css','mathjax_config']:
+        if var in proj_data:
+            proj_data[var] = os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(proj_data[var]))))
+    if proj_data['favicon'].strip() != defaults['favicon']:
+        proj_data['favicon'] = os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(proj_data['favicon']))))
     proj_data['display'] = [ item.lower() for item in proj_data['display'] ]
     proj_data['creation_date'] = datetime.now().strftime(proj_data['creation_date'])
     relative = (proj_data['project_url'] == '')
@@ -239,14 +244,18 @@ def initialize():
     for ext in proj_data['extra_filetypes']:
         sp = ext.split()
         if len(sp) < 2: continue
-        extdict[sp[0]] = sp[1]
+        if (len(sp)==2):
+            extdict[sp[0]] = (sp[1])        # (comment_char) only
+        else:
+            extdict[sp[0]] = (sp[1],sp[2])  # (comment_char and lexer_str)
     proj_data['extra_filetypes'] = extdict
     # Make sure no src_dir is contained within output_dir
     for projdir in proj_data['src_dir']:
         proj_path = ford.utils.split_path(projdir)
         out_path  = ford.utils.split_path(proj_data['output_dir'])
         for directory in out_path:
-            if len(proj_path) ==  0: break
+            if len(proj_path) == 0:
+                break
             if directory == proj_path[0]:
                 proj_path.remove(directory)
             else:

@@ -18,6 +18,9 @@
     <link href="{{ project_url }}/css/pygments.css" rel="stylesheet">
     <link href="{{ project_url }}/css/font-awesome.min.css" rel="stylesheet">
     <link href="{{ project_url }}/css/local.css" rel="stylesheet">
+    {% if search|lower == 'true' %}
+    <link  href="{{ project_url }}/tipuesearch/tipuesearch.css" rel="stylesheet">
+    {% endif %}
     {% if css %}
     <link href="{{ project_url }}/css/user.css" rel="stylesheet">
     {% endif %}
@@ -167,10 +170,7 @@
       MathJax.Hub.Config({
         TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
         jax: ['input/TeX','input/MathML','output/HTML-CSS'],
-        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js'],
-        'HTML-CSS': { 
-           styles: { '.MathJax_Display, .MathJax .mo, .MathJax .mi, .MathJax .mn': {color: '#000000 ! important'} }
-        }
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
       });
     </script>
     {% if mathjax_config %}
@@ -180,7 +180,6 @@
     
     {% if search|lower == 'true' %}
     <script src="{{ project_url }}/tipuesearch/tipuesearch_content.js"></script>
-    <link  href="{{ project_url }}/tipuesearch/tipuesearch.css" rel="stylesheet">
     <script src="{{ project_url }}/tipuesearch/tipuesearch_set.js"></script>
     <script src="{{ project_url }}/tipuesearch/tipuesearch.js"></script>
     {% endif %}

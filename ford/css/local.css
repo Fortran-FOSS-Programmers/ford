@@ -212,12 +212,20 @@ table.graph {
   padding:10px;
 }
 
-.graph td.triangle:after {
+.graph td.triangle-right:after {
     content: "";
     display: block;
     border-top: 7px solid  transparent;
     border-bottom: 7px solid  transparent;
     border-left: 7px solid black;
+}
+
+.graph td.triangle-left:after {
+    content: "";
+    display: block;
+    border-top: 7px solid  transparent;
+    border-bottom: 7px solid  transparent;
+    border-right: 7px solid black;
 }
 
 .graph td.node {
