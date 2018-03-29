@@ -449,14 +449,13 @@ class FortranGraph(object):
                                        eval(r.meta['graph_maxdepth']))
                 self.max_nodes = max(self.max_nodes,
                                      eval(r.meta['graph_maxnodes']))
+                self.warn = self.warn or (r.settings['warn'].lower() == 'true')
         except TypeError:
             self.root.append(self.data.get_node(root))
             self.max_nesting = eval(root.meta['graph_maxdepth'])
             self.max_nodes = max(self.max_nodes,
                                  eval(root.meta['graph_maxnodes']))
             self.warn = root.settings['warn'].lower() == 'true'
-        else:
-            self.warn = next(iter(root)).settings['warn'].lower() == 'true'
         self.webdir = webdir
         if ident:
             self.ident = ident + '~~' + self.__class__.__name__
