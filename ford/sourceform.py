@@ -354,6 +354,10 @@ class FortranBase(object):
             self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url)
         elif PARA_CAPTURE_RE.search(self.doc):
             self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
+        else:
+            self.meta['summary'] = ''
+        if self.meta['summary'].strip() != self.doc.strip():
+            self.meta['summary'] += '<a href="{}" class="pull-right"><emph>Read more&hellip;</emph></a>'.format(self.get_url())
         if 'graph' not in self.meta:
             self.meta['graph'] = self.settings['graph']
         else:
@@ -396,10 +400,22 @@ class FortranBase(object):
                                    'finalprocs', 'args', 'enums'):
             if isinstance(item, FortranBase):
                 item.markdown(md, project)
+        if hasattr(self,'retvar'):
+            if self.retvar:
+                if isinstance(self.retvar, FortranBase):
+                    self.retvar.markdown(md, project)
+        if hasattr(self,'procedure'):
+            if isinstance(self.procedure, FortranBase):
+                self.procedure.markdown(md, project)
+        return
 
+    
+    def sort(self):
+        '''
+        Sorts components of the object.
+        '''
         if hasattr(self,'variables'):
-            if not isinstance(self,FortranType):
-                sort_items(self,self.variables)
+            sort_items(self,self.variables)
         if hasattr(self,'modules'):
             sort_items(self,self.modules)
         if hasattr(self,'submodules'):
@@ -423,24 +439,13 @@ class FortranBase(object):
         if hasattr(self,'blockdata'):
             sort_items(self,self.blockdata)
         if hasattr(self,'boundprocs'):
-            # Type-bound procedures sorted at the end of correlation
-            # step, once any inherited ones have been added.
-            pass
+            sort_items(self,self.boundprocs)
         if hasattr(self,'finalprocs'):
             sort_items(self,self.finalprocs)
         if hasattr(self,'args'):
             #sort_items(self.args,args=True)
             pass
-        if hasattr(self,'retvar'):
-            if self.retvar:
-                if isinstance(self.retvar, FortranBase):
-                    self.retvar.markdown(md, project)
-        if hasattr(self,'procedure'):
-            if isinstance(self.procedure, FortranBase):
-                self.procedure.markdown(md, project)
-
-        return
-
+    
 
     def make_links(self, project):
         """
@@ -929,6 +934,9 @@ class FortranCodeUnit(FortranContainer):
                 arg.correlate(project)
         if hasattr(self,'retvar') and not getattr(self,'mp',False):
             self.retvar.correlate(project)
+
+        # Sort content
+        self.sort()
 
         # Separate module subroutines/functions from normal ones
         if self.obj == 'submodule':
@@ -1566,7 +1574,6 @@ class FortranType(FortranContainer):
                      if var.permission == "public"]
         self.local_variables = self.variables
         self.variables = inherited + self.variables
-        sort_items(self,self.variables)
 
         # Match boundprocs with procedures
         # FIXME: This is not at all modular because must process non-generic bound procs first--could there be a better way to do it
@@ -1605,8 +1612,8 @@ class FortranType(FortranContainer):
             self.constructor = self.all_procs[self.name.lower()]
             self.constructor.permission = self.permission
             self.num_lines += getattr(self.constructor,'num_lines_all',self.constructor.num_lines)
-        # Sort boundprocs, now that any inherited ones have been added.
-        sort_items(self,self.boundprocs)
+        # Sort content
+        self.sort()
         # Get total num_lines, including implementations
         for proc in self.finalprocs:
             self.num_lines_all += proc.procedure.num_lines
@@ -1677,6 +1684,8 @@ class FortranInterface(FortranContainer):
                 func.correlate(project)
         else:
             self.procedure.correlate(project)
+        # Sort content
+        self.sort()
 
     def _cleanup(self):
         if self.abstract:
@@ -1880,6 +1889,8 @@ class FortranBoundProcedure(FortranBase):
                     break
             #else:
             #    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
+        # Sort content
+        self.sort()
 
 
 class FortranModuleProcedure(FortranBase):
@@ -1966,6 +1977,8 @@ class FortranBlockData(FortranContainer):
             var.correlate(project)
         for com in self.common:
             com.correlate(project)
+        # Sort content
+        self.sort()
 
     def prune(self):
         self.types = [obj for obj in self.types if obj.permission in self.display]
@@ -2045,6 +2058,8 @@ class FortranCommon(FortranBase):
             lst = [self,]
             project.common[self.name] = lst
             self.other_uses = lst
+        # Sort content
+        self.sort()
 
 
 class FortranSpoof(object):
@@ -2386,9 +2401,10 @@ def sort_items(self,items,args=False):
             if i.intent == 'inout': return 'c'
             if i.intent == 'out': return 'd'
             if i.intent == '': return 'e'
-        if i.permission == 'public': return 'b'
-        if i.permission == 'protected': return 'c'
-        if i.permission == 'private': return 'd'
+        perm = getattr(i, 'permission', '')
+        if perm == 'public': return 'b'
+        if perm == 'protected': return 'c'
+        if perm == 'private': return 'd'
         return 'a'
     def permission_alpha(i):
         return permission(i) + '-' + i.name
