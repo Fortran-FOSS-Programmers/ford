@@ -4,11 +4,11 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-	 {% if summary %}
-	 <meta name="description" content="{{ summary|striptags }}">
+   {% if summary %}
+   <meta name="description" content="{{ summary|striptags }}">
     {% else %}
     <meta name="description" content="Documentation for {{ project }}">
-	 {% endif %}
+   {% endif %}
     <meta name="author" content="{{ author }}" >
     <link rel="icon" href="{{ project_url }}/favicon.png">
 
@@ -52,23 +52,25 @@
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
-				{% if pages %}
+        {% if pages %}
             <li>{{ pages }}</li>
-	    {% endif %}
+      {% endif %}
             <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
               <a href="#" class="dropdown-toggle"
               data-toggle="dropdown" role="button"
               aria-haspopup="true"
-		 aria-expanded="false">Contents <span class="caret"></span></a>
-	      <ul class="dropdown-menu">
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+          {% if incl_src == "true" %}
               {% if project.files|length + project.extra_files|length > 1 %}
             <li><a href="{{ project_url }}/lists/files.html">Source Files</a></li>
-				{% else %}
+        {% else %}
             <li><a href="{{project.files[0].get_url()}}">Source File</a></li>
-				{% endif %}
-				{% if project.modules|length > 0 %}
+        {% endif %}
+        {% endif %}
+        {% if project.modules|length > 0 %}
             <li><a href="{{ project_url }}/lists/modules.html">Modules</a></li>
-				{% endif %}
+        {% endif %}
             {% if project.blockdata|length > 1 %}
     <li><a href="{{ project_url }}/lists/blockdata.html">Block Data Units</a></li>
     {% elif project.blockdata|length == 1 %}
@@ -76,23 +78,25 @@
     {% endif %}
                                 {% if project.procedures|length > 0 %}
             <li><a href="{{ project_url }}/lists/procedures.html">Procedures</a></li>
-				{% endif %}
-				{% if project.absinterfaces|length > 0 %}
+        {% endif %}
+        {% if project.absinterfaces|length > 0 %}
             <li><a href="{{ project_url }}/lists/absint.html">Abstract Interfaces</a></li>
-				{% endif %}				{% if project.types|length > 0 %}
+        {% endif %}       {% if project.types|length > 0 %}
             <li><a href="{{ project_url }}/lists/types.html">Derived Types</a></li>
-				{% endif %}
-				{% if project.programs|length > 1 %}
+        {% endif %}
+        {% if project.programs|length > 1 %}
             <li><a href="{{ project_url }}/lists/programs.html">Programs</a></li>
-				{% elif project.programs|length == 1 %}
+        {% elif project.programs|length == 1 %}
             <li><a href="{{ project.programs[0].get_url() }}">Program</a></li>
-	    {% endif %}
+      {% endif %}
             </ul>
             </li>
+{% if incl_src == "true" %}
 {% if project.files|length + project.extra_files|length > 1 %}
 <li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/files.html">Source Files</a></li>
 {% else %}
 <li class="visible-xs hidden-sm visible-lg"><a href="{{project.files[0].get_url()}}">Source File</a></li>
+{% endif %}
 {% endif %}
 {% if project.modules|length > 0 %}
 <li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/modules.html">Modules</a></li>

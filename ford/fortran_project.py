@@ -56,7 +56,8 @@ class Project(object):
         self.display = settings['display']
         
         if settings['preprocess'].lower() != 'true': settings['fpp_extensions'] = []
-            
+
+        html_incl_src = settings.get("incl_src","true") == "true"
         
         self.files = []
         self.modules = []
@@ -86,10 +87,10 @@ class Project(object):
                         preprocessor = None
                     if settings['dbg']:
                         self.files.append(
-                            ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings, preprocessor, ext in self.fixed_extensions))
+                            ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings, preprocessor, ext in self.fixed_extensions,incl_src=html_incl_src))
                     else:
                         try:
-                            self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,preprocessor, ext in self.fixed_extensions))
+                            self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,preprocessor, ext in self.fixed_extensions,incl_src=html_incl_src))
                         except Exception as e:
                             print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
                             continue

@@ -71,8 +71,9 @@ class Documentation(object):
             graphparent = ''
         print("Creating HTML documentation...")
         try:
-            for item in project.allfiles:
-                self.docs.append(FilePage(data,project,item))
+            if data['incl_src'] == 'true':
+                for item in project.allfiles:
+                    self.docs.append(FilePage(data,project,item))
             for item in project.types:
                 self.docs.append(TypePage(data,project,item))
             for item in project.absinterfaces:
@@ -91,8 +92,9 @@ class Documentation(object):
                 self.docs.append(BlockPage(data,project,item))
             if len(project.procedures) > 0:
                 self.lists.append(ProcList(data,project))
-            if len(project.files) + len(project.extra_files) > 1:
-                self.lists.append(FileList(data,project))
+            if data['incl_src'] == 'true':
+                if len(project.files) + len(project.extra_files) > 1:
+                    self.lists.append(FileList(data,project))
             if len(project.modules) + len(project.submodules) > 0:
                 self.lists.append(ModList(data,project))
             if len(project.programs) > 1:
@@ -202,8 +204,9 @@ class Documentation(object):
             shutil.copy(os.path.join(loc,'favicon.png'),os.path.join(out_dir,'favicon.png'))
         else:
             shutil.copy(self.data['favicon'],os.path.join(out_dir,'favicon.png'))
-        for src in self.project.allfiles:
-            shutil.copy(src.path,os.path.join(out_dir,'src',src.name))
+        if self.data['incl_src'] == 'true':
+            for src in self.project.allfiles:
+                shutil.copy(src.path,os.path.join(out_dir,'src',src.name))
         if 'mathjax_config' in self.data:
             shutil.copy(self.data['mathjax_config'],
                         os.path.join(out_dir, os.path.join('js/MathJax-config',
