@@ -57,7 +57,7 @@ class Project(object):
         
         if settings['preprocess'].lower() != 'true': settings['fpp_extensions'] = []
 
-        html_incl_src = settings.get("incl_src","true") == "true"
+        html_incl_src = settings.get("incl_src","true").lower() == "true"
         
         self.files = []
         self.modules = []

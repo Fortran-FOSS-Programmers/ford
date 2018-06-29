@@ -173,7 +173,7 @@ def initialize():
                 'predocmark_alt':      '|',
                 'favicon':             'default-icon',
                 'extra_vartypes':      [],
-                'incl_src':            'false',
+                'incl_src':            'true',
                 'source':              'false',
                 'macro':               [],
                 'include':             [],
@@ -235,6 +235,7 @@ def initialize():
     if proj_data['favicon'].strip() != defaults['favicon']:
         proj_data['favicon'] = os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(proj_data['favicon']))))
     proj_data['display'] = [ item.lower() for item in proj_data['display'] ]
+    proj_data['incl_src'] = proj_data['incl_src'].lower()
     proj_data['creation_date'] = datetime.now().strftime(proj_data['creation_date'])
     relative = (proj_data['project_url'] == '')
     proj_data['relative'] = relative
