@@ -6,10 +6,10 @@
     <h1>{{ module.name }} 
     <small>{% if module.obj == 'submodule' %}Submodule{% else %}Module{% endif %}</small>
     {% if module.meta['deprecated'] and module.meta['deprecated'].lower() == 'true' %}
-	 <span class="label label-danger depwarn">Deprecated</span>
+   <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
-    {{ macros.info_bar(module.name,module.meta,project_url,module.hierarchy,module.lines_description(project.mod_lines)) }}
+    {{ macros.info_bar(module.name,module.meta,incl_src,project_url,module.hierarchy,module.lines_description(project.mod_lines)) }}
   </div>
   
   <div class="row">
@@ -66,32 +66,32 @@
     
     {% if module.interfaces|length > 0 %}
     <section>
-	 <h2>Interfaces</h2>
-	 {% for intr in module.interfaces %}
-	   {{ macros.interface(intr) }}
+   <h2>Interfaces</h2>
+   {% for intr in module.interfaces %}
+     {{ macros.interface(intr) }}
     {% endfor %}
     </section>
-	<br>
+  <br>
     {% endif %}
 
     {% if module.absinterfaces|length > 0 %}
     <section>
      <h2>Abstract Interfaces</h2>
-	 {% for intr in module.absinterfaces %}
-	   {{ macros.absinterface(intr) }}
+   {% for intr in module.absinterfaces %}
+     {{ macros.absinterface(intr) }}
     {% endfor %}
     </section>
-	<br>
+  <br>
     {% endif %}
     
     {% if module.types|length > 0 %}
     <section>
      <h2>Derived Types</h2>
-	 {% for type in module.types %}
-	   {{ macros.type_summary(type) }}
+   {% for type in module.types %}
+     {{ macros.type_summary(type) }}
      {% endfor %}
     </section>
-	<br>
+  <br>
     {% endif %}
     
     {% if module.functions|length > 0 %} 

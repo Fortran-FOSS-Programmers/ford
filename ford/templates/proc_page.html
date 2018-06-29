@@ -6,11 +6,11 @@
     <h1>{{ procedure.name }}
       <small>{%if procedure.module %}Module {% endif %}{% if not procedure.mp %}{{ procedure.proctype }}{% else %}Procedure{% endif %}</small>
     {% if procedure.meta['deprecated'] and procedure.meta['deprecated'].lower() == 'true' %}
-	 <span class="label label-danger depwarn">Deprecated</span>
+   <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
     {{
-    macros.info_bar(procedure.name,procedure.meta,project_url,procedure.hierarchy,procedure.lines_description(project.proc_lines)) }}
+    macros.info_bar(procedure.name,procedure.meta,incl_src,project_url,procedure.hierarchy,procedure.lines_description(project.proc_lines)) }}
   </div>
   
   <div class="row">
@@ -39,7 +39,7 @@
     {% if var.kind %}{% set args = args + 1 %}{% endif %}
     {% if var.strlen %}{% set args = args + 1 %}{% endif %}
     {% if var.proto %}{% set args = args + 1 %}{% endif %}
-	 <h3>Return Value <small><span class="anchor" id="{{ var.anchor }}"></span>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
+   <h3>Return Value <small><span class="anchor" id="{{ var.anchor }}"></span>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
   {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {%- endif %}{%- endfor %}{{ var.dimension }}</small></h3>
     {{ var.doc }}
     {% endif %}
@@ -49,20 +49,20 @@
     {% if procedure.callsgraph %}
     <div class="panel panel-default">
       <div class="panel-heading">
-	<h3 class="panel-title">Calls</h3>
+  <h3 class="panel-title">Calls</h3>
       </div>
       <div class="panel-body">
-	{{ procedure.callsgraph }}
+  {{ procedure.callsgraph }}
       </div>
     </div>
      {% endif %}
      {% if procedure.calledbygraph %}
     <div class="panel panel-default">
       <div class="panel-heading">
-	<h3 class="panel-title">Called by</h3>
+  <h3 class="panel-title">Called by</h3>
       </div>
       <div class="panel-body">
-	{{ procedure.calledbygraph }}
+  {{ procedure.calledbygraph }}
       </div>
     </div>
      {% endif %}
@@ -107,33 +107,33 @@
     {% endif %}
     
     {% if procedure.interfaces|length > 0 %}
-	<section> 
+  <section> 
      <h2>Interfaces</h2>
-	 {% for intr in procedure.interfaces %}
-	   {{ macros.interface(intr) }}
+   {% for intr in procedure.interfaces %}
+     {{ macros.interface(intr) }}
     {% endfor %}
     </section>
-	 <br>
+   <br>
     {% endif %}
 
     {% if procedure.absinterfaces|length > 0 %}
     <section>
-	 <h2>Abstract Interfaces</h2>
-	 {% for intr in procedure.absinterfaces %}
-	   {{ macros.absinterface(intr) }}
+   <h2>Abstract Interfaces</h2>
+   {% for intr in procedure.absinterfaces %}
+     {{ macros.absinterface(intr) }}
     {% endfor %}
     </section>
-	 <br>
+   <br>
     {% endif %}
     
     {% if procedure.types|length > 0 %}
     <section>
-	 <h2>Derived Types</h2>
-	 {% for type in procedure.types %}
-	   {{ macros.type_summary(type) }}
+   <h2>Derived Types</h2>
+   {% for type in procedure.types %}
+     {{ macros.type_summary(type) }}
     {% endfor %}
     </section>
-	 <br>
+   <br>
     {% endif %}
     
     {% if procedure.functions|length > 0 %} 

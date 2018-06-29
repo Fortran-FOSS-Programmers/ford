@@ -148,6 +148,7 @@ def initialize():
                'project_sourceforge','project_url','display','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
+               'incl_src',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
                'graph_maxdepth', 'graph_maxnodes',
@@ -172,6 +173,7 @@ def initialize():
                 'predocmark_alt':      '|',
                 'favicon':             'default-icon',
                 'extra_vartypes':      [],
+                'incl_src':            'true',
                 'source':              'false',
                 'macro':               [],
                 'include':             [],
@@ -233,6 +235,7 @@ def initialize():
     if proj_data['favicon'].strip() != defaults['favicon']:
         proj_data['favicon'] = os.path.normpath(os.path.join(base_dir,os.path.expanduser(os.path.expandvars(proj_data['favicon']))))
     proj_data['display'] = [ item.lower() for item in proj_data['display'] ]
+    proj_data['incl_src'] = proj_data['incl_src'].lower()
     proj_data['creation_date'] = datetime.now().strftime(proj_data['creation_date'])
     relative = (proj_data['project_url'] == '')
     proj_data['relative'] = relative
