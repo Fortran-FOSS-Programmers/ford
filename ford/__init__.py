@@ -44,17 +44,22 @@ if (sys.version_info[0] > 2):
 else:
     from StringIO import StringIO
 
-__appname__    = "FORD"
-__author__     = "Chris MacMackin, Jacob Williams, Marco Restelli, Iain Barrass, Jérémie Burgalat, Stephen J. Turnbull, Balint Aradi"
-__credits__    = ["Stefano Zhagi", "Izaak Beekman", "Gavin Huttley"]
-__license__    = "GPLv3"
-__version__    = "5.0.6"
+__appname__ = "FORD"
+__author__ = "Chris MacMackin"
+__credits__ = ["Balint Aradi", "Iain Barrass", "Izaak Beekman",
+               "Jérémie Burgalat", "David Dickinson",
+               "Gavin Huttley", "Harald Klimach", "Ibarrass-qmul",
+               "Nick R. Papior", "Marco Restelli", "Schildkroete23",
+               "Stephen J. Turnbull", "Jacob Williams", "Stefano Zhagi"]
+__license__ = "GPLv3"
+__version__ = "6.0.0"
 __maintainer__ = "Chris MacMackin"
-__status__     = "Production"
+__status__ = "Production"
 
 if sys.version_info[0] < 3:
-    reload(sys)  
+    reload(sys)
     sys.setdefaultencoding('utf8')
+
 
 @contextmanager
 def stdout_redirector(stream):
@@ -64,6 +69,7 @@ def stdout_redirector(stream):
         yield
     finally:
         sys.stdout = old_stdout
+
 
 LICENSES = { 'by': '<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" /></a>',
              'by-nd': '<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>',
