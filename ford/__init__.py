@@ -48,7 +48,7 @@ __appname__ = "FORD"
 __author__ = "Chris MacMackin"
 __credits__ = ["Balint Aradi", "Iain Barrass", "Izaak Beekman",
                "Jérémie Burgalat", "David Dickinson",
-               "Gavin Huttley", "Harald Klimach", "Ibarrass-qmul",
+               "Gavin Huttley", "Harald Klimach",
                "Nick R. Papior", "Marco Restelli", "Schildkroete23",
                "Stephen J. Turnbull", "Jacob Williams", "Stefano Zhagi"]
 __license__ = "GPLv3"
