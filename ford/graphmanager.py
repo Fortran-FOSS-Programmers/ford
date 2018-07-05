@@ -25,6 +25,7 @@
 
 from __future__ import print_function
 import os
+import sys
 import time
 from multiprocessing import Pool
 
@@ -80,7 +81,7 @@ class GraphManager(object):
             self.graph_objs.append(obj)
         
     def graph_all(self):
-        for obj in tqdm(iter(self.graph_objs), total=len(self.graph_objs), unit=''):
+        for obj in tqdm(iter(self.graph_objs), file=sys.stdout, total=len(self.graph_objs), unit=''):
             if isinstance(obj,FortranModule):
                 obj.usesgraph = ford.graphs.UsesGraph(obj,self.webdir)
                 obj.usedbygraph = ford.graphs.UsedByGraph(obj,self.webdir)
