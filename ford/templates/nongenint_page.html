@@ -5,18 +5,18 @@
   {% import 'macros.html' as macros %}
   <div class="row">
     <h1>{{ interface.name }}
-	 <small>{% if interface.abstract -%}Abstract {% endif %}Interface</small>
+   <small>{% if interface.abstract -%}Abstract {% endif %}Interface</small>
     {% if interface.meta['deprecated'] and interface.meta['deprecated'].lower() == 'true' %}
     <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
     {% if interface.abstract %}
     {{
-    macros.info_bar(interface.name,interface.meta,project_url,interface.hierarchy,interface.lines_description(project.absint_lines))
+    macros.info_bar(interface.name,interface.meta,incl_src,project_url,interface.hierarchy,interface.lines_description(project.absint_lines))
     }}
     {% else %}
     {{
-    macros.info_bar(interface.name,interface.meta,project_url,interface.hierarchy,interface.lines_description(project.proc_lines,obj='proc'))
+    macros.info_bar(interface.name,interface.meta,incl_src,project_url,interface.hierarchy,interface.lines_description(project.proc_lines,obj='proc'))
     }}
     {% endif %}
   </div>
@@ -35,20 +35,20 @@
     {% if interface.callsgraph %}
     <div class="panel panel-default">
       <div class="panel-heading">
-	<h3 class="panel-title">Calls</h3>
+  <h3 class="panel-title">Calls</h3>
       </div>
       <div class="panel-body">
-	{{ interface.callsgraph }}
+  {{ interface.callsgraph }}
       </div>
     </div>
      {% endif %}
      {% if interface.calledbygraph %}
     <div class="panel panel-default">
       <div class="panel-heading">
-	<h3 class="panel-title">Called by</h3>
+  <h3 class="panel-title">Called by</h3>
       </div>
       <div class="panel-body">
-	{{ interface.calledbygraph }}
+  {{ interface.calledbygraph }}
       </div>
     </div>
      {% endif %}

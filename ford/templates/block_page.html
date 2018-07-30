@@ -6,10 +6,10 @@
     <h1>{{ blockdat.name }} 
     <small>Block Data</small>
     {% if blockdat.meta['deprecated'] and blockdat.meta['deprecated'].lower() == 'true' %}
-	 <span class="label label-danger depwarn">Deprecated</span>
+    <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
-    {{ macros.info_bar(blockdat.name,blockdat.meta,project_url,blockdat.hierarchy,blockdat.lines_description(project.block_lines)) }}
+    {{ macros.info_bar(blockdat.name,blockdat.meta,incl_src,project_url,blockdat.hierarchy,blockdat.lines_description(project.block_lines)) }}
   </div>
   
   <div class="row">
@@ -53,11 +53,11 @@
     {% if blockdat.types|length > 0 %}
     <section>
      <h2>Derived Types</h2>
-	 {% for type in blockdat.types %}
-	   {{ macros.type_summary(type) }}
+   {% for type in blockdat.types %}
+     {{ macros.type_summary(type) }}
      {% endfor %}
     </section>
-	<br>
+  <br>
     {% endif %}
     
     </div>

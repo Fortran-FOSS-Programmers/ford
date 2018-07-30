@@ -6,10 +6,10 @@
     <h1>{{ src.name }}
     <small>Source File</small>
     {% if src.meta['deprecated'] and src.meta['deprecated'].lower() == 'true' %}
-	 <span class="label label-danger depwarn">Deprecated</span>
+   <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
-    {{ macros.info_bar(src.name,src.meta,project_url,src.hierarchy,src.lines_description(project.file_lines)) }}
+    {{ macros.info_bar(src.name,src.meta,incl_src,project_url,src.hierarchy,src.lines_description(project.file_lines)) }}
   </div>
   <div class="row">
     <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
@@ -21,20 +21,20 @@
     {% if src.efferentgraph %}
     <div class="panel panel-default">
       <div class="panel-heading">
-	<h3 class="panel-title">This file depends on</h3>
+  <h3 class="panel-title">This file depends on</h3>
       </div>
       <div class="panel-body">
-	{{ src.efferentgraph }}
+  {{ src.efferentgraph }}
       </div>
     </div>
     {% endif %}
       {% if src.afferentgraph %}
     <div class="panel panel-default">
       <div class="panel-heading">
-	<h3 class="panel-title">Files dependent on this one</h3>
+  <h3 class="panel-title">Files dependent on this one</h3>
       </div>
       <div class="panel-body">
-	{{ src.afferentgraph }}
+  {{ src.afferentgraph }}
       </div>
     </div>
       {% endif %}
