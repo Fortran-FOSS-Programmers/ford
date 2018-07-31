@@ -81,6 +81,7 @@ LICENSES = { 'by': '<a rel="license" href="http://creativecommons.org/licenses/b
              'opl': '<a rel="license" href="http://opencontent.org/openpub/">Open Publication License</a>',
              'pdl': '<a rel="license" href="http://www.openoffice.org/licenses/PDL.html">Public Documentation License</a>',
              'bsd': '<a rel="license" href="http://www.freebsd.org/copyright/freebsd-doc-license.html">FreeBSD Documentation License</a>',
+             'isc': '<a rel="license" href="https://opensource.org/licenses/ISC">ISC (Internet Systems Consortium) License</a>',
              '': ''
            }
 
