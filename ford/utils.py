@@ -342,6 +342,19 @@ def external(project, make=False, path='.'):
                         extDict[attrib][key] = extItem
         return extDict
 
+    def modules_from_local(url):
+        '''
+        Get module information from an external project but on the
+        local file system.
+        Uses the io module to work in both, Python 2 and 3.
+        '''
+        from io import open
+        with open(os.path.join(url, 'modules.json'),
+                  mode = 'r',
+                  encoding = 'utf-8' ) as extfile:
+            extModules = json.loads(extfile.read())
+        return extModules
+
     def dict2obj(extDict, url, parent=None):
         '''
         Converts a dictionary to an object.
@@ -409,8 +422,7 @@ def external(project, make=False, path='.'):
                     extModules = json.loads(urlopen(
                         urljoin(url, 'modules.json')).read().decode('utf8'))
                 else:
-                    with open(os.path.join(url, 'modules.json'), mode = 'r') as extfile:
-                        extModules = json.loads(extfile.read().decode('utf8'))
+                    extModules = modules_from_local(url)
             except:
                 extModules = []
                 print('Could not open external URL: {}.'.format(url))
