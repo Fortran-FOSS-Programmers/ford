@@ -43,7 +43,7 @@ from pygments.formatters import HtmlFormatter
 import ford.reader
 import ford.utils
 
-VAR_TYPE_STRING = "^integer|real|double\s*precision|character|complex|logical|type|class|procedure|enumerator"
+VAR_TYPE_STRING = "^integer|real|double\s*precision|character|double\s*complex|logical|type|class|procedure|enumerator"
 VARKIND_RE = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
 KIND_RE = re.compile("kind\s*=\s*",re.IGNORECASE)
 LEN_RE = re.compile("len\s*=\s*",re.IGNORECASE)
@@ -53,6 +53,7 @@ ASSIGN_RE = re.compile("(\w+\s*(?:\([^=]*\)))\s*=(?!>)(?:\s*([^\s]+))?")
 POINT_RE = re.compile("(\w+\s*(?:\([^=>]*\)))\s*=>(?:\s*([^\s]+))?")
 EXTENDS_RE = re.compile("extends\s*\(\s*([^()\s]+)\s*\)")
 DOUBLE_PREC_RE = re.compile("double\s+precision",re.IGNORECASE)
+DOUBLE_CMPLX_RE = re.compile("double\s+complex",re.IGNORECASE)
 QUOTES_RE = re.compile("\"([^\"]|\"\")*\"|'([^']|'')*'",re.IGNORECASE)
 PARA_CAPTURE_RE = re.compile("<p>.*?</p>",re.IGNORECASE|re.DOTALL)
 COMMA_RE = re.compile(",(?!\s)")
@@ -77,8 +78,8 @@ INTRINSICS = ['abort','abs','abstract','access','achar','acos','acosh','adjustl'
               'contiguous','continue','cos','cosh','count','cpu_time','critical',
               'cshift','cycle','data','ctime','dabs','date_and_time','dble',
               'dcmplx','deallocate','deferred','digits','dim','dimension','do',
-              'while','dlog','dlog10','dmax1','dmin1',
-              'dot_product','double precision','dprod','dreal','dshiftl','dshiftr',
+              'dlog','dlog10','dmax1','dmin1',
+              'dot_product','double complex','double precision','dprod','dreal','dshiftl','dshiftr',
               'dsqrt','dtime','elemental','else','else if','elseif','elsewhere',
               'end','end associate','end block','end block data','end critical',
               'end do','end enum','end forall','end function','end if',
@@ -512,7 +513,7 @@ class FortranContainer(FortranBase):
     CALL_RE = re.compile("(?:^|[^a-zA-Z0-9_% ]\s*)(\w+)(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
     SUBCALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
 
-    VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
+    VARIABLE_STRING = "^(integer|real|double\s*precision|character|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
 
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
@@ -2306,6 +2307,7 @@ def parse_type(string,capture_strings,settings):
 
     vartype = match.group().lower()
     if DOUBLE_PREC_RE.match(vartype): vartype = "double precision"
+    if DOUBLE_CMPLX_RE.match(vartype): vartype = "double complex"
     rest = string[match.end():].strip()
     kindstr = ford.utils.get_parens(rest)
     rest = rest[len(kindstr):].strip()
