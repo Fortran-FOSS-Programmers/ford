@@ -31,7 +31,8 @@ import os.path
 NOTE_TYPE = {'note':'info',
              'warning':'warning',
              'todo':'success',
-             'bug':'danger'}
+             'bug':'danger',
+             'history':'history'}
 NOTE_RE = [re.compile(r"@({})\s*(((?!@({})).)*?)@end\1\s*(</p>)?".format(note,
            '|'.join(NOTE_TYPE.keys())), re.IGNORECASE|re.DOTALL) for note in NOTE_TYPE] \
         + [re.compile(r"@({})\s*(.*?)\s*</p>".format(note),
