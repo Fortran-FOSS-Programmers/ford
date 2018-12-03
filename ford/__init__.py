@@ -161,7 +161,7 @@ def initialize():
                'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar','mathjax_config','parallel',
-               'revision', 'fixed_length_limit']
+               'revision', 'fixed_length_limit', 'encoding']
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
@@ -203,6 +203,7 @@ def initialize():
                 'coloured_edges':      'false',
                 'parallel':            ncpus,
                 'fixed_length_limit':  'true',
+                'encoding':            'utf-8'
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
