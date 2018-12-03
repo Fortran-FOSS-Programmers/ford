@@ -786,7 +786,7 @@ class FortranContainer(FortranBase):
                     if callval.lower() not in self.calls and callval.lower() not in INTRINSICS:
                         self.calls.append(callval.lower())
                 else:
-                    raise ("Found procedure call in {}".format(type(self).__name__[7:].upper()))
+                    raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
 
 
         if not isinstance(self,FortranSourceFile):
@@ -1042,15 +1042,16 @@ class FortranSourceFile(FortranContainer):
         self.hierarchy = []
         self.obj = 'sourcefile'
         self.display = settings['display']
+        self.encoding = kwargs.get("encoding",True)
 
         source = ford.reader.FortranReader(self.path,settings['docmark'],
                     settings['predocmark'],settings['docmark_alt'],
                     settings['predocmark_alt'],fixed,
                     settings['fixed_length_limit'].lower()=='true',preprocessor,
-                    settings['macro'],settings['include'])
+                    settings['macro'],settings['include'], settings['encoding'])
 
         FortranContainer.__init__(self,source,"")
-        readobj = open(self.path,'r')
+        readobj = open(self.path,'r', encoding=settings['encoding'])
         self.raw_src = readobj.read()
         if self.fixed:
             self.src = highlight(self.raw_src,FortranFixedLexer(),
@@ -2115,7 +2116,7 @@ class GenericSource(FortranBase):
         predocmark_alt = settings['predocmark_alt']
         self.path = filename.strip()
         self.name = os.path.basename(self.path)
-        with open(filename, 'r') as r:
+        with open(filename, 'r', encoding=settings['encoding']) as r:
             self.raw_src = r.read()
         #TODO: Get line numbers to display properly
         if self.lexer_str is None:
@@ -2149,7 +2150,7 @@ class GenericSource(FortranBase):
         self.doc = []
         prevdoc = False
         docalt = False
-        for line in open(filename, 'r'):
+        for line in open(filename, 'r', encoding=settings['encoding']):
             line = line.strip()
             if doc_alt_re:
                 match = doc_alt_re.match(line)
