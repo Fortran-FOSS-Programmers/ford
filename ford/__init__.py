@@ -110,6 +110,8 @@ def initialize():
     parser.add_argument("-m","--macro",action="append",help="preprocessor macro (and, optionally, its value) to be applied to files in need of preprocessing.")
     parser.add_argument("-w","--warn",dest='warn',action='store_true',
                         help="display warnings for undocumented items")
+    parser.add_argument("-f","--force",dest='force',action="store_true",
+                        help="continue to read file if fatal errors")
     parser.add_argument("--no-search",dest='search',action='store_false',
                         help="don't process documentation to produce a search feature")
     parser.add_argument("-q","--quiet",dest='quiet',action='store_true',
@@ -117,7 +119,7 @@ def initialize():
     parser.add_argument("-V", "--version", action="version",
                         version="{}, version {}".format(__appname__,__version__))
     parser.add_argument("--debug",dest="dbg",action="store_true",
-                        help="display traceback if fatal exception occurs")
+                        help="display traceback if fatal exception occurs and print faulty line")
     parser.add_argument("-I","--include",action="append",
                         help="any directories which should be searched for include files")
     # Get options from command-line
@@ -154,7 +156,7 @@ def initialize():
                'project_sourceforge','project_url','display','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
-               'incl_src',
+               'incl_src', 'force',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
                'graph_maxdepth', 'graph_maxnodes',
@@ -187,6 +189,7 @@ def initialize():
                 'preprocessor':        '',
                 'proc_internals':      'false',
                 'warn':                'false',
+                'force':               'false',
                 'quiet':               'false',
                 'search':              'true',
                 'lower':               'false',
@@ -213,6 +216,10 @@ def initialize():
         args.warn = 'true'
     else:
         del args.warn
+    if args.force:
+        args.force = 'true'
+    else:
+        del args.force
     if args.quiet:
         args.quiet = 'true'
     else:
