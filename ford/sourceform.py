@@ -221,7 +221,10 @@ class FortranBase(object):
         loc = self.get_dir()
         if loc:
             return outstr.format(self.base_url,loc,quote(self.ident))
-        elif isinstance(self,(FortranBoundProcedure,FortranCommon)):
+        elif (
+            isinstance(self,(FortranBoundProcedure,FortranCommon))
+            or isinstance(self, FortranVariable) and isinstance(self.parent, FortranType)
+        ):
             return self.parent.get_url() + '#' + self.anchor
         else:
             return None
