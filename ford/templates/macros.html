@@ -13,6 +13,9 @@
      {% if meta['license'] %}
     <li><i class="fa fa-legal"></i> {{ meta['license'] }}</li>
      {% endif %}
+     {% if meta['since'] %}
+    <li><i class="fa fa-history"></i> Since: {{ meta['since'] }}</li>
+     {% endif %}
      {% if meta['version'] %}
     <li><i class="fa fa-barcode"></i> {{ meta['version'] }}</li>
     {% endif %}
@@ -753,6 +756,9 @@
     {% endif %}
     {% if meta['license'] %}
     <dt>License</dt><dd>{{ meta['license'] }}</dd>
+    {% endif %}
+    {% if meta['since'] %}
+    <dt>Since</dt><dd>{{ meta['since'] }}</dd>
     {% endif %}
     {% if meta['version'] %}
     <dt>Version</dt><dd>{{ meta['version'] }}</dd>
