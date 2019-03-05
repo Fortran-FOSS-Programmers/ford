@@ -81,6 +81,7 @@ LICENSES = { 'by': '<a rel="license" href="http://creativecommons.org/licenses/b
              'opl': '<a rel="license" href="http://opencontent.org/openpub/">Open Publication License</a>',
              'pdl': '<a rel="license" href="http://www.openoffice.org/licenses/PDL.html">Public Documentation License</a>',
              'bsd': '<a rel="license" href="http://www.freebsd.org/copyright/freebsd-doc-license.html">FreeBSD Documentation License</a>',
+             'mit': '<a rel="license" href="https://opensource.org/licenses/">MIT</a>',
              '': ''
            }
 
@@ -322,6 +323,13 @@ def initialize():
             proj_data['preprocessor'] = preprocessor
     
     # Get correct license
+    # This add the ability to have custom license (custom|||license_name|||license_url)
+    if proj_data['license'].lower().startswith("custom"):
+        _t_proj_license = proj_data['license'].split("|||")
+        if len(_t_proj_license) == 3:
+            LICENSES[_t_proj_license[1].lower()] = '<a rel="license" href="'+_t_proj_license[2]+'">'+_t_proj_license[1]+"</a>"
+            proj_data['license'] = _t_proj_license[1]
+    
     try:
         proj_data['license'] = LICENSES[proj_data['license'].lower()]
     except KeyError:
