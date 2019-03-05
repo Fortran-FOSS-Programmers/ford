@@ -29,6 +29,8 @@ import re
 import os.path
 
 NOTE_TYPE = {'note':'info',
+             'since':'info',
+             'see': 'info',
              'warning':'warning',
              'todo':'success',
              'bug':'danger'}
