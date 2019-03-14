@@ -399,13 +399,13 @@ def main(proj_data,proj_docs,md):
     if 'page_dir' in proj_data:
         if 'page_dir_recursive' in proj_data:
             if proj_data['page_dir_recursive'].lower() == 'false':
-                page_dir_recursive = False
+                proj_data['page_dir_recursive'] = False
             else:
-                page_dir_recursive = True
+                proj_data['page_dir_recursive'] = True
                 if proj_data['page_dir_recursive'].lower() != 'true':
                     print("Warning: page_dir_recursive can only be 'true' or 'false'.")
         else:
-            page_dir_recursive = True
+            proj_data['page_dir_recursive'] = True
         page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md,proj_data)
         print()
     else:
