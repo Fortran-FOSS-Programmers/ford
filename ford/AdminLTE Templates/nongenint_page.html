@@ -1,0 +1,91 @@
+
+{% extends "base.html" %}
+{% block title %}{{ interface.name }} &ndash; {{ project }}{% endblock title %}
+{% block body %}
+  {% import 'macros.html' as macros %}
+  <div class="row">
+    <h1>{{ interface.name }}
+   <small>{% if interface.abstract -%}Abstract {% endif %}Interface</small>
+    {% if interface.meta['deprecated'] and interface.meta['deprecated'].lower() == 'true' %}
+    <span class="label label-danger depwarn">Deprecated</span>
+    {% endif %}
+    </h1>
+    {% if interface.abstract %}
+    {{
+    macros.info_bar(interface.name,interface.meta,incl_src,project_url,interface.hierarchy,interface.lines_description(project.absint_lines))
+    }}
+    {% else %}
+    {{
+    macros.info_bar(interface.name,interface.meta,incl_src,project_url,interface.hierarchy,interface.lines_description(project.proc_lines,obj='proc'))
+    }}
+    {% endif %}
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+    {{ macros.sidebar(project,interface) }}
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    {% set procedure = interface.procedure %}
+    {% if interface.doc or interface.callsgraph or interface.calledbygraph %}
+      <h2>{% if interface.abstract %}abstract {% endif %}interface</h2>
+      {{ interface.doc }}
+      <br>
+    {% if interface.callsgraph %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Calls</h3>
+      </div>
+      <div class="panel-body">
+  {{ interface.callsgraph }}
+      </div>
+    </div>
+     {% endif %}
+     {% if interface.calledbygraph %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Called by</h3>
+      </div>
+      <div class="panel-body">
+  {{ interface.calledbygraph }}
+      </div>
+    </div>
+     {% endif %}
+    {% if interface.calledbygraph or interface.callsgraph %}
+    <br>
+    {% endif %}
+      <h2>{{ macros.proc_line(procedure,False) }}</h2>
+    {% else %}
+      <h2>{% if interface.abstract %}abstract {% endif %}interface <br>
+      {{ macros.proc_line(procedure,False) }}</h2>    
+    {% endif %}
+
+    {{ macros.use_list(interface) }}
+
+    <h3>Arguments</h3>
+    {% if procedure.args|length > 0 %}
+      {{ macros.var_list(procedure.args,intent=True) }}
+    {% else %}
+      <em>None</em>
+    {% endif %}
+    {% if procedure.retvar %}
+    {% set var = procedure.retvar %}
+    {% set args = 0 %}
+    {% if var.kind %}{% set args = args + 1 %}{% endif %}
+    {% if var.strlen %}{% set args = args + 1 %}{% endif %}
+    {% if var.proto %}{% set args = args + 1 %}{% endif %}
+      <h3>Return Value <span class="anchor" id="{{ var.anchor }}"></span><small>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
+  {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {%- endif %}{%- endfor %}{{ var.dimension }}</small></h3>
+    {{ var.doc }}
+    {% endif %}
+    {% if procedure.doc %}
+    <h3>Description</h3>
+    {{ procedure.doc }}
+    {% endif %}
+    <br>
+
+ </div>
+</div>
+
+{% endblock body %}

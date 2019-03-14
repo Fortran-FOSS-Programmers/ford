@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}
+All Programs &ndash; {{ project }}
+{% endblock %}
+{% block body %}
+      <div class="row">
+        <div class="col-lg-12" id='text'>
+			 <h1>Programs</h1>
+			 <table class="table table-striped nostretch">
+			 <thead><tr><th>Program</th><th>Source File</th><th>Description</th></tr></thead>
+			 <tbody>
+			 {% for prog in project.programs|sort(attribute='name') %}
+			   <tr><td>{{ prog }}</td><td>{{ prog.parent }}</td><td>{{ prog.meta['summary'] }}</td></tr>
+			 {% endfor %}
+			 </tbody></table>
+        </div>
+      </div>
+{% endblock %}
