@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ interface.name }} &ndash; {{ project }}{% endblock title %}
+{% block body %}
+  {% import 'macros.html' as macros %}
+  <div class="row">
+    <h1>{{ interface.name }}
+   <small>Interface</small>
+    {% if interface.meta['deprecated'] and interface.meta['deprecated'].lower() == 'true' %}
+    <span class="label label-danger depwarn">Deprecated</span>
+    {% endif %}
+    </h1>
+    {{ macros.info_bar(interface.name,interface.meta,incl_src,project_url,interface.hierarchy,interface.lines_description(project.proc_lines,project.proc_lines,'proc')) }}
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      {{ macros.sidebar(project,interface) }}
+    </div>
+    
+    <div class="col-md-9" id='text'>
+      <h2>{{ interface.permission }} interface {{ interface.name }}</h2>
+   {{ interface.doc }}
+     {% if interface.callsgraph %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Calls</h3>
+      </div>
+      <div class="panel-body">
+  {{ interface.callsgraph }}
+      </div>
+    </div>
+     {% endif %}
+     {% if interface.calledbygraph %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Called by</h3>
+      </div>
+      <div class="panel-body">
+     {{ interface.calledbygraph }}
+      </div>
+    </div>
+     {% endif %}
+    {% if interface.doc or interface.callsgraph or interface.calledbygraph %}<br>{% endif %}
+
+     <section class="visible-xs visible-sm hidden-md">
+       {{ macros.content_list(interface,1) }}
+     </section>
+     <br class="visible-xs visible-sm hidden-md">
+     
+  {% if interface.functions|length > 0 %}
+   <h2>Functions</h2>
+   {% for proc in interface.functions %}
+    {{ macros.proc_entry(proc) }}
+   {% endfor %}
+     {% endif %}
+
+  {% if interface.subroutines|length > 0 %}
+   <h2>Subroutines</h2>
+   {% for proc in interface.subroutines %}
+    {{ macros.proc_entry(proc) }}
+   {% endfor %}
+     {% endif %}
+
+  {% if interface.modprocs|length > 0 %}
+   <h2>Module Procedures</h2>
+   {% for proc in interface.modprocs %}
+    {{ macros.proc_entry(proc.procedure) }}
+   {% endfor %}
+     {% endif %}
+
+ </div>
+</div>
+
+{% endblock body %}

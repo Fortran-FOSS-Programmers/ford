@@ -1,0 +1,55 @@
+{% extends "base.html" %}s
+{% block title %}{{ src.name }} &ndash; {{ project }}{% endblock title %}
+{% block body %}
+  {% import 'macros.html' as macros %}
+  <div class="row">
+    <h1>{{ src.name }}
+    <small>Source File</small>
+    {% if src.meta['deprecated'] and src.meta['deprecated'].lower() == 'true' %}
+   <span class="label label-danger depwarn">Deprecated</span>
+    {% endif %}
+    </h1>
+    {{ macros.info_bar(src.name,src.meta,incl_src,project_url,src.hierarchy,src.lines_description(project.file_lines)) }}
+  </div>
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+    {{ macros.sidebar(project,src) }}
+    </div>
+    <div class="col-md-9" id='text'>
+      {{ src.doc }}
+      <br>
+    {% if src.efferentgraph %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">This file depends on</h3>
+      </div>
+      <div class="panel-body">
+  {{ src.efferentgraph }}
+      </div>
+    </div>
+    {% endif %}
+      {% if src.afferentgraph %}
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Files dependent on this one</h3>
+      </div>
+      <div class="panel-body">
+  {{ src.afferentgraph }}
+      </div>
+    </div>
+      {% endif %}
+      {% if src.doc or src.efferentgraph or src.afferentgraph%}<br>{% endif %}
+
+    <section class="visible-xs visible-sm hidden-md">
+      {{ macros.content_list(src,1) }}
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+
+    <section>
+      <h2><span class="anchor" id="src"></span>Source Code</h2>
+    {{ src.src }}
+    </section>
+    </div>
+  </div>
+
+  {% endblock body %}

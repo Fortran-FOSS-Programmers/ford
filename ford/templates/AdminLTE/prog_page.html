@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}{% if program.name %}{{ program.name }}{% else %}unnamed{% endif %} &ndash; {{ project }}{% endblock title %}
+{% block body %}
+  {% import 'macros.html' as macros %}
+  <div class="row">
+    <h1>{% if program.name -%}{{ program.name }}{% else %}<em>unnamed</em>{% endif %}
+    <small>Program</small>
+    {% if program.meta['deprecated'] and program.meta['deprecated'].lower() == 'true' %}
+   <span class="label label-danger depwarn">Deprecated</span>
+    {% endif %}
+    </h1>
+    {{ macros.info_bar(program.name,program.meta,incl_src,project_url,program.hierarchy,program.lines_description(project.prog_lines)) }}
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+    {{ macros.sidebar(project,program) }}
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    {{ macros.use_list(program) }}
+    {{ program.doc }}
+    {% if program.callsgraph %}
+    <br>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Calls</h3>
+      </div>
+      <div class="panel-body">
+  {{ program.callsgraph }}
+      </div>
+    </div>
+     {% endif %}
+    {% if program.doc or program.callsgraph %}<br>{% endif %}
+
+     <section class="visible-xs visible-sm hidden-md">
+       {{ macros.content_list(program,1) }}
+     </section>
+     <br class="visible-xs visible-sm hidden-md">
+
+     {% if program.common|length > 0 %}
+     <section>
+       <h2>Common Blocks</h2>
+       {% for com in program.common %}
+       {{ macros.common_block(com) }}
+       {% endfor %}
+     </section>
+     <br>
+     <script>
+       $(function () {
+       $('[data-toggle="popover"]').popover()
+       })
+     </script>
+     {% endif %}
+
+    {% if program.variables|length > 0 %}
+    <section>
+    <h2>Variables</h2>
+    {{ macros.var_list(program.variables) }}
+    </section>
+    <br>
+    {% endif %}
+    
+    {% if program.enums|length > 0 %}
+    <section>
+    <h2>Enumerations</h2>
+    {% for enum in program.enums %}
+      {{ macros.enum_entry(enum) }}
+    {% endfor %}
+    </section>
+    <br>
+    {% endif %}
+    
+    {% if program.interfaces|length > 0 %}
+    <section>
+   <h2>Interfaces</h2>
+   {% for intr in program.interfaces %}
+     {{ macros.interface(intr) }}
+    {% endfor %}
+    </section>
+   <br>
+    {% endif %}
+    
+    {% if program.absinterfaces|length > 0 %}
+    <section>
+   <h2>Abstract Interfaces</h2>
+   {% for intr in program.absinterfaces %}
+     {{ macros.absinterface(intr) }}
+    {% endfor %}
+    </section>
+   <br>
+    {% endif %}
+
+    {% if program.types|length > 0 %}
+    <section>
+   <h2>Derived Types</h2>
+   {% for type in program.types %}
+     {{ macros.type_summary(type) }}
+    {% endfor %}
+    </section>
+   <br>
+    {% endif %}
+    
+    {% if program.functions|length > 0 %} 
+    <section>
+    <h2>Functions</h2>
+    {% for proc in program.functions %}
+    {{ macros.proc_entry(proc) }}
+    {% endfor %}
+    </section>
+    <br>
+    {% endif %}
+
+
+    {% if program.subroutines|length > 0 %}
+    <section>
+    <h2>Subroutines</h2>
+    {% for proc in program.subroutines %}
+    {{ macros.proc_entry(proc) }}
+    {% endfor %}
+    </section>    
+    {% endif %}
+    
+    {% if program.src %}
+    <section>
+    <h2 id="src">Source Code</h2>
+    {{ program.src }}
+    </section>
+    {% endif %}
+    
+    </div>
+  </div>
+
+  {% endblock body %}

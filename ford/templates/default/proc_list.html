@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}
+All Procedures &ndash; {{ project }}
+{% endblock %}
+{% block body %}
+      <div class="row">
+        <div class="col-lg-12" id='text'>
+			 <h1>Procedures</h1>
+			 <table class="table table-striped">
+			 <thead><tr><th>Procedure</th><th>Location</th><th>Procedure Type</th><th>Description</th></tr></thead>
+			 <tbody>
+			 {% for proc in project.procedures|sort(attribute='name') %}
+			   <tr><td>{{ proc }}</td><td>{{ proc.parent }}</td><td>{{ proc.proctype }}</td><td>{{ proc.meta['summary'] }}</td></tr>
+			 {% endfor %}
+			 </tbody></table>
+             {{ project.callgraph }}
+        </div>
+      </div>
+{% endblock %}

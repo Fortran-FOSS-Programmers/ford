@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} &ndash; {{ project }}{% endblock title %}
+{% block body %}
+  <div class="row">
+    <h1>{{ page.title }}</h1>
+    <div class="row">
+    <div class="col-lg-12">
+    <div class="well well-sm" style="min-height: 40px;">
+      <ul class="list-inline" style="margin-bottom:0px; display:inline">
+         {% if page.author %}
+        <li><i class="fa fa-pencil"></i> {{ page.author }}</li>
+         {% endif %}
+         {% if page.date %}
+        <li><i class="fa fa-calendar-o"></i> {{ page.date }}</li>
+         {% endif %}
+<!--
+        {% if page.subpages %}
+        <li><i class="fa fa-sitemap"></i> Subsections:</li>
+        {% for sub in page.subpages %}
+        <li>{{ sub }}</li>
+        {% endfor %}
+        {% endif %}
+-->
+      </ul>
+        <ol class="breadcrumb in-well">
+      {% for item in page.hierarchy %}
+         <li>{{ item }}</li>
+      {% endfor %}
+         <li class="active">{{ page.title }}</li>
+      </ol>
+    </div>
+    </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <div class="col-md-9 col-md-push-3" id='text'>
+      {{ page.contents }}
+    </div>
+    {% if pages.subpages %}
+    <div class="col-md-3 col-md-pull-9">
+      <hr class="visible-xs visible-sm">
+        <div class="well toc">
+          <ul class="nav nav-stacked nav-pills">
+            <li role="presentation" class="title{% if pages==page %} disabled{% endif %}">{{ pages }}</li>
+          </ul>
+          <hr>
+          <ul class="nav nav-stacked nav-pills">
+            {% for subpage in pages.subpages recursive %}
+            <li role="presentation"{% if subpage==page %} class="disabled"{% endif %}>
+            {{ subpage }}
+            {% if subpage.subpages %}
+            <ul class="nav nav-stacked nav-pills">
+              {{ loop(subpage.subpages) }}
+            </ul>
+            {% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+    </div>
+    {% endif %}
+  </div>
+{% endblock body %}
