@@ -137,6 +137,7 @@ INTRINSICS = ['abort','abs','abstract','access','achar','acos','acosh','adjustl'
               'write','xor','zabs']
 
 base_url = ''
+page_extension = ''
 
 class FortranBase(object):
     """
@@ -217,7 +218,7 @@ class FortranBase(object):
             return None
 
     def get_url(self):
-        outstr = "{0}/{1}/{2}.html"
+        outstr = "{0}/{1}/{2}." + page_extension
         loc = self.get_dir()
         if loc:
             return outstr.format(self.base_url,loc,quote(self.ident))
@@ -342,11 +343,11 @@ class FortranBase(object):
                 self.meta[key] = '\n'.join(self.meta[key])
         if hasattr(self,'num_lines'): self.meta['num_lines'] = self.num_lines
 
-        self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url)
+        self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url, page_extension)
 
         if 'summary' in self.meta:
             self.meta['summary'] = md.convert(self.meta['summary'])
-            self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url)
+            self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url, page_extension)
         elif PARA_CAPTURE_RE.search(self.doc):
             self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
         else:

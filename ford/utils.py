@@ -278,12 +278,13 @@ def sub_links(string,project):
     return string
 
 
-def sub_macros(string,base_url):
+def sub_macros(string,base_url,page_extension):
     '''
     Replaces macros in documentation with their appropriate values. These macros
     are used for things like providing URLs.
     '''
     macros = { '|url|': base_url,
+               '|page_extension|': page_extension,
                '|media|': os.path.join(base_url,'media'),
                '|page|': os.path.join(base_url,'page')
              }

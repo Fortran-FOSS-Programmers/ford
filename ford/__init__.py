@@ -21,8 +21,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 #  
-
-#  @Note: Do not use page_extension, it is being worked on.
+#  
 
 from __future__ import print_function
 from contextlib import contextmanager
@@ -152,12 +151,13 @@ def initialize():
                'project','author','author_description','author_pic',
                'summary','github','bitbucket','facebook','twitter',
                'google_plus','linkedin','email','website','project_github',
-               'project_bitbucket','project_website','doc_asset_url','project_download',
-               'project_sourceforge','project_url','display','version',
+               'project_bitbucket','project_website','doc_asset_url','doc_license',
+               'project_download','project_sourceforge','project_url',
+               'display','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes',
                'page_dir','page_dir_recursive', 'page_index', 'page_license',
-               'page_extension',
+               'page_extension','privacy_policy_link','terms_of_service_link',
                'incl_src',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
@@ -202,6 +202,7 @@ def initialize():
                 'graph_maxdepth':      '10000',
                 'graph_maxnodes':      '1000000000',
                 'license':             '',
+                'doc_license':         '',
                 'extra_filetypes':     [],
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': False,
@@ -332,17 +333,32 @@ def initialize():
     
     # Get correct license
     # This add the ability to have custom license (custom|||license_name|||license_url)
+    # Project_license should be different then document license.
+    # Most of the code use license as code's license. Thus, 'license' is code's license,
+    # and doc_license is document's license or site's license. doc_license
+    # is more like a copyright link for the website.
     if proj_data['license'].lower().startswith("custom"):
         _t_proj_license = proj_data['license'].split("|||")
         if len(_t_proj_license) == 3:
             LICENSES[_t_proj_license[1].lower()] = '<a rel="license" href="'+_t_proj_license[2]+'">'+_t_proj_license[1]+"</a>"
             proj_data['license'] = _t_proj_license[1]
-    
     try:
         proj_data['license'] = LICENSES[proj_data['license'].lower()]
     except KeyError:
         print('Warning: license "{}" not recognized.'.format(proj_data['license']))
         proj_data['license'] = ''
+    # doc_license
+    if proj_data['doc_license'].lower().startswith("custom"):
+        _t_proj_license = proj_data['doc_license'].split("|||")
+        if len(_t_proj_license) == 3:
+            LICENSES[_t_proj_license[1].lower()] = '<a rel="site_license" href="'+_t_proj_license[2]+'">'+_t_proj_license[1]+"</a>"
+            proj_data['doc_license'] = _t_proj_license[1]
+    try:
+        proj_data['doc_license'] = LICENSES[proj_data['doc_license'].lower()]
+    except KeyError:
+        print('Warning: license "{}" not recognized.'.format(proj_data['doc_license']))
+        proj_data['doc_license'] = ''
+    ford.sourceform.page_extension = proj_data['page_extension']
     # Return project data, docs, and the Markdown reader
     md.reset()
     md.Meta = {}
@@ -374,19 +390,19 @@ def main(proj_data,proj_docs,md):
     if proj_data['relative']: ford.sourceform.set_base_url('.')
     if 'summary' in proj_data:
         proj_data['summary'] = md.convert(proj_data['summary'])
-        proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url']),project)
+        proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url'],proj_data['page_extension']),project)
     if 'author_description' in proj_data:
         proj_data['author_description'] = md.convert(proj_data['author_description'])
-        proj_data['author_description'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url']),project)
-    proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url']),project)
+        proj_data['author_description'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url'],proj_data['page_extension']),project)
+    proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url'],proj_data['page_extension']),project)
     # Process any pages
     if 'page_dir' in proj_data:
         if 'page_dir_recursive' in proj_data:
-            if proj_data['page_dir_recursive'] == 'false':
+            if proj_data['page_dir_recursive'].lower() == 'false':
                 page_dir_recursive = False
             else:
                 page_dir_recursive = True
-                if proj_data['page_dir_recursive'] != 'true':
+                if proj_data['page_dir_recursive'].lower() != 'true':
                     print("Warning: page_dir_recursive can only be 'true' or 'false'.")
         else:
             page_dir_recursive = True
