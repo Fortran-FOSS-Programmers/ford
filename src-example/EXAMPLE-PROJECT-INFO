@@ -1,0 +1,37 @@
+project: faiNumber-Fortran
+license: custom|||MIT|||https://github.com/kevinhng86/faiNumber-Fortran/blob/v1/LICENSE
+doc_license: custom|||fai.host|||https://fai.host
+summary: A fast, flexible, and secure numerical library for Fortran.
+author: Khang Hoang Nguyen
+facebook: https://www.facebook.com/kevin.ng.142035
+email: kevin@fai.host
+version: 1.0.0.f
+year: 2019
+graph: true
+project_github: https://github.com/kevinhng86/faiNumber-Fortran
+coloured_edges: true
+src_dir: ./
+page_dir: ./
+page_dir_recursive: false
+page_index: .docGenIndex
+html_minify: true
+page_extension: html
+privacy_policy_link: https://lib.fai.host/privacy-policy/
+terms_of_service_link: https://lib.fai.host/terms-of-service/ 
+
+## Description
+
+This is an example of the project-info file so that new changes 
+can be observe.
+
+It is okay to have php code if the file extension is php. However,
+that php code must be in the template file and not in the md files.
+htmlmin seemed to work fine with php code, nonetheless, more thorough
+testing needed to study its behaviour.
+
+This two below can also be used. doc_asset_url is where all to support
+files(js, css, fonts) are.
+
+doc_asset_url: https://lib.fai.host/assets
+project_url: https://lib.fai.host/fortran/faiNumber/v1
+
