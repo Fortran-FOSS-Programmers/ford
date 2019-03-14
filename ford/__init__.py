@@ -21,7 +21,8 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 #  
-#  
+
+#  @Note: Do not use page_extension, it is being worked on.
 
 from __future__ import print_function
 from contextlib import contextmanager
