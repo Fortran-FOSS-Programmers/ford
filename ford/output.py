@@ -24,6 +24,7 @@
 #  
 
 from __future__ import print_function
+import htmlmin
 
 import sys
 import os
@@ -251,7 +252,8 @@ class BasePage(object):
     
     def writeout(self):
         out = open(self.outfile,'wb')
-        out.write(self.html.encode('utf8'))
+        if self.data['html_minify'].lower() == 'true': out.write(htmlmin.minify(self.html.encode('utf8'), True))
+        else: out.write(self.html.encode('utf8'))
         out.close()
     
     def render(self, data, proj, obj):

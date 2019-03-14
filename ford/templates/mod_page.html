@@ -98,7 +98,7 @@
     <section>
     <h2>Functions</h2>
     {% for proc in module.functions %}
-    {{ macros.proc_entry(proc) }}
+    {{ macros.proc_entry_code_title(proc) }}
     {% endfor %}
     </section>
     <br>
@@ -108,7 +108,7 @@
     <section>
     <h2>Subroutines</h2>
     {% for proc in module.subroutines %}
-    {{ macros.proc_entry(proc) }}
+    {{ macros.proc_entry_code_title(proc) }}
     {% endfor %}
     </section>    
     <br>
@@ -120,7 +120,7 @@
         <section>
         <h2>Module Functions</h2>
         {% for proc in module.modfunctions %}
-        {{ macros.proc_entry(proc) }}
+        {{ macros.proc_entry_code_title(proc) }}
         {% endfor %}
         </section>
         <br>
@@ -130,7 +130,7 @@
         <section>
         <h2>Module Subroutines</h2>
         {% for proc in module.modsubroutines %}
-        {{ macros.proc_entry(proc) }}
+        {{ macros.proc_entry_code_title(proc) }}
         {% endfor %}
         </section>
         <br>
@@ -140,7 +140,7 @@
         <section>
         <h2>Module Procedures</h2>
         {% for proc in module.modprocedures %}
-        {{ macros.proc_entry(proc) }}
+        {{ macros.proc_entry_code_title(proc) }}
         {% endfor %}
         </section>    
         {% endif %}

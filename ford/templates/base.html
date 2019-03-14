@@ -1,3 +1,6 @@
+{% if doc_asset_url|length == 0 %}
+    {% set doc_asset_url = project_url %}
+{% endif %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -14,15 +17,15 @@
 
     <title>{% block title %} {{ project }} {% endblock title %}</title>
 
-    <link href="{{ project_url }}/css/bootstrap.min.css" rel="stylesheet">
-    <link href="{{ project_url }}/css/pygments.css" rel="stylesheet">
-    <link href="{{ project_url }}/css/font-awesome.min.css" rel="stylesheet">
-    <link href="{{ project_url }}/css/local.css" rel="stylesheet">
+    <link href="{{ doc_asset_url }}/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ doc_asset_url }}/css/pygments.css" rel="stylesheet">
+    <link href="{{ doc_asset_url }}/css/font-awesome.min.css" rel="stylesheet">
+    <link href="{{ doc_asset_url }}/css/local.css" rel="stylesheet">
     {% if search|lower == 'true' %}
-    <link  href="{{ project_url }}/tipuesearch/tipuesearch.css" rel="stylesheet">
+    <link  href="{{ doc_asset_url }}/tipuesearch/tipuesearch.css" rel="stylesheet">
     {% endif %}
     {% if css %}
-    <link href="{{ project_url }}/css/user.css" rel="stylesheet">
+    <link href="{{ doc_asset_url }}/css/user.css" rel="stylesheet">
     {% endif %}
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
@@ -31,9 +34,17 @@
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
     
-    <script src="{{ project_url }}/js/jquery-2.1.3.min.js"></script>
-    <script src="{{ project_url }}/js/svg-pan-zoom.min.js"></script>
+    <script src="{{ doc_asset_url }}/js/jquery-2.1.3.min.js"></script>
+    <script src="{{ doc_asset_url }}/js/clipboard.min.js"></script>
+    <script src="{{ doc_asset_url }}/js/svg-pan-zoom.min.js"></script>
 
+    <!-- PRISMJS -->
+    {% if src %}
+      <link rel="stylesheet" href="{{ doc_asset_url }}/css/prism-c-fortran-bash-shell-makefile_autolink.css">
+    {% else %}
+      <link rel="stylesheet" href="{{ doc_asset_url }}/css/prism-c-fortran-bash-shell-makefile_autolink-keepmarkup.css">
+    {% endif %}
+    <!-- END PRISMJS -->
   </head>
 
   <body>
@@ -163,9 +174,9 @@
 <!--
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 -->
-    <script src="{{ project_url }}/js/bootstrap.min.js"></script>
+    <script src="{{ doc_asset_url }}/js/bootstrap.min.js"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="{{ project_url }}/js/ie10-viewport-bug-workaround.js"></script>
+    <script src="{{ doc_asset_url }}/js/ie10-viewport-bug-workaround.js"></script>
 
     <!-- MathJax JavaScript
     ================================================== -->
@@ -182,11 +193,35 @@
     {% endif %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     
+    <!-- tipue for each build is different should always be with the project url -->
     {% if search|lower == 'true' %}
     <script src="{{ project_url }}/tipuesearch/tipuesearch_content.js"></script>
     <script src="{{ project_url }}/tipuesearch/tipuesearch_set.js"></script>
     <script src="{{ project_url }}/tipuesearch/tipuesearch.js"></script>
     {% endif %}
+
+    <!-- This below is to support go to source line by #source-anything.(n)
+         where n is line number, and source-anything is any division with the 
+         id started as 'source-' and is existed on the page. -->
+    <script>
+    if ( window.location.hash ){
+        if ( window.location.hash.indexOf("source-") !== -1 ){
+            window.onload = function(){
+                var hash = window.location.hash;
+                window.location.hash = "";
+                window.location.hash = hash;
+            };
+        }
+    }
+    </script>
     
+    <!-- PRISMJS -->
+    {% if src %}
+      <script src="{{ doc_asset_url }}/js/prism-c-fortran-bash-shell-makefile_autolink.js"></script>
+    {% else %}
+      <script src="{{ doc_asset_url }}/js/prism-c-fortran-bash-shell-makefile_autolink-keepmarkup.js"></script>
+    {% endif %}
+    <!-- END PRISMJS -->
+
   </body>
 </html>

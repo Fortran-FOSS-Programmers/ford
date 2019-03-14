@@ -677,6 +677,15 @@
   </div>
 {% endmacro %}
 
+{% macro proc_entry_code_title(proc,code="lang-fortran") %}
+  <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="{{ proc.anchor }}"></span>
+      <pre><code class="{{ code }}">{{ proc_line(proc).strip() }}</code></pre></div>
+  <div class="panel-body">
+      {{ proc_summary(proc,False) }}
+  </div>
+  </div>
+{% endmacro %}
 
 {% macro use_list(obj) %}
   {% if obj.uses|length > 0 or (obj.ancestry and obj.ancestry|length >

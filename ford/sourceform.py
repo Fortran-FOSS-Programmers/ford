@@ -22,8 +22,8 @@
 #  MA 02110-1301, USA.
 #
 #
-
 from __future__ import print_function
+from markupsafe import escape
 
 import sys
 import re
@@ -1051,13 +1051,16 @@ class FortranSourceFile(FortranContainer):
 
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
-        self.raw_src = readobj.read()
-        if self.fixed:
-            self.src = highlight(self.raw_src,FortranFixedLexer(),
-                                 HtmlFormatter(lineanchors='ln', cssclass='hl'))
-        else:
-            self.src = highlight(self.raw_src,FortranLexer(),
-                                 HtmlFormatter(lineanchors='ln', cssclass='hl'))
+
+        self.src = '<pre class="lang-fortran line-numbers"><code id="source-file">' + str(escape(readobj.read())) + '</code></pre>'
+
+        #self.raw_src = readobj.read()
+        #if self.fixed:
+        #    self.src = highlight(self.raw_src,FortranFixedLexer(),
+        #                         HtmlFormatter(lineanchors='ln', cssclass='hl'))
+        #else:
+        #    self.src = highlight(self.raw_src,FortranLexer(),
+        #                         HtmlFormatter(lineanchors='ln', cssclass='hl'))
 
 class FortranModule(FortranCodeUnit):
     """

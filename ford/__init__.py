@@ -151,10 +151,12 @@ def initialize():
                'project','author','author_description','author_pic',
                'summary','github','bitbucket','facebook','twitter',
                'google_plus','linkedin','email','website','project_github',
-               'project_bitbucket','project_website','project_download',
+               'project_bitbucket','project_website','doc_asset_url','project_download',
                'project_sourceforge','project_url','display','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
-               'media_dir','favicon','warn','extra_vartypes','page_dir',
+               'media_dir','favicon','warn','extra_vartypes',
+               'page_dir','page_dir_recursive', 'page_index', 'page_license',
+               'page_extension',
                'incl_src',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
@@ -162,7 +164,7 @@ def initialize():
                'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar','mathjax_config','parallel',
-               'revision', 'fixed_length_limit']
+               'revision', 'fixed_length_limit', 'html_minify']
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
@@ -170,6 +172,7 @@ def initialize():
                 'output_dir':          './doc',
                 'project':             'Fortran Program',
                 'project_url':         '',
+                'doc_asset_url':       '',
                 'display':             ['public','protected'],
                 'year':                date.today().year,
                 'exclude':             [],
@@ -204,6 +207,10 @@ def initialize():
                 'coloured_edges':      'false',
                 'parallel':            ncpus,
                 'fixed_length_limit':  'true',
+                'page_index':          'index.md',
+                'page_license':        'LICENSE',
+                'page_extension':      'html',
+                'html_minify':         'false'
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
@@ -373,7 +380,16 @@ def main(proj_data,proj_docs,md):
     proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url']),project)
     # Process any pages
     if 'page_dir' in proj_data:
-        page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md)
+        if 'page_dir_recursive' in proj_data:
+            if proj_data['page_dir_recursive'] == 'false':
+                page_dir_recursive = False
+            else:
+                page_dir_recursive = True
+                if proj_data['page_dir_recursive'] != 'true':
+                    print("Warning: page_dir_recursive can only be 'true' or 'false'.")
+        else:
+            page_dir_recursive = True
+        page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md,proj_data)
         print()
     else:
         page_tree = None
