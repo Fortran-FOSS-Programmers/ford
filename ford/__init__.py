@@ -401,9 +401,9 @@ def main(proj_data,proj_docs,md):
             if proj_data['page_dir_recursive'].lower() == 'false':
                 proj_data['page_dir_recursive'] = False
             else:
-                proj_data['page_dir_recursive'] = True
                 if proj_data['page_dir_recursive'].lower() != 'true':
                     print("Warning: page_dir_recursive can only be 'true' or 'false'.")
+                proj_data['page_dir_recursive'] = True
         else:
             proj_data['page_dir_recursive'] = True
         page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md,proj_data)
