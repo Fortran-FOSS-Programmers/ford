@@ -1,6 +1,15 @@
 {% if doc_asset_url|length == 0 %}
     {% set doc_asset_url = path.join(project_url, 'assets') %}
 {% endif %}
+{% if not branding %}
+    {% set branding = project.name %}
+{% endif %}
+{% if not branding_short %}
+    {% set branding_short = branding[:3] %}
+{% endif %}
+{% if not branding_url %}
+    {% set branding_url = project_url %}
+{% endif %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -67,11 +76,11 @@
 
   <header class="main-header">
     <!-- Logo -->
-    <a href="{{ project_url }}" class="logo">
+    <a href="{{ branding_url }}" class="logo">
       <!-- mini logo for sidebar mini 50x50 pixels -->
-      <span class="logo-mini"><b>FAI</b></span>
+      <span class="logo-mini"><b>{{ branding_short }}</b></span>
       <!-- logo for regular state and mobile devices -->
-      <span class="logo-lg"><b>FAI</b>Fortran Library</span>
+      <span class="logo-lg">{{ branding }}</span>
     </a>
 
     <!-- Header Navbar: style can be found in header.less -->
