@@ -165,7 +165,10 @@ def initialize():
                'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar','mathjax_config','parallel',
-               'revision', 'fixed_length_limit', 'html_minify']
+               'revision', 'fixed_length_limit', 'html_minify',
+               'branding', 'branding_short', 'branding_url', 'breadcrumb_pre',
+               'copy_assets'
+               ]
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
@@ -212,7 +215,8 @@ def initialize():
                 'page_index':          'index.md',
                 'page_license':        'LICENSE',
                 'page_extension':      'html',
-                'html_minify':         'false'
+                'html_minify':         'false',
+                'copy_assets':         'true'
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
@@ -401,9 +405,9 @@ def main(proj_data,proj_docs,md):
             if proj_data['page_dir_recursive'].lower() == 'false':
                 proj_data['page_dir_recursive'] = False
             else:
+                proj_data['page_dir_recursive'] = True
                 if proj_data['page_dir_recursive'].lower() != 'true':
                     print("Warning: page_dir_recursive can only be 'true' or 'false'.")
-                proj_data['page_dir_recursive'] = True
         else:
             proj_data['page_dir_recursive'] = True
         page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md,proj_data)
