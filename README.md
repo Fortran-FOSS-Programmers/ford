@@ -80,7 +80,7 @@ If you would like to install the latest development (master) branch from github,
 simply add the `--HEAD` flag: `brew install --HEAD FORD`
 
 ## Documentation
-More complete documentation can be found in the [project wiki](https://github.com/cmacmackin/ford/wiki).
+More complete documentation can be found in the [project wiki](https://github.com/Fortran-FOSS-Programmers/ford/wiki).
 
 ## License
 This program is free software: you can redistribute it and/or modify
