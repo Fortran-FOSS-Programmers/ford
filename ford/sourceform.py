@@ -407,7 +407,7 @@ class FortranBase(object):
                 self.procedure.markdown(md, project)
         return
 
-    
+
     def sort(self):
         '''
         Sorts components of the object.
@@ -443,7 +443,7 @@ class FortranBase(object):
         if hasattr(self,'args'):
             #sort_items(self.args,args=True)
             pass
-    
+
 
     def make_links(self, project):
         """
@@ -765,31 +765,32 @@ class FortranContainer(FortranBase):
                     self.uses.append(self.USE_RE.match(line).groups())
                 else:
                     raise Exception("Found USE statemnt in {}".format(type(self).__name__[7:].upper()))
-            elif self.CALL_RE.search(line):
-                if hasattr(self,'calls'):
-                    # Arithmetic GOTOs looks little like function references:
-                    # "goto (1, 2, 3) i".  But even in free-form source we're
-                    # allowed to use a space: "go to (1, 2, 3) i".  Our CALL_RE
-                    # expression doesn't catch that so we first rule such a
-                    # GOTO out.
-                    if not self.ARITH_GOTO_RE.search(line):
-                        callvals = self.CALL_RE.findall(line)
-                        for val in callvals:
-                            if val.lower() not in self.calls and val.lower() not in INTRINSICS:
-                                self.calls.append(val.lower())
-                else:
-                    pass
-                    # Not raising an error here as too much possibility that something
-                    # has been misidentified as a function call
-                    #~ raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
-            elif self.SUBCALL_RE.match(line):
-                # Need this to catch any subroutines called without argument lists
-                if hasattr(self,'calls'):
-                    callval = self.SUBCALL_RE.match(line).group(1)
-                    if callval.lower() not in self.calls and callval.lower() not in INTRINSICS:
-                        self.calls.append(callval.lower())
-                else:
-                    raise ("Found procedure call in {}".format(type(self).__name__[7:].upper()))
+            else:
+                if self.CALL_RE.search(line):
+                    if hasattr(self,'calls'):
+                        # Arithmetic GOTOs looks little like function references:
+                        # "goto (1, 2, 3) i".  But even in free-form source we're
+                        # allowed to use a space: "go to (1, 2, 3) i".  Our CALL_RE
+                        # expression doesn't catch that so we first rule such a
+                        # GOTO out.
+                        if not self.ARITH_GOTO_RE.search(line):
+                            callvals = self.CALL_RE.findall(line)
+                            for val in callvals:
+                                if val.lower() not in self.calls and val.lower() not in INTRINSICS:
+                                    self.calls.append(val.lower())
+                    else:
+                        pass
+                        # Not raising an error here as too much possibility that something
+                        # has been misidentified as a function call
+                        #~ raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
+                if self.SUBCALL_RE.match(line):
+                    # Need this to catch any subroutines called without argument lists
+                    if hasattr(self,'calls'):
+                        callval = self.SUBCALL_RE.match(line).group(1)
+                        if callval.lower() not in self.calls and callval.lower() not in INTRINSICS:
+                            self.calls.append(callval.lower())
+                    else:
+                        raise ("Found procedure call in {}".format(type(self).__name__[7:].upper()))
 
 
         if not isinstance(self,FortranSourceFile):
