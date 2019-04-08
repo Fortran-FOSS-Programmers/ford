@@ -7,9 +7,9 @@ refers to crossing a river (or other body of water). It does not, in
 this context, refer to any company or individual associated with cars.
 
 Ford was written due to
-`Doxygen <http://www.stack.nl/~dimitri/doxygen/>`__'s poor handling of
+`Doxygen <http://www.doxygen.org/>`__'s poor handling of
 Fortran and the lack of comparable alternatives.
-`ROBODoc <http://rfsber.home.xs4all.nl/Robo/index.html>`__ can't
+`ROBODoc <https://rfsber.home.xs4all.nl/Robo/index.html>`__ can't
 actually extract any information from the source code and just about any
 other automatic documentation software I found was either proprietary,
 didn't work very well for Fortran, or was limited in terms of how it
@@ -38,7 +38,7 @@ Current features include:
 -  the ability to extract documentation from comments in the source
    code.
 -  LaTeX support in documentation using
-   `MathJax <http://www.mathjax.org/>`__.
+   `MathJax <https://www.mathjax.org/>`__.
 -  searchable documentation, using `Tipue
    Search <http://www.tipue.com/search/>`__.
 -  author description and social media (including Github!) links.
@@ -50,7 +50,7 @@ Current features include:
 -  Bootstrap CSS for the documentation, making it both functional and
    pretty.
 -  configurable settings.
--  ability to create a hiearchical set of pages containing general information,
+-  ability to create a hierarchical set of pages containing general information,
    not associated with any particular part of the source code.
 -  display an entry for non-Fortran source files with file-level documentation
    and syntax highlighted code.
@@ -76,7 +76,7 @@ somewhere in your home directory.
 If you prefer, you can install all of those dependencies manually and clone
 FORD from Github. Then place FORD somewhere in your PYTHONPATH.
 
-Alternatively, FORD is available through the `Homebrew <http://brew.sh>`__ package
+Alternatively, FORD is available through the `Homebrew <https://brew.sh>`__ package
 manager for Mac OS X. To update Homebrew and install FORD, run these commands in
 a terminal:
 
@@ -92,7 +92,7 @@ simply add the :code:`--HEAD` flag: :code:`brew install --HEAD FORD`
 Documentation
 -------------
 
-More complete documentation can be found in the `project wiki <ttps://github.com/cmacmackin/ford/wiki>`__.
+More complete documentation can be found in the `project wiki <https://github.com/Fortran-FOSS-Programmers/ford/wiki>`__.
 
 
 License
@@ -109,7 +109,7 @@ but **without any warrenty**; without even the implied warranty of
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see the `GNU website <http://www.gnu.org/licenses/gpl.htm>`__.
+along with this program.  If not, see the `GNU website <https://www.gnu.org/licenses/gpl.html>`__.
 
 Documents produced by FORD are derivative works derived from the input used in their production;
 they are not affected by this license.
