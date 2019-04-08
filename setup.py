@@ -48,7 +48,7 @@ setup(
     ],
   install_requires = ['markdown','markdown-include >= 0.5.1','toposort',
                       'jinja2 >= 2.1','pygments','beautifulsoup4>=4.5.1',
-                      'graphviz','md-environ', 'tqdm'],
+                      'graphviz','md-environ', 'tqdm', 'markupsafe', 'htmlmin'],
   entry_points = {
     'console_scripts': [
         'ford=ford:run',

@@ -22,8 +22,8 @@
 #  MA 02110-1301, USA.
 #
 #
-
 from __future__ import print_function
+from markupsafe import escape
 
 import sys
 import re
@@ -137,6 +137,7 @@ INTRINSICS = ['abort','abs','abstract','access','achar','acos','acosh','adjustl'
               'write','xor','zabs']
 
 base_url = ''
+page_extension = ''
 
 class FortranBase(object):
     """
@@ -217,7 +218,7 @@ class FortranBase(object):
             return None
 
     def get_url(self):
-        outstr = "{0}/{1}/{2}.html"
+        outstr = "{0}/{1}/{2}." + page_extension
         loc = self.get_dir()
         if loc:
             return outstr.format(self.base_url,loc,quote(self.ident))
@@ -302,7 +303,7 @@ class FortranBase(object):
         if len(self.doc) > 0:
             if len(self.doc) == 1 and ':' in self.doc[0]:
                 words = self.doc[0].split(':')[0].strip()
-                if words.lower() not in ['author','date','license','version','category','summary','deprecated','display','graph']:
+                if words.lower() not in ['author','date','license','version','since','category','summary','deprecated','display','graph']:
                     self.doc.insert(0,'')
                 self.doc.append('')
             self.doc = '\n'.join(self.doc)
@@ -342,11 +343,11 @@ class FortranBase(object):
                 self.meta[key] = '\n'.join(self.meta[key])
         if hasattr(self,'num_lines'): self.meta['num_lines'] = self.num_lines
 
-        self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url)
+        self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url, page_extension)
 
         if 'summary' in self.meta:
             self.meta['summary'] = md.convert(self.meta['summary'])
-            self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url)
+            self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url, page_extension)
         elif PARA_CAPTURE_RE.search(self.doc):
             self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
         else:
@@ -1051,13 +1052,16 @@ class FortranSourceFile(FortranContainer):
 
         FortranContainer.__init__(self,source,"")
         readobj = open(self.path,'r')
-        self.raw_src = readobj.read()
-        if self.fixed:
-            self.src = highlight(self.raw_src,FortranFixedLexer(),
-                                 HtmlFormatter(lineanchors='ln', cssclass='hl'))
-        else:
-            self.src = highlight(self.raw_src,FortranLexer(),
-                                 HtmlFormatter(lineanchors='ln', cssclass='hl'))
+
+        self.src = '<pre class="lang-fortran line-numbers"><code id="source-file">' + str(escape(readobj.read())) + '</code></pre>'
+
+        #self.raw_src = readobj.read()
+        #if self.fixed:
+        #    self.src = highlight(self.raw_src,FortranFixedLexer(),
+        #                         HtmlFormatter(lineanchors='ln', cssclass='hl'))
+        #else:
+        #    self.src = highlight(self.raw_src,FortranLexer(),
+        #                         HtmlFormatter(lineanchors='ln', cssclass='hl'))
 
 class FortranModule(FortranCodeUnit):
     """

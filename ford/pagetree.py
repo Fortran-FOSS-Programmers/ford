@@ -35,7 +35,7 @@ class PageNode(object):
     
     base_url = '..'
     
-    def __init__(self,md,path,parent):
+    def __init__(self,md,path,parent,extension,pageType='normal',):
         print("Reading page {}".format(os.path.relpath(path)))
         page = open(path,'r')
         text = page.read()
@@ -45,7 +45,8 @@ class PageNode(object):
         if 'title' in md.Meta:
             self.title  = '\n'.join(md.Meta['title'])
         else:
-            raise Exception('Page {} has no title metadata'.format(path))
+            self.title  = '\n' + os.path.split(path)[1]
+            #raise Exception('Page {} has no title metadata'.format(path))
         if 'author' in md.Meta:
             self.author = '\n'.join(md.Meta['author'])
         else:
@@ -64,7 +65,14 @@ class PageNode(object):
         else:
             self.hierarchy = []
 
-        self.filename = os.path.split(path)[1][:-3]
+        if pageType == 'index':
+            self.filename = 'index'
+        elif pageType == 'license':
+            self.filename = 'LICENSE'
+        else: 
+            self.filename = os.path.split(path)[1][:-3]
+        self.extension = extension
+
         if parent:
             self.topdir   = parent.topdir
             self.location = os.path.relpath(os.path.split(path)[0],self.topdir)
@@ -77,7 +85,7 @@ class PageNode(object):
     def __str__(self):
         #~ urlstr = "<a href='{0}/page/{1}/{2}.html'>{3}</a>"
         urlstr = "<a href='{0}'>{1}</a>"
-        url = urlstr.format(os.path.join(self.base_url,'page',self.location,self.filename+'.html'),self.title)
+        url = urlstr.format(os.path.join(self.base_url,'page',self.location,self.filename+'.'+self.extension),self.title)
         return url
     
     def __iter__(self):
@@ -86,38 +94,51 @@ class PageNode(object):
             retlist.extend(list(sp.__iter__()))
         return iter(retlist)
 
-    
-def get_page_tree(topdir,md,parent=None):
+def get_page_tree(topdir,md,data,parent=None):
     # look for files within topdir
     filelist = sorted(os.listdir(topdir))
-    if 'index.md' in filelist:
+    if data['page_index'] in filelist:
         # process index.md
         try:
-            node = PageNode(md,os.path.join(topdir,'index.md'),parent)
+            node = PageNode(md,os.path.join(topdir,data['page_index']),parent,data['page_extension'],'index')
         except Exception as e:
-            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(topdir,'index.md')),e.args[0]))
+            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(topdir,data['page_index'])),e.args[0]))
             return None
-        filelist.remove('index.md')
+        filelist.remove(data['page_index'])
+        # If page index is used, and if there is another index.md, that file will
+        # not be parsed.
+        if 'index.md' in filelist: filelist.remove('index.md')
     else:
-        print('Warning: No index.md file in directory {}'.format(topdir))
+        print('Warning: No '+data['page_index']+' file in directory {}'.format(topdir))
         return None
+
+    if data['page_license'] in filelist:
+        # process LICENSE
+        try:
+            node.subpages.append(PageNode(md,os.path.join(topdir,data['page_license']),node,data['page_extension'],'license'))
+        except Exception as e:
+            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(topdir,data['page_license'])),e.args[0]))
+        filelist.remove(data['page_license'])
+        if 'LICENSE.md' in filelist: filelist.remove('LICENSE.md')
+        
     for name in filelist:
         if name[0] != '.' and name[-1] != '~':
             if os.path.isdir(os.path.join(topdir,name)):
-                # recurse into subdirectories
-                subnode = get_page_tree(os.path.join(topdir,name),md,node)
-                if subnode: node.subpages.append(subnode)
+                if data['page_dir_recursive'] == True:
+                    # recurse into subdirectories
+                    subnode = get_page_tree(os.path.join(topdir,name),md,data,node)
+                    if subnode: node.subpages.append(subnode)
             elif name[-3:] == '.md':
                 # process subpages
                 try:
-                    node.subpages.append(PageNode(md,os.path.join(topdir,name),node))
+                    node.subpages.append(PageNode(md,os.path.join(topdir,name),node,data['page_extension']))
                 except Exception as e:
                     print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(topdir,name)),e.args[0]))
                     continue
             else:
                 node.files.append(name)
     return node
-    
+
 
 def set_base_url(url):
     PageNode.base_url = url

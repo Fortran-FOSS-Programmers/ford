@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}
+All Block Data Units &ndash; {{ project }}
+{% endblock %}
+{% block body %}
+      <div class="row">
+        <div class="col-lg-12" id='text'>
+			 <h1>Block Data Units</h1>
+			 <table class="table table-striped nostretch">
+			 <thead><tr><th>Block Data Unit</th><th>Source File</th><th>Description</th></tr></thead>
+			 <tbody>
+			 {% for block in project.blockdata|sort(attribute='name') %}
+			   <tr><td>{{ block }}</td><td>{{ block.parent }}</td><td>{{ block.meta['summary'] }}</td></tr>
+			 {% endfor %}
+			 </tbody></table>
+        </div>
+      </div>
+{% endblock %}

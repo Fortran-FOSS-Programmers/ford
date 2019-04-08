@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ blockdat.name|striptags }} &ndash; {{ project }}{% endblock title %}
+{% block body %}
+  {% import 'macros.html' as macros %}
+  <div class="row">
+    <h1>{{ blockdat.name }} 
+    <small>Block Data</small>
+    {% if blockdat.meta['deprecated'] and blockdat.meta['deprecated'].lower() == 'true' %}
+    <span class="label label-danger depwarn">Deprecated</span>
+    {% endif %}
+    </h1>
+    {{ macros.info_bar(blockdat.name,blockdat.meta,incl_src,project_url,blockdat.hierarchy,blockdat.lines_description(project.block_lines)) }}
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+    {{ macros.sidebar(project,blockdat) }}
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    {{ macros.use_list(blockdat) }}
+    {{ blockdat.doc }}
+    <br>
+
+    <section class="visible-xs visible-sm hidden-md">
+      {{ macros.content_list(blockdat,1) }}
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+    
+    {% if blockdat.common|length > 0 %}
+    <section>
+      <h2>Common Blocks</h2>
+      {% for com in blockdat.common %}
+      {{ macros.common_block(com) }}
+      {% endfor %}
+    </section>
+    <br>
+    <script>
+      $(function () {
+      $('[data-toggle="popover"]').popover()
+      })
+    </script>
+    {% endif %}
+
+    {% if blockdat.variables|length > 0 %}
+    <section>
+    <h2>Variables</h2>
+    {{ macros.var_list(blockdat.variables) }}
+    </section>
+    <br>
+    {% endif %}
+    
+    {% if blockdat.types|length > 0 %}
+    <section>
+     <h2>Derived Types</h2>
+   {% for type in blockdat.types %}
+     {{ macros.type_summary(type) }}
+     {% endfor %}
+    </section>
+  <br>
+    {% endif %}
+    
+    </div>
+  </div>
+  {% endblock body %}

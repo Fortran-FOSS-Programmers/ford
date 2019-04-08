@@ -81,6 +81,7 @@ LICENSES = { 'by': '<a rel="license" href="http://creativecommons.org/licenses/b
              'opl': '<a rel="license" href="http://opencontent.org/openpub/">Open Publication License</a>',
              'pdl': '<a rel="license" href="http://www.openoffice.org/licenses/PDL.html">Public Documentation License</a>',
              'bsd': '<a rel="license" href="http://www.freebsd.org/copyright/freebsd-doc-license.html">FreeBSD Documentation License</a>',
+             'mit': '<a rel="license" href="https://opensource.org/licenses/">MIT</a>',
              '': ''
            }
 
@@ -150,10 +151,13 @@ def initialize():
                'project','author','author_description','author_pic',
                'summary','github','bitbucket','facebook','twitter',
                'google_plus','linkedin','email','website','project_github',
-               'project_bitbucket','project_website','project_download',
-               'project_sourceforge','project_url','display','version',
+               'project_bitbucket','project_website','doc_asset_url','doc_license',
+               'project_download','project_sourceforge','project_url',
+               'display','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
-               'media_dir','favicon','warn','extra_vartypes','page_dir',
+               'media_dir','favicon','warn','extra_vartypes',
+               'page_dir','page_dir_recursive', 'page_index', 'page_license',
+               'page_extension','privacy_policy_link','terms_of_service_link',
                'incl_src',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
@@ -161,7 +165,10 @@ def initialize():
                'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar','mathjax_config','parallel',
-               'revision', 'fixed_length_limit']
+               'revision', 'fixed_length_limit', 'html_minify',
+               'branding', 'branding_short', 'branding_url', 'breadcrumb_pre',
+               'copy_assets'
+               ]
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
@@ -169,6 +176,7 @@ def initialize():
                 'output_dir':          './doc',
                 'project':             'Fortran Program',
                 'project_url':         '',
+                'doc_asset_url':       '',
                 'display':             ['public','protected'],
                 'year':                date.today().year,
                 'exclude':             [],
@@ -197,12 +205,18 @@ def initialize():
                 'graph_maxdepth':      '10000',
                 'graph_maxnodes':      '1000000000',
                 'license':             '',
+                'doc_license':         '',
                 'extra_filetypes':     [],
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': False,
                 'coloured_edges':      'false',
                 'parallel':            ncpus,
                 'fixed_length_limit':  'true',
+                'page_index':          'index.md',
+                'page_license':        'LICENSE',
+                'page_extension':      'html',
+                'html_minify':         'false',
+                'copy_assets':         'true'
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
@@ -322,11 +336,33 @@ def initialize():
             proj_data['preprocessor'] = preprocessor
     
     # Get correct license
+    # This add the ability to have custom license (custom|||license_name|||license_url)
+    # Project_license should be different then document license.
+    # Most of the code use license as code's license. Thus, 'license' is code's license,
+    # and doc_license is document's license or site's license. doc_license
+    # is more like a copyright link for the website.
+    if proj_data['license'].lower().startswith("custom"):
+        _t_proj_license = proj_data['license'].split("|||")
+        if len(_t_proj_license) == 3:
+            LICENSES[_t_proj_license[1].lower()] = '<a rel="license" href="'+_t_proj_license[2]+'">'+_t_proj_license[1]+"</a>"
+            proj_data['license'] = _t_proj_license[1]
     try:
         proj_data['license'] = LICENSES[proj_data['license'].lower()]
     except KeyError:
         print('Warning: license "{}" not recognized.'.format(proj_data['license']))
         proj_data['license'] = ''
+    # doc_license
+    if proj_data['doc_license'].lower().startswith("custom"):
+        _t_proj_license = proj_data['doc_license'].split("|||")
+        if len(_t_proj_license) == 3:
+            LICENSES[_t_proj_license[1].lower()] = '<a rel="site_license" href="'+_t_proj_license[2]+'">'+_t_proj_license[1]+"</a>"
+            proj_data['doc_license'] = _t_proj_license[1]
+    try:
+        proj_data['doc_license'] = LICENSES[proj_data['doc_license'].lower()]
+    except KeyError:
+        print('Warning: license "{}" not recognized.'.format(proj_data['doc_license']))
+        proj_data['doc_license'] = ''
+    ford.sourceform.page_extension = proj_data['page_extension']
     # Return project data, docs, and the Markdown reader
     md.reset()
     md.Meta = {}
@@ -358,14 +394,23 @@ def main(proj_data,proj_docs,md):
     if proj_data['relative']: ford.sourceform.set_base_url('.')
     if 'summary' in proj_data:
         proj_data['summary'] = md.convert(proj_data['summary'])
-        proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url']),project)
+        proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url'],proj_data['page_extension']),project)
     if 'author_description' in proj_data:
         proj_data['author_description'] = md.convert(proj_data['author_description'])
-        proj_data['author_description'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url']),project)
-    proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url']),project)
+        proj_data['author_description'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url'],proj_data['page_extension']),project)
+    proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url'],proj_data['page_extension']),project)
     # Process any pages
     if 'page_dir' in proj_data:
-        page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md)
+        if 'page_dir_recursive' in proj_data:
+            if proj_data['page_dir_recursive'].lower() == 'false':
+                proj_data['page_dir_recursive'] = False
+            else:
+                proj_data['page_dir_recursive'] = True
+                if proj_data['page_dir_recursive'].lower() != 'true':
+                    print("Warning: page_dir_recursive can only be 'true' or 'false'.")
+        else:
+            proj_data['page_dir_recursive'] = True
+        page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md,proj_data)
         print()
     else:
         page_tree = None

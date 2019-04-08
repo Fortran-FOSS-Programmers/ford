@@ -24,6 +24,7 @@
 #  
 
 from __future__ import print_function
+import htmlmin
 
 import sys
 import os
@@ -44,7 +45,21 @@ from ford.graphmanager import GraphManager
 from ford.graphs import graphviz_installed
 
 loc = os.path.dirname(__file__)
-env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
+# Possible future expansion of templates with template_dir
+template_dir = os.path.join(loc, "templates", "default")
+# An assets dir is where all css/js/font etc is stored.
+# Every support files that a template need should be in this directory.
+# However, Tipuesearch and Mathjax could be different for each 
+# docs. Therefore Tipue and Mathjax should not be handled by
+# the template.
+# Everything in assets should be copy to out_dir/assets, except for 
+# favicon. User.css will go in out_dir/assets/ . Thus, template should
+# avoid putting something similar at the root their assets.
+# 
+# @todo  Future pre code should be handled by the template, as jinja
+#        should be capable of such.
+assets_dir = os.path.join(template_dir, "assets")
+env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
 env.globals['path'] = os.path # this lets us call path.* in templates
 
 class Documentation(object):
@@ -70,6 +85,7 @@ class Documentation(object):
         else:
             graphparent = ''
         print("Creating HTML documentation...")
+
         try:
             if data['incl_src'] == 'true':
                 for item in project.allfiles:
@@ -158,7 +174,7 @@ class Documentation(object):
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],'')
             else:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(data['output_dir'],data['project_url'])
-            self.tipue.create_node(self.index.html,'index.html', {'category': 'home'})
+            self.tipue.create_node(self.index.html,'index.' + self.data['page_extension'], {'category': 'home'})
             jobs = len(self.docs) + len(self.pagetree)
             progbar = tqdm(chain(iter(self.docs), iter(self.pagetree)),
                            total=jobs, unit='', file=sys.stdout)
@@ -186,9 +202,7 @@ class Documentation(object):
         os.mkdir(os.path.join(out_dir,'program'), 0o755)
         os.mkdir(os.path.join(out_dir,'src'), 0o755)
         os.mkdir(os.path.join(out_dir,'blockdata'), 0o755)
-        copytree(os.path.join(loc,'css'), os.path.join(out_dir,'css'))
-        copytree(os.path.join(loc,'fonts'), os.path.join(out_dir,'fonts'))
-        copytree(os.path.join(loc,'js'), os.path.join(out_dir,'js'))
+        copytree(os.path.join(assets_dir), os.path.join(out_dir,'assets'))
         if self.data['graph'].lower() == 'true': self.graphs.output_graphs(self.njobs)
         if self.data['search'].lower() == 'true':
             copytree(os.path.join(loc,'tipuesearch'),os.path.join(out_dir,'tipuesearch'))
@@ -199,9 +213,9 @@ class Documentation(object):
             except:
                 print('Warning: error copying media directory {}'.format(self.data['media_dir']))
         if 'css' in self.data:
-            shutil.copy(self.data['css'],os.path.join(out_dir,'css','user.css'))
+            shutil.copy(self.data['css'],os.path.join(out_dir,'assets','user.css'))
         if self.data['favicon'] == 'default-icon':
-            shutil.copy(os.path.join(loc,'favicon.png'),os.path.join(out_dir,'favicon.png'))
+            shutil.copy(os.path.join(assets_dir,'favicon.png'),os.path.join(out_dir,'favicon.png'))
         else:
             shutil.copy(self.data['favicon'],os.path.join(out_dir,'favicon.png'))
         if self.data['incl_src'] == 'true':
@@ -252,7 +266,8 @@ class BasePage(object):
     
     def writeout(self):
         out = open(self.outfile,'wb')
-        out.write(self.html.encode('utf8'))
+        if self.data['html_minify'].lower() == 'true': out.write(htmlmin.minify(self.html.encode('utf8'), True))
+        else: out.write(self.html.encode('utf8'))
         out.close()
     
     def render(self, data, proj, obj):
@@ -268,7 +283,7 @@ class BasePage(object):
 class IndexPage(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir,'index.html')
+        return os.path.join(self.out_dir,'index.' + self.data['page_extension'])
 
     def render(self,data,proj,obj):
         if data['relative']:
@@ -282,7 +297,7 @@ class IndexPage(BasePage):
 class SearchPage(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir,'search.html')
+        return os.path.join(self.out_dir,'search.' + self.data['page_extension'])
 
     def render(self,data,proj,obj):
         if data['relative']:
@@ -296,7 +311,7 @@ class SearchPage(BasePage):
 class ProcList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir,'lists','procedures.html')
+        return os.path.join(self.out_dir,'lists','procedures.' + self.data['page_extension'])
 
     def render(self,data,proj,obj):
         if data['relative']:
@@ -310,7 +325,7 @@ class ProcList(BasePage):
 class FileList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir,'lists','files.html')
+        return os.path.join(self.out_dir,'lists','files.' + self.data['page_extension'])
 
     def render(self,data,proj,obj):
         if data['relative']:
@@ -324,7 +339,7 @@ class FileList(BasePage):
 class ModList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir,'lists','modules.html')
+        return os.path.join(self.out_dir,'lists','modules.' + self.data['page_extension'])
 
     def render(self,data,proj,obj):
         if data['relative']:
@@ -338,7 +353,7 @@ class ModList(BasePage):
 class ProgList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir,'lists','programs.html')
+        return os.path.join(self.out_dir,'lists','programs.' + self.data['page_extension'])
 
     def render(self,data,proj,obj):
         if data['relative']:
@@ -352,7 +367,7 @@ class ProgList(BasePage):
 class TypeList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir,'lists','types.html')
+        return os.path.join(self.out_dir,'lists','types.' + self.data['page_extension'])
 
     def render(self,data,proj,obj):
         if data['relative']:
@@ -366,7 +381,7 @@ class TypeList(BasePage):
 class AbsIntList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir,'lists','absint.html')
+        return os.path.join(self.out_dir,'lists','absint.' + self.data['page_extension'])
 
     def render(self,data,proj,obj):
         if data['relative']:
@@ -380,7 +395,7 @@ class AbsIntList(BasePage):
 class BlockList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir,'lists','blockdata.html')
+        return os.path.join(self.out_dir,'lists','blockdata.' + self.data['page_extension'])
 
     def render(self,data,proj,obj):
         if data['relative']:
@@ -397,11 +412,11 @@ class DocPage(BasePage):
     """
     @property
     def loc(self):
-        return self.obj.get_dir() + '/' + self.obj.ident + '.html'
+        return self.obj.get_dir() + '/' + self.obj.ident + '.' + self.data['page_extension']
     
     @property
     def outfile(self):
-        return os.path.join(self.out_dir,self.obj.get_dir(),self.obj.ident+'.html')
+        return os.path.join(self.out_dir,self.obj.get_dir(),self.obj.ident+'.'+self.data['page_extension'])
 
 
 class FilePage(DocPage):
@@ -483,11 +498,11 @@ class BlockPage(DocPage):
 class PagetreePage(BasePage):
     @property
     def loc(self):
-        return 'page/' + self.obj.location + '/' + self.obj.filename + '.html'
+        return 'page/' + self.obj.location + '/' + self.obj.filename + '.' + self.data['page_extension']
 
     @property
     def outfile(self):
-        return os.path.join(self.out_dir,'page',self.obj.location,self.obj.filename+'.html')
+        return os.path.join(self.out_dir,'page',self.obj.location,self.obj.filename+ '.' + self.data['page_extension'])
 
     def render(self,data,proj,obj):
         if data['relative']:
@@ -501,7 +516,7 @@ class PagetreePage(BasePage):
             ford.pagetree.set_base_url(base_url)
             data['project_url'] = base_url
         template = env.get_template('info_page.html')
-        obj.contents = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(obj.contents),data['project_url']),proj)
+        obj.contents = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(obj.contents),data['project_url'], data['page_extension']),proj)
         return template.render(data,page=obj,project=proj,topnode=obj.topnode)
 
     def writeout(self):
