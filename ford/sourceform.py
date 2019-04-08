@@ -992,6 +992,12 @@ class FortranCodeUnit(FortranContainer):
         """
         Remove anything which shouldn't be displayed.
         """
+        def to_include(obj):
+            inc = obj.permission in self.display
+            if self.settings['hide_undoc'].lower() == 'true' and not obj.doc:
+                inc = False
+            return inc
+
         if self.obj == 'proc' and self.meta['proc_internals'] == 'false':
             self.functions = []
             self.subroutines = []
@@ -1000,18 +1006,18 @@ class FortranCodeUnit(FortranContainer):
             self.absinterfaces = []
             self.variables = []
         else:
-            self.functions = [obj for obj in self.functions if obj.permission in self.display]
-            self.subroutines = [obj for obj in self.subroutines if obj.permission in self.display]
-            self.types = [obj for obj in self.types if obj.permission in self.display]
-            self.interfaces = [obj for obj in self.interfaces if obj.permission in self.display]
-            self.absinterfaces = [obj for obj in self.absinterfaces if obj.permission in self.display]
-            self.variables = [obj for obj in self.variables if obj.permission in self.display]
+            self.functions = [obj for obj in self.functions if to_include(obj)]
+            self.subroutines = [obj for obj in self.subroutines if to_include(obj)]
+            self.types = [obj for obj in self.types if to_include(obj)]
+            self.interfaces = [obj for obj in self.interfaces if to_include(obj)]
+            self.absinterfaces = [obj for obj in self.absinterfaces if to_include(obj)]
+            self.variables = [obj for obj in self.variables if to_include(obj)]
             if hasattr(self,'modprocedures'):
-                self.modprocedures = [obj for obj in self.modprocedures if obj.permission in self.display]
+                self.modprocedures = [obj for obj in self.modprocedures if to_include(obj)]
             if hasattr(self,'modsubroutines'):
-                self.modsubroutines = [obj for obj in self.modsubroutines if obj.permission in self.display]
+                self.modsubroutines = [obj for obj in self.modsubroutines if to_include(obj)]
             if hasattr(self,'modfunctions'):
-                self.modfunctions = [obj for obj in self.modfunctions if obj.permission in self.display]
+                self.modfunctions = [obj for obj in self.modfunctions if to_include(obj)]
         # Recurse
         for obj in self.absinterfaces:
             obj.visible = True
