@@ -175,13 +175,13 @@ class FortranReader(object):
                 # Switch to predoc: following comment lines are predoc until the end of the block
                 reading_predoc = True
                 self.reading_alt = 0
-                readeing_predoc_alt = 0
+                reading_predoc_alt = 0
                 # Substitute predocmark with docmark
                 tmp = match.group(4)
                 tmp = tmp[:1] + self.docmark + tmp[1+len(self.predocmark):]
                 self.docbuffer.append(tmp)
                 if len(line[0:match.start(4)].strip()) > 0:
-                    raise Exception("Preceding documentation lines can not be inline")
+                    raise Exception("Preceding documentation lines can not be inline: {}".format(line))
 
             # Check for alternate preceding documentation
             if self.predoc_alt_re:
@@ -198,7 +198,7 @@ class FortranReader(object):
                 tmp = tmp[:1] + self.docmark + tmp[1+len(self.predocmark_alt):]
                 self.docbuffer.append(tmp)
                 if len(line[0:match.start(4)].strip()) > 0:
-                    raise Exception("Alternate documentation lines can not be inline")
+                    raise Exception("Alternate documentation lines can not be inline: {}".format(line))
 
             # Check for alternate succeeding documentation
             if self.doc_alt_re:
@@ -215,7 +215,7 @@ class FortranReader(object):
                 tmp = tmp[:1] + self.docmark + tmp[1+len(self.docmark_alt):]
                 self.docbuffer.append(tmp)
                 if len(line[0:match.start(4)].strip()) > 0:
-                    raise Exception("Alternate documentation lines can not be inline")
+                    raise Exception("Alternate documentation lines can not be inline: {}".format(line))
 
             # Capture any documentation comments
             match = self.doc_re.match(line)
@@ -256,7 +256,7 @@ class FortranReader(object):
                     if continued:
                         line = line[1:]
                     else:
-                        raise Exception("Can not start a new line in Fortran with \"&\"")
+                        raise Exception("Can not start a new line in Fortran with \"&\": {}".format(line))
                 else:
                     linebuffer = linebuffer.strip() + ' '
                 # Check if line will be continued
