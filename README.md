@@ -13,9 +13,9 @@ FORD stands for FORtran Documenter. As you may know, "to ford" refers to
 crossing a river (or other body of water). It does not, in this context, refer
 to any company or individual associated with cars.
 
-Ford was written due to [Doxygen](http://www.stack.nl/~dimitri/doxygen/)'s
+Ford was written due to [Doxygen](http://www.doxygen.org/)'s
 poor handling of Fortran and the lack of comparable alternatives.
-[ROBODoc](http://rfsber.home.xs4all.nl/Robo/index.html) can't actually extract
+[ROBODoc](https://rfsber.home.xs4all.nl/Robo/index.html) can't actually extract
 any information from the source code and just about any other automatic
 documentation software I found was either proprietary, didn't work very well
 for Fortran, or was limited in terms of how it produced its output.
@@ -38,7 +38,7 @@ Current features include:
 - the ability to extract information about variables, procedures, procedure
   arguments, derived types, programs, and modules from the source code.
 - the ability to extract documentation from comments in the source code.
-- LaTeX support in documentation using [MathJax](http://www.mathjax.org/).
+- LaTeX support in documentation using [MathJax](https://www.mathjax.org/).
 - searchable documentation, using [Tipue Search](http://www.tipue.com/search/).
 - author description and social media (including Github!) links.
 - links to download the source code.
@@ -48,7 +48,7 @@ Current features include:
 - links between related parts of the software.
 - Bootstrap CSS for the documentation, making it both functional and pretty.
 - configurable settings.
-- ability to create a hiearchical set of pages containing general information,
+- ability to create a hierarchical set of pages containing general information,
   not associated with any particular part of the source code.
 - display an entry for non-Fortran source files with file-level documentation
   and syntax highlighted code.
@@ -69,7 +69,7 @@ your home directory.
 If you prefer, you can install all of those dependencies manually and clone
 FORD from Github. Then place FORD somewhere in your PYTHONPATH.
 
-Alternatively, FORD is available through the [Homebrew](http://brew.sh) package
+Alternatively, FORD is available through the [Homebrew](https://brew.sh) package
 manager for Mac OS X. To update Homebrew and install FORD, run these commands in
 a terminal:
 
@@ -80,7 +80,7 @@ If you would like to install the latest development (master) branch from github,
 simply add the `--HEAD` flag: `brew install --HEAD FORD`
 
 ## Documentation
-More complete documentation can be found in the [project wiki](https://github.com/cmacmackin/ford/wiki).
+More complete documentation can be found in the [project wiki](https://github.com/Fortran-FOSS-Programmers/ford/wiki).
 
 ## License
 This program is free software: you can redistribute it and/or modify
@@ -94,7 +94,7 @@ but **without any warrenty**; without even the implied warranty of
 GNU General Public License for more details.
 
 You should have received a [copy](./LICENSE) of the GNU General Public License
-along with this program.  If not, see the [GNU website](http://www.gnu.org/licenses/gpl.html).
+along with this program.  If not, see the [GNU website](https://www.gnu.org/licenses/gpl.html).
 
 Documents produced by FORD are derivative works derived from the input used in their production;
 they are not affected by this license.

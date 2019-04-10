@@ -208,9 +208,10 @@ class Documentation(object):
             for src in self.project.allfiles:
                 shutil.copy(src.path,os.path.join(out_dir,'src',src.name))
         if 'mathjax_config' in self.data:
+            os.mkdir(os.path.join(out_dir, 'js', 'MathJax-config'))
             shutil.copy(self.data['mathjax_config'],
-                        os.path.join(out_dir, os.path.join('js/MathJax-config',
-                              os.path.basename(self.data['mathjax_config']))))
+                        os.path.join(out_dir, 'js', 'MathJax-config',
+                              os.path.basename(self.data['mathjax_config'])))
         # By doing this we omit a duplication of data.
         for p in self.docs:
             p.writeout()
