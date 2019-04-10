@@ -863,7 +863,7 @@ class FortranCodeUnit(FortranContainer):
             self.all_absinterfaces.update(absints)
             self.all_types.update(types)
             self.all_vars.update(variables)
-        self.uses = [m[0] for m in self.uses]
+        self.uses = set([m[0] for m in self.uses])
 
         typelist = {}
         for dtype in self.types:
