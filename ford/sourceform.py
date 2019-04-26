@@ -351,7 +351,13 @@ class FortranBase(object):
             self.meta['summary'] = md.convert(self.meta['summary'])
             self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url)
         elif PARA_CAPTURE_RE.search(self.doc):
-            self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
+            if self.get_url() == None:
+                # There is no stand-alone webpage for this item (e.g.,
+                # an internal routine in a routine, so make the whole
+                # doc blob appear, without the link to "more..."
+                self.meta['summary'] = self.doc
+            else:
+                self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
         else:
             self.meta['summary'] = ''
         if self.meta['summary'].strip() != self.doc.strip():
