@@ -796,7 +796,7 @@ class FortranContainer(FortranBase):
                         if callval.lower() not in self.calls and callval.lower() not in INTRINSICS:
                             self.calls.append(callval.lower())
                     else:
-                        raise ("Found procedure call in {}".format(type(self).__name__[7:].upper()))
+                        raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
 
 
         if not isinstance(self,FortranSourceFile):
