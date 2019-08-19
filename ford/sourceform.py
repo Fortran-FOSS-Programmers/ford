@@ -225,7 +225,11 @@ class FortranBase(object):
             isinstance(self,(FortranBoundProcedure,FortranCommon))
             or isinstance(self, FortranVariable) and isinstance(self.parent, FortranType)
         ):
-            return self.parent.get_url() + '#' + self.anchor
+            parent_url = self.parent.get_url()
+            if parent_url:
+                return parent_url + '#' + self.anchor
+            else:
+                return None
         else:
             return None
 
