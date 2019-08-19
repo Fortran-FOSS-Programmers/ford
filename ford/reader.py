@@ -255,6 +255,8 @@ class FortranReader(object):
                 if line[0] == '&':
                     if continued:
                         line = line[1:]
+                    elif len(line.strip()) == 1:
+                        continue
                     else:
                         raise Exception("Can not start a new line in Fortran with \"&\": {}".format(line))
                 else:
