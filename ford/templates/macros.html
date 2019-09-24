@@ -12,8 +12,8 @@
      {% endif %}
      {% if meta['license'] %}
     <li><i class="fa fa-legal"></i> {{ meta['license'] }}</li>
-     {% elif projectData['license'] %}
-    <li><i class="fa fa-legal"></i> {{ projectData['license']|length > 0 }}</li> 
+     {% elif projectData['license']|length > 0 %}
+    <li><i class="fa fa-legal"></i> {{ projectData['license'] }}</li> 
      {% endif %}
      {% if meta['since'] %}
     <li><i class="fa fa-history"></i> Since: {{ meta['since'] }}</li>
@@ -758,8 +758,8 @@
     {% endif %}
     {% if meta['license'] %}
     <dt>License</dt><dd>{{ meta['license'] }}</dd>
-    {% elif projectData['license'] %}
-    <dt>License</dt><dd>{{ projectData['license']|length > 0 }}</dd>
+    {% elif projectData['license']|length > 0 %}
+    <dt>License</dt><dd>{{ projectData['license'] }}</dd>
     {% endif %}
     {% if meta['since'] %}
     <dt>Since</dt><dd>{{ meta['since'] }}</dd>
