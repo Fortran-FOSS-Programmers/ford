@@ -269,7 +269,7 @@ def initialize():
             else:
                 break
         else:
-            print('Error: directory containing source-code {} a subdirectory of output directory {}.'.format(proj_data['output_dir'],projdir))
+            print('Error: directory containing source-code {} a subdirectory of output directory {}.'.format(projdir,proj_data['output_dir']))
             sys.exit(1)
     # Check that none of the docmarks are the same
     if proj_data['docmark'] == proj_data['predocmark'] != '':
