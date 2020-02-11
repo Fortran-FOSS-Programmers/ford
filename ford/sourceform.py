@@ -230,7 +230,11 @@ class FortranBase(object):
             isinstance(self,(FortranBoundProcedure,FortranCommon))
             or isinstance(self, FortranVariable) and isinstance(self.parent, FortranType)
         ):
-            return self.parent.get_url() + '#' + self.anchor
+            parent_url = self.parent.get_url()
+            if parent_url:
+                return parent_url + '#' + self.anchor
+            else:
+                return None
         else:
             return None
 
@@ -356,7 +360,13 @@ class FortranBase(object):
             self.meta['summary'] = md.convert(self.meta['summary'])
             self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url)
         elif PARA_CAPTURE_RE.search(self.doc):
-            self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
+            if self.get_url() == None:
+                # There is no stand-alone webpage for this item (e.g.,
+                # an internal routine in a routine, so make the whole
+                # doc blob appear, without the link to "more..."
+                self.meta['summary'] = self.doc
+            else:
+                self.meta['summary'] = PARA_CAPTURE_RE.search(self.doc).group()
         else:
             self.meta['summary'] = ''
         if self.meta['summary'].strip() != self.doc.strip():
@@ -795,7 +805,7 @@ class FortranContainer(FortranBase):
                         if callval.lower() not in self.calls and callval.lower() not in INTRINSICS:
                             self.calls.append(callval.lower())
                     else:
-                        raise ("Found procedure call in {}".format(type(self).__name__[7:].upper()))
+                        raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
 
 
         if not isinstance(self,FortranSourceFile):
@@ -868,7 +878,7 @@ class FortranCodeUnit(FortranContainer):
             self.all_absinterfaces.update(absints)
             self.all_types.update(types)
             self.all_vars.update(variables)
-        self.uses = [m[0] for m in self.uses]
+        self.uses = set([m[0] for m in self.uses])
 
         typelist = {}
         for dtype in self.types:
