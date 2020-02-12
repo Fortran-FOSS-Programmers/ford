@@ -446,8 +446,9 @@ def external(project, make=False, path='.'):
             modFile.write(json.dumps(extModules))
     else:
         # get the external modules from the external URLs
-        for url in project.external:
+        for urldef in project.external:
             # get the external modules from the external URL
+            url, short = register_macro(urldef)
             try:
                 if re.match('https?://', url):
                     extModules = json.loads(urlopen(

@@ -361,6 +361,16 @@ def main(proj_data,proj_docs,md):
     if len(project.files) < 1:
         print("Error: No source files with appropriate extension found in specified directory.")
         sys.exit(1)        
+
+    # Define core macros:
+    ford.utils.register_macro('url = {0}'.format(proj_data['project_url']))
+    ford.utils.register_macro( 'media = {0}'.format(
+                                    os.path.join(proj_data['project_url'],
+                                                 'media') ) )
+    ford.utils.register_macro( 'page = {0}'.format(
+                                    os.path.join(proj_data['project_url'],
+                                                 'page') ) )
+
     # Convert the documentation from Markdown to HTML. Make sure to properly
     # handle LateX and metadata.
     if proj_data['relative']:
@@ -373,14 +383,6 @@ def main(proj_data,proj_docs,md):
     else:
         project.make_links(proj_data['project_url'])
 
-    # Define core macros:
-    ford.utils.register_macro('url = {0}'.format(proj_data['project_url']))
-    ford.utils.register_macro( 'media = {0}'.format(
-                                    os.path.join(proj_data['project_url'],
-                                                 'media') ) )
-    ford.utils.register_macro( 'page = {0}'.format(
-                                    os.path.join(proj_data['project_url'],
-                                                 'page') ) )
     # Register the user defined aliases:
     for alias in proj_data['alias']:
         val, key = ford.utils.register_macro(alias)
