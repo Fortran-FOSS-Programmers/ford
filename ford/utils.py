@@ -39,6 +39,12 @@ NOTE_RE = [re.compile(r"@({})\s*(((?!@({})).)*?)@end\1\s*(</p>)?".format(note,
 LINK_RE = re.compile(r"\[\[(\w+(?:\.\w+)?)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)?\]\]")
 
 
+# Dictionary for all macro definitions to be used in the documentation.
+# Each key of the form |name| will be replaced by the value found in the
+# dictionary in sub_macros.
+_MACRO_DICT = {}
+
+
 def sub_notes(docs):
     """
     Substitutes the special controls for notes, warnings, todos, and bugs with
@@ -276,15 +282,40 @@ def sub_links(string,project):
     return string
 
 
-def sub_macros(string,base_url):
+def register_macro(string):
+    '''
+    Register a new macro definition of the form 'key = value'.
+    In the documentation |key| can then be used to represent value.
+    If key is already defined in the list of macros an RuntimeError
+    will be raised.
+    The function returns a tuple of the form (value, key), where
+    key is None if no key definition is found in the string.
+    '''
+
+    chunks = string.split('=')
+    if len(chunks) > 1:
+        key = '|{0}|'.format(chunks[0].strip())
+        val = '='.join(chunks[1:]).strip()
+
+        if key in _MACRO_DICT:
+            # The macro is already defined. Do not overwrite it!
+            # Can be ignored if the definition is the same...
+            if val != _MACRO_DICT[key]:
+                raise RuntimeError('Could not register macro {0} as {1} because it is already defined as {2}.'.format(key, val, _MACRO_DICT[key]))
+        else:
+            # Everything OK, add the macro definition to the dict.
+            _MACRO_DICT[key] = val
+        return (val, key)
+    else:
+        # No macro definition, just return the original string as value.
+        return (string, None)
+
+
+def sub_macros(string):
     '''
     Replaces macros in documentation with their appropriate values. These macros
     are used for things like providing URLs.
     '''
-    macros = { '|url|': base_url,
-               '|media|': os.path.join(base_url,'media'),
-               '|page|': os.path.join(base_url,'page')
-             }
-    for key, val in macros.items():
+    for key, val in _MACRO_DICT.items():
         string = string.replace(key,val)
     return string

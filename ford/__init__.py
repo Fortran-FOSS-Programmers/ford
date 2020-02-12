@@ -154,7 +154,7 @@ def initialize():
                'project_sourceforge','project_url','display','hide_undoc','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
-               'incl_src',
+               'incl_src', 'alias',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
                'graph_maxdepth', 'graph_maxnodes',
@@ -178,6 +178,7 @@ def initialize():
                 'docmark_alt':         '*',
                 'predocmark':          '>',
                 'predocmark_alt':      '|',
+                'alias':               [],
                 'favicon':             'default-icon',
                 'extra_vartypes':      [],
                 'incl_src':            'true',
@@ -206,7 +207,7 @@ def initialize():
                 'fixed_length_limit':  'true',
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
-                'extra_vartypes','src_dir','exclude','exclude_dir',
+                'extra_vartypes','src_dir','alias','exclude','exclude_dir',
                 'macro','include','extra_mods','extra_filetypes']
     # Evaluate paths relative to project file location
     if args.warn:
@@ -355,15 +356,30 @@ def main(proj_data,proj_docs,md):
         project.make_links('..')
     else:
         project.make_links(proj_data['project_url'])
+
+    # Define core macros:
+    ford.utils.register_macro('url = {0}'.format(proj_data['project_url']))
+    ford.utils.register_macro( 'media = {0}'.format(
+                                    os.path.join(proj_data['project_url'],
+                                                 'media') ) )
+    ford.utils.register_macro( 'page = {0}'.format(
+                                    os.path.join(proj_data['project_url'],
+                                                 'page') ) )
+    # Register the user defined aliases:
+    for alias in proj_data['alias']:
+        val, key = ford.utils.register_macro(alias)
+        if key == None:
+            raise RuntimeError('Error, no alias name provided for {0}'.format(val))
+
     # Convert summaries and descriptions to HTML
     if proj_data['relative']: ford.sourceform.set_base_url('.')
     if 'summary' in proj_data:
         proj_data['summary'] = md.convert(proj_data['summary'])
-        proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary']),proj_data['project_url']),project)
+        proj_data['summary'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['summary'])),project)
     if 'author_description' in proj_data:
         proj_data['author_description'] = md.convert(proj_data['author_description'])
-        proj_data['author_description'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['author_description']),proj_data['project_url']),project)
-    proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url']),project)
+        proj_data['author_description'] = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_data['author_description'])),project)
+    proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs)),project)
     # Process any pages
     if 'page_dir' in proj_data:
         page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md)
