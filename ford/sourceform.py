@@ -354,11 +354,11 @@ class FortranBase(object):
                 self.meta[key] = '\n'.join(self.meta[key])
         if hasattr(self,'num_lines'): self.meta['num_lines'] = self.num_lines
 
-        self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc),self.base_url)
+        self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc))
 
         if 'summary' in self.meta:
             self.meta['summary'] = md.convert(self.meta['summary'])
-            self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']),self.base_url)
+            self.meta['summary'] = ford.utils.sub_macros(ford.utils.sub_notes(self.meta['summary']))
         elif PARA_CAPTURE_RE.search(self.doc):
             if self.get_url() == None:
                 # There is no stand-alone webpage for this item (e.g.,
