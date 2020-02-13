@@ -35,7 +35,7 @@ class PageNode(object):
     
     base_url = '..'
     
-    def __init__(self,md,path,parent):
+    def __init__(self,md,path,proj_copy_subdir,parent):
         print("Reading page {}".format(os.path.relpath(path)))
         page = open(path,'r')
         text = page.read()
@@ -54,6 +54,16 @@ class PageNode(object):
             self.date   = '\n'.join(md.Meta['date'])
         else:
             self.date = None
+
+        # set list of directory names that are to be copied along without
+        # containing an index.md itself.
+        #   first priority is the copy_dir option in the *.md file
+        #   if this option is not set in the file fall back to the global
+        #   project settings
+        if 'copy_subdir' in md.Meta:
+            self.copy_subdir = md.Meta['copy_subdir']
+        else:
+            self.copy_subdir = proj_copy_subdir
         
         self.parent    = parent
         self.contents  = text
@@ -87,13 +97,13 @@ class PageNode(object):
         return iter(retlist)
 
     
-def get_page_tree(topdir,md,parent=None):
+def get_page_tree(topdir,proj_copy_subdir,md,parent=None):
     # look for files within topdir
     filelist = sorted(os.listdir(topdir))
     if 'index.md' in filelist:
         # process index.md
         try:
-            node = PageNode(md,os.path.join(topdir,'index.md'),parent)
+            node = PageNode(md,os.path.join(topdir,'index.md'),proj_copy_subdir,parent)
         except Exception as e:
             print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(topdir,'index.md')),e.args[0]))
             return None
@@ -105,12 +115,12 @@ def get_page_tree(topdir,md,parent=None):
         if name[0] != '.' and name[-1] != '~':
             if os.path.isdir(os.path.join(topdir,name)):
                 # recurse into subdirectories
-                subnode = get_page_tree(os.path.join(topdir,name),md,node)
+                subnode = get_page_tree(os.path.join(topdir,name),proj_copy_subdir,md,node)
                 if subnode: node.subpages.append(subnode)
             elif name[-3:] == '.md':
                 # process subpages
                 try:
-                    node.subpages.append(PageNode(md,os.path.join(topdir,name),node))
+                    node.subpages.append(PageNode(md,os.path.join(topdir,name),proj_copy_subdir,node))
                 except Exception as e:
                     print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(topdir,name)),e.args[0]))
                     continue

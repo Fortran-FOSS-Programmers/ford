@@ -508,6 +508,15 @@ class PagetreePage(BasePage):
         if self.obj.filename == 'index':
             os.mkdir(os.path.join(self.out_dir,'page',self.obj.location), 0o755)
         super(PagetreePage,self).writeout()
+
+        for item in self.obj.copy_subdir:
+            try:
+                copytree(os.path.join(self.data['page_dir'],self.obj.location,item),
+                         os.path.join(self.out_dir,'page',self.obj.location,item))
+            except Exception as e:
+                print('Warning: could not copy directory {}. Error: {}'.format(
+                  os.path.join(self.data['page_dir'],self.obj.location,item),e.args[0]))
+
         for item in self.obj.files:
             try:
                 shutil.copy(os.path.join(self.data['page_dir'],self.obj.location,item),
