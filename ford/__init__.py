@@ -168,7 +168,7 @@ FORD will look in the provided paths for a modules.json file.
                'project_sourceforge','project_url','display','hide_undoc','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
-               'incl_src', 'alias',
+               'incl_src','alias','copy_subdir',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
                'graph_maxdepth', 'graph_maxnodes',
@@ -188,6 +188,7 @@ FORD will look in the provided paths for a modules.json file.
                 'year':                date.today().year,
                 'exclude':             [],
                 'exclude_dir':         [],
+                'copy_subdir':         [],
                 'external':            [],
                 'externalize':         'false',
                 'docmark':             '!',
@@ -224,7 +225,8 @@ FORD will look in the provided paths for a modules.json file.
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','alias','exclude','exclude_dir',
-                'macro','include','extra_mods','extra_filetypes','external']
+                'macro','include','extra_mods','extra_filetypes','external',
+                'copy_subdir']
     # Evaluate paths relative to project file location
     if args.warn:
         args.warn = 'true'
@@ -400,7 +402,7 @@ def main(proj_data,proj_docs,md):
     proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs)),project)
     # Process any pages
     if 'page_dir' in proj_data:
-        page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md)
+        page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),proj_data['copy_subdir'],md)
         print()
     else:
         page_tree = None
