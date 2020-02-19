@@ -451,6 +451,10 @@ def external(project, make=False, path='.'):
             url, short = register_macro(urldef)
             try:
                 if re.match('https?://', url):
+                    # Ensure the URL ends with '/' to have urljoin work as
+                    # intentend.
+                    if url[-1] != '/':
+                        url = url + '/'
                     extModules = json.loads(urlopen(
                         urljoin(url, 'modules.json')).read().decode('utf8'))
                 else:
