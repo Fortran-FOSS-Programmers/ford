@@ -3,3 +3,4 @@ markdown
 tqdm
 bs4
 graphviz
+pygments
