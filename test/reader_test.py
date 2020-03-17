@@ -9,7 +9,7 @@ import unittest
 import glob
 import re
 
-RE_WHITE=re.compile('\s+')
+RE_WHITE=re.compile(r'\s+')
 
 #import sys
 #sys.path.append('./ford')
@@ -30,14 +30,14 @@ class Test_reader(unittest.TestCase):
         create_expected=False
         for ff in f_files:
             ee=ff.replace('.f90','_expected.f90')
-        #for ff in f_files:
             print('\tProcessing: %s \tExpected: %s '%(ff,ee))
             lines=[line for line in reader.FortranReader(ff,docmark='!',predocmark='>',docmark_alt='#',predocmark_alt='<') ]
             if create_expected:
                 print('WARNING : Writing expected file '+ee)
-                with open(ee,'w') as ef:
-                    [print(line) for line in lines]
-                    [ef.write(line+'\n') for line in lines]
+                with open(ee,'w') as ef:                    
+                    for line in lines:
+                        print(line) 
+                        ef.write(line+'\n')
             else:
                 with open(ee) as ef:
                     lines=remove_multiple_white_space(lines)
