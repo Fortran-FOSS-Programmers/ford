@@ -4,3 +4,4 @@ tqdm
 bs4
 graphviz
 pygments
+jinja2
