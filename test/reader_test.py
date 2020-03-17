@@ -10,7 +10,7 @@ import glob
 import re
 import sys
 # fix for travis build
-sys.path.append('./ford')
+sys.path.append('./')
 
 RE_WHITE=re.compile(r'\s+')
 
