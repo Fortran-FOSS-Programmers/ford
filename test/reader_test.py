@@ -2,17 +2,18 @@
 """
 Created on Tue Mar 17 20:21:05 2020
 
-@author: xr3
+@author: Peter M. Clausen
 """
 
 import unittest
 import glob
 import re
+import sys
+# fix for travis build
+sys.path.append('./ford')
 
 RE_WHITE=re.compile(r'\s+')
 
-#import sys
-#sys.path.append('./ford')
 
 import ford.reader as reader
 
