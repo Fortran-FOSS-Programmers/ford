@@ -75,66 +75,71 @@
        </div>
        {% endif %}
       </div>
-      {% set count=1 %}
+      {% set count=0 %}
+      {% if incl_src == "true" %}{% set count = count + 1 %}{% endif %}
       {% if project.modules|length > 0 %}{% set count = count + 1 %}{% endif %}
       {% if project.procedures|length > 0 %}{% set count = count + 1 %}{% endif %}
       {% if project.types|length > 0 %}{% set count = count + 1 %}{% endif %}
-		{% set width = (12/count)|int %}
-      <div class="row">
-        <div class="col-xs-6 col-sm-{{ width }}">
-              <h3>Source Files</h3>
-              <ul>
-                {% for src in project.allfiles|sort(attribute='name') %}
-                  {% if loop.index0 < 10 %}
-                    <li>{{ src }}</li>
-                  {% elif loop.index0 == 10 %}
-                    <li><a href="{{ project_url }}/lists/files.html"><em>All source files&hellip;</em></a></li>
-                  {% endif %}
-                {% endfor %}
-              </ul>
+      {% if count != 0 %}
+          {% set width = (12/count)|int %}
+          <div class="row">
+              {% if incl_src == "true" %}
+                      <div class="col-xs-6 col-sm-{{ width }}">
+                  <h3>Source Files</h3>
+                  <ul>
+                    {% for src in project.allfiles|sort(attribute='name') %}
+                      {% if loop.index0 < 10 %}
+                        <li>{{ src }}</li>
+                      {% elif loop.index0 == 10 %}
+                        <li><a href="{{ project_url }}/lists/files.html"><em>All source files&hellip;</em></a></li>
+                      {% endif %}
+                    {% endfor %}
+                  </ul>
+              </div>
+              {% endif %}
+              {% if project.modules|length > 0 %}
+            	  <div class="col-xs-6 col-sm-{{ width }}">
+                  <h3>Modules</h3>
+                  <ul>
+                    {% for mod in project.modules|sort(attribute='name') %}
+                      {% if loop.index0 < 10 %}
+                        <li>{{ mod }}</li>
+                      {% elif loop.index0 == 10 %}
+                        <li><a href="{{ project_url }}/lists/modules.html"><em>All modules&hellip;</em></a></li>
+                      {% endif %}
+                    {% endfor %}
+                  </ul>
+              </div>
+              {% endif %}
+              {% if project.procedures|length > 0 %}
+            	  <div class="col-xs-6 col-sm-{{ width }}">
+                  <h3>Procedures</h3>
+                  <ul>
+                    {% for proc in project.procedures|sort(attribute='name') %}
+                      {% if loop.index0 < 10 %}
+                        <li>{{ proc }}</li>
+                      {% elif loop.index0 == 10 %}
+                        <li><a href="{{ project_url }}/lists/procedures.html"><em>All procedures&hellip;</em></a></li>
+                      {% endif %}
+                    {% endfor %}
+                  </ul>
+              </div>
+              {% endif %}
+              {% if project.types|length > 0 %}
+            	  <div class="col-xs-6 col-sm-{{ width }}">
+                  <h3>Derived Types</h3>
+                  <ul>
+                    {% for dtype in project.types|sort(attribute='name') %}
+                      {% if loop.index0 < 10 %}
+                        <li>{{ dtype }}</li>
+                      {% elif loop.index0 == 10 %}
+                        <li><a href="{{ project_url }}/lists/types.html"><em>All derived types&hellip;</em></a></li>
+                      {% endif %}
+                    {% endfor %}
+                  </ul>
+              </div>
+              {% endif %}
           </div>
-          {% if project.modules|length > 0 %}
-		  <div class="col-xs-6 col-sm-{{ width }}">
-              <h3>Modules</h3>
-              <ul>
-                {% for mod in project.modules|sort(attribute='name') %}
-                  {% if loop.index0 < 10 %}
-                    <li>{{ mod }}</li>
-                  {% elif loop.index0 == 10 %}
-                    <li><a href="{{ project_url }}/lists/modules.html"><em>All modules&hellip;</em></a></li>
-                  {% endif %}
-                {% endfor %}
-              </ul>
-          </div>
-          {% endif %}
-          {% if project.procedures|length > 0 %}
-		  <div class="col-xs-6 col-sm-{{ width }}">
-              <h3>Procedures</h3>
-              <ul>
-                {% for proc in project.procedures|sort(attribute='name') %}
-                  {% if loop.index0 < 10 %}
-                    <li>{{ proc }}</li>
-                  {% elif loop.index0 == 10 %}
-                    <li><a href="{{ project_url }}/lists/procedures.html"><em>All procedures&hellip;</em></a></li>
-                  {% endif %}
-                {% endfor %}
-              </ul>
-          </div>
-          {% endif %}
-          {% if project.types|length > 0 %}
-		  <div class="col-xs-6 col-sm-{{ width }}">
-              <h3>Derived Types</h3>
-              <ul>
-                {% for dtype in project.types|sort(attribute='name') %}
-                  {% if loop.index0 < 10 %}
-                    <li>{{ dtype }}</li>
-                  {% elif loop.index0 == 10 %}
-                    <li><a href="{{ project_url }}/lists/types.html"><em>All derived types&hellip;</em></a></li>
-                  {% endif %}
-                {% endfor %}
-              </ul>
-          </div>
-          {% endif %}
-      </div>
+      {% endif %}
 {% endblock body %}
 
