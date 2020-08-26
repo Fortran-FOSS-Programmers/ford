@@ -115,8 +115,13 @@ def get_page_tree(topdir,proj_copy_subdir,md,parent=None):
         if name[0] != '.' and name[-1] != '~':
             if os.path.isdir(os.path.join(topdir,name)):
                 # recurse into subdirectories
-                subnode = get_page_tree(os.path.join(topdir,name),proj_copy_subdir,md,node)
-                if subnode: node.subpages.append(subnode)
+                traversedir = True
+                if not parent==None:
+                    traversedir = not name in parent.copy_subdir
+                if traversedir:
+                    subnode = get_page_tree( os.path.join(topdir,name),
+                                             proj_copy_subdir, md, node )
+                    if subnode: node.subpages.append(subnode)
             elif name[-3:] == '.md':
                 # process subpages
                 try:
