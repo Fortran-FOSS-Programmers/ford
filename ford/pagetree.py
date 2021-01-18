@@ -54,6 +54,11 @@ class PageNode(object):
             self.date   = '\n'.join(md.Meta['date'])
         else:
             self.date = None
+        if 'ordered_subpage' in md.Meta:
+            # index.md is the main page, it should not be added by the user in the subpage lists.
+            self.ordered_subpages = [x for x in md.Meta['ordered_subpage'] if x != 'index.md']
+        else:
+            self.ordered_subpages = None
         
         self.parent    = parent
         self.contents  = text
@@ -88,6 +93,12 @@ class PageNode(object):
 
     
 def get_page_tree(topdir,md,parent=None):
+
+    # In python 3.6 or newer, the normal dict is guaranteed to be ordered.
+    # However, to keep compatibility with older versions I use OrderedDict.
+    # I will use this later to remove duplicates from a list in a short way.
+    from collections import OrderedDict
+
     # look for files within topdir
     filelist = sorted(os.listdir(topdir))
     if 'index.md' in filelist:
@@ -101,9 +112,17 @@ def get_page_tree(topdir,md,parent=None):
     else:
         print('Warning: No index.md file in directory {}'.format(topdir))
         return None
-    for name in filelist:
+    if node.ordered_subpages:
+        #Merge user given files and all files in folder, removing duplicates.
+        mergedfilelist = list(OrderedDict.fromkeys(node.ordered_subpages + filelist))
+    else:
+        mergedfilelist = filelist
+
+    for name in mergedfilelist:
         if name[0] != '.' and name[-1] != '~':
-            if os.path.isdir(os.path.join(topdir,name)):
+            if not os.path.exists(os.path.join(topdir,name)):
+                raise Exception('Requested page file {} does not exist.'.format(name))
+            elif os.path.isdir(os.path.join(topdir,name)):
                 # recurse into subdirectories
                 subnode = get_page_tree(os.path.join(topdir,name),md,node)
                 if subnode: node.subpages.append(subnode)
