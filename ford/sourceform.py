@@ -2220,7 +2220,8 @@ class GenericSource(FortranBase):
 
 
 _can_have_contains = [FortranModule,FortranProgram,FortranFunction,
-                      FortranSubroutine,FortranType,FortranSubmodule]
+                      FortranSubroutine,FortranType,FortranSubmodule,
+                      FortranSubmoduleProcedure]
 
 def line_to_variables(source, line, inherit_permission, parent):
     """
