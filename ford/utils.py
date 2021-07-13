@@ -245,7 +245,7 @@ def sub_links(string,project):
             else:
                 if match.group(4).lower() in SUBLINK_TYPES:
                     if hasattr(item,SUBLINK_TYPES[match.group(4).lower()]):
-                        if match.group(4).lower == 'constructor':
+                        if match.group(4).lower() == 'constructor':
                             if item.constructor:
                                 searchlist.append(item.constructor)
                         else:
