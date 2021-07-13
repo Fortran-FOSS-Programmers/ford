@@ -301,7 +301,7 @@ class FortranReader(object):
         If the next line is an include statement, inserts the contents
         of the included file into the pending buffer.
         """
-        if len(self.pending) == 0 or not self.pending[0].startswith('include '):
+        if len(self.pending) == 0 or not self.pending[0].lower().startswith('include '):
             return
         name = self.pending.pop(0)[8:].strip()[1:-1]
         for b in [os.path.dirname(self.name)] + self.inc_dirs:
