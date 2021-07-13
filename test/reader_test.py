@@ -18,13 +18,14 @@ def remove_multiple_white_space(lines):
 
 
 def test_reader_test_data():
+    """Basic regression test"""
     f_files = glob.glob("./test_data/*.f*")
     f_files = [
         f
         for f in f_files
-        if "expected" not in f and "bad" not in f  # remove 'expected' files
-    ]  # remove 'bad files'
-    # create_expected=True
+        if "expected" not in f and "bad" not in f  # remove 'expected' and 'bad' files
+    ]
+    # Set to True to update the 'expected' files
     create_expected = False
     for ff in f_files:
         ee = ff.replace(".f90", "_expected.f90")
