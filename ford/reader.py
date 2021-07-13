@@ -255,6 +255,10 @@ class FortranReader(object):
                 if line[0] == '&':
                     if continued:
                         line = line[1:]
+                        if len(line.strip()) == 0:
+                            # If the line contained only an "&" and `continued==True` then
+                            # we keep going.
+                            continue
                     elif len(line.strip()) == 1:
                         continue
                     else:
