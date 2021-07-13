@@ -47,3 +47,23 @@ def test_reader_test_data():
                 lines = remove_multiple_white_space(lines)
                 elines = remove_multiple_white_space(ef.readlines())
                 assert lines == elines
+
+
+def test_reader_continuation(tmp_path):
+    """Checks that line continuations are handled correctly"""
+
+    data = """\
+    program foo
+    !! some docs
+    integer :: bar = &
+    &
+    4
+    end
+    """
+
+    filename = tmp_path / "test.f90"
+    with open(filename, "w") as f:
+        f.write(data)
+
+    lines = list(reader.FortranReader(filename, docmark="!"))
+    assert lines == ["program foo", "!! some docs", "integer :: bar = 4", "end"]
