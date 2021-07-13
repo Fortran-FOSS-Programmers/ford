@@ -67,3 +67,35 @@ def test_reader_continuation(tmp_path):
 
     lines = list(reader.FortranReader(filename, docmark="!"))
     assert lines == ["program foo", "!! some docs", "integer :: bar = 4", "end"]
+
+
+def test_type(tmp_path):
+    """Check that types can be read"""
+
+    data = """\
+    program foo
+    !! base type
+    type :: base
+    end type base
+
+    !! derived type
+    type, extends(base) :: derived
+    end type
+    """
+
+    expected = [
+        "program foo",
+        "!! base type",
+        "type :: base",
+        "end type base",
+        "!! derived type",
+        "type, extends(base) :: derived",
+        "end type",
+    ]
+
+    filename = tmp_path / "test.f90"
+    with open(filename, "w") as f:
+        f.write(data)
+
+    lines = list(reader.FortranReader(filename, docmark="!"))
+    assert lines == expected
