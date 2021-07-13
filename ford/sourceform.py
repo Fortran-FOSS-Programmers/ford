@@ -43,7 +43,7 @@ from pygments.formatters import HtmlFormatter
 import ford.reader
 import ford.utils
 
-VAR_TYPE_STRING = "^integer|real|double\s*precision|character|double\s*complex|logical|type|class|procedure|enumerator"
+VAR_TYPE_STRING = "^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
 VARKIND_RE = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
 KIND_RE = re.compile("kind\s*=\s*",re.IGNORECASE)
 LEN_RE = re.compile("len\s*=\s*",re.IGNORECASE)
@@ -513,7 +513,7 @@ class FortranContainer(FortranBase):
     CALL_RE = re.compile("(?:^|[^a-zA-Z0-9_% ]\s*)(\w+)(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
     SUBCALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
 
-    VARIABLE_STRING = "^(integer|real|double\s*precision|character|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
+    VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
 
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
