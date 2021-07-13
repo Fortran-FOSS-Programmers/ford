@@ -6,8 +6,11 @@
         	 {% if project_github or project_bitbucket or project_sourceforge or project_website %}
 	<p> Find us on&hellip;</p>
         <p>
-        	 {% if project_github %}
+			 {% if project_github %}
           <a class="btn btn-lg btn-primary" href="{{ project_github }}" role="button">GitHub</a>
+			 {% endif %}
+			 {% if project_gitlab %}
+          <a class="btn btn-lg btn-primary" href="{{ project_gitlab }}" role="button">The Web</a>
 			 {% endif %}
 			 {% if project_bitbucket %}
           <a class="btn btn-lg btn-primary" href="{{ project_bitbucket }}" role="button">Bitbucket</a>
@@ -53,6 +56,9 @@
               {% endif %}
               {% if github %}
               <a class="btn btn-lg btn-primary" href="{{ github }}"><i class="fa fa-github fa-lg"></i></a>
+              {% endif %}
+              {% if gitlab %}
+              <a class="btn btn-lg btn-primary" href="{{ gitlab }}"><i class="fa fa-gitlab fa-lg"></i></a>
 				  {% endif %}
 				  {% if bitbucket %}
               <a class="btn btn-lg btn-primary" href="{{ bitbucket }}"><i class="fa fa-bitbucket fa-lg"></i></a>
