@@ -84,6 +84,35 @@ def test_submodule_procedure_contains(tmp_path):
     assert len(module_procedure.subroutines) == 1
 
 
+def test_backslash_in_character_string(tmp_path):
+    """Bad escape crash #296"""
+
+    data = r"""\
+    module test_module
+    character(len=*),parameter,public:: q = '(?)'
+    character(len=*),parameter,public:: a  = '\a'
+    character(len=*),parameter,public:: b  = '\b'
+    character(len=*),parameter,public:: c  = '\c'
+    end module test_module
+    """
+
+    filename = tmp_path / "test.f90"
+    with open(filename, "w") as f:
+        f.write(data)
+
+    settings = defaultdict(str)
+    settings["docmark"] = "!"
+    settings["encoding"] = "utf-8"
+
+    source = FortranSourceFile(str(filename), settings)
+    module = source.modules[0]
+
+    expected_variables = {"q": r"'(?)'", "a": r"'\a'", "b": r"'\b'", "c": r"'\c'"}
+
+    for variable in module.variables:
+        assert variable.initial == expected_variables[variable.name]
+
+
 def test_sync_images_in_submodule_procedure(tmp_path):
     """Crash on sync images inside module procedure in submodule #237"""
 
