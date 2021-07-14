@@ -150,10 +150,10 @@ def initialize():
     options = ['src_dir','extensions','fpp_extensions','fixed_extensions',
                'output_dir','css','exclude',
                'project','author','author_description','author_pic',
-               'summary','github','bitbucket','facebook','twitter',
-               'google_plus','linkedin','email','website','project_github',
+               'summary','github','gitlab','bitbucket','facebook','twitter',
+               'google_plus','linkedin','email','website','project_github','project_gitlab',
                'project_bitbucket','project_website','project_download',
-               'project_sourceforge','project_url','display','version',
+               'project_sourceforge','project_url','display','hide_undoc','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'incl_src', 'force',
@@ -163,7 +163,8 @@ def initialize():
                'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar','mathjax_config','parallel',
-               'revision', 'fixed_length_limit', 'encoding']
+               'revision', 'fixed_length_limit','max_frontpage_items',
+               'encoding']
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
@@ -172,6 +173,7 @@ def initialize():
                 'project':             'Fortran Program',
                 'project_url':         '',
                 'display':             ['public','protected'],
+                'hide_undoc':          'false',
                 'year':                date.today().year,
                 'exclude':             [],
                 'exclude_dir':         [],
@@ -206,7 +208,8 @@ def initialize():
                 'coloured_edges':      'false',
                 'parallel':            ncpus,
                 'fixed_length_limit':  'true',
-                'encoding':            'utf-8'
+                'max_frontpage_items': 10,
+                'encoding':            'utf-8',
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
@@ -276,7 +279,7 @@ def initialize():
             else:
                 break
         else:
-            print('Error: directory containing source-code {} a subdirectory of output directory {}.'.format(proj_data['output_dir'],projdir))
+            print('Error: directory containing source-code {} a subdirectory of output directory {}.'.format(projdir,proj_data['output_dir']))
             sys.exit(1)
     # Check that none of the docmarks are the same
     if proj_data['docmark'] == proj_data['predocmark'] != '':

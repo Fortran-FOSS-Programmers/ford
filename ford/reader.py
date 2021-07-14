@@ -174,13 +174,13 @@ class FortranReader(object):
                 # Switch to predoc: following comment lines are predoc until the end of the block
                 reading_predoc = True
                 self.reading_alt = 0
-                readeing_predoc_alt = 0
+                reading_predoc_alt = 0
                 # Substitute predocmark with docmark
                 tmp = match.group(4)
                 tmp = tmp[:1] + self.docmark + tmp[1+len(self.predocmark):]
                 self.docbuffer.append(tmp)
                 if len(line[0:match.start(4)].strip()) > 0:
-                    raise Exception("Preceding documentation lines can not be inline")
+                    raise Exception("Preceding documentation lines can not be inline: {}".format(line))
 
             # Check for alternate preceding documentation
             if self.predoc_alt_re:
@@ -197,7 +197,7 @@ class FortranReader(object):
                 tmp = tmp[:1] + self.docmark + tmp[1+len(self.predocmark_alt):]
                 self.docbuffer.append(tmp)
                 if len(line[0:match.start(4)].strip()) > 0:
-                    raise Exception("Alternate documentation lines can not be inline")
+                    raise Exception("Alternate documentation lines can not be inline: {}".format(line))
 
             # Check for alternate succeeding documentation
             if self.doc_alt_re:
@@ -214,7 +214,7 @@ class FortranReader(object):
                 tmp = tmp[:1] + self.docmark + tmp[1+len(self.docmark_alt):]
                 self.docbuffer.append(tmp)
                 if len(line[0:match.start(4)].strip()) > 0:
-                    raise Exception("Alternate documentation lines can not be inline")
+                    raise Exception("Alternate documentation lines can not be inline: {}".format(line))
 
             # Capture any documentation comments
             match = self.doc_re.match(line)
@@ -254,8 +254,14 @@ class FortranReader(object):
                 if line[0] == '&':
                     if continued:
                         line = line[1:]
+                        if len(line.strip()) == 0:
+                            # If the line contained only an "&" and `continued==True` then
+                            # we keep going.
+                            continue
+                    elif len(line.strip()) == 1:
+                        continue
                     else:
-                        raise Exception("Can not start a new line in Fortran with \"&\"")
+                        raise Exception("Can not start a new line in Fortran with \"&\": {}".format(line))
                 else:
                     linebuffer = linebuffer.strip() + ' '
                 # Check if line will be continued
@@ -298,7 +304,7 @@ class FortranReader(object):
         If the next line is an include statement, inserts the contents
         of the included file into the pending buffer.
         """
-        if len(self.pending) == 0 or not self.pending[0].startswith('include '):
+        if len(self.pending) == 0 or not self.pending[0].lower().startswith('include '):
             return
         name = self.pending.pop(0)[8:].strip()[1:-1]
         for b in [os.path.dirname(self.name)] + self.inc_dirs:
