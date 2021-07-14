@@ -6,8 +6,11 @@
         	 {% if project_github or project_bitbucket or project_sourceforge or project_website %}
 	<p> Find us on&hellip;</p>
         <p>
-        	 {% if project_github %}
+			 {% if project_github %}
           <a class="btn btn-lg btn-primary" href="{{ project_github }}" role="button">GitHub</a>
+			 {% endif %}
+			 {% if project_gitlab %}
+          <a class="btn btn-lg btn-primary" href="{{ project_gitlab }}" role="button">The Web</a>
 			 {% endif %}
 			 {% if project_bitbucket %}
           <a class="btn btn-lg btn-primary" href="{{ project_bitbucket }}" role="button">Bitbucket</a>
@@ -53,6 +56,9 @@
               {% endif %}
               {% if github %}
               <a class="btn btn-lg btn-primary" href="{{ github }}"><i class="fa fa-github fa-lg"></i></a>
+              {% endif %}
+              {% if gitlab %}
+              <a class="btn btn-lg btn-primary" href="{{ gitlab }}"><i class="fa fa-gitlab fa-lg"></i></a>
 				  {% endif %}
 				  {% if bitbucket %}
               <a class="btn btn-lg btn-primary" href="{{ bitbucket }}"><i class="fa fa-bitbucket fa-lg"></i></a>
@@ -81,65 +87,66 @@
       {% if project.procedures|length > 0 %}{% set count = count + 1 %}{% endif %}
       {% if project.types|length > 0 %}{% set count = count + 1 %}{% endif %}
       {% if count != 0 %}
-          {% set width = (12/count)|int %}
-          <div class="row">
-              {% if incl_src == "true" %}
-                      <div class="col-xs-6 col-sm-{{ width }}">
-                  <h3>Source Files</h3>
-                  <ul>
-                    {% for src in project.allfiles|sort(attribute='name') %}
-                      {% if loop.index0 < 10 %}
-                        <li>{{ src }}</li>
-                      {% elif loop.index0 == 10 %}
-                        <li><a href="{{ project_url }}/lists/files.html"><em>All source files&hellip;</em></a></li>
-                      {% endif %}
-                    {% endfor %}
-                  </ul>
-              </div>
-              {% endif %}
-              {% if project.modules|length > 0 %}
-            	  <div class="col-xs-6 col-sm-{{ width }}">
-                  <h3>Modules</h3>
-                  <ul>
-                    {% for mod in project.modules|sort(attribute='name') %}
-                      {% if loop.index0 < 10 %}
-                        <li>{{ mod }}</li>
-                      {% elif loop.index0 == 10 %}
-                        <li><a href="{{ project_url }}/lists/modules.html"><em>All modules&hellip;</em></a></li>
-                      {% endif %}
-                    {% endfor %}
-                  </ul>
-              </div>
-              {% endif %}
-              {% if project.procedures|length > 0 %}
-            	  <div class="col-xs-6 col-sm-{{ width }}">
-                  <h3>Procedures</h3>
-                  <ul>
-                    {% for proc in project.procedures|sort(attribute='name') %}
-                      {% if loop.index0 < 10 %}
-                        <li>{{ proc }}</li>
-                      {% elif loop.index0 == 10 %}
-                        <li><a href="{{ project_url }}/lists/procedures.html"><em>All procedures&hellip;</em></a></li>
-                      {% endif %}
-                    {% endfor %}
-                  </ul>
-              </div>
-              {% endif %}
-              {% if project.types|length > 0 %}
-            	  <div class="col-xs-6 col-sm-{{ width }}">
-                  <h3>Derived Types</h3>
-                  <ul>
-                    {% for dtype in project.types|sort(attribute='name') %}
-                      {% if loop.index0 < 10 %}
-                        <li>{{ dtype }}</li>
-                      {% elif loop.index0 == 10 %}
-                        <li><a href="{{ project_url }}/lists/types.html"><em>All derived types&hellip;</em></a></li>
-                      {% endif %}
-                    {% endfor %}
-                  </ul>
-              </div>
-              {% endif %}
+		{% set width = (12/count)|int %}
+        {% set max_length = max_frontpage_items|int %}
+      <div class="row">
+        {% if incl_src == "true" %}
+        <div class="col-xs-6 col-sm-{{ width }}">
+              <h3>Source Files</h3>
+              <ul>
+                {%- for src in (project.allfiles|sort(attribute='name'))[:max_length] -%}
+                  {% if loop.index0 < max_length %}
+                    <li>{{ src }}</li>
+                  {% elif loop.index0 == max_length %}
+                    <li><a href="{{ project_url }}/lists/files.html"><em>All source files&hellip;</em></a></li>
+                  {%- endif -%}
+                {%- endfor -%}
+              </ul>
           </div>
+        {% endif %}
+          {% if project.modules|length > 0 %}
+		  <div class="col-xs-6 col-sm-{{ width }}">
+              <h3>Modules</h3>
+              <ul>
+                {%- for mod in (project.modules|sort(attribute='name'))[:max_length] -%}
+                  {% if loop.index0 < max_length %}
+                    <li>{{ mod }}</li>
+                  {% elif loop.index0 == max_length %}
+                    <li><a href="{{ project_url }}/lists/modules.html"><em>All modules&hellip;</em></a></li>
+                  {%- endif -%}
+                {%- endfor -%}
+              </ul>
+          </div>
+          {% endif %}
+          {% if project.procedures|length > 0 %}
+		  <div class="col-xs-6 col-sm-{{ width }}">
+              <h3>Procedures</h3>
+              <ul>
+                {%- for proc in (project.procedures|sort(attribute='name'))[:max_length] -%}
+                  {% if loop.index0 < max_length %}
+                    <li>{{ proc }}</li>
+                  {% elif loop.index0 == max_length %}
+                    <li><a href="{{ project_url }}/lists/procedures.html"><em>All procedures&hellip;</em></a></li>
+                  {%- endif -%}
+                {%- endfor -%}
+              </ul>
+          </div>
+          {% endif %}
+          {% if project.types|length > 0 %}
+		  <div class="col-xs-6 col-sm-{{ width }}">
+              <h3>Derived Types</h3>
+              <ul>
+                {%- for dtype in (project.types|sort(attribute='name'))[:max_length] -%}
+                  {% if loop.index0 < max_length %}
+                    <li>{{ dtype }}</li>
+                  {% elif loop.index0 == max_length %}
+                    <li><a href="{{ project_url }}/lists/types.html"><em>All derived types&hellip;</em></a></li>
+                  {%- endif -%}
+                {%- endfor -%}
+              </ul>
+          </div>
+          {% endif %}
+      </div>
       {% endif %}
 {% endblock body %}
 
