@@ -323,6 +323,8 @@ def register_macro(string):
     # Everything OK, add the macro definition to the dict.
     _MACRO_DICT[key] = val
 
+    return (val, key)
+
 
 def sub_macros(string):
     '''
