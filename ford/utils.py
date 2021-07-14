@@ -39,7 +39,8 @@ else:
 NOTE_TYPE = {'note':'info',
              'warning':'warning',
              'todo':'success',
-             'bug':'danger'}
+             'bug':'danger',
+             'history':'history'}
 NOTE_RE = [re.compile(r"@({})\s*(((?!@({})).)*?)@end\1\s*(</p>)?".format(note,
            '|'.join(NOTE_TYPE.keys())), re.IGNORECASE|re.DOTALL) for note in NOTE_TYPE] \
         + [re.compile(r"@({})\s*(.*?)\s*</p>".format(note),
@@ -207,7 +208,7 @@ def sub_links(string,project):
                       'absinterface': 'absinterfaces',
                       'extabsinterface': 'extInterfaces',
                       'program': 'programs',
-                      'block': 'blockdata'}
+                      'block': 'blockdata' }
 
     SUBLINK_TYPES = { 'variable': 'variables',
                       'type': 'types',
@@ -265,7 +266,7 @@ def sub_links(string,project):
             else:
                 if match.group(4).lower() in SUBLINK_TYPES:
                     if hasattr(item,SUBLINK_TYPES[match.group(4).lower()]):
-                        if match.group(4).lower == 'constructor':
+                        if match.group(4).lower() == 'constructor':
                             if item.constructor:
                                 searchlist.append(item.constructor)
                         else:
@@ -306,23 +307,21 @@ def register_macro(string):
     key is None if no key definition is found in the string.
     '''
 
-    chunks = string.split('=')
-    if len(chunks) > 1:
-        key = '|{0}|'.format(chunks[0].strip())
-        val = '='.join(chunks[1:]).strip()
+    if "=" not in string:
+        raise RuntimeError('Error, no alias name provided for {0}'.format(string))
 
-        if key in _MACRO_DICT:
-            # The macro is already defined. Do not overwrite it!
-            # Can be ignored if the definition is the same...
-            if val != _MACRO_DICT[key]:
-                raise RuntimeError('Could not register macro {0} as {1} because it is already defined as {2}.'.format(key, val, _MACRO_DICT[key]))
-        else:
-            # Everything OK, add the macro definition to the dict.
-            _MACRO_DICT[key] = val
-        return (val, key)
-    else:
-        # No macro definition, just return the original string as value.
-        return (string, None)
+    chunks = string.split('=', 1)
+    key = '|{0}|'.format(chunks[0].strip())
+    val = chunks[1]
+
+    if key in _MACRO_DICT:
+        # The macro is already defined. Do not overwrite it!
+        # Can be ignored if the definition is the same...
+        if val != _MACRO_DICT[key]:
+            raise RuntimeError('Could not register macro "{0}" as "{1}" because it is already defined as "{2}".'.format(key, val, _MACRO_DICT[key]))
+
+    # Everything OK, add the macro definition to the dict.
+    _MACRO_DICT[key] = val
 
 
 def sub_macros(string):

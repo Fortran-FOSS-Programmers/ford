@@ -82,6 +82,7 @@ LICENSES = { 'by': '<a rel="license" href="http://creativecommons.org/licenses/b
              'pdl': '<a rel="license" href="http://www.openoffice.org/licenses/PDL.html">Public Documentation License</a>',
              'bsd': '<a rel="license" href="http://www.freebsd.org/copyright/freebsd-doc-license.html">FreeBSD Documentation License</a>',
              'isc': '<a rel="license" href="https://opensource.org/licenses/ISC">ISC (Internet Systems Consortium) License</a>',
+             'mit': '<a rel="license" href="https://opensource.org/licenses/">MIT</a>',
              '': ''
            }
 
@@ -97,7 +98,7 @@ def initialize():
         ncpus = '0'
 
     # Setup the command-line options and parse them.
-    parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
+    parser = argparse.ArgumentParser("ford", description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
     parser.add_argument("project_file",help="file containing the description and settings for the project",
                         type=argparse.FileType('r'))
     parser.add_argument("-d","--src_dir",action="append",help='directories containing all source files for the project')
@@ -111,6 +112,8 @@ def initialize():
     parser.add_argument("-m","--macro",action="append",help="preprocessor macro (and, optionally, its value) to be applied to files in need of preprocessing.")
     parser.add_argument("-w","--warn",dest='warn',action='store_true',
                         help="display warnings for undocumented items")
+    parser.add_argument("-f","--force",dest='force',action="store_true",
+                        help="continue to read file if fatal errors")
     parser.add_argument("--no-search",dest='search',action='store_false',
                         help="don't process documentation to produce a search feature")
     parser.add_argument("-q","--quiet",dest='quiet',action='store_true',
@@ -118,7 +121,7 @@ def initialize():
     parser.add_argument("-V", "--version", action="version",
                         version="{}, version {}".format(__appname__,__version__))
     parser.add_argument("--debug",dest="dbg",action="store_true",
-                        help="display traceback if fatal exception occurs")
+                        help="display traceback if fatal exception occurs and print faulty line")
     parser.add_argument("-I","--include",action="append",
                         help="any directories which should be searched for include files")
     parser.add_argument("--externalize", action="store_const", const='true',
@@ -162,20 +165,23 @@ FORD will look in the provided paths for a modules.json file.
     options = ['src_dir','extensions','fpp_extensions','fixed_extensions',
                'output_dir','css','exclude', 'external', 'externalize',
                'project','author','author_description','author_pic',
-               'summary','github','bitbucket','facebook','twitter',
-               'google_plus','linkedin','email','website','project_github',
+               'summary','github','gitlab','bitbucket','facebook','twitter',
+               'google_plus','linkedin','email','website','project_github','project_gitlab',
                'project_bitbucket','project_website','project_download',
-               'project_sourceforge','project_url','display','hide_undoc','version',
+               'project_sourceforge','project_url', 'doc_license',
+               'display','hide_undoc','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
-               'incl_src','alias','copy_subdir',
+               'privacy_policy_url','terms_of_service_url',
+               'incl_src', 'force','copy_subdir','alias',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
                'graph_maxdepth', 'graph_maxnodes',
                'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar','mathjax_config','parallel',
-               'revision', 'fixed_length_limit']
+               'revision', 'fixed_length_limit','max_frontpage_items',
+               'encoding']
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
@@ -206,6 +212,7 @@ FORD will look in the provided paths for a modules.json file.
                 'preprocessor':        '',
                 'proc_internals':      'false',
                 'warn':                'false',
+                'force':               'false',
                 'quiet':               'false',
                 'search':              'true',
                 'lower':               'false',
@@ -216,22 +223,28 @@ FORD will look in the provided paths for a modules.json file.
                 'graph_maxdepth':      '10000',
                 'graph_maxnodes':      '1000000000',
                 'license':             '',
+                'doc_license':         '',
                 'extra_filetypes':     [],
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': 'false',
                 'coloured_edges':      'false',
                 'parallel':            ncpus,
                 'fixed_length_limit':  'true',
+                'max_frontpage_items': 10,
+                'encoding':            'utf-8',
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
-                'extra_vartypes','src_dir','alias','exclude','exclude_dir',
-                'macro','include','extra_mods','extra_filetypes','external',
-                'copy_subdir']
+                'extra_vartypes','src_dir','exclude','exclude_dir',
+                'macro','include','extra_mods','extra_filetypes','copy_subdir','alias']
     # Evaluate paths relative to project file location
     if args.warn:
         args.warn = 'true'
     else:
         del args.warn
+    if args.force:
+        args.force = 'true'
+    else:
+        del args.force
     if args.quiet:
         args.quiet = 'true'
     else:
@@ -288,7 +301,7 @@ FORD will look in the provided paths for a modules.json file.
             else:
                 break
         else:
-            print('Error: directory containing source-code {} a subdirectory of output directory {}.'.format(proj_data['output_dir'],projdir))
+            print('Error: directory containing source-code {} a subdirectory of output directory {}.'.format(projdir,proj_data['output_dir']))
             sys.exit(1)
     # Check that none of the docmarks are the same
     if proj_data['docmark'] == proj_data['predocmark'] != '':
@@ -341,12 +354,17 @@ FORD will look in the provided paths for a modules.json file.
             proj_data['preprocess'] = 'true'
             proj_data['preprocessor'] = preprocessor
     
-    # Get correct license
+    # Get the correct license for project license or use value as a custom license value.
     try:
         proj_data['license'] = LICENSES[proj_data['license'].lower()]
     except KeyError:
-        print('Warning: license "{}" not recognized.'.format(proj_data['license']))
-        proj_data['license'] = ''
+        print('Notice: license "{}" is not a recognized value, using the value as a custom license value.'.format(proj_data['license']))
+    # Get the correct license for doc license(website or doc) or use value as a custom license value.
+    try:
+        proj_data['doc_license'] = LICENSES[proj_data['doc_license'].lower()]
+    except KeyError:
+        print('Notice: doc_license "{}" is not a recognized value, using the value as a custom license value.'.format(proj_data['doc_license']))
+        
     # Return project data, docs, and the Markdown reader
     md.reset()
     md.Meta = {}
@@ -364,15 +382,6 @@ def main(proj_data,proj_docs,md):
         print("Error: No source files with appropriate extension found in specified directory.")
         sys.exit(1)        
 
-    # Define core macros:
-    ford.utils.register_macro('url = {0}'.format(proj_data['project_url']))
-    ford.utils.register_macro( 'media = {0}'.format(
-                                    os.path.join(proj_data['project_url'],
-                                                 'media') ) )
-    ford.utils.register_macro( 'page = {0}'.format(
-                                    os.path.join(proj_data['project_url'],
-                                                 'page') ) )
-
     # Convert the documentation from Markdown to HTML. Make sure to properly
     # handle LateX and metadata.
     if proj_data['relative']:
@@ -385,11 +394,18 @@ def main(proj_data,proj_docs,md):
     else:
         project.make_links(proj_data['project_url'])
 
+    # Define core macros:
+    ford.utils.register_macro('url = {0}'.format(proj_data['project_url']))
+    ford.utils.register_macro( 'media = {0}'.format(
+                                    os.path.join(proj_data['project_url'],
+                                                 'media') ) )
+    ford.utils.register_macro( 'page = {0}'.format(
+                                    os.path.join(proj_data['project_url'],
+                                                 'page') ) )
+
     # Register the user defined aliases:
     for alias in proj_data['alias']:
-        val, key = ford.utils.register_macro(alias)
-        if key == None:
-            raise RuntimeError('Error, no alias name provided for {0}'.format(val))
+        ford.utils.register_macro(alias)
 
     # Convert summaries and descriptions to HTML
     if proj_data['relative']: ford.sourceform.set_base_url('.')
