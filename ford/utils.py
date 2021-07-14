@@ -420,19 +420,20 @@ def external(project, make=False, path='.'):
         extObj.obj = extDict['obj']
         extObj.parent = parent
         for key in attribs:
-            if key in extDict:
-                if type(extDict[key]) == str:
-                    setattr(extObj, key, extDict[key])
-                elif type(extDict[key]) == list:
-                    tmpLs = []
-                    for item in extDict[key]:
-                        tmpLs.append(dict2obj(item, url, extObj))
-                    setattr(extObj, key, tmpLs)
-                elif type(extDict[key]) == dict:
-                    tmpDict = {}
-                    for key2, val in extDict[key].items():
-                        tmpDict[key2] = dict2obj(val, url, extObj)
-                    setattr(extObj, key, tmpDict)
+            if key not in extDict:
+                continue
+            if type(extDict[key]) == str:
+                setattr(extObj, key, extDict[key])
+            elif type(extDict[key]) == list:
+                tmpLs = []
+                for item in extDict[key]:
+                    tmpLs.append(dict2obj(item, url, extObj))
+                setattr(extObj, key, tmpLs)
+            elif type(extDict[key]) == dict:
+                tmpDict = {}
+                for key2, val in extDict[key].items():
+                    tmpDict[key2] = dict2obj(val, url, extObj)
+                setattr(extObj, key, tmpDict)
         return extObj
 
     if make:
