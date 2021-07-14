@@ -110,3 +110,30 @@ def test_sync_images_in_submodule_procedure(tmp_path):
     settings["docmark"] = "!"
 
     FortranSourceFile(str(filename), settings)
+
+
+def test_function_and_subroutine_call_on_same_line(tmp_path):
+    """Regex does not check for nested calls #256"""
+
+    data = """\
+    program test
+    call bar(foo())
+    contains
+    integer function foo()
+    end function foo
+    subroutine bar(thing)
+      integer, intent(in) :: thing
+    end subroutine bar
+    end program test
+    """
+
+    filename = tmp_path / "test.f90"
+    with open(filename, "w") as f:
+        f.write(data)
+
+    settings = defaultdict(str)
+    settings["docmark"] = "!"
+
+    fortran_file = FortranSourceFile(str(filename), settings)
+    program = fortran_file.programs[0]
+    assert len(program.calls) == 2
