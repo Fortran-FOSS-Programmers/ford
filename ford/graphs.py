@@ -254,24 +254,28 @@ class TypeNode(BaseNode):
                     self.ancestor = gd.get_node(obj.extends,FortranType,newdict(hist,obj,self))
                 self.ancestor.children.add(self)
                 self.ancestor.visible = getattr(obj.extends,'visible',True)
-            if not hasattr(obj, 'extURL'):
-                for var in obj.local_variables:
-                    if (var.vartype == 'type' or var.vartype == 'class') and var.proto[0] != '*':
-                        if var.proto[0] == obj:
-                            n = self
-                        elif var.proto[0] in hist:
-                            n = hist[var.proto[0]]
-                        else:
-                            n = gd.get_node(var.proto[0],FortranType,newdict(hist,obj,self))
-                        n.visible = getattr(var.proto[0],'visible',True)
-                        if self in n.comp_of:
-                            n.comp_of[self] += ', ' + var.name
-                        else:
-                            n.comp_of[self] = var.name
-                        if n in self.comp_types:
-                            self.comp_types[n] += ', ' + var.name
-                        else:
-                            self.comp_types[n] = var.name
+
+            if hasattr(obj, 'extURL'):
+                # Stop following chain, as this object is in an external project
+                return
+
+            for var in obj.local_variables:
+                if (var.vartype == 'type' or var.vartype == 'class') and var.proto[0] != '*':
+                    if var.proto[0] == obj:
+                        n = self
+                    elif var.proto[0] in hist:
+                        n = hist[var.proto[0]]
+                    else:
+                        n = gd.get_node(var.proto[0],FortranType,newdict(hist,obj,self))
+                    n.visible = getattr(var.proto[0],'visible',True)
+                    if self in n.comp_of:
+                        n.comp_of[self] += ', ' + var.name
+                    else:
+                        n.comp_of[self] = var.name
+                    if n in self.comp_types:
+                        self.comp_types[n] += ', ' + var.name
+                    else:
+                        self.comp_types[n] = var.name
 
 
 class ProcNode(BaseNode):
