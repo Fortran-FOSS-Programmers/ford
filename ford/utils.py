@@ -312,7 +312,7 @@ def register_macro(string):
 
     chunks = string.split('=', 1)
     key = '|{0}|'.format(chunks[0].strip())
-    val = chunks[1]
+    val = chunks[1].strip()
 
     if key in _MACRO_DICT:
         # The macro is already defined. Do not overwrite it!
