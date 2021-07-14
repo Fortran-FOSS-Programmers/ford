@@ -29,6 +29,8 @@ from __future__ import print_function
 import os
 import toposort
 import ford.utils
+import ford.sourceform
+
 
 INTRINSIC_MODS = {'iso_fortran_env': '<a href="http://fortranwiki.org/fortran/show/ISO_FORTRAN_ENV">iso_fortran_env</a>',
                   'iso_c_binding': '<a href="http://fortranwiki.org/fortran/show/ISO_C_BINDING">iso_c_binding</a>',
