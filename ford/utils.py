@@ -29,12 +29,9 @@ import os.path
 import json
 import sys
 import ford.sourceform
-if (sys.version_info[0] > 2):
-    from urllib.request import urlopen
-    from urllib.parse import urljoin
-else:
-    from urllib import urlopen
-    from urlparse import urljoin
+from urllib.request import urlopen
+from urllib.parse import urljoin
+
 
 NOTE_TYPE = {'note':'info',
              'warning':'warning',
