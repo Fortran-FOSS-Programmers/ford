@@ -293,23 +293,21 @@ def register_macro(string):
     key is None if no key definition is found in the string.
     '''
 
-    chunks = string.split('=')
-    if len(chunks) > 1:
-        key = '|{0}|'.format(chunks[0].strip())
-        val = '='.join(chunks[1:]).strip()
+    if "=" not in string:
+        raise RuntimeError('Error, no alias name provided for {0}'.format(string))
 
-        if key in _MACRO_DICT:
-            # The macro is already defined. Do not overwrite it!
-            # Can be ignored if the definition is the same...
-            if val != _MACRO_DICT[key]:
-                raise RuntimeError('Could not register macro {0} as {1} because it is already defined as {2}.'.format(key, val, _MACRO_DICT[key]))
-        else:
-            # Everything OK, add the macro definition to the dict.
-            _MACRO_DICT[key] = val
-        return (val, key)
-    else:
-        # No macro definition, just return the original string as value.
-        return (string, None)
+    chunks = string.split('=', 1)
+    key = '|{0}|'.format(chunks[0].strip())
+    val = chunks[1]
+
+    if key in _MACRO_DICT:
+        # The macro is already defined. Do not overwrite it!
+        # Can be ignored if the definition is the same...
+        if val != _MACRO_DICT[key]:
+            raise RuntimeError('Could not register macro "{0}" as "{1}" because it is already defined as "{2}".'.format(key, val, _MACRO_DICT[key]))
+
+    # Everything OK, add the macro definition to the dict.
+    _MACRO_DICT[key] = val
 
 
 def sub_macros(string):

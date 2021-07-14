@@ -387,9 +387,7 @@ def main(proj_data,proj_docs,md):
                                                  'page') ) )
     # Register the user defined aliases:
     for alias in proj_data['alias']:
-        val, key = ford.utils.register_macro(alias)
-        if key == None:
-            raise RuntimeError('Error, no alias name provided for {0}'.format(val))
+        ford.utils.register_macro(alias)
 
     # Convert summaries and descriptions to HTML
     if proj_data['relative']: ford.sourceform.set_base_url('.')
