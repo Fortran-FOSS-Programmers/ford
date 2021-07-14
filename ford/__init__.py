@@ -96,7 +96,7 @@ def initialize():
         ncpus = '0'
 
     # Setup the command-line options and parse them.
-    parser = argparse.ArgumentParser(description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
+    parser = argparse.ArgumentParser("ford", description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.")
     parser.add_argument("project_file",help="file containing the description and settings for the project",
                         type=argparse.FileType('r'))
     parser.add_argument("-d","--src_dir",action="append",help='directories containing all source files for the project')
