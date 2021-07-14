@@ -2313,16 +2313,8 @@ def line_to_variables(source, line, inherit_permission, parent):
             search_from = 0
             while QUOTES_RE.search(initial[search_from:]):
                 num = int(QUOTES_RE.search(initial[search_from:]).group()[1:-1])
-                old_string = NBSP_RE.sub('&nbsp;',parent.strings[num])
-                string = ''
-                for i in range(len(old_string)):
-                    if old_string[i] == "\\" and (old_string[i+1] in '0123456789' or
-                                                   old_string[i+1] == 'g'):
-                        string += r'\\'
-                    elif old_string[i] == '(' and old_string[i+1] =='?':
-                        string += r'\('
-                    else:
-                        string += old_string[i]
+                string = NBSP_RE.sub('&nbsp;',parent.strings[num])
+                string = string.replace('\\','\\\\')
                 initial = initial[0:search_from] + QUOTES_RE.sub(string,initial[search_from:],count=1)
                 search_from += QUOTES_RE.search(initial[search_from:]).end(0)
 
