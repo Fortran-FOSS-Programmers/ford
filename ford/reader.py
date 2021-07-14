@@ -87,7 +87,8 @@ class FortranReader(object):
             preprocessor = preprocessor + macros + incdirs + [filename]
             fpp = subprocess.Popen(preprocessor, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
-                                   universal_newlines=True)
+                                   universal_newlines=True,
+                                   encoding=encoding)
             (out, err) = fpp.communicate()
 
             if len(err) > 0:
@@ -95,7 +96,7 @@ class FortranReader(object):
                 print(err)
                 self.reader = open(filename,'r', encoding=encoding)
             else:
-                self.reader = StringIO(str(out), encoding=encoding)
+                self.reader = StringIO(out)
         else:
             self.reader = open(filename,'r', encoding=encoding)
         
