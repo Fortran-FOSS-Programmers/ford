@@ -29,6 +29,7 @@ def test_extends(tmp_path):
 
     settings = defaultdict(str)
     settings["docmark"] = "!"
+    settings["encoding"] = "utf-8"
 
     fortran_type = FortranSourceFile(str(filename), settings)
 
@@ -71,6 +72,7 @@ def test_submodule_procedure_contains(tmp_path):
 
     settings = defaultdict(str)
     settings["docmark"] = "!"
+    settings["encoding"] = "utf-8"
 
     fortran_type = FortranSourceFile(str(filename), settings)
 
@@ -108,6 +110,7 @@ def test_sync_images_in_submodule_procedure(tmp_path):
 
     settings = defaultdict(str)
     settings["docmark"] = "!"
+    settings["encoding"] = "utf-8"
 
     FortranSourceFile(str(filename), settings)
 
@@ -133,6 +136,7 @@ def test_function_and_subroutine_call_on_same_line(tmp_path):
 
     settings = defaultdict(str)
     settings["docmark"] = "!"
+    settings["encoding"] = "utf-8"
 
     fortran_file = FortranSourceFile(str(filename), settings)
     program = fortran_file.programs[0]
