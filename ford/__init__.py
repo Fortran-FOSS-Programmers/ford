@@ -234,7 +234,7 @@ FORD will look in the provided paths for a modules.json file.
                 'encoding':            'utf-8',
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
-                'extra_vartypes','src_dir','exclude','exclude_dir',
+                'extra_vartypes','src_dir','exclude','exclude_dir', 'external',
                 'macro','include','extra_mods','extra_filetypes','copy_subdir','alias']
     # Evaluate paths relative to project file location
     if args.warn:
