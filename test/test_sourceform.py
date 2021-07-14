@@ -80,3 +80,33 @@ def test_submodule_procedure_contains(tmp_path):
     assert len(submodule.modprocedures) == 1
     module_procedure = submodule.modprocedures[0]
     assert len(module_procedure.subroutines) == 1
+
+
+def test_sync_images_in_submodule_procedure(tmp_path):
+    """Crash on sync images inside module procedure in submodule #237"""
+
+    data = """\
+    module stuff
+      interface
+        module subroutine foo()
+        end subroutine
+      end interface
+    end module
+
+    submodule(stuff) sub_stuff
+      implicit none
+    contains
+      module procedure foo
+        sync images(1)
+      end procedure
+    end submodule
+    """
+
+    filename = tmp_path / "test.f90"
+    with open(filename, "w") as f:
+        f.write(data)
+
+    settings = defaultdict(str)
+    settings["docmark"] = "!"
+
+    FortranSourceFile(str(filename), settings)
