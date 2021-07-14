@@ -53,6 +53,9 @@ class Documentation(object):
     a project.
     """
     def __init__(self,data,proj_docs,project,pagetree):
+        env.globals['projectData'] = data   # This lets us use meta data anywhere within the template.
+                                            # Also, in future for other template, we may not need to
+                                            # pass the data obj.                             
         self.project = project
         self.data = data
         self.pagetree = []
