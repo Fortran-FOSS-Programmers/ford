@@ -200,22 +200,22 @@ class FortranBase(object):
         self.hierarchy.reverse()
 
     def get_dir(self):
-        if ( type(self) in [FortranSubroutine, ExtSubroutine,
-                            FortranFunction, ExtFunction] and
-             type(self.parent) in [FortranInterface, ExtInterface] and
+        if ( type(self) in [FortranSubroutine, ExternalSubroutine,
+                            FortranFunction, ExternalFunction] and
+             type(self.parent) in [FortranInterface, ExternalInterface] and
              not self.parent.generic ):
             return 'interface'
         elif type(self) is FortranSubmodule:
             return 'module'
         elif ( type(self) in [FortranSourceFile,FortranProgram,FortranModule,
-                              GenericSource,FortranBlockData, ExtModule]
-               or ( type(self) in [FortranType, ExtType, FortranInterface,
-                                   ExtInterface, FortranFunction, ExtFunction,
-                                   FortranSubroutine, ExtSubroutine,
+                              GenericSource,FortranBlockData, ExternalModule]
+               or ( type(self) in [FortranType, ExternalType, FortranInterface,
+                                   ExternalInterface, FortranFunction, ExternalFunction,
+                                   FortranSubroutine, ExternalSubroutine,
                                    FortranSubmoduleProcedure]
                     and type(self.parent) in [FortranSourceFile,FortranProgram,
                                               FortranModule, FortranSubmodule,
-                                              FortranBlockData, ExtModule] ) ):
+                                              FortranBlockData, ExternalModule] ) ):
             return self.obj
         else:
             return None
@@ -2539,7 +2539,7 @@ class NameSelector(object):
 namelist = NameSelector()
 
 
-class ExtModule(FortranModule):
+class ExternalModule(FortranModule):
 
     def __init__(self):
         self.name = ''
@@ -2551,35 +2551,35 @@ class ExtModule(FortranModule):
         self.extURL = ''
 
 
-class ExtFunction(FortranFunction):
+class ExternalFunction(FortranFunction):
 
     def __init__(self):
         self.name = ''
         self.extURL = ''
 
 
-class ExtSubroutine(FortranSubroutine):
+class ExternalSubroutine(FortranSubroutine):
 
     def __init__(self):
         self.name = ''
         self.extURL = ''
 
 
-class ExtInterface(FortranInterface):
+class ExternalInterface(FortranInterface):
 
     def __init__(self):
         self.name = ''
         self.extURL = ''
 
 
-class ExtType(FortranType):
+class ExternalType(FortranType):
 
     def __init__(self):
         self.name = ''
         self.extURL = ''
 
 
-class ExtVariable(FortranVariable):
+class ExternalVariable(FortranVariable):
 
     def __init__(self):
         self.name = ''
