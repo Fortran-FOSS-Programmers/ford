@@ -116,8 +116,8 @@ def get_page_tree(topdir,proj_copy_subdir,md,parent=None):
             if os.path.isdir(os.path.join(topdir,name)):
                 # recurse into subdirectories
                 traversedir = True
-                if not parent==None:
-                    traversedir = not name in parent.copy_subdir
+                if parent is not None:
+                    traversedir = name not in parent.copy_subdir
                 if traversedir:
                     subnode = get_page_tree( os.path.join(topdir,name),
                                              proj_copy_subdir, md, node )
