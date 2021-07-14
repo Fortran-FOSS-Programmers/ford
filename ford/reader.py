@@ -59,7 +59,7 @@ class FortranReader(object):
 
     def __init__(self,filename,docmark='!',predocmark='',docmark_alt='',
                  predocmark_alt='',fixed=False,length_limit=True,
-                 preprocessor=None,macros=[],inc_dirs=[]):
+                 preprocessor=None,macros=[],inc_dirs=[], encoding='utf-8'):
         self.name = filename
         
         # Check that none of the docmarks are the same
@@ -87,21 +87,22 @@ class FortranReader(object):
             preprocessor = preprocessor + macros + incdirs + [filename]
             fpp = subprocess.Popen(preprocessor, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
-                                   universal_newlines=True)
+                                   universal_newlines=True,
+                                   encoding=encoding)
             (out, err) = fpp.communicate()
 
             if len(err) > 0:
                 print('Warning: error preprocessing '+filename)
                 print(err)
-                self.reader = open(filename,'r')
+                self.reader = open(filename,'r', encoding=encoding)
             else:
-                self.reader = StringIO(str(out))
+                self.reader = StringIO(out)
         else:
-            self.reader = open(filename,'r')
+            self.reader = open(filename,'r', encoding=encoding)
         
         if fixed:
             self.reader = convertToFree(self.reader, length_limit)
-        
+
         self.fixed = fixed
         self.length_limit = length_limit
         self.inc_dirs = inc_dirs
@@ -112,6 +113,7 @@ class FortranReader(object):
         self.docmark = docmark
         self.doc_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(re.escape(docmark)))
         self.predocmark = predocmark
+        self.encoding = encoding
         if len(self.predocmark) != 0:
             self.predoc_re = re.compile("^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(re.escape(predocmark)))
         else:
@@ -156,9 +158,7 @@ class FortranReader(object):
         reading_predoc = False
         reading_predoc_alt = 0
         linebuffer = ""
-        count = 0
         while not done:
-            count += 1
             
             if (sys.version_info[0]>2):
                 line = self.reader.__next__()
@@ -297,7 +297,7 @@ class FortranReader(object):
         else:
             tmp = self.docbuffer.pop(0)
             if tmp != "!"+self.docmark:
-                self.prevdoc = True;
+                self.prevdoc = True
             return tmp
 
     def include(self):
@@ -325,12 +325,13 @@ class FortranReader(object):
         self.pending = list(FortranReader(name, self.docmark, self.predocmark, 
                                           self.docmark_alt, self.predocmark_alt,
                                           self.fixed, self.length_limit,
-                                          inc_dirs=self.inc_dirs)) + self.pending
+                                          inc_dirs=self.inc_dirs, 
+                                          encoding=self.encoding)) + self.pending
 
 
 if __name__ == '__main__':
     filename = sys.argv[1]
-    for line in FortranReader(filename,docmark='!',predocmark='>',docmark_alt='#',predocmark_alt='<'):
+    for line in FortranReader(filename,docmark='!',predocmark='>',docmark_alt='#',predocmark_alt='<',encoding=self.encoding):
         print(line)
         continue
 

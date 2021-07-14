@@ -110,6 +110,8 @@ def initialize():
     parser.add_argument("-m","--macro",action="append",help="preprocessor macro (and, optionally, its value) to be applied to files in need of preprocessing.")
     parser.add_argument("-w","--warn",dest='warn',action='store_true',
                         help="display warnings for undocumented items")
+    parser.add_argument("-f","--force",dest='force',action="store_true",
+                        help="continue to read file if fatal errors")
     parser.add_argument("--no-search",dest='search',action='store_false',
                         help="don't process documentation to produce a search feature")
     parser.add_argument("-q","--quiet",dest='quiet',action='store_true',
@@ -117,7 +119,7 @@ def initialize():
     parser.add_argument("-V", "--version", action="version",
                         version="{}, version {}".format(__appname__,__version__))
     parser.add_argument("--debug",dest="dbg",action="store_true",
-                        help="display traceback if fatal exception occurs")
+                        help="display traceback if fatal exception occurs and print faulty line")
     parser.add_argument("-I","--include",action="append",
                         help="any directories which should be searched for include files")
     # Get options from command-line
@@ -154,14 +156,15 @@ def initialize():
                'project_sourceforge','project_url','display','hide_undoc','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
-               'incl_src',
+               'incl_src', 'force',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
                'graph_maxdepth', 'graph_maxnodes',
                'license','extra_filetypes','preprocessor','creation_date',
                'print_creation_date','proc_internals','coloured_edges',
                'graph_dir','gitter_sidecar','mathjax_config','parallel',
-               'revision', 'fixed_length_limit','max_frontpage_items']
+               'revision', 'fixed_length_limit','max_frontpage_items',
+               'encoding']
     defaults = {'src_dir':             ['./src'],
                 'extensions':          ['f90','f95','f03','f08','f15'],
                 'fpp_extensions':      ['F90','F95','F03','F08','F15','F','FOR'],
@@ -188,6 +191,7 @@ def initialize():
                 'preprocessor':        '',
                 'proc_internals':      'false',
                 'warn':                'false',
+                'force':               'false',
                 'quiet':               'false',
                 'search':              'true',
                 'lower':               'false',
@@ -205,6 +209,7 @@ def initialize():
                 'parallel':            ncpus,
                 'fixed_length_limit':  'true',
                 'max_frontpage_items': 10,
+                'encoding':            'utf-8',
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
@@ -214,6 +219,10 @@ def initialize():
         args.warn = 'true'
     else:
         del args.warn
+    if args.force:
+        args.force = 'true'
+    else:
+        del args.force
     if args.quiet:
         args.quiet = 'true'
     else:
