@@ -75,3 +75,8 @@ def test_submodule_procedure_contains(tmp_path):
     fortran_type = FortranSourceFile(str(filename), settings)
 
     assert len(fortran_type.modules) == 1
+    assert len(fortran_type.submodules) == 1
+    submodule = fortran_type.submodules[0]
+    assert len(submodule.modprocedures) == 1
+    module_procedure = submodule.modprocedures[0]
+    assert len(module_procedure.subroutines) == 1
