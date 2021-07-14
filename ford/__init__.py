@@ -81,6 +81,7 @@ LICENSES = { 'by': '<a rel="license" href="http://creativecommons.org/licenses/b
              'opl': '<a rel="license" href="http://opencontent.org/openpub/">Open Publication License</a>',
              'pdl': '<a rel="license" href="http://www.openoffice.org/licenses/PDL.html">Public Documentation License</a>',
              'bsd': '<a rel="license" href="http://www.freebsd.org/copyright/freebsd-doc-license.html">FreeBSD Documentation License</a>',
+             'mit': '<a rel="license" href="https://opensource.org/licenses/">MIT</a>',
              '': ''
            }
 
@@ -153,9 +154,11 @@ def initialize():
                'summary','github','gitlab','bitbucket','facebook','twitter',
                'google_plus','linkedin','email','website','project_github','project_gitlab',
                'project_bitbucket','project_website','project_download',
-               'project_sourceforge','project_url','display','hide_undoc','version',
+               'project_sourceforge','project_url', 'doc_license',
+               'display','hide_undoc','version',
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
+               'privacy_policy_url','terms_of_service_url',
                'incl_src', 'force',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
@@ -202,6 +205,7 @@ def initialize():
                 'graph_maxdepth':      '10000',
                 'graph_maxnodes':      '1000000000',
                 'license':             '',
+                'doc_license':         '',
                 'extra_filetypes':     [],
                 'creation_date':       '%Y-%m-%dT%H:%M:%S.%f%z',
                 'print_creation_date': False,
@@ -332,12 +336,17 @@ def initialize():
             proj_data['preprocess'] = 'true'
             proj_data['preprocessor'] = preprocessor
     
-    # Get correct license
+    # Get the correct license for project license or use value as a custom license value.
     try:
         proj_data['license'] = LICENSES[proj_data['license'].lower()]
     except KeyError:
-        print('Warning: license "{}" not recognized.'.format(proj_data['license']))
-        proj_data['license'] = ''
+        print('Notice: license "{}" is not a recognized value, using the value as a custom license value.'.format(proj_data['license']))
+    # Get the correct license for doc license(website or doc) or use value as a custom license value.
+    try:
+        proj_data['doc_license'] = LICENSES[proj_data['doc_license'].lower()]
+    except KeyError:
+        print('Notice: doc_license "{}" is not a recognized value, using the value as a custom license value.'.format(proj_data['doc_license']))
+        
     # Return project data, docs, and the Markdown reader
     md.reset()
     md.Meta = {}
