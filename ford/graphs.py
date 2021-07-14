@@ -32,10 +32,10 @@ import colorsys
 
 from graphviz import Digraph
 
-from ford.sourceform import (FortranFunction, ExtFunction, FortranSubroutine,
-                             ExtSubroutine, FortranInterface, ExtInterface,
-                             FortranProgram, FortranType, ExtType,
-                             FortranModule, ExtModule, FortranSubmodule,
+from ford.sourceform import (FortranFunction, ExternalFunction, FortranSubroutine,
+                             ExternalSubroutine, FortranInterface, ExternalInterface,
+                             FortranProgram, FortranType, ExternalType,
+                             FortranModule, ExternalModule, FortranSubmodule,
                              FortranSubmoduleProcedure, FortranSourceFile,
                              FortranBlockData)
 
@@ -78,22 +78,22 @@ def newdict(old,key,val):
     return new
 
 def is_module(obj,cls):
-    return (isinstance(obj, (FortranModule, ExtModule))
-            or issubclass(cls, (FortranModule, ExtModule)))
+    return (isinstance(obj, (FortranModule, ExternalModule))
+            or issubclass(cls, (FortranModule, ExternalModule)))
 
 def is_submodule(obj,cls):
     return isinstance(obj,FortranSubmodule) or issubclass(cls,FortranSubmodule)
     
 def is_type(obj,cls):
-    return (isinstance(obj, (FortranType, ExtType))
-            or issubclass(cls, (FortranType, ExtType)))
+    return (isinstance(obj, (FortranType, ExternalType))
+            or issubclass(cls, (FortranType, ExternalType)))
 
 def is_proc(obj,cls):
-    return (isinstance(obj,(FortranFunction, ExtFunction, FortranSubroutine,
-                            ExtSubroutine, FortranInterface, ExtInterface,
+    return (isinstance(obj,(FortranFunction, ExternalFunction, FortranSubroutine,
+                            ExternalSubroutine, FortranInterface, ExternalInterface,
                             FortranSubmoduleProcedure))
-         or issubclass(cls,(FortranFunction, ExtFunction, FortranSubroutine,
-                            ExtSubroutine, FortranInterface, ExtInterface,
+         or issubclass(cls,(FortranFunction, ExternalFunction, FortranSubroutine,
+                            ExternalSubroutine, FortranInterface, ExternalInterface,
                             FortranSubmoduleProcedure)))
 
 def is_program(obj, cls):

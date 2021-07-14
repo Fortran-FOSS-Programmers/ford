@@ -392,27 +392,27 @@ def external(project, make=False, path='.'):
         Converts a dictionary to an object.
         '''
         if extDict['obj'].lower() == 'module':
-            extObj = ford.sourceform.ExtModule()
+            extObj = ford.sourceform.ExternalModule()
             project.extModules.append(extObj)
         elif extDict['obj'].lower() == 'proc':
             if extDict['proctype'].lower() == 'function':
-                extObj = ford.sourceform.ExtFunction()
+                extObj = ford.sourceform.ExternalFunction()
             elif extDict['proctype'].lower() == 'subroutine':
-                extObj = ford.sourceform.ExtSubroutine()
+                extObj = ford.sourceform.ExternalSubroutine()
             elif extDict['proctype'].lower() == 'interface':
-                extObj = ford.sourceform.ExtInterface()
+                extObj = ford.sourceform.ExternalInterface()
             project.extProcedures.append(extObj)
             extObj.proctype = extDict['proctype']
         elif extDict['obj'].lower() == 'interface':
-            extObj = ford.sourceform.ExtInterface()
+            extObj = ford.sourceform.ExternalInterface()
             project.extInterfaces.append(extObj)
             extObj.proctype = extDict['proctype']
         elif extDict['obj'].lower() == 'type':
-            extObj = ford.sourceform.ExtType()
+            extObj = ford.sourceform.ExternalType()
             project.extTypes.append(extObj)
             extObj.extends = extDict['extends']
         elif extDict['obj'].lower() == 'variable':
-            extObj = ford.sourceform.ExtVariable()
+            extObj = ford.sourceform.ExternalVariable()
             project.extVariables.append(extObj)
         extObj.name = extDict['name']
         if extDict['extURL']:
