@@ -43,22 +43,22 @@ from pygments.formatters import HtmlFormatter
 import ford.reader
 import ford.utils
 
-VAR_TYPE_STRING = "^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
-VARKIND_RE = re.compile("\((.*)\)|\*\s*(\d+|\(.*\))")
-KIND_RE = re.compile("kind\s*=\s*",re.IGNORECASE)
-LEN_RE = re.compile("len\s*=\s*",re.IGNORECASE)
-ATTRIBSPLIT_RE = re.compile(",\s*(\w.*?)::\s*(.*)\s*")
-ATTRIBSPLIT2_RE = re.compile("\s*(::)?\s*(.*)\s*")
-ASSIGN_RE = re.compile("(\w+\s*(?:\([^=]*\)))\s*=(?!>)(?:\s*([^\s]+))?")
-POINT_RE = re.compile("(\w+\s*(?:\([^=>]*\)))\s*=>(?:\s*([^\s]+))?")
-EXTENDS_RE = re.compile("extends\s*\(\s*([^()\s]+)\s*\)", re.IGNORECASE)
-DOUBLE_PREC_RE = re.compile("double\s+precision",re.IGNORECASE)
-DOUBLE_CMPLX_RE = re.compile("double\s+complex",re.IGNORECASE)
-QUOTES_RE = re.compile("\"([^\"]|\"\")*\"|'([^']|'')*'",re.IGNORECASE)
-PARA_CAPTURE_RE = re.compile("<p>.*?</p>",re.IGNORECASE|re.DOTALL)
-COMMA_RE = re.compile(",(?!\s)")
-NBSP_RE = re.compile(" (?= )|(?<= ) ")
-DIM_RE = re.compile("^\w+\s*(\(.*\))\s*$")
+VAR_TYPE_STRING = r"^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
+VARKIND_RE = re.compile(r"\((.*)\)|\*\s*(\d+|\(.*\))")
+KIND_RE = re.compile(r"kind\s*=\s*",re.IGNORECASE)
+LEN_RE = re.compile(r"len\s*=\s*",re.IGNORECASE)
+ATTRIBSPLIT_RE = re.compile(r",\s*(\w.*?)::\s*(.*)\s*")
+ATTRIBSPLIT2_RE = re.compile(r"\s*(::)?\s*(.*)\s*")
+ASSIGN_RE = re.compile(r"(\w+\s*(?:\([^=]*\)))\s*=(?!>)(?:\s*([^\s]+))?")
+POINT_RE = re.compile(r"(\w+\s*(?:\([^=>]*\)))\s*=>(?:\s*([^\s]+))?")
+EXTENDS_RE = re.compile(r"extends\s*\(\s*([^()\s]+)\s*\)", re.IGNORECASE)
+DOUBLE_PREC_RE = re.compile(r"double\s+precision",re.IGNORECASE)
+DOUBLE_CMPLX_RE = re.compile(r"double\s+complex",re.IGNORECASE)
+QUOTES_RE = re.compile(r"\"([^\"]|\"\")*\"|'([^']|'')*'",re.IGNORECASE)
+PARA_CAPTURE_RE = re.compile(r"<p>.*?</p>",re.IGNORECASE|re.DOTALL)
+COMMA_RE = re.compile(r",(?!\s)")
+NBSP_RE = re.compile(r" (?= )|(?<= ) ")
+DIM_RE = re.compile(r"^\w+\s*(\(.*\))\s*$")
 
 INTRINSICS = ['abort','abs','abstract','access','achar','acos','acosh','adjustl',
               'adjustr','aimag','aint','alarm','all','allocatable','allocate',
@@ -147,8 +147,8 @@ class FortranBase(object):
 
     IS_SPOOF = False
 
-    POINTS_TO_RE = re.compile("\s*=>\s*",re.IGNORECASE)
-    SPLIT_RE = re.compile("\s*,\s*",re.IGNORECASE)
+    POINTS_TO_RE = re.compile(r"\s*=>\s*",re.IGNORECASE)
+    SPLIT_RE = re.compile(r"\s*,\s*",re.IGNORECASE)
     SRC_CAPTURE_STR = r"^[ \t]*([\w(),*: \t]+?[ \t]+)?{0}([\w(),*: \t]+?)?[ \t]+{1}[ \t\n,(].*?end[ \t]*{0}[ \t]+{1}[ \t]*?(!.*?)?$"
 
     #~ this regex is not working for the LINK and DOUBLE_LINK types
@@ -502,31 +502,31 @@ class FortranContainer(FortranBase):
     """
     A class on which any classes requiring further parsing are based.
     """
-    ATTRIB_RE = re.compile("^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",re.IGNORECASE)
-    END_RE = re.compile("^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface|enum|block\sdata|block|associate)(?:\s+(\w.*))?)?$",re.IGNORECASE)
-    BLOCK_RE = re.compile("^(\w+\s*:)?\s*block\s*$",re.IGNORECASE)
-    BLOCK_DATA_RE = re.compile('^block\s*data\s*(\w+)?\s*$',re.IGNORECASE)
-    ASSOCIATE_RE = re.compile("^(\w+\s*:)?\s*associate\s*\((.+)\)\s*$",re.IGNORECASE)
-    ENUM_RE = re.compile("^enum\s*,\s*bind\s*\(.*\)\s*$",re.IGNORECASE)
-    MODPROC_RE = re.compile("^(module\s+)?procedure\s*(?:::|\s)\s*(\w.*)$",re.IGNORECASE)
-    MODULE_RE = re.compile("^module(?:\s+(\w+))?$",re.IGNORECASE)
-    SUBMODULE_RE = re.compile("^submodule\s*\(\s*(\w+)\s*(?::\s*(\w+))?\s*\)\s*(?:::|\s)\s*(\w+)$",re.IGNORECASE)
-    PROGRAM_RE = re.compile("^program(?:\s+(\w+))?$",re.IGNORECASE)
-    SUBROUTINE_RE = re.compile("^\s*(?:(.+?)\s+)?subroutine\s+(\w+)\s*(\([^()]*\))?(?:\s*bind\s*\(\s*(.*)\s*\))?$",re.IGNORECASE)
-    FUNCTION_RE = re.compile("^(?:(.+?)\s+)?function\s+(\w+)\s*(\([^()]*\))?(?=(?:.*result\s*\(\s*(\w+)\s*\))?)(?=(?:.*bind\s*\(\s*(.*)\s*\))?).*$",re.IGNORECASE)
-    TYPE_RE = re.compile("^type(?:\s+|\s*(,.*)?::\s*)((?!(?:is\s*\())\w+)\s*(\([^()]*\))?\s*$",re.IGNORECASE)
-    INTERFACE_RE = re.compile("^(abstract\s+)?interface(?:\s+(\S.+))?$",re.IGNORECASE)
-    #~ ABS_INTERFACE_RE = re.compile("^abstract\s+interface(?:\s+(\S.+))?$",re.IGNORECASE)
-    BOUNDPROC_RE = re.compile("^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)",re.IGNORECASE)
-    COMMON_RE = re.compile("^common(?:\s*/\s*(\w+)\s*/\s*|\s+)(\w+.*)",re.IGNORECASE)
-    COMMON_SPLIT_RE = re.compile("\s*(/\s*\w+\s*/)\s*",re.IGNORECASE)
-    FINAL_RE = re.compile("^final\s*::\s*(\w.*)",re.IGNORECASE)
-    USE_RE = re.compile("^use(?:\s*(?:,\s*(?:non_)?intrinsic\s*)?::\s*|\s+)(\w+)\s*($|,.*)",re.IGNORECASE)
-    ARITH_GOTO_RE = re.compile("go\s*to\s*\([0-9,\s]+\)",re.IGNORECASE)
-    CALL_RE = re.compile("(?:^|[^a-zA-Z0-9_% ]\s*)(\w+)(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
-    SUBCALL_RE = re.compile("^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
+    ATTRIB_RE = re.compile(r"^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",re.IGNORECASE)
+    END_RE = re.compile(r"^end\s*(?:(module|submodule|subroutine|function|procedure|program|type|interface|enum|block\sdata|block|associate)(?:\s+(\w.*))?)?$",re.IGNORECASE)
+    BLOCK_RE = re.compile(r"^(\w+\s*:)?\s*block\s*$",re.IGNORECASE)
+    BLOCK_DATA_RE = re.compile(r'^block\s*data\s*(\w+)?\s*$',re.IGNORECASE)
+    ASSOCIATE_RE = re.compile(r"^(\w+\s*:)?\s*associate\s*\((.+)\)\s*$",re.IGNORECASE)
+    ENUM_RE = re.compile(r"^enum\s*,\s*bind\s*\(.*\)\s*$",re.IGNORECASE)
+    MODPROC_RE = re.compile(r"^(module\s+)?procedure\s*(?:::|\s)\s*(\w.*)$",re.IGNORECASE)
+    MODULE_RE = re.compile(r"^module(?:\s+(\w+))?$",re.IGNORECASE)
+    SUBMODULE_RE = re.compile(r"^submodule\s*\(\s*(\w+)\s*(?::\s*(\w+))?\s*\)\s*(?:::|\s)\s*(\w+)$",re.IGNORECASE)
+    PROGRAM_RE = re.compile(r"^program(?:\s+(\w+))?$",re.IGNORECASE)
+    SUBROUTINE_RE = re.compile(r"^\s*(?:(.+?)\s+)?subroutine\s+(\w+)\s*(\([^()]*\))?(?:\s*bind\s*\(\s*(.*)\s*\))?$",re.IGNORECASE)
+    FUNCTION_RE = re.compile(r"^(?:(.+?)\s+)?function\s+(\w+)\s*(\([^()]*\))?(?=(?:.*result\s*\(\s*(\w+)\s*\))?)(?=(?:.*bind\s*\(\s*(.*)\s*\))?).*$",re.IGNORECASE)
+    TYPE_RE = re.compile(r"^type(?:\s+|\s*(,.*)?::\s*)((?!(?:is\s*\())\w+)\s*(\([^()]*\))?\s*$",re.IGNORECASE)
+    INTERFACE_RE = re.compile(r"^(abstract\s+)?interface(?:\s+(\S.+))?$",re.IGNORECASE)
+    #~ ABS_INTERFACE_RE = re.compile(r"^abstract\s+interface(?:\s+(\S.+))?$",re.IGNORECASE)
+    BOUNDPROC_RE = re.compile(r"^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)",re.IGNORECASE)
+    COMMON_RE = re.compile(r"^common(?:\s*/\s*(\w+)\s*/\s*|\s+)(\w+.*)",re.IGNORECASE)
+    COMMON_SPLIT_RE = re.compile(r"\s*(/\s*\w+\s*/)\s*",re.IGNORECASE)
+    FINAL_RE = re.compile(r"^final\s*::\s*(\w.*)",re.IGNORECASE)
+    USE_RE = re.compile(r"^use(?:\s*(?:,\s*(?:non_)?intrinsic\s*)?::\s*|\s+)(\w+)\s*($|,.*)",re.IGNORECASE)
+    ARITH_GOTO_RE = re.compile(r"go\s*to\s*\([0-9,\s]+\)",re.IGNORECASE)
+    CALL_RE = re.compile(r"(?:^|[^a-zA-Z0-9_% ]\s*)(\w+)(?=\s*\(\s*(?:.*?)\s*\))",re.IGNORECASE)
+    SUBCALL_RE = re.compile(r"^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$",re.IGNORECASE)
 
-    VARIABLE_STRING = "^(integer|real|double\s*precision|character|complex|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
+    VARIABLE_STRING = r"^(integer|real|double\s*precision|character|complex|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
 
     def __init__(self,source,first_line,parent=None,inherited_permission=None,
                  strings=[]):
@@ -1118,8 +1118,8 @@ class FortranModule(FortranCodeUnit):
     objects contains lists of all of the module's contents, as well as its
     dependencies.
     """
-    ONLY_RE = re.compile('^\s*,\s*only\s*:\s*(?=[^,])',re.IGNORECASE)
-    RENAME_RE = re.compile('(\w+)\s*=>\s*(\w+)',re.IGNORECASE)
+    ONLY_RE = re.compile(r'^\s*,\s*only\s*:\s*(?=[^,])',re.IGNORECASE)
+    RENAME_RE = re.compile(r'(\w+)\s*=>\s*(\w+)',re.IGNORECASE)
 
     def _initialize(self,line):
         self.name = line.group(1)
@@ -2178,7 +2178,7 @@ class GenericSource(FortranBase):
             lexer = getattr(pygments.lexers,self.lexer_str)
         self.src = highlight(self.raw_src, lexer,
                              HtmlFormatter(lineanchors='ln', cssclass='hl'))
-        com_re = re.compile("^((?!{0}|[\"']).|(\'[^']*')|(\"[^\"]*\"))*({0}.*)$".format(re.escape(comchar)))
+        com_re = re.compile(r"^((?!{0}|[\"']).|(\'[^']*')|(\"[^\"]*\"))*({0}.*)$".format(re.escape(comchar)))
         if docmark == docmark_alt != '':
             raise Exception('Error: docmark and docmark_alt are the same.')
         if docmark == predocmark_alt != '':
@@ -2188,15 +2188,15 @@ class GenericSource(FortranBase):
         if predocmark == predocmark_alt != '':
             raise Exception('Error: predocmark and predocmark_alt are the same.')
         if len(predocmark) != 0:
-            doc_re = re.compile("^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}(?:{1}|{2}).*)$".format(re.escape(comchar),re.escape(docmark),re.escape(predocmark)))
+            doc_re = re.compile(r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}(?:{1}|{2}).*)$".format(re.escape(comchar),re.escape(docmark),re.escape(predocmark)))
         else:
-            doc_re = re.compile("^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(re.escape(comchar),re.escape(docmark)))
+            doc_re = re.compile(r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(re.escape(comchar),re.escape(docmark)))
         if len(docmark_alt) != 0 and len(predocmark_alt) != 0:
-            doc_alt_re = re.compile("^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}(?:{1}|{2}).*)$".format(re.escape(comchar),re.escape(docmark_alt),re.escape(predocmark_alt)))
+            doc_alt_re = re.compile(r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}(?:{1}|{2}).*)$".format(re.escape(comchar),re.escape(docmark_alt),re.escape(predocmark_alt)))
         elif len(docmark_alt) != 0:
-            doc_alt_re = re.compile("^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(re.escape(comchar),re.escape(docmark_alt)))
+            doc_alt_re = re.compile(r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(re.escape(comchar),re.escape(docmark_alt)))
         elif len(predocmark_alt) != 0:
-            doc_alt_re = re.compile("^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(re.escape(comchar),re.escape(predocmark_alt)))
+            doc_alt_re = re.compile(r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(re.escape(comchar),re.escape(predocmark_alt)))
         else:
             doc_alt_re = None
         self.doc = []
@@ -2378,9 +2378,9 @@ def parse_type(string,capture_strings,settings):
             if args.startswith('('):
                 args = args[1:-1].strip()
 
-        args = re.sub("\s","",args)
+        args = re.sub(r"\s","",args)
         if vartype == "type" or vartype == "class" or vartype == "procedure":
-            PROTO_RE = re.compile("(\*|\w+)\s*(?:\((.*)\))?")
+            PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
             try:
                 proto = list(PROTO_RE.match(args).groups())
                 if not proto[1]: proto[1] = ''
@@ -2419,7 +2419,7 @@ def set_base_url(url):
 def get_mod_procs(source,line,parent):
     inherit_permission = parent.permission
     retlist = []
-    SPLIT_RE = re.compile("\s*,\s*",re.IGNORECASE)
+    SPLIT_RE = re.compile(r"\s*,\s*",re.IGNORECASE)
     splitlist = SPLIT_RE.split(line.group(2))
     if splitlist and len(splitlist) > 0:
         for item in splitlist:
