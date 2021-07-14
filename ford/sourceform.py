@@ -221,8 +221,8 @@ class FortranBase(object):
             return None
 
     def get_url(self):
-        if hasattr(self, 'extURL'):
-            return self.extURL
+        if hasattr(self, 'external_url'):
+            return self.external_url
         outstr = "{0}/{1}/{2}.html"
         loc = self.get_dir()
         if loc:
@@ -2548,39 +2548,39 @@ class ExternalModule(FortranModule):
         self.pub_absints = {}
         self.pub_types = {}
         self.pub_vars = {}
-        self.extURL = ''
+        self.external_url = ''
 
 
 class ExternalFunction(FortranFunction):
 
     def __init__(self):
         self.name = ''
-        self.extURL = ''
+        self.external_url = ''
 
 
 class ExternalSubroutine(FortranSubroutine):
 
     def __init__(self):
         self.name = ''
-        self.extURL = ''
+        self.external_url = ''
 
 
 class ExternalInterface(FortranInterface):
 
     def __init__(self):
         self.name = ''
-        self.extURL = ''
+        self.external_url = ''
 
 
 class ExternalType(FortranType):
 
     def __init__(self):
         self.name = ''
-        self.extURL = ''
+        self.external_url = ''
 
 
 class ExternalVariable(FortranVariable):
 
     def __init__(self):
         self.name = ''
-        self.extURL = ''
+        self.external_url = ''

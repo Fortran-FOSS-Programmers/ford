@@ -352,7 +352,7 @@ def external(project, make=False, path='.'):
         '''
         extDict = {}
         extDict['name'] = intObj.name
-        extDict['extURL'] = intObj.get_url()
+        extDict['external_url'] = intObj.get_url()
         extDict['obj'] = intObj.obj
         if hasattr(intObj, 'proctype'):
             extDict['proctype'] = intObj.proctype
@@ -415,11 +415,11 @@ def external(project, make=False, path='.'):
             extObj = ford.sourceform.ExternalVariable()
             project.extVariables.append(extObj)
         extObj.name = extDict['name']
-        if extDict['extURL']:
-            extDict['extURL'] = '/' + extDict['extURL'].split('/', 1)[-1]
-            extObj.extURL = url + extDict['extURL']
+        if extDict['external_url']:
+            extDict['external_url'] = '/' + extDict['external_url'].split('/', 1)[-1]
+            extObj.external_url = url + extDict['external_url']
         else:
-            extObj.extURL = extDict['extURL']
+            extObj.external_url = extDict['external_url']
         extObj.obj = extDict['obj']
         extObj.parent = parent
         for key in attribs:

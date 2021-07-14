@@ -193,7 +193,7 @@ class BaseNode(object):
             self.url = obj.get_url()
         self.attribs['label'] = self.name
         if self.url and getattr(obj,'visible',True):
-            if self.fromstr or hasattr(obj, 'extURL'):
+            if self.fromstr or hasattr(obj, 'external_url'):
                 self.attribs['URL'] = self.url
             else:
                 self.attribs['URL'] = _parentdir + self.url
@@ -255,7 +255,7 @@ class TypeNode(BaseNode):
                 self.ancestor.children.add(self)
                 self.ancestor.visible = getattr(obj.extends,'visible',True)
 
-            if hasattr(obj, 'extURL'):
+            if hasattr(obj, 'external_url'):
                 # Stop following chain, as this object is in an external project
                 return
 
