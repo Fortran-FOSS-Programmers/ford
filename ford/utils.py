@@ -31,7 +31,8 @@ import os.path
 NOTE_TYPE = {'note':'info',
              'warning':'warning',
              'todo':'success',
-             'bug':'danger'}
+             'bug':'danger',
+             'history':'history'}
 NOTE_RE = [re.compile(r"@({})\s*(((?!@({})).)*?)@end\1\s*(</p>)?".format(note,
            '|'.join(NOTE_TYPE.keys())), re.IGNORECASE|re.DOTALL) for note in NOTE_TYPE] \
         + [re.compile(r"@({})\s*(.*?)\s*</p>".format(note),
@@ -251,7 +252,7 @@ def sub_links(string,project):
             else:
                 if match.group(4).lower() in SUBLINK_TYPES:
                     if hasattr(item,SUBLINK_TYPES[match.group(4).lower()]):
-                        if match.group(4).lower == 'constructor':
+                        if match.group(4).lower() == 'constructor':
                             if item.constructor:
                                 searchlist.append(item.constructor)
                         else:
