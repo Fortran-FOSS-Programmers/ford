@@ -99,3 +99,26 @@ def test_type(tmp_path):
 
     lines = list(reader.FortranReader(filename, docmark="!"))
     assert lines == expected
+
+
+def test_unknown_include(tmp_path):
+    """Check that `include "file.h"` ignores unknown files"""
+
+    data = """\
+    program test
+    include "file.h"
+    end program test
+    """
+
+    expected = [
+        "program test",
+        'include "file.h"',
+        "end program test",
+    ]
+
+    filename = tmp_path / "test.f90"
+    with open(filename, "w") as f:
+        f.write(data)
+
+    lines = list(reader.FortranReader(filename, docmark="!"))
+    assert lines == expected
