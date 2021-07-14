@@ -307,14 +307,21 @@ class FortranReader(object):
         """
         if len(self.pending) == 0 or not self.pending[0].lower().startswith('include '):
             return
-        name = self.pending.pop(0)[8:].strip()[1:-1]
+        curpending = self.pending.pop(0)
+        name = curpending[8:].strip()[1:-1]
         for b in [os.path.dirname(self.name)] + self.inc_dirs:
             pname = os.path.abspath(os.path.expanduser(os.path.join(b, name)))
             if os.path.isfile(pname):
                 name = pname
                 break
         else:
-            raise Exception('Can not find include file "{}".'.format(name))
+            msg = 'Can not find include file "{}".'.format(name)
+            if name.endswith(".h"):
+                print("WARNING:", msg)
+                # undo pop and return
+                self.pending = [curpending] + self.pending
+                return
+            raise FileNotFoundError(msg)
         self.pending = list(FortranReader(name, self.docmark, self.predocmark, 
                                           self.docmark_alt, self.predocmark_alt,
                                           self.fixed, self.length_limit,
