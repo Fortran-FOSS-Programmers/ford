@@ -159,7 +159,7 @@ def initialize():
                'year','docmark','predocmark','docmark_alt','predocmark_alt',
                'media_dir','favicon','warn','extra_vartypes','page_dir',
                'privacy_policy_url','terms_of_service_url',
-               'incl_src', 'force',
+               'incl_src', 'force','copy_subdir',
                'source','exclude_dir','macro','include','preprocess','quiet',
                'search','lower','sort','extra_mods','dbg','graph',
                'graph_maxdepth', 'graph_maxnodes',
@@ -180,6 +180,7 @@ def initialize():
                 'year':                date.today().year,
                 'exclude':             [],
                 'exclude_dir':         [],
+                'copy_subdir':         [],
                 'docmark':             '!',
                 'docmark_alt':         '*',
                 'predocmark':          '>',
@@ -217,7 +218,7 @@ def initialize():
                }
     listopts = ['extensions','fpp_extensions','fixed_extensions','display',
                 'extra_vartypes','src_dir','exclude','exclude_dir',
-                'macro','include','extra_mods','extra_filetypes']
+                'macro','include','extra_mods','extra_filetypes','copy_subdir']
     # Evaluate paths relative to project file location
     if args.warn:
         args.warn = 'true'
@@ -385,7 +386,7 @@ def main(proj_data,proj_docs,md):
     proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(ford.utils.sub_notes(proj_docs),proj_data['project_url']),project)
     # Process any pages
     if 'page_dir' in proj_data:
-        page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),md)
+        page_tree = ford.pagetree.get_page_tree(os.path.normpath(proj_data['page_dir']),proj_data['copy_subdir'],md)
         print()
     else:
         page_tree = None
