@@ -24,9 +24,14 @@
 #  
 
 
-
 import re
 import os.path
+import json
+import sys
+import ford.sourceform
+from urllib.request import urlopen
+from urllib.parse import urljoin
+
 
 NOTE_TYPE = {'note':'info',
              'warning':'warning',
@@ -183,17 +188,25 @@ def sub_links(string,project):
     for either or both of these parts.
     '''
     LINK_TYPES    = { 'module': 'modules',
+                      'extmodule': 'extModules',
                       'type': 'types',
+                      'exttype': 'extTypes',
                       'procedure': 'procedures',
+                      'extprocedure': 'extProcedures',
                       'subroutine': 'procedures',
+                      'extsubroutine': 'extProcedures',
                       'function': 'procedures',
+                      'extfunction': 'extProcedures',
                       'proc': 'procedures',
+                      'extproc': 'extProcedures',
                       'file': 'allfiles',
                       'interface': 'absinterfaces',
+                      'extinterface': 'extInterfaces',
                       'absinterface': 'absinterfaces',
+                      'extabsinterface': 'extInterfaces',
                       'program': 'programs',
                       'block': 'blockdata' }
-        
+
     SUBLINK_TYPES = { 'variable': 'variables',
                       'type': 'types',
                       'constructor': 'constructor',
@@ -205,8 +218,7 @@ def sub_links(string,project):
                       'bound': 'boundprocs',
                       'modproc': 'modprocs',
                       'common': 'common' }
-        
-    
+
     def convert_link(match):
         ERR = 'Warning: Could not substitute link {}. {}'
         url = ''
@@ -214,7 +226,6 @@ def sub_links(string,project):
         found = False
         searchlist = []
         item = None
-        
         #[name,obj,subname,subobj]
         if not match.group(2):
             for key, val in LINK_TYPES.items():
@@ -298,7 +309,7 @@ def register_macro(string):
 
     chunks = string.split('=', 1)
     key = '|{0}|'.format(chunks[0].strip())
-    val = chunks[1]
+    val = chunks[1].strip()
 
     if key in _MACRO_DICT:
         # The macro is already defined. Do not overwrite it!
@@ -309,6 +320,8 @@ def register_macro(string):
     # Everything OK, add the macro definition to the dict.
     _MACRO_DICT[key] = val
 
+    return (val, key)
+
 
 def sub_macros(string):
     '''
@@ -318,3 +331,136 @@ def sub_macros(string):
     for key, val in _MACRO_DICT.items():
         string = string.replace(key,val)
     return string
+
+
+def external(project, make=False, path='.'):
+    '''
+    Reads and writes the information needed for processing external modules.
+    '''
+
+    # attributes of a module object needed for further processing
+    attribs = ['pub_procs', 'pub_absints', 'pub_types', 'pub_vars',
+               'functions', 'subroutines', 'interfaces', 'absinterfaces',
+               'types', 'variables']
+
+    def obj2dict(intObj):
+        '''
+        Converts an object to a dictionary.
+        '''
+        extDict = {}
+        extDict['name'] = intObj.name
+        extDict['external_url'] = intObj.get_url()
+        extDict['obj'] = intObj.obj
+        if hasattr(intObj, 'proctype'):
+            extDict['proctype'] = intObj.proctype
+        if hasattr(intObj, 'extends'):
+            extDict['extends'] = intObj.extends
+        for attrib in attribs:
+            if hasattr(intObj, attrib):
+                if type(getattr(intObj, attrib)) == str:
+                    extDict[attrib] = getattr(intObj, attrib)
+                elif type(getattr(intObj, attrib)) == list:
+                    extDict[attrib] = []
+                    for item in getattr(intObj, attrib):
+                        extItem = obj2dict(item)
+                        extDict[attrib].append(extItem)
+                elif type(getattr(intObj, attrib)) == dict:
+                    extDict[attrib] = {}
+                    for key, val in getattr(intObj, attrib).items():
+                        extItem = obj2dict(val)
+                        extDict[attrib][key] = extItem
+        return extDict
+
+    def modules_from_local(url):
+        '''
+        Get module information from an external project but on the
+        local file system.
+        Uses the io module to work in both, Python 2 and 3.
+        '''
+        from io import open
+        with open(os.path.join(url, 'modules.json'),
+                  mode = 'r',
+                  encoding = 'utf-8' ) as extfile:
+            extModules = json.loads(extfile.read())
+        return extModules
+
+    def dict2obj(extDict, url, parent=None):
+        '''
+        Converts a dictionary to an object.
+        '''
+        if extDict['obj'].lower() == 'module':
+            extObj = ford.sourceform.ExternalModule()
+            project.extModules.append(extObj)
+        elif extDict['obj'].lower() == 'proc':
+            if extDict['proctype'].lower() == 'function':
+                extObj = ford.sourceform.ExternalFunction()
+            elif extDict['proctype'].lower() == 'subroutine':
+                extObj = ford.sourceform.ExternalSubroutine()
+            elif extDict['proctype'].lower() == 'interface':
+                extObj = ford.sourceform.ExternalInterface()
+            project.extProcedures.append(extObj)
+            extObj.proctype = extDict['proctype']
+        elif extDict['obj'].lower() == 'interface':
+            extObj = ford.sourceform.ExternalInterface()
+            project.extInterfaces.append(extObj)
+            extObj.proctype = extDict['proctype']
+        elif extDict['obj'].lower() == 'type':
+            extObj = ford.sourceform.ExternalType()
+            project.extTypes.append(extObj)
+            extObj.extends = extDict['extends']
+        elif extDict['obj'].lower() == 'variable':
+            extObj = ford.sourceform.ExternalVariable()
+            project.extVariables.append(extObj)
+        extObj.name = extDict['name']
+        if extDict['external_url']:
+            extDict['external_url'] = '/' + extDict['external_url'].split('/', 1)[-1]
+            extObj.external_url = url + extDict['external_url']
+        else:
+            extObj.external_url = extDict['external_url']
+        extObj.obj = extDict['obj']
+        extObj.parent = parent
+        for key in attribs:
+            if key not in extDict:
+                continue
+            if type(extDict[key]) == str:
+                setattr(extObj, key, extDict[key])
+            elif type(extDict[key]) == list:
+                tmpLs = []
+                for item in extDict[key]:
+                    tmpLs.append(dict2obj(item, url, extObj))
+                setattr(extObj, key, tmpLs)
+            elif type(extDict[key]) == dict:
+                tmpDict = {}
+                for key2, val in extDict[key].items():
+                    tmpDict[key2] = dict2obj(val, url, extObj)
+                setattr(extObj, key, tmpDict)
+        return extObj
+
+    if make:
+        # convert internal module object to a JSON database
+        extModules = []
+        for module in project.modules:
+            extModules.append(obj2dict(module))
+        with open(os.path.join(path, 'modules.json'), 'w') as modFile:
+            modFile.write(json.dumps(extModules))
+    else:
+        # get the external modules from the external URLs
+        for urldef in project.external:
+            # get the external modules from the external URL
+            url, short = register_macro(urldef)
+            try:
+                if re.match('https?://', url):
+                    # Ensure the URL ends with '/' to have urljoin work as
+                    # intentend.
+                    if url[-1] != '/':
+                        url = url + '/'
+                    extModules = json.loads(urlopen(
+                        urljoin(url, 'modules.json')).read().decode('utf8'))
+                else:
+                    extModules = modules_from_local(url)
+            except:
+                extModules = []
+                print('Could not open external URL: {}.'.format(url))
+            # convert modules defined in the JSON database to module objects
+            for extModule in extModules:
+                dict2obj(extModule, url)

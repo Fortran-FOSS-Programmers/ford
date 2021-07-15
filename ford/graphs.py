@@ -32,7 +32,12 @@ import colorsys
 
 from graphviz import Digraph
 
-from ford.sourceform import FortranFunction, FortranSubroutine, FortranInterface, FortranProgram, FortranType, FortranModule, FortranSubmodule, FortranSubmoduleProcedure, FortranSourceFile, FortranBlockData
+from ford.sourceform import (FortranFunction, ExternalFunction, FortranSubroutine,
+                             ExternalSubroutine, FortranInterface, ExternalInterface,
+                             FortranProgram, FortranType, ExternalType,
+                             FortranModule, ExternalModule, FortranSubmodule,
+                             FortranSubmoduleProcedure, FortranSourceFile,
+                             FortranBlockData)
 
 _coloured_edges = False
 def set_coloured_edges(val):
@@ -73,19 +78,23 @@ def newdict(old,key,val):
     return new
 
 def is_module(obj,cls):
-    return isinstance(obj,FortranModule) or issubclass(cls,FortranModule)
+    return (isinstance(obj, (FortranModule, ExternalModule))
+            or issubclass(cls, (FortranModule, ExternalModule)))
 
 def is_submodule(obj,cls):
     return isinstance(obj,FortranSubmodule) or issubclass(cls,FortranSubmodule)
     
 def is_type(obj,cls):
-    return isinstance(obj,FortranType) or issubclass(cls,FortranType)
+    return (isinstance(obj, (FortranType, ExternalType))
+            or issubclass(cls, (FortranType, ExternalType)))
 
 def is_proc(obj,cls):
-    return (isinstance(obj,(FortranFunction,FortranSubroutine,
-                            FortranInterface,FortranSubmoduleProcedure))
-         or issubclass(cls,(FortranFunction,FortranSubroutine,
-                               FortranInterface,FortranSubmoduleProcedure)))
+    return (isinstance(obj,(FortranFunction, ExternalFunction, FortranSubroutine,
+                            ExternalSubroutine, FortranInterface, ExternalInterface,
+                            FortranSubmoduleProcedure))
+         or issubclass(cls,(FortranFunction, ExternalFunction, FortranSubroutine,
+                            ExternalSubroutine, FortranInterface, ExternalInterface,
+                            FortranSubmoduleProcedure)))
 
 def is_program(obj, cls):
     return isinstance(obj,FortranProgram) or issubclass(cls,FortranProgram)
@@ -184,7 +193,7 @@ class BaseNode(object):
             self.url = obj.get_url()
         self.attribs['label'] = self.name
         if self.url and getattr(obj,'visible',True):
-            if self.fromstr:
+            if self.fromstr or hasattr(obj, 'external_url'):
                 self.attribs['URL'] = self.url
             else:
                 self.attribs['URL'] = _parentdir + self.url
@@ -245,6 +254,11 @@ class TypeNode(BaseNode):
                     self.ancestor = gd.get_node(obj.extends,FortranType,newdict(hist,obj,self))
                 self.ancestor.children.add(self)
                 self.ancestor.visible = getattr(obj.extends,'visible',True)
+
+            if hasattr(obj, 'external_url'):
+                # Stop following chain, as this object is in an external project
+                return
+
             for var in obj.local_variables:
                 if (var.vartype == 'type' or var.vartype == 'class') and var.proto[0] != '*':
                     if var.proto[0] == obj:

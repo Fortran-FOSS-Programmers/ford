@@ -28,8 +28,9 @@ from __future__ import print_function
 
 import os
 import toposort
-
+import ford.utils
 import ford.sourceform
+
 
 INTRINSIC_MODS = {'iso_fortran_env': '<a href="http://fortranwiki.org/fortran/show/ISO_FORTRAN_ENV">iso_fortran_env</a>',
                   'iso_c_binding': '<a href="http://fortranwiki.org/fortran/show/ISO_C_BINDING">iso_c_binding</a>',
@@ -49,6 +50,7 @@ class Project(object):
     def __init__(self, settings):
         self.settings = settings        
         self.name = settings['project']
+        self.external = settings['external']
         self.topdirs = settings['src_dir']
         self.extensions = settings['extensions']
         self.fixed_extensions = settings['fixed_extensions']
@@ -71,7 +73,12 @@ class Project(object):
         self.extra_files = []
         self.blockdata = []
         self.common = {}
-                
+        self.extModules = []
+        self.extProcedures = []
+        self.extInterfaces = []
+        self.extTypes = []
+        self.extVariables = []
+
         # Get all files within topdir, recursively
         srcdir_list = self.make_srcdir_list(settings['exclude_dir'])
         for curdir in srcdir_list:
@@ -158,19 +165,26 @@ class Project(object):
             name = item[:i].strip()
             url = item[i+1:].strip()
             non_local_mods[name.lower()] = '<a href="{}">{}</a>'.format(url,name)
-        
+
+        # load external FORD FortranModules
+        ford.utils.external(self)
+
         # Match USE statements up with the right modules
         for s in self.modules:
-            id_mods(s, self.modules, non_local_mods, self.submodules)
+            id_mods(s, self.modules, non_local_mods, self.submodules,
+                    self.extModules)
         for s in self.procedures:
-            id_mods(s, self.modules, non_local_mods, self.submodules)
+            id_mods(s, self.modules, non_local_mods, self.submodules,
+                    self.extModules)
         for s in self.programs:
-            id_mods(s, self.modules, non_local_mods, self.submodules)
+            id_mods(s, self.modules, non_local_mods, self.submodules,
+                    self.extModules)
         for s in self.submodules:
-            id_mods(s, self.modules, non_local_mods, self.submodules)
+            id_mods(s, self.modules, non_local_mods, self.submodules,
+                    self.extModules)
         for s in self.blockdata:
-            id_mods(s, self.modules, non_local_mods, self.submodules)
-            
+            id_mods(s, self.modules, non_local_mods, self.submodules,
+                    self.extModules)
         # Get the order to process other correlations with
         deplist = {}
         
@@ -183,10 +197,10 @@ class Project(object):
             for proc in getattr(item,'modprocedures',[]):
                 uselist.extend(get_deps(proc))
             return uselist
-        
         for mod in self.modules:
             uselist = get_deps(mod)
-            uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
+            uselist = [m for m in uselist if type(m) ==
+                       ford.sourceform.FortranModule]
             deplist[mod] = set(uselist)
             mod.deplist = uselist
         for mod in self.submodules:
@@ -338,12 +352,12 @@ class Project(object):
           
 
 
-def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
+def id_mods(obj,modlist,intrinsic_mods={},submodlist=[],extMods=[]):
     """
     Match USE statements up with the right modules
     """
     for i in range(len(obj.uses)):
-        for candidate in modlist:
+        for candidate in modlist + extMods:
             if obj.uses[i][0].lower() == candidate.name.lower():
                 obj.uses[i] = [candidate, obj.uses[i][1]]
                 break
@@ -362,8 +376,8 @@ def id_mods(obj,modlist,intrinsic_mods={},submodlist=[]):
                 obj.ancestor_mod = mod
                 break
     for modproc in getattr(obj,'modprocedures',[]):
-        id_mods(modproc,modlist,intrinsic_mods)
+        id_mods(modproc,modlist,intrinsic_mods,extMods)
     for func in getattr(obj,'functions',[]):
-        id_mods(func,modlist,intrinsic_mods)
+        id_mods(func,modlist,intrinsic_mods,extMods)
     for subroutine in getattr(obj,'subroutines',[]):
-        id_mods(subroutine,modlist,intrinsic_mods)
+        id_mods(subroutine,modlist,intrinsic_mods,extMods)

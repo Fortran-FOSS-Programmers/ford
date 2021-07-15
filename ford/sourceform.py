@@ -200,24 +200,29 @@ class FortranBase(object):
         self.hierarchy.reverse()
 
     def get_dir(self):
-        if ( type(self) in [FortranSubroutine,FortranFunction] and
-             type(self.parent) is FortranInterface and
+        if ( type(self) in [FortranSubroutine, ExternalSubroutine,
+                            FortranFunction, ExternalFunction] and
+             type(self.parent) in [FortranInterface, ExternalInterface] and
              not self.parent.generic ):
             return 'interface'
         elif type(self) is FortranSubmodule:
             return 'module'
         elif ( type(self) in [FortranSourceFile,FortranProgram,FortranModule,
-                              GenericSource,FortranBlockData]
-               or ( type(self) in [FortranType,FortranInterface,FortranFunction,
-                                   FortranSubroutine, FortranSubmoduleProcedure]
+                              GenericSource,FortranBlockData, ExternalModule]
+               or ( type(self) in [FortranType, ExternalType, FortranInterface,
+                                   ExternalInterface, FortranFunction, ExternalFunction,
+                                   FortranSubroutine, ExternalSubroutine,
+                                   FortranSubmoduleProcedure]
                     and type(self.parent) in [FortranSourceFile,FortranProgram,
                                               FortranModule, FortranSubmodule,
-                                              FortranBlockData] ) ):
+                                              FortranBlockData, ExternalModule] ) ):
             return self.obj
         else:
             return None
 
     def get_url(self):
+        if hasattr(self, 'external_url'):
+            return self.external_url
         outstr = "{0}/{1}/{2}.html"
         loc = self.get_dir()
         if loc:
@@ -2524,3 +2529,50 @@ class NameSelector(object):
             return name
 
 namelist = NameSelector()
+
+
+class ExternalModule(FortranModule):
+
+    def __init__(self):
+        self.name = ''
+        self.uses = []
+        self.pub_procs = {}
+        self.pub_absints = {}
+        self.pub_types = {}
+        self.pub_vars = {}
+        self.external_url = ''
+
+
+class ExternalFunction(FortranFunction):
+
+    def __init__(self):
+        self.name = ''
+        self.external_url = ''
+
+
+class ExternalSubroutine(FortranSubroutine):
+
+    def __init__(self):
+        self.name = ''
+        self.external_url = ''
+
+
+class ExternalInterface(FortranInterface):
+
+    def __init__(self):
+        self.name = ''
+        self.external_url = ''
+
+
+class ExternalType(FortranType):
+
+    def __init__(self):
+        self.name = ''
+        self.external_url = ''
+
+
+class ExternalVariable(FortranVariable):
+
+    def __init__(self):
+        self.name = ''
+        self.external_url = ''
