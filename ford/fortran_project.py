@@ -3,25 +3,25 @@
 #
 #  project.py
 #  This file is part of FORD.
-#  
+#
 #  Copyright 2014 Christopher MacMackin <cmacmackin@gmail.com>
-#  
+#
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 3 of the License, or
 #  (at your option) any later version.
-#  
+#
 #  This program is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
-#  
-#  
+#
+#
 
 
 from __future__ import print_function
@@ -32,36 +32,41 @@ import ford.utils
 import ford.sourceform
 
 
-INTRINSIC_MODS = {'iso_fortran_env': '<a href="http://fortranwiki.org/fortran/show/ISO_FORTRAN_ENV">iso_fortran_env</a>',
-                  'iso_c_binding': '<a href="http://fortranwiki.org/fortran/show/ISO_C_BINDING">iso_c_binding</a>',
-                  'ieee_arithmetic': '<a href="http://fortranwiki.org/fortran/show/IEEE_ARITHMETIC">ieee_arithmetic</a>',
-                  'ieee_exceptions': '<a href="http://fortranwiki.org/fortran/show/IEEE+arithmetic">ieee_exceptions</a>',
-                  'ieee_features': '<a href="http://fortranwiki.org/fortran/show/IEEE+arithmetic">ieee_features</a>',
-                  'openacc': '<a href="http://www.openacc.org/sites/default/files/OpenACC.2.0a_1.pdf#page=49">openacc</a>',
-                  'omp_lib': '<a href="https://gcc.gnu.org/onlinedocs/gcc-4.4.3/libgomp/Runtime-Library-Routines.html">omp_lib</a>',
-                  'mpi': '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node410.htm">mpi</a>',
-                  'mpi_f08': '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node409.htm">mpi_f08</a>',}
+INTRINSIC_MODS = {
+    "iso_fortran_env": '<a href="http://fortranwiki.org/fortran/show/ISO_FORTRAN_ENV">iso_fortran_env</a>',
+    "iso_c_binding": '<a href="http://fortranwiki.org/fortran/show/ISO_C_BINDING">iso_c_binding</a>',
+    "ieee_arithmetic": '<a href="http://fortranwiki.org/fortran/show/IEEE_ARITHMETIC">ieee_arithmetic</a>',
+    "ieee_exceptions": '<a href="http://fortranwiki.org/fortran/show/IEEE+arithmetic">ieee_exceptions</a>',
+    "ieee_features": '<a href="http://fortranwiki.org/fortran/show/IEEE+arithmetic">ieee_features</a>',
+    "openacc": '<a href="http://www.openacc.org/sites/default/files/OpenACC.2.0a_1.pdf#page=49">openacc</a>',
+    "omp_lib": '<a href="https://gcc.gnu.org/onlinedocs/gcc-4.4.3/libgomp/Runtime-Library-Routines.html">omp_lib</a>',
+    "mpi": '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node410.htm">mpi</a>',
+    "mpi_f08": '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node409.htm">mpi_f08</a>',
+}
+
 
 class Project(object):
     """
     An object which collects and contains all of the information about the
     project which is to be documented.
     """
-    def __init__(self, settings):
-        self.settings = settings        
-        self.name = settings['project']
-        self.external = settings['external']
-        self.topdirs = settings['src_dir']
-        self.extensions = settings['extensions']
-        self.fixed_extensions = settings['fixed_extensions']
-        self.extra_filetypes = settings['extra_filetypes']
-        self.display = settings['display']
-        self.encoding = settings['encoding']
-        
-        if settings['preprocess'].lower() != 'true': settings['fpp_extensions'] = []
 
-        html_incl_src = settings.get("incl_src","true").lower() == "true"
-        
+    def __init__(self, settings):
+        self.settings = settings
+        self.name = settings["project"]
+        self.external = settings["external"]
+        self.topdirs = settings["src_dir"]
+        self.extensions = settings["extensions"]
+        self.fixed_extensions = settings["fixed_extensions"]
+        self.extra_filetypes = settings["extra_filetypes"]
+        self.display = settings["display"]
+        self.encoding = settings["encoding"]
+
+        if settings["preprocess"].lower() != "true":
+            settings["fpp_extensions"] = []
+
+        html_incl_src = settings.get("incl_src", "true").lower() == "true"
+
         self.files = []
         self.modules = []
         self.programs = []
@@ -80,29 +85,57 @@ class Project(object):
         self.extVariables = []
 
         # Get all files within topdir, recursively
-        srcdir_list = self.make_srcdir_list(settings['exclude_dir'])
+        srcdir_list = self.make_srcdir_list(settings["exclude_dir"])
         for curdir in srcdir_list:
-            for item in [ f for f in os.listdir(curdir) \
-                           if not os.path.isdir(os.path.join(curdir,f))]:
-                ext = item.split('.')[-1]
-                if (ext in self.extensions or ext in self.fixed_extensions) and \
-                  not item in settings['exclude']:
+            for item in [
+                f
+                for f in os.listdir(curdir)
+                if not os.path.isdir(os.path.join(curdir, f))
+            ]:
+                ext = item.split(".")[-1]
+                if (
+                    ext in self.extensions or ext in self.fixed_extensions
+                ) and not item in settings["exclude"]:
                     # Get contents of the file
-                    print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
-                    if item.split('.')[-1] in settings['fpp_extensions']:
-                        preprocessor = settings['preprocessor']
+                    print(
+                        "Reading file {}".format(
+                            os.path.relpath(os.path.join(curdir, item))
+                        )
+                    )
+                    if item.split(".")[-1] in settings["fpp_extensions"]:
+                        preprocessor = settings["preprocessor"]
                     else:
                         preprocessor = None
-                    if settings['dbg']:
+                    if settings["dbg"]:
                         self.files.append(
-                            ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings, \
-                                preprocessor, ext in self.fixed_extensions,incl_src=html_incl_src, encoding=self.encoding))
+                            ford.sourceform.FortranSourceFile(
+                                os.path.join(curdir, item),
+                                settings,
+                                preprocessor,
+                                ext in self.fixed_extensions,
+                                incl_src=html_incl_src,
+                                encoding=self.encoding,
+                            )
+                        )
                     else:
                         try:
-                            self.files.append(ford.sourceform.FortranSourceFile(os.path.join(curdir,item),settings,preprocessor,\
-                                ext in self.fixed_extensions,incl_src=html_incl_src, encoding=self.encoding))
+                            self.files.append(
+                                ford.sourceform.FortranSourceFile(
+                                    os.path.join(curdir, item),
+                                    settings,
+                                    preprocessor,
+                                    ext in self.fixed_extensions,
+                                    incl_src=html_incl_src,
+                                    encoding=self.encoding,
+                                )
+                            )
                         except Exception as e:
-                            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
+                            print(
+                                "Warning: Error parsing {}.\n\t{}".format(
+                                    os.path.relpath(os.path.join(curdir, item)),
+                                    e.args[0],
+                                )
+                            )
                             continue
                     for module in self.files[-1].modules:
                         self.modules.append(module)
@@ -119,20 +152,40 @@ class Project(object):
                         self.programs.append(program)
                     for block in self.files[-1].blockdata:
                         self.blockdata.append(block)
-                elif item.split('.')[-1] in self.extra_filetypes and not item in settings['exclude']:
-                    print("Reading file {}".format(os.path.relpath(os.path.join(curdir,item))))
-                    if settings['dbg']:
-                        self.extra_files.append(ford.sourceform.GenericSource(os.path.join(curdir,item),settings))
+                elif (
+                    item.split(".")[-1] in self.extra_filetypes
+                    and not item in settings["exclude"]
+                ):
+                    print(
+                        "Reading file {}".format(
+                            os.path.relpath(os.path.join(curdir, item))
+                        )
+                    )
+                    if settings["dbg"]:
+                        self.extra_files.append(
+                            ford.sourceform.GenericSource(
+                                os.path.join(curdir, item), settings
+                            )
+                        )
                     else:
                         try:
-                            self.extra_files.append(ford.sourceform.GenericSource(os.path.join(curdir,item),settings))
+                            self.extra_files.append(
+                                ford.sourceform.GenericSource(
+                                    os.path.join(curdir, item), settings
+                                )
+                            )
                         except Exception as e:
-                            print("Warning: Error parsing {}.\n\t{}".format(os.path.relpath(os.path.join(curdir,item)),e.args[0]))
+                            print(
+                                "Warning: Error parsing {}.\n\t{}".format(
+                                    os.path.relpath(os.path.join(curdir, item)),
+                                    e.args[0],
+                                )
+                            )
                             continue
 
     @property
     def allfiles(self):
-        """ Instead of duplicating files, it is much more efficient to create the itterator on the fly """
+        """Instead of duplicating files, it is much more efficient to create the itterator on the fly"""
         for f in self.files:
             yield f
         for f in self.extra_files:
@@ -140,7 +193,7 @@ class Project(object):
 
     @property
     def allfiles(self):
-        """ Instead of duplicating files, it is much more efficient to create the itterator on the fly """
+        """Instead of duplicating files, it is much more efficient to create the itterator on the fly"""
         for f in self.files:
             yield f
         for f in self.extra_files:
@@ -155,94 +208,117 @@ class Project(object):
         """
 
         print("Correlating information from different parts of your project...")
-                        
-        non_local_mods = INTRINSIC_MODS        
-        for item in self.settings['extra_mods']:
-            i = item.index(':')
+
+        non_local_mods = INTRINSIC_MODS
+        for item in self.settings["extra_mods"]:
+            i = item.index(":")
             if i < 0:
                 print('Warning: could not parse extra modules ""'.format(item))
                 continue
             name = item[:i].strip()
-            url = item[i+1:].strip()
-            non_local_mods[name.lower()] = '<a href="{}">{}</a>'.format(url,name)
+            url = item[i + 1 :].strip()
+            non_local_mods[name.lower()] = '<a href="{}">{}</a>'.format(url, name)
 
         # load external FORD FortranModules
         ford.utils.external(self)
 
         # Match USE statements up with the right modules
         for s in self.modules:
-            id_mods(s, self.modules, non_local_mods, self.submodules,
-                    self.extModules)
+            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
         for s in self.procedures:
-            id_mods(s, self.modules, non_local_mods, self.submodules,
-                    self.extModules)
+            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
         for s in self.programs:
-            id_mods(s, self.modules, non_local_mods, self.submodules,
-                    self.extModules)
+            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
         for s in self.submodules:
-            id_mods(s, self.modules, non_local_mods, self.submodules,
-                    self.extModules)
+            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
         for s in self.blockdata:
-            id_mods(s, self.modules, non_local_mods, self.submodules,
-                    self.extModules)
+            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
         # Get the order to process other correlations with
         deplist = {}
-        
+
         def get_deps(item):
             uselist = [m[0] for m in item.uses]
-            for proc in getattr(item,'subroutines',[]):
+            for proc in getattr(item, "subroutines", []):
                 uselist.extend(get_deps(proc))
-            for proc in getattr(item,'functions',[]):
+            for proc in getattr(item, "functions", []):
                 uselist.extend(get_deps(proc))
-            for proc in getattr(item,'modprocedures',[]):
+            for proc in getattr(item, "modprocedures", []):
                 uselist.extend(get_deps(proc))
             return uselist
+
         for mod in self.modules:
             uselist = get_deps(mod)
-            uselist = [m for m in uselist if type(m) ==
-                       ford.sourceform.FortranModule]
+            uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
             deplist[mod] = set(uselist)
             mod.deplist = uselist
         for mod in self.submodules:
             if type(mod.ancestor_mod) is ford.sourceform.FortranModule:
                 uselist = get_deps(mod)
-                uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
+                uselist = [
+                    m for m in uselist if type(m) == ford.sourceform.FortranModule
+                ]
                 if mod.ancestor:
                     if type(mod.ancestor) is ford.sourceform.FortranSubmodule:
-                        uselist.insert(0,mod.ancestor)
-                    elif self.settings['warn'].lower() == 'true':
-                        print('Warning: could not identify parent SUBMODULE of SUBMODULE ' + mod.name)
+                        uselist.insert(0, mod.ancestor)
+                    elif self.settings["warn"].lower() == "true":
+                        print(
+                            "Warning: could not identify parent SUBMODULE of SUBMODULE "
+                            + mod.name
+                        )
                 else:
-                    uselist.insert(0,mod.ancestor_mod)
+                    uselist.insert(0, mod.ancestor_mod)
                 mod.deplist = uselist
                 deplist[mod] = set(uselist)
-            elif self.settings['warn'].lower() == 'true':
-                print('Warning: could not identify parent MODULE of SUBMODULE ' + mod.name)
+            elif self.settings["warn"].lower() == "true":
+                print(
+                    "Warning: could not identify parent MODULE of SUBMODULE " + mod.name
+                )
         # Get dependencies for programs and top-level procedures as well,
         # if dependency graphs are to be produced
-        if self.settings['graph'].lower() == 'true':
+        if self.settings["graph"].lower() == "true":
             for proc in self.procedures:
-                proc.deplist = set([m for m in get_deps(proc) if type(m) == ford.sourceform.FortranModule])
+                proc.deplist = set(
+                    [
+                        m
+                        for m in get_deps(proc)
+                        if type(m) == ford.sourceform.FortranModule
+                    ]
+                )
             for prog in self.programs:
-                prog.deplist = set([m for m in get_deps(prog) if type(m) == ford.sourceform.FortranModule])
+                prog.deplist = set(
+                    [
+                        m
+                        for m in get_deps(prog)
+                        if type(m) == ford.sourceform.FortranModule
+                    ]
+                )
             for block in self.blockdata:
-                block.deplist = set([m for m in get_deps(block) if type(m) == ford.sourceform.FortranModule])
+                block.deplist = set(
+                    [
+                        m
+                        for m in get_deps(block)
+                        if type(m) == ford.sourceform.FortranModule
+                    ]
+                )
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:
-            if proc.parobj == 'sourcefile': ranklist.append(proc)
+            if proc.parobj == "sourcefile":
+                ranklist.append(proc)
         ranklist.extend(self.programs)
         ranklist.extend(self.blockdata)
 
         # Perform remaining correlations for the project
         for container in ranklist:
-            if type(container) != str: container.correlate(self)
+            if type(container) != str:
+                container.correlate(self)
         for container in ranklist:
-            if type(container) != str: container.prune()
+            if type(container) != str:
+                container.prune()
 
-        if self.settings['project_url'] == '.':
-            url = '..'
+        if self.settings["project_url"] == ".":
+            url = ".."
         else:
-            url = self.settings['project_url']
+            url = self.settings["project_url"]
 
         for sfile in self.files:
             for module in sfile.modules:
@@ -292,43 +368,45 @@ class Project(object):
                     self.types.append(dtype)
 
         def sum_lines(*argv, **kwargs):
-            """ Wrapper for minimizing memory consumption """
-            routine = kwargs.get('func', 'num_lines')
+            """Wrapper for minimizing memory consumption"""
+            routine = kwargs.get("func", "num_lines")
             n = 0
             for arg in argv:
                 for item in arg:
                     n += getattr(item, routine)
             return n
+
         self.mod_lines = sum_lines(self.modules, self.submodules)
         self.proc_lines = sum_lines(self.procedures)
         self.file_lines = sum_lines(self.files)
         self.type_lines = sum_lines(self.types)
-        self.type_lines_all = sum_lines(self.types, func='num_lines_all')
+        self.type_lines_all = sum_lines(self.types, func="num_lines_all")
         self.absint_lines = sum_lines(self.absinterfaces)
         self.prog_lines = sum_lines(self.programs)
         self.block_lines = sum_lines(self.blockdata)
         print()
 
-    def markdown(self,md,base_url='..'):
+    def markdown(self, md, base_url=".."):
         """
         Process the documentation with Markdown to produce HTML.
         """
         print("\nProcessing documentation comments...")
-        ford.sourceform.set_base_url(base_url)        
-        if self.settings['warn'].lower() == 'true': print()
+        ford.sourceform.set_base_url(base_url)
+        if self.settings["warn"].lower() == "true":
+            print()
         for src in self.allfiles:
             src.markdown(md, self)
 
-    def make_links(self,base_url='..'):
+    def make_links(self, base_url=".."):
         """
-        Substitute intrasite links to documentation for other parts of 
+        Substitute intrasite links to documentation for other parts of
         the program.
         """
-        ford.sourceform.set_base_url(base_url)        
+        ford.sourceform.set_base_url(base_url)
         for src in self.allfiles:
             src.make_links(self)
 
-    def make_srcdir_list(self,exclude_dirs):
+    def make_srcdir_list(self, exclude_dirs):
         """
         Like os.walk, except that:
         a) directories listed in exclude_dir are excluded with all
@@ -338,21 +416,20 @@ class Project(object):
         srcdir_list = []
         for topdir in self.topdirs:
             srcdir_list.append(topdir)
-            srcdir_list += self.recursive_dir_list(topdir,exclude_dirs)
+            srcdir_list += self.recursive_dir_list(topdir, exclude_dirs)
         return srcdir_list
 
-    def recursive_dir_list(self,topdir,skip):
+    def recursive_dir_list(self, topdir, skip):
         dir_list = []
         for entry in os.listdir(topdir):
-            abs_entry = os.path.join(topdir,entry)
+            abs_entry = os.path.join(topdir, entry)
             if os.path.isdir(abs_entry) and (abs_entry not in skip):
-                dir_list.append( abs_entry )
-                dir_list += self.recursive_dir_list(abs_entry,skip)
+                dir_list.append(abs_entry)
+                dir_list += self.recursive_dir_list(abs_entry, skip)
         return dir_list
-          
 
 
-def id_mods(obj,modlist,intrinsic_mods={},submodlist=[],extMods=[]):
+def id_mods(obj, modlist, intrinsic_mods={}, submodlist=[], extMods=[]):
     """
     Match USE statements up with the right modules
     """
@@ -365,19 +442,19 @@ def id_mods(obj,modlist,intrinsic_mods={},submodlist=[],extMods=[]):
             if obj.uses[i][0].lower() in intrinsic_mods:
                 obj.uses[i] = [intrinsic_mods[obj.uses[i][0].lower()], obj.uses[i][1]]
                 continue
-    if getattr(obj,'ancestor',None):
+    if getattr(obj, "ancestor", None):
         for submod in submodlist:
             if obj.ancestor.lower() == submod.name.lower():
                 obj.ancestor = submod
                 break
-    if hasattr(obj,'ancestor_mod'):
+    if hasattr(obj, "ancestor_mod"):
         for mod in modlist:
             if obj.ancestor_mod.lower() == mod.name.lower():
                 obj.ancestor_mod = mod
                 break
-    for modproc in getattr(obj,'modprocedures',[]):
-        id_mods(modproc,modlist,intrinsic_mods,extMods)
-    for func in getattr(obj,'functions',[]):
-        id_mods(func,modlist,intrinsic_mods,extMods)
-    for subroutine in getattr(obj,'subroutines',[]):
-        id_mods(subroutine,modlist,intrinsic_mods,extMods)
+    for modproc in getattr(obj, "modprocedures", []):
+        id_mods(modproc, modlist, intrinsic_mods, extMods)
+    for func in getattr(obj, "functions", []):
+        id_mods(func, modlist, intrinsic_mods, extMods)
+    for subroutine in getattr(obj, "subroutines", []):
+        id_mods(subroutine, modlist, intrinsic_mods, extMods)
