@@ -37,6 +37,7 @@ python fixed2free2.py file.f > file.f90
 from __future__ import print_function
 import sys
 
+
 class FortranLine:
     def __init__(self, line, length_limit=True):
         self.line = line
@@ -45,10 +46,10 @@ class FortranLine:
         self.isContinuation = False
         self.length_limit = length_limit
         self.__analyse()
-        
+
     def __repr__(self):
         return self.line_conv
-        
+
     def continueLine(self):
         """Insert line continuation symbol at end of line."""
 
@@ -57,47 +58,49 @@ class FortranLine:
         else:
             temp = self.line_conv[:72].rstrip() + " &"
             self.line_conv = temp.ljust(72) + self.excess_line
-                  
+
     def __analyse(self):
         line = self.line
-        firstchar = line[0] if len(line) > 0 else ''
-        self.label = line[0:5].strip().lower() + ' ' if len(line) > 1 else ''
-        cont_char = line[5] if len(line) >= 6 else ''
-        fivechars = line[1:5] if len(line) > 1 else ''
-        self.isShort = (len(line) <= 6)
-        self.isLong  = (len(line) > 73 and self.length_limit)
-        
+        firstchar = line[0] if len(line) > 0 else ""
+        self.label = line[0:5].strip().lower() + " " if len(line) > 1 else ""
+        cont_char = line[5] if len(line) >= 6 else ""
+        fivechars = line[1:5] if len(line) > 1 else ""
+        self.isShort = len(line) <= 6
+        self.isLong = len(line) > 73 and self.length_limit
+
         self.isComment = firstchar in "cC*!"
-        self.isNewComment = '!' in fivechars and not self.isComment
+        self.isNewComment = "!" in fivechars and not self.isComment
         self.isOMP = self.isComment and fivechars.lower() == "$omp"
         if self.isOMP:
             self.isComment = False
-            self.label = ''
-        self.isCppLine = (firstchar == '#')
-        self.is_regular = (not (self.isComment or self.isNewComment or 
-                           self.isCppLine or self.isShort))      
-        self.isContinuation = (not (cont_char.isspace() or cont_char == '0') and
-                               self.is_regular)
+            self.label = ""
+        self.isCppLine = firstchar == "#"
+        self.is_regular = not (
+            self.isComment or self.isNewComment or self.isCppLine or self.isShort
+        )
+        self.isContinuation = (
+            not (cont_char.isspace() or cont_char == "0") and self.is_regular
+        )
 
         if self.isLong and self.is_regular:
-            self.excess_line = '!' + line[72:]
-            line = line[:72] + '\n'
+            self.excess_line = "!" + line[72:]
+            line = line[:72] + "\n"
         else:
-            self.excess_line = ''
+            self.excess_line = ""
 
         self.line = line
         self.__convert()
 
     def __convert(self):
         line = self.line
-        self.code = line[6:] if len(line) > 6 else '\n'
-        
+        self.code = line[6:] if len(line) > 6 else "\n"
+
         if self.isComment:
-            self.line_conv = '!' + line[1:]
+            self.line_conv = "!" + line[1:]
         elif self.isNewComment or self.isCppLine:
             self.line_conv = line
         elif self.isOMP:
-            self.line_conv = '!' + line[1:5] + ' ' + self.code
+            self.line_conv = "!" + line[1:5] + " " + self.code
         elif not self.label.isspace():
             self.line_conv = self.label + self.code
         else:
@@ -110,30 +113,30 @@ class FortranLine:
 def convertToFree(stream, length_limit=True):
     """Convert stream from fixed source form to free source form."""
     linestack = []
-        
+
     for line in stream:
         convline = FortranLine(line, length_limit)
-        
+
         if convline.is_regular:
-            if convline.isContinuation and linestack: 
+            if convline.isContinuation and linestack:
                 linestack[0].continueLine()
             for l in linestack:
                 yield str(l)
             linestack = []
-            
+
         linestack.append(convline)
-        
+
     for l in linestack:
         yield str(l)
-        
+
 
 if __name__ == "__main__":
 
     if len(sys.argv) > 1:
-        infile = open(sys.argv[1], 'r')
+        infile = open(sys.argv[1], "r")
         for line in convertToFree(infile):
             print(line),
-    
+
         infile.close()
     else:
         print(__doc__)
