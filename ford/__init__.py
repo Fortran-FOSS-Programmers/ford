@@ -77,10 +77,6 @@ __license__ = "GPLv3"
 __maintainer__ = "Chris MacMackin"
 __status__ = "Production"
 
-if sys.version_info[0] < 3:
-    reload(sys)
-    sys.setdefaultencoding("utf8")
-
 
 @contextmanager
 def stdout_redirector(stream):
