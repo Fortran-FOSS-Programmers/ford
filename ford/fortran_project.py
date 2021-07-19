@@ -91,7 +91,7 @@ class Project(object):
                 ext = item.split(".")[-1]
                 if (
                     ext in self.extensions or ext in self.fixed_extensions
-                ) and not item in settings["exclude"]:
+                ) and item not in settings["exclude"]:
                     # Get contents of the file
                     print(
                         "Reading file {}".format(
@@ -150,7 +150,7 @@ class Project(object):
                         self.blockdata.append(block)
                 elif (
                     item.split(".")[-1] in self.extra_filetypes
-                    and not item in settings["exclude"]
+                    and item not in settings["exclude"]
                 ):
                     print(
                         "Reading file {}".format(
