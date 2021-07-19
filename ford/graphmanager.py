@@ -24,7 +24,6 @@
 
 import os
 import sys
-import time
 from multiprocessing import Pool
 
 from tqdm import tqdm

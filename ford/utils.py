@@ -26,7 +26,6 @@
 import re
 import os.path
 import json
-import sys
 import ford.sourceform
 from urllib.request import urlopen, URLError
 from urllib.parse import urljoin
