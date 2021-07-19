@@ -2216,7 +2216,7 @@ class FortranFunction(FortranCodeUnit):
                 self.args.append(arg.strip())
         try:
             self.bindC = ford.utils.get_parens(line.group(5), -1)[0:-1]
-        except:
+        except (RuntimeError, TypeError):
             self.bindC = line.group(5)
         if self.bindC:
             search_from = 0
@@ -3336,7 +3336,7 @@ def parse_type(string, capture_strings, settings):
                 proto = list(PROTO_RE.match(args).groups())
                 if not proto[1]:
                     proto[1] = ""
-            except:
+            except AttributeError:
                 raise Exception(
                     "Bad type, class, or procedure prototype specification: {}".format(
                         args
@@ -3355,7 +3355,7 @@ def parse_type(string, capture_strings, settings):
                         match = QUOTES_RE.search(kind)
                         num = int(match.group()[1:-1])
                         kind = QUOTES_RE.sub(capture_strings[num], kind)
-                    except:
+                    except AttributeError:
                         pass
                 elif LEN_RE.search(args):
                     length = LEN_RE.sub("", args)

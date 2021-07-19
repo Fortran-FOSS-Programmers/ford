@@ -218,7 +218,7 @@ class Documentation(object):
         if "media_dir" in self.data:
             try:
                 copytree(self.data["media_dir"], os.path.join(out_dir, "media"))
-            except:
+            except OSError:
                 print(
                     "Warning: error copying media directory {}".format(
                         self.data["media_dir"]

@@ -737,7 +737,7 @@ class FortranGraph(object):
                     node += '<a href="{0}">{1}</a></td>'.format(
                         n.attribs["URL"], n.attribs["label"]
                     )
-                except:
+                except KeyError:
                     node += n.attribs["label"] + "</td>"
                 if root_on_left:
                     rows += "<tr>" + root + arrow + node + "</tr>\n"

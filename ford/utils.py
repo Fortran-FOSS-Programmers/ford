@@ -28,7 +28,7 @@ import os.path
 import json
 import sys
 import ford.sourceform
-from urllib.request import urlopen
+from urllib.request import urlopen, URLError
 from urllib.parse import urljoin
 
 
@@ -537,9 +537,9 @@ def external(project, make=False, path="."):
                     )
                 else:
                     extModules = modules_from_local(url)
-            except:
+            except (URLError, json.JSONDecodeError) as error:
                 extModules = []
-                print("Could not open external URL: {}.".format(url))
+                print("Could not open external URL '{}', reason: {}".format(url, error))
             # convert modules defined in the JSON database to module objects
             for extModule in extModules:
                 dict2obj(extModule, url)
