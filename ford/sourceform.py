@@ -3354,7 +3354,7 @@ def parse_type(string, capture_strings, settings):
                     try:
                         match = QUOTES_RE.search(kind)
                         num = int(match.group()[1:-1])
-                        kind = QUOTES_RE.sub(captured_strings[num], kind)
+                        kind = QUOTES_RE.sub(capture_strings[num], kind)
                     except:
                         pass
                 elif LEN_RE.search(args):
