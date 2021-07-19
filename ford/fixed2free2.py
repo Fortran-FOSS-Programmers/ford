@@ -119,14 +119,14 @@ def convertToFree(stream, length_limit=True):
         if convline.is_regular:
             if convline.isContinuation and linestack:
                 linestack[0].continueLine()
-            for l in linestack:
-                yield str(l)
+            for line_ in linestack:
+                yield str(line_)
             linestack = []
 
         linestack.append(convline)
 
-    for l in linestack:
-        yield str(l)
+    for line in linestack:
+        yield str(line)
 
 
 if __name__ == "__main__":
