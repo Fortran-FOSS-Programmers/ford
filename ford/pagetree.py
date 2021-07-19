@@ -26,7 +26,6 @@
 from __future__ import print_function
 
 import os
-import ford.utils
 
 
 class PageNode(object):
