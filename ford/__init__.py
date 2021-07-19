@@ -24,6 +24,7 @@
 #
 
 from contextlib import contextmanager
+from io import StringIO
 import sys
 import argparse
 import markdown
@@ -37,11 +38,6 @@ import ford.output
 from ford.mdx_math import MathExtension
 import ford.utils
 import ford.pagetree
-
-if sys.version_info[0] > 2:
-    from io import StringIO
-else:
-    from StringIO import StringIO
 
 try:
     from importlib.metadata import version, PackageNotFoundError
