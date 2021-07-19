@@ -42,9 +42,11 @@ from ford.sourceform import (
 )
 import ford.graphs
 
-# Wrapper function for output graphs -- needed to allow multiprocessing to
-# pickle the function (must be at top level)
+
 def outputFuncWrap(args):
+    """Wrapper function for output graphs -- needed to allow multiprocessing to
+    pickle the function (must be at top level)"""
+
     for f in args[0:-1]:
         f.create_svg(args[-1])
 
