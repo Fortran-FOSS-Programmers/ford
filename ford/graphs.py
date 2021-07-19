@@ -394,7 +394,7 @@ class ProcNode(BaseNode):
                 if (
                     hasattr(obj, "procedure")
                     and obj.procedure.module
-                    and obj.procedure.module != True
+                    and obj.procedure.module is not True
                     and getattr(obj.procedure.module, "visible", True)
                 ):
                     if obj.procedure.module in hist:

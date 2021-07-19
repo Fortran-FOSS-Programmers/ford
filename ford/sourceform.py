@@ -547,7 +547,7 @@ class FortranBase(object):
         self, source, first_line, parent=None, inherited_permission=None, strings=[]
     ):
         self.visible = False
-        if inherited_permission != None:
+        if inherited_permission is not None:
             self.permission = inherited_permission.lower()
         else:
             self.permission = None
@@ -830,7 +830,7 @@ class FortranBase(object):
                 ford.utils.sub_notes(self.meta["summary"])
             )
         elif PARA_CAPTURE_RE.search(self.doc):
-            if self.get_url() == None:
+            if self.get_url() is None:
                 # There is no stand-alone webpage for this item (e.g.,
                 # an internal routine in a routine, so make the whole
                 # doc blob appear, without the link to "more..."
@@ -1593,7 +1593,7 @@ class FortranCodeUnit(FortranContainer):
                         intr.proctype.lower() == "interface"
                         and not intr.generic
                         and not intr.abstract
-                        and intr.procedure.module == True
+                        and intr.procedure.module is True
                     ):
                         proc.module = intr
                         intr.procedure.module = proc
@@ -1607,7 +1607,7 @@ class FortranCodeUnit(FortranContainer):
                         intr.proctype.lower() == "interface"
                         and not intr.generic
                         and not intr.abstract
-                        and intr.procedure.module == True
+                        and intr.procedure.module is True
                     ):
                         proc.attribs = intr.procedure.attribs
                         proc.args = intr.procedure.args
@@ -2345,7 +2345,7 @@ class FortranProgram(FortranCodeUnit):
 
     def _initialize(self, line):
         self.name = line.group(1)
-        if self.name == None:
+        if self.name is None:
             self.name = ""
         self.variables = []
         self.enums = []
@@ -2805,7 +2805,7 @@ class FortranModuleProcedure(FortranBase):
     """
 
     def __init__(self, name, parent=None, inherited_permission=None):
-        if inherited_permission != None:
+        if inherited_permission is not None:
             self.permission = inherited_permission.lower()
         else:
             self.permission = None
