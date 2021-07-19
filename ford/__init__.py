@@ -93,12 +93,30 @@ def stdout_redirector(stream):
 
 
 LICENSES = {
-    "by": '<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" /></a>',
-    "by-nd": '<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>',
-    "by-sa": '<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>',
-    "by-nc": '<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/80x15.png" /></a>',
-    "by-nc-nd": '<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-nd/4.0/80x15.png" /></a>',
-    "by-nc-sa": '<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>',
+    "by": (
+        '<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">'
+        '<img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" /></a>'
+    ),
+    "by-nd": (
+        '<a rel="license" href="http://creativecommons.org/licenses/by-nd/4.0/">'
+        '<img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nd/4.0/80x15.png" /></a>'
+    ),
+    "by-sa": (
+        '<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">'
+        '<img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/80x15.png" /></a>'
+    ),
+    "by-nc": (
+        '<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">'
+        '<img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/80x15.png" /></a>'
+    ),
+    "by-nc-nd": (
+        '<a rel="license" href="http://creativecommons.org/licenses/by-nc-nd/4.0/">'
+        '<img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-nd/4.0/80x15.png" /></a>'
+    ),
+    "by-nc-sa": (
+        '<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">'
+        '<img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>'
+    ),
     "gfdl": '<a rel="license" href="http://www.gnu.org/licenses/old-licenses/fdl-1.2.en.html">GNU Free Documentation License</a>',
     "opl": '<a rel="license" href="http://opencontent.org/openpub/">Open Publication License</a>',
     "pdl": '<a rel="license" href="http://www.openoffice.org/licenses/PDL.html">Public Documentation License</a>',
