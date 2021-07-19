@@ -187,14 +187,6 @@ class Project(object):
         for f in self.extra_files:
             yield f
 
-    @property
-    def allfiles(self):
-        """Instead of duplicating files, it is much more efficient to create the itterator on the fly"""
-        for f in self.files:
-            yield f
-        for f in self.extra_files:
-            yield f
-
     def __str__(self):
         return self.name
 
