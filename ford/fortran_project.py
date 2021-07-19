@@ -201,7 +201,7 @@ class Project(object):
         for item in self.settings["extra_mods"]:
             i = item.index(":")
             if i < 0:
-                print('Warning: could not parse extra modules ""'.format(item))
+                print('Warning: could not parse extra modules "{}"'.format(item))
                 continue
             name = item[:i].strip()
             url = item[i + 1 :].strip()
