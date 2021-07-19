@@ -401,7 +401,6 @@ if __name__ == "__main__":
         predocmark=">",
         docmark_alt="#",
         predocmark_alt="<",
-        encoding=self.encoding,
     ):
         print(line)
         continue
