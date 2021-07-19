@@ -93,7 +93,7 @@ LICENSES = {
     "pdl": '<a rel="license" href="http://www.openoffice.org/licenses/PDL.html">Public Documentation License</a>',
     "bsd": '<a rel="license" href="http://www.freebsd.org/copyright/freebsd-doc-license.html">FreeBSD Documentation License</a>',
     "isc": '<a rel="license" href="https://opensource.org/licenses/ISC">ISC (Internet Systems Consortium) License</a>',
-    "mit": '<a rel="license" href="https://opensource.org/licenses/">MIT</a>',
+    "mit": '<a rel="license" href="https://opensource.org/licenses/MIT">MIT</a>',
     "": "",
 }
 

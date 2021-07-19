@@ -33,13 +33,13 @@ import ford.sourceform
 
 
 INTRINSIC_MODS = {
-    "iso_fortran_env": '<a href="http://fortranwiki.org/fortran/show/ISO_FORTRAN_ENV">iso_fortran_env</a>',
-    "iso_c_binding": '<a href="http://fortranwiki.org/fortran/show/ISO_C_BINDING">iso_c_binding</a>',
-    "ieee_arithmetic": '<a href="http://fortranwiki.org/fortran/show/IEEE_ARITHMETIC">ieee_arithmetic</a>',
+    "iso_fortran_env": '<a href="http://fortranwiki.org/fortran/show/iso_fortran_env">iso_fortran_env</a>',
+    "iso_c_binding": '<a href="http://fortranwiki.org/fortran/show/iso_c_binding">iso_c_binding</a>',
+    "ieee_arithmetic": '<a href="http://fortranwiki.org/fortran/show/ieee_arithmetic">ieee_arithmetic</a>',
     "ieee_exceptions": '<a href="http://fortranwiki.org/fortran/show/IEEE+arithmetic">ieee_exceptions</a>',
     "ieee_features": '<a href="http://fortranwiki.org/fortran/show/IEEE+arithmetic">ieee_features</a>',
-    "openacc": '<a href="http://www.openacc.org/sites/default/files/OpenACC.2.0a_1.pdf#page=49">openacc</a>',
-    "omp_lib": '<a href="https://gcc.gnu.org/onlinedocs/gcc-4.4.3/libgomp/Runtime-Library-Routines.html">omp_lib</a>',
+    "openacc": '<a href="https://www.openacc.org/sites/default/files/inline-images/Specification/OpenACC.3.0.pdf#page=85">openacc</a>',
+    "omp_lib": '<a href="https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003">omp_lib</a>',
     "mpi": '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node410.htm">mpi</a>',
     "mpi_f08": '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node409.htm">mpi_f08</a>',
 }
