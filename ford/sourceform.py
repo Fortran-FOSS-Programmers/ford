@@ -1188,7 +1188,9 @@ class FortranContainer(FortranBase):
                             else:
                                 self.attr_dict[name] = [attr]
                 elif attr.lower() == "data" and self.obj == "sourcefile":
-                    # TODO: This is just a fix to keep FORD from crashing on encountering a block data structure. At some point I should actually implement support for them.
+                    # TODO: This is just a fix to keep FORD from crashing on
+                    # encountering a block data structure. At some point I
+                    # should actually implement support for them.
                     continue
                 else:
                     self.print_error(
@@ -2211,7 +2213,11 @@ class FortranFunction(FortranCodeUnit):
         self.args = []  # Set this in the correlation step
 
         for arg in self.SPLIT_RE.split(line.group(3)[1:-1]):
-            # FIXME: This is to avoid a problem whereby sometimes an empty argument list will appear to contain the argument ''. I didn't know why it would do this (especially since sometimes it works fine) and just put this in as a quick fix. However, at some point I should try to figure out the actual root of the problem.
+            # FIXME: This is to avoid a problem whereby sometimes an empty
+            # argument list will appear to contain the argument ''. I didn't
+            # know why it would do this (especially since sometimes it works
+            # fine) and just put this in as a quick fix. However, at some point
+            # I should try to figure out the actual root of the problem.
             if arg.strip() != "":
                 self.args.append(arg.strip())
         try:
