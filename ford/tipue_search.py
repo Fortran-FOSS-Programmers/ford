@@ -33,8 +33,6 @@ Adapted from the Pelican plugin by Talha Mansoor
 https://github.com/getpelican/pelican-plugins/tree/master/tipue_search
 """
 
-from __future__ import unicode_literals
-
 import os.path
 import json
 from bs4 import BeautifulSoup, FeatureNotFound, SoupStrainer

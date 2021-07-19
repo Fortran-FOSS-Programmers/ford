@@ -23,7 +23,6 @@
 #
 #
 
-from __future__ import print_function
 from contextlib import contextmanager
 import sys
 import argparse

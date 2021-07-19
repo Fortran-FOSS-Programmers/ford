@@ -34,7 +34,6 @@ python fixed2free2.py file.f > file.f90
 # TODO:
 # *) Improve command line usage
 
-from __future__ import print_function
 import sys
 
 
