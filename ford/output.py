@@ -116,7 +116,7 @@ class Documentation(object):
             if pagetree:
                 for item in pagetree:
                     self.pagetree.append(PagetreePage(data, project, item))
-        except Exception as e:
+        except Exception:
             if data["dbg"]:
                 traceback.print_exc()
                 sys.exit("Error encountered.")
