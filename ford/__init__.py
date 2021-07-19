@@ -44,6 +44,18 @@ if sys.version_info[0] > 2:
 else:
     from StringIO import StringIO
 
+try:
+    from importlib.metadata import version, PackageNotFoundError
+except ModuleNotFoundError:
+    from importlib_metadata import version, PackageNotFoundError
+try:
+    __version__ = version(__name__)
+except PackageNotFoundError:
+    from setuptools_scm import get_version
+
+    __version__ = get_version(root="..", relative_to=__file__)
+
+
 __appname__ = "FORD"
 __author__ = "Chris MacMackin"
 __credits__ = [
@@ -62,7 +74,6 @@ __credits__ = [
     "Stefano Zhagi",
 ]
 __license__ = "GPLv3"
-__version__ = "6.0.0"
 __maintainer__ = "Chris MacMackin"
 __status__ = "Production"
 
@@ -194,7 +205,7 @@ def initialize():
         "-V",
         "--version",
         action="version",
-        version="{}, version {}".format(__appname__, __version__),
+        version="%(prog)s version {}".format(__version__),
     )
     parser.add_argument(
         "--debug",
