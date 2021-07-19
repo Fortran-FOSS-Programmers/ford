@@ -82,7 +82,7 @@ def rainbowcolour(depth, maxd):
 
 
 HYPERLINK_RE = re.compile(
-    "^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$", re.IGNORECASE
+    r"^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$", re.IGNORECASE
 )
 WIDTH_RE = re.compile('width="(.*?)pt"', re.IGNORECASE)
 HEIGHT_RE = re.compile('height="(.*?)pt"', re.IGNORECASE)
@@ -598,7 +598,7 @@ class FortranGraph(object):
         if graphviz_installed:
             self.svg_src = self.dot.pipe().decode("utf-8")
             self.svg_src = self.svg_src.replace(
-                "<svg ", '<svg id="' + re.sub("[^\w]", "", self.ident) + '" '
+                "<svg ", '<svg id="' + re.sub(r"[^\w]", "", self.ident) + '" '
             )
             w = int(WIDTH_RE.search(self.svg_src).group(1))
             if isinstance(self, (ModuleGraph, CallGraph, TypeGraph)):
@@ -753,7 +753,7 @@ class FortranGraph(object):
             svgGraph = self.svg_src
             # add zoom ability for big graphs
             if self.scaled:
-                zoomName = re.sub("[^\w]", "", self.ident)
+                zoomName = re.sub(r"[^\w]", "", self.ident)
                 rettext += (
                     "<script>var pan{1} = svgPanZoom('#{1}', "
                     "{{zoomEnabled: true,controlIconsEnabled: true, "
