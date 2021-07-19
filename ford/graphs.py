@@ -1351,7 +1351,7 @@ if graphviz_installed:
     descended from. Dashed arrows point from a module or program unit to 
     modules which it uses.{{}}
     </p>
-    """
+    """  # noqa W291
     ).format(mod_svg)
 
     TYPE_GRAPH_KEY = (
@@ -1373,7 +1373,7 @@ if graphviz_installed:
     This could include the module procedures in a generic interface or the
     implementation in a submodule of an interface in a parent module.{{}}
     </p>
-    """
+    """  # noqa W291
     ).format(call_svg)
 
     FILE_GRAPH_KEY = (
