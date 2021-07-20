@@ -113,7 +113,7 @@ def get_parens(line, retlevel=0, retblevel=0):
 
     if level == retlevel and blevel == retblevel:
         return parenstr
-    raise Exception("Couldn't parse parentheses: {}".format(line))
+    raise RuntimeError("Couldn't parse parentheses: {}".format(line))
 
 
 def paren_split(sep, string):
@@ -121,7 +121,7 @@ def paren_split(sep, string):
     Splits the string into pieces divided by sep, when sep is outside of parentheses.
     """
     if len(sep) != 1:
-        raise Exception("Separation string must be one character long")
+        raise ValueError("Separation string must be one character long")
     retlist = []
     level = 0
     blevel = 0
@@ -147,7 +147,7 @@ def quote_split(sep, string):
     Splits the strings into pieces divided by sep, when sep in not inside quotes.
     """
     if len(sep) != 1:
-        raise Exception("Separation string must be one character long")
+        raise ValueError("Separation string must be one character long")
     retlist = []
     squote = False
     dquote = False
