@@ -1011,7 +1011,8 @@ class FortranContainer(FortranBase):
     """
 
     ATTRIB_RE = re.compile(
-        r"^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",
+        r"^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|"
+        r"pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",
         re.IGNORECASE,
     )
     END_RE = re.compile(
@@ -1063,7 +1064,10 @@ class FortranContainer(FortranBase):
         r"^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$", re.IGNORECASE
     )
 
-    VARIABLE_STRING = r"^(integer|real|double\s*precision|character|complex|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
+    VARIABLE_STRING = (
+        r"^(integer|real|double\s*precision|character|complex|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|"
+        r"procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
+    )
 
     def __init__(
         self, source, first_line, parent=None, inherited_permission=None, strings=[]
