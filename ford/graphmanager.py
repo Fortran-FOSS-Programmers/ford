@@ -35,7 +35,6 @@ from ford.sourceform import (
     FortranProgram,
     FortranType,
     FortranModule,
-    FortranSubmodule,
     FortranSubmoduleProcedure,
     FortranSourceFile,
     FortranBlockData,
@@ -216,7 +215,7 @@ class GraphManager(object):
 
             np = min(njobs, len(args))
             pool = Pool(processes=np)
-            results = pool.map(outputFuncWrap, args, len(args) / np)
+            results = pool.map(outputFuncWrap, args, len(args) / np)  # noqa F841
             pool.close()
             pool.join()
 
