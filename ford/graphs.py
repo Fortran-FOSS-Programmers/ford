@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  graphs.py
@@ -23,7 +22,6 @@
 #
 #
 
-from __future__ import print_function
 import os
 import shutil
 import re
@@ -84,7 +82,7 @@ def rainbowcolour(depth, maxd):
 
 
 HYPERLINK_RE = re.compile(
-    "^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$", re.IGNORECASE
+    r"^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$", re.IGNORECASE
 )
 WIDTH_RE = re.compile('width="(.*?)pt"', re.IGNORECASE)
 HEIGHT_RE = re.compile('height="(.*?)pt"', re.IGNORECASE)
@@ -396,7 +394,7 @@ class ProcNode(BaseNode):
                 if (
                     hasattr(obj, "procedure")
                     and obj.procedure.module
-                    and obj.procedure.module != True
+                    and obj.procedure.module is not True
                     and getattr(obj.procedure.module, "visible", True)
                 ):
                     if obj.procedure.module in hist:
@@ -600,7 +598,7 @@ class FortranGraph(object):
         if graphviz_installed:
             self.svg_src = self.dot.pipe().decode("utf-8")
             self.svg_src = self.svg_src.replace(
-                "<svg ", '<svg id="' + re.sub("[^\w]", "", self.ident) + '" '
+                "<svg ", '<svg id="' + re.sub(r"[^\w]", "", self.ident) + '" '
             )
             w = int(WIDTH_RE.search(self.svg_src).group(1))
             if isinstance(self, (ModuleGraph, CallGraph, TypeGraph)):
@@ -739,7 +737,7 @@ class FortranGraph(object):
                     node += '<a href="{0}">{1}</a></td>'.format(
                         n.attribs["URL"], n.attribs["label"]
                     )
-                except:
+                except KeyError:
                     node += n.attribs["label"] + "</td>"
                 if root_on_left:
                     rows += "<tr>" + root + arrow + node + "</tr>\n"
@@ -755,7 +753,7 @@ class FortranGraph(object):
             svgGraph = self.svg_src
             # add zoom ability for big graphs
             if self.scaled:
-                zoomName = re.sub("[^\w]", "", self.ident)
+                zoomName = re.sub(r"[^\w]", "", self.ident)
                 rettext += (
                     "<script>var pan{1} = svgPanZoom('#{1}', "
                     "{{zoomEnabled: true,controlIconsEnabled: true, "
@@ -1353,7 +1351,7 @@ if graphviz_installed:
     descended from. Dashed arrows point from a module or program unit to 
     modules which it uses.{{}}
     </p>
-    """
+    """  # noqa W291
     ).format(mod_svg)
 
     TYPE_GRAPH_KEY = (
@@ -1375,7 +1373,7 @@ if graphviz_installed:
     This could include the module procedures in a generic interface or the
     implementation in a submodule of an interface in a parent module.{{}}
     </p>
-    """
+    """  # noqa W291
     ).format(call_svg)
 
     FILE_GRAPH_KEY = (

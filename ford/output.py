@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  output.py
@@ -23,8 +22,7 @@
 #
 #
 
-from __future__ import print_function
-
+import errno
 import sys
 import os
 import shutil
@@ -118,7 +116,7 @@ class Documentation(object):
             if pagetree:
                 for item in pagetree:
                     self.pagetree.append(PagetreePage(data, project, item))
-        except Exception as e:
+        except Exception:
             if data["dbg"]:
                 traceback.print_exc()
                 sys.exit("Error encountered.")
@@ -221,7 +219,7 @@ class Documentation(object):
         if "media_dir" in self.data:
             try:
                 copytree(self.data["media_dir"], os.path.join(out_dir, "media"))
-            except:
+            except OSError:
                 print(
                     "Warning: error copying media directory {}".format(
                         self.data["media_dir"]

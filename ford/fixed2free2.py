@@ -34,7 +34,6 @@ python fixed2free2.py file.f > file.f90
 # TODO:
 # *) Improve command line usage
 
-from __future__ import print_function
 import sys
 
 
@@ -120,14 +119,14 @@ def convertToFree(stream, length_limit=True):
         if convline.is_regular:
             if convline.isContinuation and linestack:
                 linestack[0].continueLine()
-            for l in linestack:
-                yield str(l)
+            for line_ in linestack:
+                yield str(line_)
             linestack = []
 
         linestack.append(convline)
 
-    for l in linestack:
-        yield str(l)
+    for line in linestack:
+        yield str(line)
 
 
 if __name__ == "__main__":

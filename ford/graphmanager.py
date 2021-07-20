@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  graphmanager.py
@@ -23,10 +22,8 @@
 #
 #
 
-from __future__ import print_function
 import os
 import sys
-import time
 from multiprocessing import Pool
 
 from tqdm import tqdm
@@ -38,16 +35,17 @@ from ford.sourceform import (
     FortranProgram,
     FortranType,
     FortranModule,
-    FortranSubmodule,
     FortranSubmoduleProcedure,
     FortranSourceFile,
     FortranBlockData,
 )
 import ford.graphs
 
-# Wrapper function for output graphs -- needed to allow multiprocessing to
-# pickle the function (must be at top level)
+
 def outputFuncWrap(args):
+    """Wrapper function for output graphs -- needed to allow multiprocessing to
+    pickle the function (must be at top level)"""
+
     for f in args[0:-1]:
         f.create_svg(args[-1])
 
@@ -217,7 +215,7 @@ class GraphManager(object):
 
             np = min(njobs, len(args))
             pool = Pool(processes=np)
-            results = pool.map(outputFuncWrap, args, len(args) / np)
+            results = pool.map(outputFuncWrap, args, len(args) / np)  # noqa F841
             pool.close()
             pool.join()
 

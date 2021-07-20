@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  utils.py
@@ -27,9 +26,8 @@
 import re
 import os.path
 import json
-import sys
 import ford.sourceform
-from urllib.request import urlopen
+from urllib.request import urlopen, URLError
 from urllib.parse import urljoin
 
 
@@ -115,7 +113,7 @@ def get_parens(line, retlevel=0, retblevel=0):
 
     if level == retlevel and blevel == retblevel:
         return parenstr
-    raise Exception("Couldn't parse parentheses: {}".format(line))
+    raise RuntimeError("Couldn't parse parentheses: {}".format(line))
 
 
 def paren_split(sep, string):
@@ -123,7 +121,7 @@ def paren_split(sep, string):
     Splits the string into pieces divided by sep, when sep is outside of parentheses.
     """
     if len(sep) != 1:
-        raise Exception("Separation string must be one character long")
+        raise ValueError("Separation string must be one character long")
     retlist = []
     level = 0
     blevel = 0
@@ -149,7 +147,7 @@ def quote_split(sep, string):
     Splits the strings into pieces divided by sep, when sep in not inside quotes.
     """
     if len(sep) != 1:
-        raise Exception("Separation string must be one character long")
+        raise ValueError("Separation string must be one character long")
     retlist = []
     squote = False
     dquote = False
@@ -538,9 +536,9 @@ def external(project, make=False, path="."):
                     )
                 else:
                     extModules = modules_from_local(url)
-            except:
+            except (URLError, json.JSONDecodeError) as error:
                 extModules = []
-                print("Could not open external URL: {}.".format(url))
+                print("Could not open external URL '{}', reason: {}".format(url, error))
             # convert modules defined in the JSON database to module objects
             for extModule in extModules:
                 dict2obj(extModule, url)

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  project.py
@@ -22,9 +21,6 @@
 #  MA 02110-1301, USA.
 #
 #
-
-
-from __future__ import print_function
 
 import os
 import toposort
@@ -95,7 +91,7 @@ class Project(object):
                 ext = item.split(".")[-1]
                 if (
                     ext in self.extensions or ext in self.fixed_extensions
-                ) and not item in settings["exclude"]:
+                ) and item not in settings["exclude"]:
                     # Get contents of the file
                     print(
                         "Reading file {}".format(
@@ -154,7 +150,7 @@ class Project(object):
                         self.blockdata.append(block)
                 elif (
                     item.split(".")[-1] in self.extra_filetypes
-                    and not item in settings["exclude"]
+                    and item not in settings["exclude"]
                 ):
                     print(
                         "Reading file {}".format(
@@ -191,14 +187,6 @@ class Project(object):
         for f in self.extra_files:
             yield f
 
-    @property
-    def allfiles(self):
-        """Instead of duplicating files, it is much more efficient to create the itterator on the fly"""
-        for f in self.files:
-            yield f
-        for f in self.extra_files:
-            yield f
-
     def __str__(self):
         return self.name
 
@@ -213,7 +201,7 @@ class Project(object):
         for item in self.settings["extra_mods"]:
             i = item.index(":")
             if i < 0:
-                print('Warning: could not parse extra modules ""'.format(item))
+                print('Warning: could not parse extra modules "{}"'.format(item))
                 continue
             name = item[:i].strip()
             url = item[i + 1 :].strip()

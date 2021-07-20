@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  tipue_search.py
@@ -33,8 +32,6 @@ Serializes generated HTML to JSON that can be used by jQuery plugin - Tipue Sear
 Adapted from the Pelican plugin by Talha Mansoor
 https://github.com/getpelican/pelican-plugins/tree/master/tipue_search
 """
-
-from __future__ import unicode_literals
 
 import os.path
 import json

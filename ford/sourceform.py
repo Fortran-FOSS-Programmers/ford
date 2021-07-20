@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 #  sourceform.py
@@ -22,8 +21,6 @@
 #  MA 02110-1301, USA.
 #
 #
-
-from __future__ import print_function
 
 import sys
 import re
@@ -550,7 +547,7 @@ class FortranBase(object):
         self, source, first_line, parent=None, inherited_permission=None, strings=[]
     ):
         self.visible = False
-        if inherited_permission != None:
+        if inherited_permission is not None:
             self.permission = inherited_permission.lower()
         else:
             self.permission = None
@@ -833,7 +830,7 @@ class FortranBase(object):
                 ford.utils.sub_notes(self.meta["summary"])
             )
         elif PARA_CAPTURE_RE.search(self.doc):
-            if self.get_url() == None:
+            if self.get_url() is None:
                 # There is no stand-alone webpage for this item (e.g.,
                 # an internal routine in a routine, so make the whole
                 # doc blob appear, without the link to "more..."
@@ -1014,7 +1011,8 @@ class FortranContainer(FortranBase):
     """
 
     ATTRIB_RE = re.compile(
-        r"^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",
+        r"^(asynchronous|allocatable|bind\s*\(.*\)|data|dimension|external|intent\s*\(\s*\w+\s*\)|optional|parameter|"
+        r"pointer|private|protected|public|save|target|value|volatile)(?:\s+|\s*::\s*)((/|\(|\w).*?)\s*$",
         re.IGNORECASE,
     )
     END_RE = re.compile(
@@ -1066,7 +1064,10 @@ class FortranContainer(FortranBase):
         r"^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$", re.IGNORECASE
     )
 
-    VARIABLE_STRING = r"^(integer|real|double\s*precision|character|complex|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
+    VARIABLE_STRING = (
+        r"^(integer|real|double\s*precision|character|complex|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|"
+        r"procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
+    )
 
     def __init__(
         self, source, first_line, parent=None, inherited_permission=None, strings=[]
@@ -1191,7 +1192,9 @@ class FortranContainer(FortranBase):
                             else:
                                 self.attr_dict[name] = [attr]
                 elif attr.lower() == "data" and self.obj == "sourcefile":
-                    # TODO: This is just a fix to keep FORD from crashing on encountering a block data structure. At some point I should actually implement support for them.
+                    # TODO: This is just a fix to keep FORD from crashing on
+                    # encountering a block data structure. At some point I
+                    # should actually implement support for them.
                     continue
                 else:
                     self.print_error(
@@ -1596,7 +1599,7 @@ class FortranCodeUnit(FortranContainer):
                         intr.proctype.lower() == "interface"
                         and not intr.generic
                         and not intr.abstract
-                        and intr.procedure.module == True
+                        and intr.procedure.module is True
                     ):
                         proc.module = intr
                         intr.procedure.module = proc
@@ -1610,7 +1613,7 @@ class FortranCodeUnit(FortranContainer):
                         intr.proctype.lower() == "interface"
                         and not intr.generic
                         and not intr.abstract
-                        and intr.procedure.module == True
+                        and intr.procedure.module is True
                     ):
                         proc.attribs = intr.procedure.attribs
                         proc.args = intr.procedure.args
@@ -2214,12 +2217,16 @@ class FortranFunction(FortranCodeUnit):
         self.args = []  # Set this in the correlation step
 
         for arg in self.SPLIT_RE.split(line.group(3)[1:-1]):
-            # FIXME: This is to avoid a problem whereby sometimes an empty argument list will appear to contain the argument ''. I didn't know why it would do this (especially since sometimes it works fine) and just put this in as a quick fix. However, at some point I should try to figure out the actual root of the problem.
+            # FIXME: This is to avoid a problem whereby sometimes an empty
+            # argument list will appear to contain the argument ''. I didn't
+            # know why it would do this (especially since sometimes it works
+            # fine) and just put this in as a quick fix. However, at some point
+            # I should try to figure out the actual root of the problem.
             if arg.strip() != "":
                 self.args.append(arg.strip())
         try:
             self.bindC = ford.utils.get_parens(line.group(5), -1)[0:-1]
-        except:
+        except (RuntimeError, TypeError):
             self.bindC = line.group(5)
         if self.bindC:
             search_from = 0
@@ -2348,7 +2355,7 @@ class FortranProgram(FortranCodeUnit):
 
     def _initialize(self, line):
         self.name = line.group(1)
-        if self.name == None:
+        if self.name is None:
             self.name = ""
         self.variables = []
         self.enums = []
@@ -2808,7 +2815,7 @@ class FortranModuleProcedure(FortranBase):
     """
 
     def __init__(self, name, parent=None, inherited_permission=None):
-        if inherited_permission != None:
+        if inherited_permission is not None:
             self.permission = inherited_permission.lower()
         else:
             self.permission = None
@@ -2907,7 +2914,7 @@ class FortranBlockData(FortranContainer):
 
     def process_attribs(self):
         for item in self.types:
-            if item.name.lower() in self.attr_dict:
+            for attr in self.attr_dict.get(item.name.lower(), []):
                 if "public" in self.attr_dict[item.name.lower()]:
                     item.permission = "public"
                 elif "private" in self.attr_dict[item.name.lower()]:
@@ -3339,7 +3346,7 @@ def parse_type(string, capture_strings, settings):
                 proto = list(PROTO_RE.match(args).groups())
                 if not proto[1]:
                     proto[1] = ""
-            except:
+            except AttributeError:
                 raise Exception(
                     "Bad type, class, or procedure prototype specification: {}".format(
                         args
@@ -3357,8 +3364,8 @@ def parse_type(string, capture_strings, settings):
                     try:
                         match = QUOTES_RE.search(kind)
                         num = int(match.group()[1:-1])
-                        kind = QUOTES_RE.sub(captured_strings[num], kind)
-                    except:
+                        kind = QUOTES_RE.sub(capture_strings[num], kind)
+                    except AttributeError:
                         pass
                 elif LEN_RE.search(args):
                     length = LEN_RE.sub("", args)
