@@ -1,6 +1,6 @@
 # Changelog
 
-## [v6.1.0](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.0) (2021-07-16)
+## [v6.1.0](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.0) (2021-07-20)
 
 [Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.0.0...v6.1.0)
 
@@ -10,6 +10,7 @@
 
 **Fixed bugs:**
 
+- Broken links for the intrinsic modules [\#343](https://github.com/Fortran-FOSS-Programmers/ford/issues/343)
 - Submodules lead to a crash - 'FortranModule' object has no attribute 'all\_absinterfaces'  [\#322](https://github.com/Fortran-FOSS-Programmers/ford/issues/322)
 - Question: disable sourcecode pages [\#314](https://github.com/Fortran-FOSS-Programmers/ford/issues/314)
 - Bad escape crash [\#296](https://github.com/Fortran-FOSS-Programmers/ford/issues/296)
@@ -24,6 +25,10 @@
 
 **Merged pull requests:**
 
+- Add workflow for publishing to PyPI on release [\#348](https://github.com/Fortran-FOSS-Programmers/ford/pull/348) ([ZedThree](https://github.com/ZedThree))
+- Fix flake8 warnings [\#347](https://github.com/Fortran-FOSS-Programmers/ford/pull/347) ([ZedThree](https://github.com/ZedThree))
+- Convert setup.py to setup.cfg/pyproject.toml [\#346](https://github.com/Fortran-FOSS-Programmers/ford/pull/346) ([ZedThree](https://github.com/ZedThree))
+- Fix and update URLs for intrinsic modules. [\#344](https://github.com/Fortran-FOSS-Programmers/ford/pull/344) ([ZedThree](https://github.com/ZedThree))
 - Apply `black` formatting to project; add auto-black to CI [\#342](https://github.com/Fortran-FOSS-Programmers/ford/pull/342) ([ZedThree](https://github.com/ZedThree))
 - Linking to external projects [\#338](https://github.com/Fortran-FOSS-Programmers/ford/pull/338) ([haraldkl](https://github.com/haraldkl))
 - Use rawstring literals for regexes [\#337](https://github.com/Fortran-FOSS-Programmers/ford/pull/337) ([ZedThree](https://github.com/ZedThree))
