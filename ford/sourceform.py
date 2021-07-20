@@ -2914,7 +2914,7 @@ class FortranBlockData(FortranContainer):
 
     def process_attribs(self):
         for item in self.types:
-            if item.name.lower() in self.attr_dict:
+            for attr in self.attr_dict.get(item.name.lower(), []):
                 if "public" in self.attr_dict[item.name.lower()]:
                     item.permission = "public"
                 elif "private" in self.attr_dict[item.name.lower()]:
