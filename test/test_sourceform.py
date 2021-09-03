@@ -2,8 +2,25 @@ from ford.sourceform import FortranSourceFile
 
 from collections import defaultdict
 
+import pytest
 
-def test_extends(tmp_path):
+
+@pytest.fixture
+def parse_fortran_file(tmp_path):
+    def parse_file(data):
+        filename = tmp_path / "test.f90"
+        with open(filename, "w") as f:
+            f.write(data)
+        settings = defaultdict(str)
+        settings["docmark"] = "!"
+        settings["encoding"] = "utf-8"
+
+        return FortranSourceFile(str(filename), settings)
+
+    return parse_file
+
+
+def test_extends(parse_fortran_file):
     """Check that types can be extended"""
 
     data = """\
@@ -23,15 +40,7 @@ def test_extends(tmp_path):
     end program foo
     """
 
-    filename = tmp_path / "test.f90"
-    with open(filename, "w") as f:
-        f.write(data)
-
-    settings = defaultdict(str)
-    settings["docmark"] = "!"
-    settings["encoding"] = "utf-8"
-
-    fortran_type = FortranSourceFile(str(filename), settings)
+    fortran_type = parse_fortran_file(data)
 
     assert len(fortran_type.programs) == 1
 
@@ -42,7 +51,7 @@ def test_extends(tmp_path):
     assert program.types[2].extends == "base"
 
 
-def test_submodule_procedure_contains(tmp_path):
+def test_submodule_procedure_contains(parse_fortran_file):
     """Check that submodule procedures can have 'contains' statements"""
 
     data = """\
@@ -66,15 +75,7 @@ def test_submodule_procedure_contains(tmp_path):
     end submodule
     """
 
-    filename = tmp_path / "test.f90"
-    with open(filename, "w") as f:
-        f.write(data)
-
-    settings = defaultdict(str)
-    settings["docmark"] = "!"
-    settings["encoding"] = "utf-8"
-
-    fortran_type = FortranSourceFile(str(filename), settings)
+    fortran_type = parse_fortran_file(data)
 
     assert len(fortran_type.modules) == 1
     assert len(fortran_type.submodules) == 1
@@ -84,7 +85,7 @@ def test_submodule_procedure_contains(tmp_path):
     assert len(module_procedure.subroutines) == 1
 
 
-def test_backslash_in_character_string(tmp_path):
+def test_backslash_in_character_string(parse_fortran_file):
     """Bad escape crash #296"""
 
     data = r"""\
@@ -96,15 +97,7 @@ def test_backslash_in_character_string(tmp_path):
     end module test_module
     """
 
-    filename = tmp_path / "test.f90"
-    with open(filename, "w") as f:
-        f.write(data)
-
-    settings = defaultdict(str)
-    settings["docmark"] = "!"
-    settings["encoding"] = "utf-8"
-
-    source = FortranSourceFile(str(filename), settings)
+    source = parse_fortran_file(data)
     module = source.modules[0]
 
     expected_variables = {"q": r"'(?)'", "a": r"'\a'", "b": r"'\b'", "c": r"'\c'"}
@@ -113,7 +106,7 @@ def test_backslash_in_character_string(tmp_path):
         assert variable.initial == expected_variables[variable.name]
 
 
-def test_sync_images_in_submodule_procedure(tmp_path):
+def test_sync_images_in_submodule_procedure(parse_fortran_file):
     """Crash on sync images inside module procedure in submodule #237"""
 
     data = """\
@@ -133,18 +126,10 @@ def test_sync_images_in_submodule_procedure(tmp_path):
     end submodule
     """
 
-    filename = tmp_path / "test.f90"
-    with open(filename, "w") as f:
-        f.write(data)
-
-    settings = defaultdict(str)
-    settings["docmark"] = "!"
-    settings["encoding"] = "utf-8"
-
-    FortranSourceFile(str(filename), settings)
+    parse_fortran_file(data)
 
 
-def test_function_and_subroutine_call_on_same_line(tmp_path):
+def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
     """Regex does not check for nested calls #256"""
 
     data = """\
@@ -159,22 +144,14 @@ def test_function_and_subroutine_call_on_same_line(tmp_path):
     end program test
     """
 
-    filename = tmp_path / "test.f90"
-    with open(filename, "w") as f:
-        f.write(data)
-
-    settings = defaultdict(str)
-    settings["docmark"] = "!"
-    settings["encoding"] = "utf-8"
-
-    fortran_file = FortranSourceFile(str(filename), settings)
+    fortran_file = parse_fortran_file(data)
     program = fortran_file.programs[0]
     assert len(program.calls) == 2
     expected_calls = {"bar", "foo"}
     assert set(program.calls) == expected_calls
 
 
-def test_component_access(tmp_path):
+def test_component_access(parse_fortran_file):
     data = """\
     module mod1
         integer :: anotherVar(20)
@@ -216,22 +193,14 @@ def test_component_access(tmp_path):
     end program
     """
 
-    filename = tmp_path / "test.f90"
-    with open(filename, "w") as f:
-        f.write(data)
-
-    settings = defaultdict(str)
-    settings["docmark"] = "!"
-    settings["encoding"] = "utf-8"
-
-    fortran_file = FortranSourceFile(str(filename), settings)
+    fortran_file = parse_fortran_file(data)
 
     expected_variables = {"i", "j", "zzz", "Three"}
     actual_variables = {var.name for var in fortran_file.programs[0].variables}
     assert actual_variables == expected_variables
 
 
-def test_format_statement(tmp_path):
+def test_format_statement(parse_fortran_file):
     data = """\
     program test_format_statement
       implicit none
@@ -240,13 +209,7 @@ def test_format_statement(tmp_path):
     end program test_format_statement
     """
 
-    filename = tmp_path / "test.f90"
-    with open(filename, "w") as f:
-        f.write(data)
-
-    settings = defaultdict(str)
-    settings["docmark"] = "!"
-    settings["encoding"] = "utf-8"
-
-    fortran_file = FortranSourceFile(str(filename), settings)
+    fortran_file = parse_fortran_file(data)
     assert fortran_file.programs[0].calls == []
+
+
