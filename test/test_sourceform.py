@@ -170,3 +170,60 @@ def test_function_and_subroutine_call_on_same_line(tmp_path):
     fortran_file = FortranSourceFile(str(filename), settings)
     program = fortran_file.programs[0]
     assert len(program.calls) == 2
+
+
+def test_component_access(tmp_path):
+    data = """\
+    module mod1
+        integer :: anotherVar(20)
+        type typeOne
+            integer :: ivar(10)
+        end type typeOne
+        type(typeOne) :: One
+    end module mod1
+
+    module mod2
+        type typeTwo
+            integer :: ivar(10)
+        end type typeTwo
+        type(typeTwo) :: Two
+    end module mod2
+
+    subroutine with_space
+        use mod2
+        integer :: a
+        a = 3
+        Two% ivar(:) = a
+    end subroutine with_space
+
+    program main
+        integer :: i, j
+        integer :: zzz(5)
+
+        type typeThree
+            integer :: ivar(10)
+        end type typeThree
+        type(typeThree) :: Three
+
+        call with_space()
+        call without_space()
+        anotherVar(3) = i
+        j = zzz(3)
+
+        Three% ivar(3) = 7
+    end program
+    """
+
+    filename = tmp_path / "test.f90"
+    with open(filename, "w") as f:
+        f.write(data)
+
+    settings = defaultdict(str)
+    settings["docmark"] = "!"
+    settings["encoding"] = "utf-8"
+
+    fortran_file = FortranSourceFile(str(filename), settings)
+
+    expected_variables = {"i", "j", "zzz", "Three"}
+    actual_variables = {var.name for var in fortran_file.programs[0].variables}
+    assert actual_variables == expected_variables
