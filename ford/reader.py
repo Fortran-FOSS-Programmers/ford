@@ -157,6 +157,8 @@ class FortranReader(object):
         else:
             self.predoc_alt_re = None
 
+        self.line_number = 0
+
     def __iter__(self):
         return self
 
@@ -192,6 +194,9 @@ class FortranReader(object):
                 line = self.reader.__next__()
             else:  # Python 2
                 line = self.reader.next()
+
+            self.line_number += 1
+
             if len(line.strip()) > 0 and line.strip()[0] == "#":
                 continue
 
@@ -231,10 +236,11 @@ class FortranReader(object):
                 tmp = tmp[:1] + self.docmark + tmp[1 + len(self.predocmark_alt) :]
                 self.docbuffer.append(tmp)
                 if len(line[0 : match.start(4)].strip()) > 0:
-                    raise Exception(
-                        "Alternate documentation lines can not be inline: {}".format(
-                            line
-                        )
+                    raise RuntimeError(
+                        f"In file {self.name}\n{self.line_number}|  {line.strip()}\n"
+                        f"{'^':>{len(str(self.line_number)) + match.start(4) + 4}}\n"
+                        f"Preceding alternate documentation lines can not be inline\n"
+                        f"Use the docmark '!{self.docmark}' instead"
                     )
 
             # Check for alternate succeeding documentation
