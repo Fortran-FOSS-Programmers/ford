@@ -1122,10 +1122,7 @@ class FortranContainer(FortranBase):
                         permission = "public"
                 elif incontains:
                     self.print_error(
-                        line,
-                        "Multiple CONTAINS statements present in scope",
-                        self.settings["dbg"],
-                        self.settings["force"],
+                        line, "Multiple CONTAINS statements present in scope"
                     )
                 else:
                     self.print_error(
@@ -1133,8 +1130,6 @@ class FortranContainer(FortranBase):
                         "CONTAINS statement in {}".format(
                             type(self).__name__[7:].upper()
                         ),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif line.lower() == "public":
                 permission = "public"
@@ -1206,17 +1201,10 @@ class FortranContainer(FortranBase):
                         "Found {} statement in {}".format(
                             attr.upper(), type(self).__name__[7:].upper()
                         ),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.END_RE.match(line):
                 if isinstance(self, FortranSourceFile):
-                    self.print_error(
-                        line,
-                        "END statement outside of any nesting",
-                        self.settings["dbg"],
-                        self.settings["force"],
-                    )
+                    self.print_error(line, "END statement outside of any nesting")
                 endtype = self.END_RE.match(line).group(1)
                 if endtype and endtype.lower() == "block":
                     blocklevel -= 1
@@ -1247,8 +1235,6 @@ class FortranContainer(FortranBase):
                         "Found module procedure in {}".format(
                             type(self).__name__[7:].upper()
                         ),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.BLOCK_DATA_RE.match(line):
                 if hasattr(self, "blockdata"):
@@ -1262,8 +1248,6 @@ class FortranContainer(FortranBase):
                         "Found BLOCK DATA in {}".format(
                             type(self).__name__[7:].upper()
                         ),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.BLOCK_RE.match(line):
                 blocklevel += 1
@@ -1279,8 +1263,6 @@ class FortranContainer(FortranBase):
                     self.print_error(
                         line,
                         "Found MODULE in {}".format(type(self).__name__[7:].upper()),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.SUBMODULE_RE.match(line):
                 if hasattr(self, "submodules"):
@@ -1292,8 +1274,6 @@ class FortranContainer(FortranBase):
                     self.print_error(
                         line,
                         "Found SUBMODULE in {}".format(type(self).__name__[7:].upper()),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.PROGRAM_RE.match(line):
                 if hasattr(self, "programs"):
@@ -1305,8 +1285,6 @@ class FortranContainer(FortranBase):
                     self.print_error(
                         line,
                         "Found PROGRAM in {}".format(type(self).__name__[7:].upper()),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
                 if len(self.programs) > 1:
                     raise Exception("Multiple PROGRAM units in same source file.")
@@ -1326,8 +1304,6 @@ class FortranContainer(FortranBase):
                         "Found SUBROUTINE in {}".format(
                             type(self).__name__[7:].upper()
                         ),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.FUNCTION_RE.match(line):
                 if isinstance(self, FortranCodeUnit) and not incontains:
@@ -1343,8 +1319,6 @@ class FortranContainer(FortranBase):
                     self.print_error(
                         line,
                         "Found FUNCTION in {}".format(type(self).__name__[7:].upper()),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.TYPE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "types"):
@@ -1358,8 +1332,6 @@ class FortranContainer(FortranBase):
                         "Found derived TYPE in {}".format(
                             type(self).__name__[7:].upper()
                         ),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.INTERFACE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "interfaces"):
@@ -1377,8 +1349,6 @@ class FortranContainer(FortranBase):
                     self.print_error(
                         line,
                         "Found INTERFACE in {}".format(type(self).__name__[7:].upper()),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.ENUM_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "enums"):
@@ -1388,10 +1358,7 @@ class FortranContainer(FortranBase):
                     self.num_lines += self.enums[-1].num_lines - 1
                 else:
                     self.print_error(
-                        line,
-                        "Found ENUM in {}".format(type(self).__name__[7:].upper()),
-                        self.settings["dbg"],
-                        self.settings["force"],
+                        line, "Found ENUM in {}".format(type(self).__name__[7:].upper())
                     )
             elif self.BOUNDPROC_RE.match(line) and incontains:
                 if hasattr(self, "boundprocs"):
@@ -1421,8 +1388,6 @@ class FortranContainer(FortranBase):
                         "Found type-bound procedure in {}".format(
                             type(self).__name__[7:].upper()
                         ),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.COMMON_RE.match(line):
                 if hasattr(self, "common"):
@@ -1462,8 +1427,6 @@ class FortranContainer(FortranBase):
                         "Found common statement in {}".format(
                             type(self).__name__[7:].upper()
                         ),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.FINAL_RE.match(line) and incontains:
                 if hasattr(self, "finalprocs"):
@@ -1481,8 +1444,6 @@ class FortranContainer(FortranBase):
                         "Found finalization procedure in {}".format(
                             type(self).__name__[7:].upper()
                         ),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.VARIABLE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "variables"):
@@ -1493,8 +1454,6 @@ class FortranContainer(FortranBase):
                     self.print_error(
                         line,
                         "Found variable in {}".format(type(self).__name__[7:].upper()),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             elif self.USE_RE.match(line):
                 if hasattr(self, "uses"):
@@ -1505,8 +1464,6 @@ class FortranContainer(FortranBase):
                         "Found USE statemnt in {}".format(
                             type(self).__name__[7:].upper()
                         ),
-                        self.settings["dbg"],
-                        self.settings["force"],
                     )
             else:
                 if self.CALL_RE.search(line):
@@ -1544,8 +1501,6 @@ class FortranContainer(FortranBase):
                             "Found procedure call in {}".format(
                                 type(self).__name__[7:].upper()
                             ),
-                            self.settings["dbg"],
-                            self.settings["force"],
                         )
 
         if not isinstance(self, FortranSourceFile):
@@ -1554,15 +1509,17 @@ class FortranContainer(FortranBase):
     def _cleanup(self):
         raise NotImplementedError()
 
-    def print_error(self, line, msg, dbg, force):
+    def print_error(self, line, msg, dbg=None, force=None):
+        if dbg is None:
+            dbg = self.settings["dbg"]
+        if force is None:
+            force = self.settings["force"]
         if dbg:
-            print(line)
-            print(msg)
+            print(f"{line}: {msg}")
         else:
             if force:
                 return
-            else:
-                raise Exception(msg)
+            raise ValueError(msg)
 
 
 class FortranCodeUnit(FortranContainer):
