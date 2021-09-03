@@ -229,3 +229,24 @@ def test_component_access(tmp_path):
     expected_variables = {"i", "j", "zzz", "Three"}
     actual_variables = {var.name for var in fortran_file.programs[0].variables}
     assert actual_variables == expected_variables
+
+
+def test_format_statement(tmp_path):
+    data = """\
+    program test_format_statement
+      implicit none
+      write (*, 300)
+    300 format (/1X, 44('-'), ' Begin of test2 Calculation ', 33('-')//)
+    end program test_format_statement
+    """
+
+    filename = tmp_path / "test.f90"
+    with open(filename, "w") as f:
+        f.write(data)
+
+    settings = defaultdict(str)
+    settings["docmark"] = "!"
+    settings["encoding"] = "utf-8"
+
+    fortran_file = FortranSourceFile(str(filename), settings)
+    assert fortran_file.programs[0].calls == []

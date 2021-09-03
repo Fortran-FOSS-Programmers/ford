@@ -1063,6 +1063,7 @@ class FortranContainer(FortranBase):
     SUBCALL_RE = re.compile(
         r"^(?:if\s*\(.*\)\s*)?call\s+(\w+)\s*(?:\(\s*(.*?)\s*\))?$", re.IGNORECASE
     )
+    FORMAT_RE = re.compile(r"^[0-9]+\s+format\s+\(.*\)", re.IGNORECASE)
 
     VARIABLE_STRING = (
         r"^(integer|real|double\s*precision|character|complex|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|"
@@ -1144,6 +1145,9 @@ class FortranContainer(FortranBase):
             elif line.lower() == "sequence":
                 if type(self) == FortranType:
                     self.sequence = True
+            elif self.FORMAT_RE.match(line):
+                # There's nothing interesting for us in a format statement
+                continue
             elif self.ATTRIB_RE.match(line) and blocklevel == 0:
                 match = self.ATTRIB_RE.match(line)
                 attr = match.group(1).lower().replace(" ", "")
