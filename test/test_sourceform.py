@@ -170,6 +170,8 @@ def test_function_and_subroutine_call_on_same_line(tmp_path):
     fortran_file = FortranSourceFile(str(filename), settings)
     program = fortran_file.programs[0]
     assert len(program.calls) == 2
+    expected_calls = {"bar", "foo"}
+    assert set(program.calls) == expected_calls
 
 
 def test_component_access(tmp_path):
