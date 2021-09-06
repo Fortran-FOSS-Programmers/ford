@@ -1956,7 +1956,7 @@ class FortranModule(FortranCodeUnit):
         for item in ulist:
             match = self.RENAME_RE.search(item)
             if match:
-                uspecs[match.group(1).lower()] = match.group(2)
+                uspecs[match.group(2).lower()] = match.group(1)
             else:
                 uspecs[item.lower()] = item
         ret_procs = {}
@@ -1967,28 +1967,28 @@ class FortranModule(FortranCodeUnit):
             name = name.lower()
             if only:
                 if name in uspecs:
-                    ret_procs[name] = obj
+                    ret_procs[uspecs[name]] = obj
             else:
                 ret_procs[name] = obj
         for name, obj in self.pub_absints.items():
             name = name.lower()
             if only:
                 if name in uspecs:
-                    ret_absints[name] = obj
+                    ret_absints[uspecs[name]] = obj
             else:
                 ret_absints[name] = obj
         for name, obj in self.pub_types.items():
             name = name.lower()
             if only:
                 if name in uspecs:
-                    ret_types[name] = obj
+                    ret_types[uspecs[name]] = obj
             else:
                 ret_types[name] = obj
         for name, obj in self.pub_vars.items():
             name = name.lower()
             if only:
                 if name in uspecs:
-                    ret_vars[name] = obj
+                    ret_vars[uspecs[name]] = obj
             else:
                 ret_vars[name] = obj
         return (ret_procs, ret_absints, ret_types, ret_vars)
@@ -2526,9 +2526,13 @@ class FortranInterface(FortranContainer):
         self.num_lines_all = self.num_lines
         if self.generic:
             for modproc in self.modprocs:
-                if modproc.name.lower() in self.all_procs:
-                    modproc.procedure = self.all_procs[modproc.name.lower()]
-                    self.num_lines_all += modproc.procedure.num_lines
+                if modproc.name.lower() not in self.all_procs:
+                    raise RuntimeError(
+                        f"Could not find interface procedure '{modproc.name}' in '{self.parent.name}'. "
+                        f"Known procedures are: {list(self.all_procs.keys())}"
+                    )
+                modproc.procedure = self.all_procs[modproc.name.lower()]
+                self.num_lines_all += modproc.procedure.num_lines
             for subrtn in self.subroutines:
                 subrtn.correlate(project)
             for func in self.functions:
