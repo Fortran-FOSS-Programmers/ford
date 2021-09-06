@@ -1948,49 +1948,35 @@ class FortranModule(FortranCodeUnit):
         """
         if len(use_specs.strip()) == 0:
             return (self.pub_procs, self.pub_absints, self.pub_types, self.pub_vars)
+
         only = bool(self.ONLY_RE.match(use_specs))
         use_specs = self.ONLY_RE.sub("", use_specs)
-        ulist = self.SPLIT_RE.split(use_specs)
-        ulist[-1] = ulist[-1].strip()
-        uspecs = {}
-        for item in ulist:
+        # The used names after possible renaming
+        used_names = {}
+        for item in map(str.strip, use_specs.split(",")):
             match = self.RENAME_RE.search(item)
             if match:
-                uspecs[match.group(2).lower()] = match.group(1)
+                used_names[match.group(2).lower()] = match.group(1)
             else:
-                uspecs[item.lower()] = item
-        ret_procs = {}
-        ret_absints = {}
-        ret_types = {}
-        ret_vars = {}
-        for name, obj in self.pub_procs.items():
-            name = name.lower()
-            if only:
-                if name in uspecs:
-                    ret_procs[uspecs[name]] = obj
-            else:
-                ret_procs[name] = obj
-        for name, obj in self.pub_absints.items():
-            name = name.lower()
-            if only:
-                if name in uspecs:
-                    ret_absints[uspecs[name]] = obj
-            else:
-                ret_absints[name] = obj
-        for name, obj in self.pub_types.items():
-            name = name.lower()
-            if only:
-                if name in uspecs:
-                    ret_types[uspecs[name]] = obj
-            else:
-                ret_types[name] = obj
-        for name, obj in self.pub_vars.items():
-            name = name.lower()
-            if only:
-                if name in uspecs:
-                    ret_vars[uspecs[name]] = obj
-            else:
-                ret_vars[name] = obj
+                used_names[item.lower()] = item
+
+        def used_objects(object_type: str, only: bool) -> dict:
+            """Get the objects that are actually used"""
+            result = {}
+            object_collection = getattr(self, object_type)
+            for name, obj in object_collection.items():
+                name = name.lower()
+                if only:
+                    if name in used_names:
+                        result[used_names[name]] = obj
+                else:
+                    result[name] = obj
+            return result
+
+        ret_procs = used_objects("pub_procs", only)
+        ret_absints = used_objects("pub_absints", only)
+        ret_types = used_objects("pub_types", only)
+        ret_vars = used_objects("pub_vars", only)
         return (ret_procs, ret_absints, ret_types, ret_vars)
 
 

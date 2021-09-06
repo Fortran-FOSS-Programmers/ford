@@ -1,4 +1,4 @@
-from ford.sourceform import FortranSourceFile
+from ford.sourceform import FortranSourceFile, FortranModule
 
 from collections import defaultdict
 
@@ -213,3 +213,63 @@ def test_format_statement(parse_fortran_file):
     assert fortran_file.programs[0].calls == []
 
 
+class FakeModule(FortranModule):
+    def __init__(
+        self, procedures: dict, interfaces: dict, types: dict, variables: dict
+    ):
+        self.pub_procs = procedures
+        self.pub_absints = interfaces
+        self.pub_types = types
+        self.pub_vars = variables
+
+
+def test_module_get_used_entities_all():
+    mod_procedures = {"subroutine": "some subroutine"}
+    mod_interfaces = {"abstract": "interface"}
+    mod_types = {"mytype": "some type"}
+    mod_variables = {"x": "some var"}
+
+    module = FakeModule(mod_procedures, mod_interfaces, mod_types, mod_variables)
+
+    procedures, interfaces, types, variables = module.get_used_entities("")
+
+    assert procedures == mod_procedures
+    assert interfaces == mod_interfaces
+    assert types == mod_types
+    assert variables == mod_variables
+
+
+def test_module_get_used_entities_some():
+    mod_procedures = {"subroutine": "some subroutine"}
+    mod_interfaces = {"abstract": "interface"}
+    mod_types = {"mytype": "some type"}
+    mod_variables = {"x": "some var", "y": "some other var"}
+
+    module = FakeModule(mod_procedures, mod_interfaces, mod_types, mod_variables)
+
+    procedures, interfaces, types, variables = module.get_used_entities(
+        ", only: x, subroutine"
+    )
+
+    assert procedures == mod_procedures
+    assert interfaces == {}
+    assert types == {}
+    assert variables == {"x": mod_variables["x"]}
+
+
+def test_module_get_used_entities_rename():
+    mod_procedures = {"subroutine": "some subroutine"}
+    mod_interfaces = {"abstract": "interface"}
+    mod_types = {"mytype": "some type"}
+    mod_variables = {"x": "some var", "y": "some other var"}
+
+    module = FakeModule(mod_procedures, mod_interfaces, mod_types, mod_variables)
+
+    procedures, interfaces, types, variables = module.get_used_entities(
+        ", only: x, y => subroutine"
+    )
+
+    assert procedures == {"y": mod_procedures["subroutine"]}
+    assert interfaces == {}
+    assert types == {}
+    assert variables == {"x": mod_variables["x"]}
