@@ -273,3 +273,207 @@ def test_module_get_used_entities_rename():
     assert interfaces == {}
     assert types == {}
     assert variables == {"x": mod_variables["x"]}
+
+
+def test_module_default_access(parse_fortran_file):
+    data = """\
+    module default_access
+      ! No access keyword
+      integer :: int_public, int_private
+      private :: int_private
+      real :: real_public
+      real, private :: real_private
+
+      type :: type_public
+        complex :: component_public
+        complex, private :: component_private
+      end type type_public
+
+      type :: type_private
+        character(len=1) :: string_public
+        character(len=1), private :: string_private
+      end type type_private
+
+      private :: sub_private, func_private, type_private
+
+    contains
+      subroutine sub_public
+      end subroutine sub_public
+
+      subroutine sub_private
+      end subroutine sub_private
+
+      integer function func_public()
+      end function func_public
+
+      integer function func_private()
+      end function func_private
+    end module default_access
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_file.modules[0].correlate(None)
+
+    assert set(fortran_file.modules[0].all_procs.keys()) == {
+        "sub_public",
+        "func_public",
+        "sub_private",
+        "func_private",
+    }
+    assert set(fortran_file.modules[0].pub_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(fortran_file.modules[0].all_types.keys()) == {
+        "type_public",
+        "type_private",
+    }
+    assert set(fortran_file.modules[0].pub_types.keys()) == {
+        "type_public",
+    }
+    assert set(fortran_file.modules[0].all_vars.keys()) == {
+        "int_public",
+        "int_private",
+        "real_public",
+        "real_private",
+    }
+    assert set(fortran_file.modules[0].pub_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }
+
+
+def test_module_public_access(parse_fortran_file):
+    data = """\
+    module public_access
+      public
+      integer :: int_public, int_private
+      private :: int_private
+      real :: real_public
+      real, private :: real_private
+
+      type :: type_public
+        complex :: component_public
+        complex, private :: component_private
+      end type type_public
+
+      type :: type_private
+        character(len=1) :: string_public
+        character(len=1), private :: string_private
+      end type type_private
+
+      private :: sub_private, func_private, type_private
+
+    contains
+      subroutine sub_public
+      end subroutine sub_public
+
+      subroutine sub_private
+      end subroutine sub_private
+
+      integer function func_public()
+      end function func_public
+
+      integer function func_private()
+      end function func_private
+    end module public_access
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_file.modules[0].correlate(None)
+
+    assert set(fortran_file.modules[0].all_procs.keys()) == {
+        "sub_public",
+        "func_public",
+        "sub_private",
+        "func_private",
+    }
+    assert set(fortran_file.modules[0].pub_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(fortran_file.modules[0].all_types.keys()) == {
+        "type_public",
+        "type_private",
+    }
+    assert set(fortran_file.modules[0].pub_types.keys()) == {
+        "type_public",
+    }
+    assert set(fortran_file.modules[0].all_vars.keys()) == {
+        "int_public",
+        "int_private",
+        "real_public",
+        "real_private",
+    }
+    assert set(fortran_file.modules[0].pub_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }
+
+
+def test_module_private_access(parse_fortran_file):
+    data = """\
+    module private_access
+      private
+      integer :: int_public, int_private
+      public :: int_public
+      real :: real_private
+      real, public :: real_public
+
+      type :: type_public
+        complex :: component_public
+        complex, private :: component_private
+      end type type_public
+
+      type :: type_private
+        character(len=1) :: string_public
+        character(len=1), private :: string_private
+      end type type_private
+
+      public :: sub_public, func_public, type_public
+
+    contains
+      subroutine sub_public
+      end subroutine sub_public
+
+      subroutine sub_private
+      end subroutine sub_private
+
+      integer function func_public()
+      end function func_public
+
+      integer function func_private()
+      end function func_private
+    end module private_access
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_file.modules[0].correlate(None)
+
+    assert set(fortran_file.modules[0].all_procs.keys()) == {
+        "sub_public",
+        "func_public",
+        "sub_private",
+        "func_private",
+    }
+    assert set(fortran_file.modules[0].pub_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(fortran_file.modules[0].all_types.keys()) == {
+        "type_public",
+        "type_private",
+    }
+    assert set(fortran_file.modules[0].pub_types.keys()) == {
+        "type_public",
+    }
+    assert set(fortran_file.modules[0].all_vars.keys()) == {
+        "int_public",
+        "int_private",
+        "real_public",
+        "real_private",
+    }
+    assert set(fortran_file.modules[0].pub_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }

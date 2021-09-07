@@ -90,13 +90,10 @@ class FortranBase(object):
     }
 
     def __init__(
-        self, source, first_line, parent=None, inherited_permission=None, strings=[]
+        self, source, first_line, parent=None, inherited_permission="public", strings=[]
     ):
         self.visible = False
-        if inherited_permission is not None:
-            self.permission = inherited_permission.lower()
-        else:
-            self.permission = None
+        self.permission = inherited_permission.lower()
         self.strings = strings
         self.parent = parent
         if self.parent:
@@ -617,7 +614,7 @@ class FortranContainer(FortranBase):
     )
 
     def __init__(
-        self, source, first_line, parent=None, inherited_permission=None, strings=[]
+        self, source, first_line, parent=None, inherited_permission="public", strings=[]
     ):
         self.num_lines = 0
         if not isinstance(self, FortranSourceFile):
@@ -628,9 +625,9 @@ class FortranContainer(FortranBase):
             )
         incontains = False
         if type(self) is FortranSubmodule:
-            permission = "private"
+            self.permission = "private"
         else:
-            permission = "public"
+            self.permission = inherited_permission
 
         typestr = ""
         for vtype in self.settings["extra_vartypes"]:
@@ -665,7 +662,7 @@ class FortranContainer(FortranBase):
                 if not incontains and type(self) in _can_have_contains:
                     incontains = True
                     if isinstance(self, FortranType):
-                        permission = "public"
+                        self.permission = "public"
                 elif incontains:
                     self.print_error(
                         line, "Multiple CONTAINS statements present in scope"
@@ -678,11 +675,11 @@ class FortranContainer(FortranBase):
                         ),
                     )
             elif line.lower() == "public":
-                permission = "public"
+                self.permission = "public"
             elif line.lower() == "private":
-                permission = "private"
+                self.permission = "private"
             elif line.lower() == "protected":
-                permission = "protected"
+                self.permission = "protected"
             elif line.lower() == "sequence":
                 if type(self) == FortranType:
                     self.sequence = True
@@ -771,7 +768,7 @@ class FortranContainer(FortranBase):
                     # Module procedure implementing an interface in a SUBMODULE
                     self.modprocedures.append(
                         FortranSubmoduleProcedure(
-                            source, self.MODPROC_RE.match(line), self, permission
+                            source, self.MODPROC_RE.match(line), self, self.permission
                         )
                     )
                     self.num_lines += self.modprocedures[-1].num_lines - 1
@@ -840,7 +837,10 @@ class FortranContainer(FortranBase):
                 if hasattr(self, "subroutines"):
                     self.subroutines.append(
                         FortranSubroutine(
-                            source, self.SUBROUTINE_RE.match(line), self, permission
+                            source,
+                            self.SUBROUTINE_RE.match(line),
+                            self,
+                            self.permission,
                         )
                     )
                     self.num_lines += self.subroutines[-1].num_lines - 1
@@ -857,7 +857,7 @@ class FortranContainer(FortranBase):
                 if hasattr(self, "functions"):
                     self.functions.append(
                         FortranFunction(
-                            source, self.FUNCTION_RE.match(line), self, permission
+                            source, self.FUNCTION_RE.match(line), self, self.permission
                         )
                     )
                     self.num_lines += self.functions[-1].num_lines - 1
@@ -869,7 +869,9 @@ class FortranContainer(FortranBase):
             elif self.TYPE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "types"):
                     self.types.append(
-                        FortranType(source, self.TYPE_RE.match(line), self, permission)
+                        FortranType(
+                            source, self.TYPE_RE.match(line), self, self.permission
+                        )
                     )
                     self.num_lines += self.types[-1].num_lines - 1
                 else:
@@ -882,7 +884,7 @@ class FortranContainer(FortranBase):
             elif self.INTERFACE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "interfaces"):
                     intr = FortranInterface(
-                        source, self.INTERFACE_RE.match(line), self, permission
+                        source, self.INTERFACE_RE.match(line), self, self.permission
                     )
                     self.num_lines += intr.num_lines - 1
                     if intr.abstract:
@@ -899,7 +901,9 @@ class FortranContainer(FortranBase):
             elif self.ENUM_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "enums"):
                     self.enums.append(
-                        FortranEnum(source, self.ENUM_RE.match(line), self, permission)
+                        FortranEnum(
+                            source, self.ENUM_RE.match(line), self, self.permission
+                        )
                     )
                     self.num_lines += self.enums[-1].num_lines - 1
                 else:
@@ -914,7 +918,10 @@ class FortranContainer(FortranBase):
                     if match.group(1).lower() == "generic" or len(split) == 1:
                         self.boundprocs.append(
                             FortranBoundProcedure(
-                                source, self.BOUNDPROC_RE.match(line), self, permission
+                                source,
+                                self.BOUNDPROC_RE.match(line),
+                                self,
+                                self.permission,
                             )
                         )
                     else:
@@ -925,7 +932,7 @@ class FortranContainer(FortranBase):
                                     source,
                                     self.BOUNDPROC_RE.match(pseudo_line),
                                     self,
-                                    permission,
+                                    self.permission,
                                 )
                             )
                 else:
@@ -994,7 +1001,7 @@ class FortranContainer(FortranBase):
             elif self.VARIABLE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "variables"):
                     self.variables.extend(
-                        line_to_variables(source, line, permission, self)
+                        line_to_variables(source, line, self.permission, self)
                     )
                 else:
                     self.print_error(
@@ -1130,40 +1137,26 @@ class FortranCodeUnit(FortranContainer):
                         proc.module = intr
                         intr.procedure.module = proc
 
+        def should_be_public(name: str) -> bool:
+            """Is name public?"""
+            return self.permission == "public" or name in self.public_list
+
+        def filter_public(collection: dict) -> dict:
+            """Return a new dict of only the public objects from collection"""
+            return {
+                name: obj for name, obj in collection.items() if should_be_public(name)
+            }
+
         # Add procedures and types from USED modules to our lists
         for mod, extra in self.uses:
             if type(mod) is str:
                 continue
             procs, absints, types, variables = mod.get_used_entities(extra)
             if self.obj == "module":
-                self.pub_procs.update(
-                    [
-                        (name, proc)
-                        for name, proc in procs.items()
-                        if name in self.public_list
-                    ]
-                )
-                self.pub_absints.update(
-                    [
-                        (name, absint)
-                        for name, absint in absints.items()
-                        if name in self.public_list
-                    ]
-                )
-                self.pub_types.update(
-                    [
-                        (name, dtype)
-                        for name, dtype in types.items()
-                        if name in self.public_list
-                    ]
-                )
-                self.pub_vars.update(
-                    [
-                        (name, var)
-                        for name, var in variables.items()
-                        if name in self.public_list
-                    ]
-                )
+                self.pub_procs.update(filter_public(procs))
+                self.pub_absints.update(filter_public(absints))
+                self.pub_types.update(filter_public(types))
+                self.pub_vars.update(filter_public(variables))
             self.all_procs.update(procs)
             self.all_absinterfaces.update(absints)
             self.all_types.update(types)
@@ -1257,9 +1250,11 @@ class FortranCodeUnit(FortranContainer):
             self.modsubroutines = [sub for sub in self.subroutines if sub.module]
             self.subroutines = [sub for sub in self.subroutines if not sub.module]
 
-        del self.public_list
-
     def process_attribs(self):
+        """Attach standalone attributes to the correct object, and compute the
+        list of public objects
+        """
+
         # IMPORTANT: Make sure types processed before interfaces--import when
         # determining permissions of derived types and overridden constructors
         for item in self.iterator(
@@ -1281,6 +1276,7 @@ class FortranCodeUnit(FortranContainer):
                 del self.attr_dict[item.name.lower()]
             except KeyError:
                 pass
+
         for var in self.variables:
             for attr in self.attr_dict.get(var.name.lower(), []):
                 if attr == "public" or attr == "private" or attr == "protected":
@@ -1302,10 +1298,22 @@ class FortranCodeUnit(FortranContainer):
                 del self.attr_dict[var.name.lower()]
             except KeyError:
                 pass
-        self.public_list = []
-        for item, attrs in self.attr_dict.items():
-            if "public" in attrs:
-                self.public_list.append(item)
+
+        # Now we want a list of all the objects we've declared, plus
+        # any we've imported that have a "public" attribute
+        self.public_list = [
+            item.name.lower()
+            for item in self.iterator(
+                "functions",
+                "subroutines",
+                "types",
+                "interfaces",
+                "absinterfaces",
+                "variables",
+            )
+            if item.permission == "public"
+        ] + [item for item, attr in self.attr_dict.items() if "public" in attr]
+
         del self.attr_dict
 
     def prune(self):
@@ -1457,8 +1465,8 @@ class FortranModule(FortranCodeUnit):
         self.param_dict = dict()
 
     def _cleanup(self):
-        # Create list of all local procedures. Ones coming from other modules
-        # will be added later, during correlation.
+        """Create list of all local procedures. Ones coming from other modules
+        will be added later, during correlation."""
         self.all_procs = {}
         for p in self.routines:
             self.all_procs[p.name.lower()] = p
@@ -1470,22 +1478,17 @@ class FortranModule(FortranCodeUnit):
                     self.all_procs[proc.name.lower()] = proc
         self.process_attribs()
         self.variables = [v for v in self.variables if "external" not in v.attribs]
-        self.pub_procs = {}
-        for p, proc in self.all_procs.items():
-            if proc.permission == "public":
-                self.pub_procs[p] = proc
-        self.pub_vars = {}
-        for var in self.variables:
-            if var.permission == "public" or var.permission == "protected":
-                self.pub_vars[var.name] = var
-        self.pub_types = {}
-        for dt in self.types:
-            if dt.permission == "public":
-                self.pub_types[dt.name] = dt
-        self.pub_absints = {}
-        for ai in self.absinterfaces:
-            if ai.permission == "public":
-                self.pub_absints[ai.name] = ai
+
+        def should_be_public(item: str) -> bool:
+            return item.permission == "public" or item.permission == "protected"
+
+        def filter_public(collection: list) -> dict:
+            return {obj.name: obj for obj in collection if should_be_public(obj)}
+
+        self.pub_procs = filter_public(self.all_procs.values())
+        self.pub_vars = filter_public(self.variables)
+        self.pub_types = filter_public(self.types)
+        self.pub_absints = filter_public(self.absinterfaces)
 
     def get_used_entities(self, use_specs):
         """
