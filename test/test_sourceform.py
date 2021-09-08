@@ -201,6 +201,9 @@ def test_component_access(parse_fortran_file):
 
 
 def test_format_statement(parse_fortran_file):
+    """No function calls in `format` statements are allowed, so don't
+    confuse them with format specifiers. Issue #350"""
+
     data = """\
     program test_format_statement
       implicit none
