@@ -45,6 +45,8 @@ from ford.intrinsics import INTRINSICS
 VAR_TYPE_STRING = r"^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
 VARKIND_RE = re.compile(r"\((.*)\)|\*\s*(\d+|\(.*\))")
 KIND_RE = re.compile(r"kind\s*=\s*", re.IGNORECASE)
+KIND_SUFFIX_RE = re.compile(r"(?P<initial>.*)_(?P<kind>[a-z]\w*)", re.IGNORECASE)
+CHAR_KIND_SUFFIX_RE = re.compile(r"(?P<kind>[a-z]\w*)_(?P<initial>.*)", re.IGNORECASE)
 LEN_RE = re.compile(r"len\s*=\s*", re.IGNORECASE)
 ATTRIBSPLIT_RE = re.compile(r",\s*(\w.*?)::\s*(.*)\s*")
 ATTRIBSPLIT2_RE = re.compile(r"\s*(::)?\s*(.*)\s*")
@@ -2030,10 +2032,19 @@ class FortranEnum(FortranContainer):
         for var in self.variables:
             if not var.initial:
                 var.initial = prev_val + 1
+
+            initial = (
+                remove_kind_suffix(var.initial)
+                if isinstance(var.initial, str)
+                else var.initial
+            )
+
             try:
-                prev_val = int(var.initial)
+                prev_val = int(initial)
             except ValueError:
-                raise Exception("Non-integer assigned to enumerator.")
+                raise ValueError(
+                    f"Non-integer ('{var.initial}') assigned to enumerator '{var.name}'."
+                )
 
 
 class FortranInterface(FortranContainer):
@@ -2675,6 +2686,17 @@ _can_have_contains = [
     FortranSubmodule,
     FortranSubmoduleProcedure,
 ]
+
+
+def remove_kind_suffix(literal, is_character: bool = False):
+    """Return the literal without the kind suffix of a numerical literal,
+    or the kind prefix of a character literal"""
+
+    kind_re = CHAR_KIND_SUFFIX_RE if is_character else KIND_SUFFIX_RE
+    kind_suffix = kind_re.match(literal)
+    if kind_suffix:
+        return kind_suffix.group("initial")
+    return literal
 
 
 def line_to_variables(source, line, inherit_permission, parent):

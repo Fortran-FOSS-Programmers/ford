@@ -213,6 +213,36 @@ def test_format_statement(parse_fortran_file):
     assert fortran_file.programs[0].calls == []
 
 
+def test_enumerator_with_kind(parse_fortran_file):
+    """Checking enumerators with specified kind, issue #293"""
+
+    data = """\
+    module some_enums
+      use, intrinsic :: iso_fortran_env, only : int32
+      enum, bind(c)
+        enumerator :: item1, item2
+        enumerator :: list1 = 100_int32, list2
+        enumerator :: fixed_item1 = 0, fixed_item2
+      end enum
+    end module some_enums
+    """
+
+    fortran_file = parse_fortran_file(data)
+    enum = fortran_file.modules[0].enums[0]
+    assert enum.variables[0].name == "item1"
+    assert enum.variables[0].initial == 0
+    assert enum.variables[1].name == "item2"
+    assert enum.variables[1].initial == 1
+    assert enum.variables[2].name == "list1"
+    assert enum.variables[2].initial == "100_int32"
+    assert enum.variables[3].name == "list2"
+    assert enum.variables[3].initial == 101
+    assert enum.variables[4].name == "fixed_item1"
+    assert enum.variables[4].initial == "0"
+    assert enum.variables[5].name == "fixed_item2"
+    assert enum.variables[5].initial == 1
+
+
 class FakeModule(FortranModule):
     def __init__(
         self, procedures: dict, interfaces: dict, types: dict, variables: dict
