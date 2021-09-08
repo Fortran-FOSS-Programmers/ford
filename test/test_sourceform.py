@@ -6,11 +6,9 @@ import pytest
 
 
 @pytest.fixture
-def parse_fortran_file(tmp_path):
+def parse_fortran_file(copy_fortran_file):
     def parse_file(data):
-        filename = tmp_path / "test.f90"
-        with open(filename, "w") as f:
-            f.write(data)
+        filename = copy_fortran_file(data)
         settings = defaultdict(str)
         settings["docmark"] = "!"
         settings["encoding"] = "utf-8"

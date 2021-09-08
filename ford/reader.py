@@ -37,6 +37,44 @@ import os.path
 from ford.fixed2free2 import convertToFree
 
 
+def _contains_unterminated_string(string: str) -> bool:
+    """Return True if `string` contains an unterminated quote"""
+    in_quote = False
+    current_quote = None
+    previous_char = None
+    for char in string:
+        # Non-quote characters don't bother us
+        if not (char == "'" or char == '"'):
+            previous_char = char
+            continue
+        # Doubling-up a quote character doesn't make us leave a quote
+        if char == previous_char:
+            previous_char = char
+            continue
+        # If the current character is the same as the starting quote character
+        # then we have left the quote (as we've dealt with doubled-quotes)
+        if char == current_quote:
+            in_quote = False
+            current_quote = None
+            previous_char = char
+            continue
+        # If we weren't in a quote before, we are now
+        if not in_quote:
+            current_quote = char
+            in_quote = True
+        previous_char = char
+    return in_quote
+
+
+def _match_docmark(docmark, line: str, in_quote: bool):
+    """If docmark exists, and we're not in a string literal, try to match it"""
+    if in_quote:
+        return None
+    if not docmark:
+        return None
+    return docmark.match(line)
+
+
 class FortranReader(object):
     """
     An iterator which will convert a free-form Fortran source file into
@@ -188,23 +226,20 @@ class FortranReader(object):
         reading_predoc = False
         reading_predoc_alt = 0
         linebuffer = ""
+
         while not done:
 
-            if sys.version_info[0] > 2:
-                line = self.reader.__next__()
-            else:  # Python 2
-                line = self.reader.next()
+            line = next(self.reader)
 
             self.line_number += 1
+
+            in_quote = _contains_unterminated_string(linebuffer)
 
             if len(line.strip()) > 0 and line.strip()[0] == "#":
                 continue
 
             # Capture any preceding documenation comments
-            if self.predoc_re:
-                match = self.predoc_re.match(line)
-            else:
-                match = False
+            match = _match_docmark(self.predoc_re, line, in_quote)
             if match:
                 # Switch to predoc: following comment lines are predoc until the end of the block
                 reading_predoc = True
@@ -222,10 +257,7 @@ class FortranReader(object):
                     )
 
             # Check for alternate preceding documentation
-            if self.predoc_alt_re:
-                match = self.predoc_alt_re.match(line)
-            else:
-                match = False
+            match = _match_docmark(self.predoc_alt_re, line, in_quote)
             if match:
                 # Switch to doc_alt: following comment lines are documentation until end of the block
                 reading_predoc_alt = 1
@@ -244,10 +276,7 @@ class FortranReader(object):
                     )
 
             # Check for alternate succeeding documentation
-            if self.doc_alt_re:
-                match = self.doc_alt_re.match(line)
-            else:
-                match = False
+            match = _match_docmark(self.doc_alt_re, line, in_quote)
             if match:
                 # Switch to doc_alt: following comment lines are documentation until end of the block
                 self.reading_alt = 1
@@ -265,7 +294,7 @@ class FortranReader(object):
                     )
 
             # Capture any documentation comments
-            match = self.doc_re.match(line)
+            match = _match_docmark(self.doc_re, line, in_quote)
             if match:
                 self.reading_alt = 0
                 reading_predoc_alt = 0
@@ -279,7 +308,7 @@ class FortranReader(object):
                 reading_predoc_alt = 0
 
             # Remove any regular comments, unless following an alternative (pre)docmark
-            match = self.COM_RE.match(line)
+            match = _match_docmark(self.COM_RE, line, in_quote)
             if match:
                 if (reading_predoc_alt > 1 or self.reading_alt > 1) and len(
                     line[0 : match.start(4)].strip()
