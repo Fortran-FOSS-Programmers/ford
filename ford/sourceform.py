@@ -2838,55 +2838,56 @@ def parse_type(string, capture_strings, settings):
         and not kindstr.startswith("*")
     ):
         return (vartype, None, None, None, rest)
+
     match = VARKIND_RE.search(kindstr)
-    if match:
-        if match.group(1):
-            star = False
-            args = match.group(1).strip()
-        else:
-            star = True
-            args = match.group(2).strip()
-            if args.startswith("("):
-                args = args[1:-1].strip()
+    if not match:
+        raise ValueError(
+            "Bad declaration of variable type {}: {}".format(vartype, string)
+        )
 
-        args = re.sub(r"\s", "", args)
-        if vartype == "type" or vartype == "class" or vartype == "procedure":
-            PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
-            try:
-                proto = list(PROTO_RE.match(args).groups())
-                if not proto[1]:
-                    proto[1] = ""
-            except AttributeError:
-                raise Exception(
-                    "Bad type, class, or procedure prototype specification: {}".format(
-                        args
-                    )
-                )
-            return (vartype, None, None, proto, rest)
-        elif vartype == "character":
-            if star:
-                return (vartype, None, args, None, rest)
-            else:
-                kind = None
-                length = None
-                if KIND_RE.search(args):
-                    kind = KIND_RE.sub("", args)
-                    try:
-                        match = QUOTES_RE.search(kind)
-                        num = int(match.group()[1:-1])
-                        kind = QUOTES_RE.sub(capture_strings[num], kind)
-                    except AttributeError:
-                        pass
-                elif LEN_RE.search(args):
-                    length = LEN_RE.sub("", args)
-                else:
-                    length = args
-                return (vartype, kind, length, None, rest)
-        else:
+    if match.group(1):
+        star = False
+        args = match.group(1).strip()
+    else:
+        star = True
+        args = match.group(2).strip()
+        if args.startswith("("):
+            args = args[1:-1].strip()
+
+    args = re.sub(r"\s", "", args)
+    if vartype == "type" or vartype == "class" or vartype == "procedure":
+        PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
+        try:
+            proto = list(PROTO_RE.match(args).groups())
+            if not proto[1]:
+                proto[1] = ""
+        except AttributeError:
+            raise Exception(
+                "Bad type, class, or procedure prototype specification: {}".format(args)
+            )
+        return (vartype, None, None, proto, rest)
+    elif vartype == "character":
+        if star:
+            return (vartype, None, args, None, rest)
+
+        kind = None
+        length = None
+        if KIND_RE.search(args):
             kind = KIND_RE.sub("", args)
-            return (vartype, kind, None, None, rest)
-
-    raise Exception("Bad declaration of variable type {}: {}".format(vartype, string))
+            try:
+                match = QUOTES_RE.search(kind)
+                num = int(match.group()[1:-1])
+                kind = QUOTES_RE.sub(capture_strings[num], kind)
+            except AttributeError:
+                pass
+        elif LEN_RE.search(args):
+            length = LEN_RE.sub("", args)
+        else:
+            length = args
+        return (vartype, kind, length, None, rest)
+    else:
+        kind = KIND_RE.sub("", args)
+        return (vartype, kind, None, None, rest)
 
 
 def set_base_url(url):
