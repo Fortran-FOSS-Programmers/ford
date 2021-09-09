@@ -45,10 +45,10 @@ from ford.intrinsics import INTRINSICS
 
 VAR_TYPE_STRING = r"^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
 VARKIND_RE = re.compile(r"\((.*)\)|\*\s*(\d+|\(.*\))")
-KIND_RE = re.compile(r"kind\s*=\s*", re.IGNORECASE)
+KIND_RE = re.compile(r"kind\s*=\s*(\w+)", re.IGNORECASE)
 KIND_SUFFIX_RE = re.compile(r"(?P<initial>.*)_(?P<kind>[a-z]\w*)", re.IGNORECASE)
 CHAR_KIND_SUFFIX_RE = re.compile(r"(?P<kind>[a-z]\w*)_(?P<initial>.*)", re.IGNORECASE)
-LEN_RE = re.compile(r"len\s*=\s*", re.IGNORECASE)
+LEN_RE = re.compile(r"(?:len\s*=\s*(\w+|\*|:|\d+)|(\d+))", re.IGNORECASE)
 ATTRIBSPLIT_RE = re.compile(r",\s*(\w.*?)::\s*(.*)\s*")
 ATTRIBSPLIT2_RE = re.compile(r"\s*(::)?\s*(.*)\s*")
 ASSIGN_RE = re.compile(r"(\w+\s*(?:\([^=]*\)))\s*=(?!>)(?:\s*([^\s]+))?")
@@ -2870,23 +2870,30 @@ def parse_type(string, capture_strings, settings):
         if star:
             return (vartype, None, args, None, rest)
 
-        kind = None
-        length = None
-        if KIND_RE.search(args):
-            kind = KIND_RE.sub("", args)
-            try:
-                match = QUOTES_RE.search(kind)
-                num = int(match.group()[1:-1])
-                kind = QUOTES_RE.sub(capture_strings[num], kind)
-            except AttributeError:
-                pass
-        elif LEN_RE.search(args):
-            length = LEN_RE.sub("", args)
-        else:
-            length = args
+        args = args.split(",")
+
+        for arg in args:
+            kind = KIND_RE.match(arg)
+            if kind:
+                kind = kind.group(1)
+                try:
+                    match = QUOTES_RE.search(kind)
+                    num = int(match.group()[1:-1])
+                    kind = QUOTES_RE.sub(capture_strings[num], kind)
+                except AttributeError:
+                    pass
+                break
+
+        for arg in args:
+            length = LEN_RE.match(arg)
+            if length:
+                length = length.group(1) or length.group(2)
+                break
+
         return (vartype, kind, length, None, rest)
     else:
-        kind = KIND_RE.sub("", args)
+        kind = KIND_RE.match(args)
+        kind = kind.group(1) if kind else args
         return (vartype, kind, None, None, rest)
 
 

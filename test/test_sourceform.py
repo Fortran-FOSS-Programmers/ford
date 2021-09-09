@@ -1,6 +1,8 @@
 from ford.sourceform import FortranSourceFile, FortranModule, parse_type
 
 from collections import defaultdict
+from dataclasses import dataclass
+from typing import Union
 
 import pytest
 
@@ -558,102 +560,73 @@ def test_module_procedure_case(parse_fortran_file):
     assert module.interfaces[3].procedure.module
 
 
-def test_parse_type():
-    vartype, kind, strlen, proto, rest = parse_type(
-        "integer i", [], {"extra_vartypes": []}
-    )
-    assert vartype == "integer"
-    assert kind is None
-    assert strlen is None
-    assert proto is None
-    assert rest == "i"
+@dataclass
+class ParsedType:
+    vartype: str
+    kind: Union[None, str]
+    strlen: Union[None, str]
+    proto: Union[None, str]
+    rest: str
 
-    vartype, kind, strlen, proto, rest = parse_type(
-        "integer :: i", [], {"extra_vartypes": []}
-    )
-    assert vartype == "integer"
-    assert kind is None
-    assert strlen is None
-    assert proto is None
-    assert rest == ":: i"
 
+@pytest.mark.parametrize(
+    ["variable_decl", "expected"],
+    [
+        ("integer i", ParsedType("integer", None, None, None, "i")),
+        ("integer :: i", ParsedType("integer", None, None, None, ":: i")),
+        ("integer ( int32 ) :: i", ParsedType("integer", "int32", None, None, ":: i")),
+        ("real r", ParsedType("real", None, None, None, "r")),
+        ("real(real64) r", ParsedType("real", "real64", None, None, "r")),
+        (
+            "REAL( KIND  =  8) :: r, x, y",
+            ParsedType("real", "8", None, None, ":: r, x, y"),
+        ),
+        (
+            "REAL( 8 ) :: r, x, y",
+            ParsedType("real", "8", None, None, ":: r, x, y"),
+        ),
+        (
+            "complex*16 znum",
+            ParsedType("complex", "16", None, None, "znum"),
+        ),
+        (
+            "character(len=*) :: string",
+            ParsedType("character", None, "*", None, ":: string"),
+        ),
+        (
+            "character(len=:) :: string",
+            ParsedType("character", None, ":", None, ":: string"),
+        ),
+        (
+            "character(12) :: string",
+            ParsedType("character", None, "12", None, ":: string"),
+        ),
+        (
+            "character(LEN=12) :: string",
+            ParsedType("character", None, "12", None, ":: string"),
+        ),
+        (
+            "CHARACTER(KIND=kanji,  len =12) :: string",
+            ParsedType("character", "kanji", "12", None, ":: string"),
+        ),
+        (
+            "CHARACTER(  len =   12,KIND=kanji) :: string",
+            ParsedType("character", "kanji", "12", None, ":: string"),
+        ),
+        (
+            "CHARACTER(  kind=    kanji) :: string",
+            ParsedType("character", "kanji", None, None, ":: string"),
+        ),
+        ("double PRECISION dp", ParsedType("double precision", None, None, None, "dp")),
+        ("DOUBLE   complex dc", ParsedType("double complex", None, None, None, "dc")),
+    ],
+)
+def test_parse_type(variable_decl, expected):
     vartype, kind, strlen, proto, rest = parse_type(
-        "real(real64) r", [], {"extra_vartypes": []}
+        variable_decl, [], {"extra_vartypes": []}
     )
-    assert vartype == "real"
-    assert kind == "real64"
-    assert strlen is None
-    assert proto is None
-    assert rest == "r"
-
-    vartype, kind, strlen, proto, rest = parse_type(
-        "REAL( KIND  =  8) :: r, x, y", [], {"extra_vartypes": []}
-    )
-    assert vartype == "real"
-    assert kind == "8"
-    assert strlen is None
-    assert proto is None
-    assert rest == ":: r, x, y"
-
-    vartype, kind, strlen, proto, rest = parse_type(
-        "character(len=*) :: string", [], {"extra_vartypes": []}
-    )
-    assert vartype == "character"
-    assert kind is None
-    assert strlen == "*"
-    assert proto is None
-    assert rest == ":: string"
-
-    vartype, kind, strlen, proto, rest = parse_type(
-        "character(len=:) :: string", [], {"extra_vartypes": []}
-    )
-    assert vartype == "character"
-    assert kind is None
-    assert strlen == ":"
-    assert proto is None
-    assert rest == ":: string"
-
-    vartype, kind, strlen, proto, rest = parse_type(
-        "character(12) :: string", [], {"extra_vartypes": []}
-    )
-    assert vartype == "character"
-    assert kind is None
-    assert strlen == "12"
-    assert proto is None
-    assert rest == ":: string"
-
-    vartype, kind, strlen, proto, rest = parse_type(
-        "character(LEN=12) :: string", [], {"extra_vartypes": []}
-    )
-    assert vartype == "character"
-    assert kind is None
-    assert strlen == "12"
-    assert proto is None
-    assert rest == ":: string"
-
-    vartype, kind, strlen, proto, rest = parse_type(
-        "CHARACTER(KIND=kanji,  len =12) :: string", [], {"extra_vartypes": []}
-    )
-    assert vartype == "character"
-    # assert kind == "kanji"
-    # assert strlen == "12"
-    # assert proto is None
-    assert rest == ":: string"
-
-    vartype, kind, strlen, proto, rest = parse_type(
-        "CHARACTER(  len =   12,KIND=kanji) :: string", [], {"extra_vartypes": []}
-    )
-    assert vartype == "character"
-    # assert kind == "kanji"
-    # assert strlen == "12"
-    assert proto is None
-    assert rest == ":: string"
-
-    vartype, kind, strlen, proto, rest = parse_type(
-        "character(kind=       kanji) :: string", [], {"extra_vartypes": []}
-    )
-    assert vartype == "character"
-    assert kind == "kanji"
-    assert strlen is None
-    assert proto is None
-    assert rest == ":: string"
+    assert vartype == expected.vartype
+    assert kind == expected.kind
+    assert strlen == expected.strlen
+    assert proto == expected.proto
+    assert rest == expected.rest
