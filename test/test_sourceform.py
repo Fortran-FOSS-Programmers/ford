@@ -508,3 +508,51 @@ def test_module_private_access(parse_fortran_file):
         "int_public",
         "real_public",
     }
+
+
+def test_module_procedure_case(parse_fortran_file):
+    """Check that submodule procedures in interface blocks are parsed correctly. Issue #353"""
+    data = """\
+    module a
+      implicit none
+      interface
+        MODULE SUBROUTINE square( x )
+          integer, intent(inout):: x
+        END SUBROUTINE square
+        module subroutine cube( x )
+          integer, intent(inout):: x
+        end subroutine cube
+        MODULE FUNCTION square_func( x )
+          integer, intent(in):: x
+        END FUNCTION square_func
+        module function cube_func( x )
+          integer, intent(inout):: x
+        end function cube_func
+      end interface
+    end module a
+
+    submodule (a) b
+      implicit none
+    contains
+      MODULE PROCEDURE square
+        x = x * x
+      END PROCEDURE square
+      module PROCEDURE cube
+        x = x * x * x
+      END PROCEDURE cube
+      MODULE PROCEDURE square_func
+        square_func = x * x
+      END PROCEDURE square_func
+      module procedure cube_func
+        cube_func = x * x * x
+      end procedure cube_func
+    end submodule b
+    """
+
+    fortran_file = parse_fortran_file(data)
+    module = fortran_file.modules[0]
+    assert len(module.interfaces) == 4
+    assert module.interfaces[0].procedure.module
+    assert module.interfaces[1].procedure.module
+    assert module.interfaces[2].procedure.module
+    assert module.interfaces[3].procedure.module

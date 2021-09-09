@@ -26,6 +26,7 @@ import sys
 import re
 import os.path
 import copy
+from typing import List
 
 # Python 2 or 3:
 if sys.version_info[0] > 2:
@@ -1558,6 +1559,31 @@ class FortranSubmodule(FortranModule):
                     self.all_procs[proc.name.lower()] = proc
 
 
+def _list_of_procedure_attributes(attribute_string: str) -> List[str]:
+    """Convert a string of attributes into a list of attributes"""
+    if not attribute_string:
+        return [], ""
+
+    attribute_list = []
+    attribute_string = attribute_string.lower()
+
+    for attribute in [
+        "impure",
+        "pure",
+        "elemental",
+        "non_recursive",
+        "recursive",
+        "module",
+    ]:
+        if attribute in attribute_string:
+            attribute_list.append(attribute)
+            attribute_string = re.sub(
+                attribute, "", attribute_string, flags=re.IGNORECASE
+            )
+
+    return attribute_list, attribute_string.replace(" ", "")
+
+
 class FortranSubroutine(FortranCodeUnit):
     """
     An object representing a Fortran subroutine and holding all of said
@@ -1570,29 +1596,9 @@ class FortranSubroutine(FortranCodeUnit):
         attribstr = line.group(1)
         self.module = False
         self.mp = False
-        if not attribstr:
-            attribstr = ""
-        self.attribs = []
-        if attribstr.find("impure") >= 0:
-            self.attribs.append("impure")
-            attribstr = attribstr.replace("impure", "", 1)
-        if attribstr.find("pure") >= 0:
-            self.attribs.append("pure")
-            attribstr = attribstr.replace("pure", "", 1)
-        if attribstr.find("elemental") >= 0:
-            self.attribs.append("elemental")
-            attribstr = attribstr.replace("elemental", "", 1)
-        if attribstr.find("non_recursive") >= 0:
-            self.attribs.append("non_recursive")
-            attribstr = attribstr.replace("non_recursive", "", 1)
-        if attribstr.find("recursive") >= 0:
-            self.attribs.append("recursive")
-            attribstr = attribstr.replace("recursive", "", 1)
-        if attribstr.find("module") >= 0:
-            self.module = True
-            attribstr = attribstr.replace("module", "", 1)
-        attribstr = re.sub(" ", "", attribstr)
-        # ~ self.name = line.group(2)
+        self.attribs, attribstr = _list_of_procedure_attributes(attribstr)
+        self.module = "module" in self.attribs
+
         self.args = []
         if line.group(3):
             if self.SPLIT_RE.split(line.group(3)[1:-1]):
@@ -1674,28 +1680,10 @@ class FortranFunction(FortranCodeUnit):
         attribstr = line.group(1)
         self.module = False
         self.mp = False
-        if not attribstr:
-            attribstr = ""
-        self.attribs = []
-        if attribstr.lower().find("impure") >= 0:
-            self.attribs.append("impure")
-            attribstr = re.sub("impure", "", attribstr, 0, re.IGNORECASE)
-        if attribstr.lower().find("pure") >= 0:
-            self.attribs.append("pure")
-            attribstr = re.sub("pure", "", attribstr, 0, re.IGNORECASE)
-        if attribstr.lower().find("elemental") >= 0:
-            self.attribs.append("elemental")
-            attribstr = re.sub("elemental", "", attribstr, 0, re.IGNORECASE)
-        if attribstr.lower().find("non_recursive") >= 0:
-            self.attribs.append("non_recursive")
-            attribstr = re.sub("non_recursive", "", attribstr, 0, re.IGNORECASE)
-        if attribstr.lower().find("recursive") >= 0:
-            self.attribs.append("recursive")
-            attribstr = re.sub("recursive", "", attribstr, 0, re.IGNORECASE)
-        if attribstr.lower().find("module") >= 0:
-            self.module = True
-            attribstr = re.sub("module", "", attribstr, 0, re.IGNORECASE)
-        attribstr = re.sub(" ", "", attribstr)
+
+        self.attribs, attribstr = _list_of_procedure_attributes(attribstr)
+        self.module = "module" in self.attribs
+
         if line.group(4):
             self.retvar = line.group(4)
         else:
