@@ -619,6 +619,18 @@ class ParsedType:
         ),
         ("double PRECISION dp", ParsedType("double precision", None, None, None, "dp")),
         ("DOUBLE   complex dc", ParsedType("double complex", None, None, None, "dc")),
+        (
+            "type(something) :: thing",
+            ParsedType("type", None, None, ["something", ""], ":: thing"),
+        ),
+        (
+            "class(foo) :: thing",
+            ParsedType("class", None, None, ["foo", ""], ":: thing"),
+        ),
+        (
+            "procedure(bar) :: thing",
+            ParsedType("procedure", None, None, ["bar", ""], ":: thing"),
+        ),
     ],
 )
 def test_parse_type(variable_decl, expected):
