@@ -9,6 +9,7 @@ import glob
 import re
 
 import ford.reader as reader
+from ford.reader import _contains_unterminated_string
 
 RE_WHITE = re.compile(r"\s+")
 
@@ -49,7 +50,7 @@ def test_reader_test_data():
                 assert lines == elines
 
 
-def test_reader_continuation(tmp_path):
+def test_reader_continuation(copy_fortran_file):
     """Checks that line continuations are handled correctly"""
 
     data = """\
@@ -61,15 +62,13 @@ def test_reader_continuation(tmp_path):
     end
     """
 
-    filename = tmp_path / "test.f90"
-    with open(filename, "w") as f:
-        f.write(data)
+    filename = copy_fortran_file(data)
 
     lines = list(reader.FortranReader(filename, docmark="!"))
     assert lines == ["program foo", "!! some docs", "integer :: bar = 4", "end"]
 
 
-def test_type(tmp_path):
+def test_type(copy_fortran_file):
     """Check that types can be read"""
 
     data = """\
@@ -93,15 +92,13 @@ def test_type(tmp_path):
         "end type",
     ]
 
-    filename = tmp_path / "test.f90"
-    with open(filename, "w") as f:
-        f.write(data)
+    filename = copy_fortran_file(data)
 
     lines = list(reader.FortranReader(filename, docmark="!"))
     assert lines == expected
 
 
-def test_unknown_include(tmp_path):
+def test_unknown_include(copy_fortran_file):
     """Check that `include "file.h"` ignores unknown files"""
 
     data = """\
@@ -116,9 +113,53 @@ def test_unknown_include(tmp_path):
         "end program test",
     ]
 
-    filename = tmp_path / "test.f90"
-    with open(filename, "w") as f:
-        f.write(data)
+    filename = copy_fortran_file(data)
 
     lines = list(reader.FortranReader(filename, docmark="!"))
+    assert lines == expected
+
+
+def test_unterminated_strings():
+    """Check the utility function works"""
+    assert _contains_unterminated_string(""" bad "quote """)
+    assert _contains_unterminated_string(""" bad 'quote """)
+    assert _contains_unterminated_string(""" bad "'quote """)
+    assert _contains_unterminated_string(""" bad 'quote" """)
+    assert _contains_unterminated_string(""" "multiple" bad "'quote """)
+    assert _contains_unterminated_string(""" bad 'quote" """)
+
+    assert not _contains_unterminated_string(""" good "quote" """)
+    assert not _contains_unterminated_string(""" good 'quote' """)
+    assert not _contains_unterminated_string(""" good "'quote" """)
+    assert not _contains_unterminated_string(""" good 'quote"' """)
+    assert not _contains_unterminated_string(""" "multiple" good "'quote" """)
+    assert not _contains_unterminated_string(""" good 'quote"' """)
+
+
+def test_multiline_string(copy_fortran_file):
+    """Check that we can continue string literals including exclamation
+    marks over multiple lines. Issue #320"""
+
+    data = '''\
+    program multiline_string
+      implicit none
+      print*, 'dont''t', " get ""!>quotes!@""", " '""!<wrong!!""' ", "foo&
+              &bar! foo&
+              &bar"
+    end program multiline_string
+    '''
+
+    filename = copy_fortran_file(data)
+    expected = [
+        "program multiline_string",
+        "implicit none",
+        '''print*, 'dont''t', " get ""!>quotes!@""", " '""!<wrong!!""' ", "foobar! foobar"''',
+        "end program multiline_string",
+    ]
+
+    lines = list(
+        reader.FortranReader(
+            filename, docmark="!", predocmark="<", docmark_alt=">", predocmark_alt="@"
+        )
+    )
     assert lines == expected

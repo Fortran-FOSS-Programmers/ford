@@ -82,3 +82,285 @@ def test_use_and_rename(copy_fortran_file):
     project = Project(settings)
     project.correlate()
     assert set(project.modules[0].all_procs.keys()) == {"routine_1", "routine"}
+
+
+def test_module_use_only_everything(copy_fortran_file):
+    data = """\
+    module default_access
+      ! No access keyword
+      integer :: int_public, int_private
+      private :: int_private
+      real :: real_public
+      real, private :: real_private
+
+      type :: type_public
+        complex :: component_public
+        complex, private :: component_private
+      end type type_public
+
+      type :: type_private
+        character(len=1) :: string_public
+        character(len=1), private :: string_private
+      end type type_private
+
+      private :: sub_private, func_private, type_private
+
+    contains
+      subroutine sub_public
+      end subroutine sub_public
+
+      subroutine sub_private
+      end subroutine sub_private
+
+      integer function func_public()
+      end function func_public
+
+      integer function func_private()
+      end function func_private
+    end module default_access
+
+    module use_only_everything
+      use default_access, only : int_public, real_public, type_public, sub_public, func_public
+    end module use_only_everything
+    """
+
+    settings = copy_fortran_file(data)
+    project = Project(settings)
+    project.correlate()
+
+    # Double-check we're looking at the right module
+    assert project.modules[1].name == "use_only_everything"
+    assert set(project.modules[1].all_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(project.modules[1].pub_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(project.modules[1].all_types.keys()) == {
+        "type_public",
+    }
+    assert set(project.modules[1].pub_types.keys()) == {
+        "type_public",
+    }
+    assert set(project.modules[1].all_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }
+    assert set(project.modules[1].pub_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }
+
+
+def test_module_use_only_everything_change_access(copy_fortran_file):
+    data = """\
+    module default_access
+      ! No access keyword
+      integer :: int_public, int_private
+      private :: int_private
+      real :: real_public
+      real, private :: real_private
+
+      type :: type_public
+        complex :: component_public
+        complex, private :: component_private
+      end type type_public
+
+      type :: type_private
+        character(len=1) :: string_public
+        character(len=1), private :: string_private
+      end type type_private
+
+      private :: sub_private, func_private, type_private
+
+    contains
+      subroutine sub_public
+      end subroutine sub_public
+
+      subroutine sub_private
+      end subroutine sub_private
+
+      integer function func_public()
+      end function func_public
+
+      integer function func_private()
+      end function func_private
+    end module default_access
+
+    module use_only_change_access
+      use default_access, only : int_public, real_public, type_public, sub_public, func_public
+      private
+      public :: int_public, sub_public
+    end module use_only_change_access
+    """
+
+    settings = copy_fortran_file(data)
+    project = Project(settings)
+    project.correlate()
+
+    # Double-check we're looking at the right module
+    assert project.modules[1].name == "use_only_change_access"
+    assert set(project.modules[1].all_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(project.modules[1].pub_procs.keys()) == {
+        "sub_public",
+    }
+    assert set(project.modules[1].all_types.keys()) == {
+        "type_public",
+    }
+    assert set(project.modules[1].pub_types.keys()) == set()
+    assert set(project.modules[1].all_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }
+    assert set(project.modules[1].pub_vars.keys()) == {
+        "int_public",
+    }
+
+
+def test_module_use_everything(copy_fortran_file):
+    data = """\
+    module default_access
+      ! No access keyword
+      integer :: int_public, int_private
+      private :: int_private
+      real :: real_public
+      real, private :: real_private
+
+      type :: type_public
+        complex :: component_public
+        complex, private :: component_private
+      end type type_public
+
+      type :: type_private
+        character(len=1) :: string_public
+        character(len=1), private :: string_private
+      end type type_private
+
+      private :: sub_private, func_private, type_private
+
+    contains
+      subroutine sub_public
+      end subroutine sub_public
+
+      subroutine sub_private
+      end subroutine sub_private
+
+      integer function func_public()
+      end function func_public
+
+      integer function func_private()
+      end function func_private
+    end module default_access
+
+    module use_everything
+      use default_access
+    end module use_everything
+    """
+
+    settings = copy_fortran_file(data)
+    project = Project(settings)
+    project.correlate()
+
+    # Double-check we're looking at the right module
+    assert project.modules[1].name == "use_everything"
+    assert set(project.modules[1].all_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(project.modules[1].pub_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(project.modules[1].all_types.keys()) == {
+        "type_public",
+    }
+    assert set(project.modules[1].pub_types.keys()) == {
+        "type_public",
+    }
+    assert set(project.modules[1].all_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }
+    assert set(project.modules[1].pub_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }
+
+
+def test_module_use_everything_reexport(copy_fortran_file):
+    data = """\
+    module default_access
+      ! No access keyword
+      integer :: int_public, int_private
+      private :: int_private
+      real :: real_public
+      real, private :: real_private
+
+      type :: type_public
+        complex :: component_public
+        complex, private :: component_private
+      end type type_public
+
+      type :: type_private
+        character(len=1) :: string_public
+        character(len=1), private :: string_private
+      end type type_private
+
+      private :: sub_private, func_private, type_private
+
+    contains
+      subroutine sub_public
+      end subroutine sub_public
+
+      subroutine sub_private
+      end subroutine sub_private
+
+      integer function func_public()
+      end function func_public
+
+      integer function func_private()
+      end function func_private
+    end module default_access
+
+    module use_everything
+      use default_access
+    end module use_everything
+
+    module reexport
+      use use_everything
+    end module reexport
+    """
+
+    settings = copy_fortran_file(data)
+    project = Project(settings)
+    project.correlate()
+
+    # Double-check we're looking at the right module
+    assert project.modules[2].name == "reexport"
+    assert set(project.modules[2].all_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(project.modules[2].pub_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(project.modules[2].all_types.keys()) == {
+        "type_public",
+    }
+    assert set(project.modules[2].pub_types.keys()) == {
+        "type_public",
+    }
+    assert set(project.modules[2].all_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }
+    assert set(project.modules[2].pub_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }

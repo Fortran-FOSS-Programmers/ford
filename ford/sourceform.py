@@ -26,6 +26,7 @@ import sys
 import re
 import os.path
 import copy
+from typing import List
 
 # Python 2 or 3:
 if sys.version_info[0] > 2:
@@ -40,11 +41,14 @@ from pygments.formatters import HtmlFormatter
 
 import ford.reader
 import ford.utils
+from ford.intrinsics import INTRINSICS
 
 VAR_TYPE_STRING = r"^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
 VARKIND_RE = re.compile(r"\((.*)\)|\*\s*(\d+|\(.*\))")
-KIND_RE = re.compile(r"kind\s*=\s*", re.IGNORECASE)
-LEN_RE = re.compile(r"len\s*=\s*", re.IGNORECASE)
+KIND_RE = re.compile(r"kind\s*=\s*(\w+)", re.IGNORECASE)
+KIND_SUFFIX_RE = re.compile(r"(?P<initial>.*)_(?P<kind>[a-z]\w*)", re.IGNORECASE)
+CHAR_KIND_SUFFIX_RE = re.compile(r"(?P<kind>[a-z]\w*)_(?P<initial>.*)", re.IGNORECASE)
+LEN_RE = re.compile(r"(?:len\s*=\s*(\w+|\*|:|\d+)|(\d+))", re.IGNORECASE)
 ATTRIBSPLIT_RE = re.compile(r",\s*(\w.*?)::\s*(.*)\s*")
 ATTRIBSPLIT2_RE = re.compile(r"\s*(::)?\s*(.*)\s*")
 ASSIGN_RE = re.compile(r"(\w+\s*(?:\([^=]*\)))\s*=(?!>)(?:\s*([^\s]+))?")
@@ -58,461 +62,6 @@ COMMA_RE = re.compile(r",(?!\s)")
 NBSP_RE = re.compile(r" (?= )|(?<= ) ")
 DIM_RE = re.compile(r"^\w+\s*(\(.*\))\s*$")
 
-INTRINSICS = [
-    "abort",
-    "abs",
-    "abstract",
-    "access",
-    "achar",
-    "acos",
-    "acosh",
-    "adjustl",
-    "adjustr",
-    "aimag",
-    "aint",
-    "alarm",
-    "all",
-    "allocatable",
-    "allocate",
-    "allocated",
-    "and",
-    "anint",
-    "any",
-    "asin",
-    "asinh",
-    "assign",
-    "associate",
-    "associated",
-    "asynchronous",
-    "atan",
-    "atan2",
-    "atanh",
-    "atomic_add",
-    "atomic_and",
-    "atomic_cas",
-    "atomic_define",
-    "atomic_fetch_add",
-    "atomic_fetch_and",
-    "atomic_fetch_or",
-    "atomic_fetch_xor",
-    "atomic_or",
-    "atomic_ref",
-    "atomic_xor",
-    "backtrace",
-    "backspace",
-    "bessel_j0",
-    "bessel_j1",
-    "bessel_jn",
-    "bessel_y0",
-    "bessel_y1",
-    "bessel_yn",
-    "bge",
-    "bgt",
-    "bind",
-    "bit_size",
-    "ble",
-    "block",
-    "block data",
-    "blt",
-    "btest",
-    "c_associated",
-    "c_f_pointer",
-    "c_f_procpointer",
-    "c_funloc",
-    "c_loc",
-    "c_sizeof",
-    "cabs",
-    "call",
-    "case",
-    "case default",
-    "cdabs",
-    "ceiling",
-    "char",
-    "character",
-    "chdir",
-    "chmod",
-    "class",
-    "close",
-    "cmplx",
-    "codimension",
-    "co_broadcast",
-    "co_max",
-    "co_min",
-    "co_reduce",
-    "co_sum",
-    "command_argument_count",
-    "common",
-    "compiler_options",
-    "compiler_version",
-    "complex",
-    "concurrent",
-    "conjg",
-    "contains",
-    "contiguous",
-    "continue",
-    "cos",
-    "cosh",
-    "count",
-    "cpu_time",
-    "critical",
-    "cshift",
-    "cycle",
-    "data",
-    "ctime",
-    "dabs",
-    "date_and_time",
-    "dble",
-    "dcmplx",
-    "deallocate",
-    "deferred",
-    "digits",
-    "dim",
-    "dimension",
-    "do",
-    "dlog",
-    "dlog10",
-    "dmax1",
-    "dmin1",
-    "dot_product",
-    "double complex",
-    "double precision",
-    "dprod",
-    "dreal",
-    "dshiftl",
-    "dshiftr",
-    "dsqrt",
-    "dtime",
-    "elemental",
-    "else",
-    "else if",
-    "elseif",
-    "elsewhere",
-    "end",
-    "end associate",
-    "end block",
-    "end block data",
-    "end critical",
-    "end do",
-    "end enum",
-    "end forall",
-    "end function",
-    "end if",
-    "end interface",
-    "end module",
-    "end program",
-    "end select",
-    "end submodule",
-    "end subroutine",
-    "end type",
-    "end where",
-    "endfile",
-    "endif",
-    "entry",
-    "enum",
-    "enumerator",
-    "eoshift",
-    "epsilon",
-    "equivalence",
-    "erf",
-    "erfc",
-    "erfc_scaled",
-    "etime",
-    "error stop",
-    "execute_command_line",
-    "exit",
-    "exp",
-    "exponent",
-    "extends",
-    "extends_type_of",
-    "external",
-    "fget",
-    "fgetc",
-    "final",
-    "findloc",
-    "fdate",
-    "floor",
-    "flush",
-    "fnum",
-    "forall",
-    "format",
-    "fput",
-    "fputc",
-    "fraction",
-    "function",
-    "free",
-    "fseek",
-    "fstat",
-    "ftell",
-    "gamma",
-    "generic",
-    "gerror",
-    "getarg",
-    "get_command",
-    "get_command_argument",
-    "getcwd",
-    "getenv",
-    "get_environment_variable",
-    "go to",
-    "goto",
-    "getgid",
-    "getlog",
-    "getpid",
-    "getuid",
-    "gmtime",
-    "hostnm",
-    "huge",
-    "hypot",
-    "iabs",
-    "iachar",
-    "iall",
-    "iand",
-    "iany",
-    "iargc",
-    "ibclr",
-    "ibits",
-    "ibset",
-    "ichar",
-    "idate",
-    "ieee_class",
-    "ieee_copy_sign",
-    "ieee_get_flag",
-    "ieee_get_halting_mode",
-    "ieee_get_rounding_mode",
-    "ieee_get_status",
-    "ieee_get_underflow_mode",
-    "ieee_is_finite",
-    "ieee_is_nan",
-    "ieee_is_negative",
-    "ieee_is_normal",
-    "ieee_logb",
-    "ieee_next_after",
-    "ieee_rem",
-    "ieee_rint",
-    "ieee_scalb",
-    "ieee_selected_real_kind",
-    "ieee_set_flag",
-    "ieee_set_halting_mode",
-    "ieee_set_rounding_mode",
-    "ieee_set_status",
-    "ieee_support_datatype",
-    "ieee_support_denormal",
-    "ieee_support_divide",
-    "ieee_support_flag",
-    "ieee_support_halting",
-    "ieee_support_inf",
-    "ieee_support_io",
-    "ieee_support_nan",
-    "ieee_support_rounding",
-    "ieee_support_sqrt",
-    "ieee_support_standard",
-    "ieee_support_underflow_control",
-    "ieee_unordered",
-    "ieee_value",
-    "ieor",
-    "ierrno",
-    "if",
-    "imag",
-    "image_index",
-    "implicit",
-    "implicit none",
-    "import",
-    "include",
-    "index",
-    "inquire",
-    "int",
-    "integer",
-    "intent",
-    "interface",
-    "intrinsic",
-    "int2",
-    "int8",
-    "ior",
-    "iparity",
-    "irand",
-    "is",
-    "is_contiguous",
-    "is_iostat_end",
-    "is_iostat_eor",
-    "isatty",
-    "ishft",
-    "ishftc",
-    "isnan",
-    "itime",
-    "kill",
-    "kind",
-    "lbound",
-    "lcobound",
-    "leadz",
-    "len",
-    "len_trim",
-    "lge",
-    "lgt",
-    "link",
-    "lle",
-    "llt",
-    "lock",
-    "lnblnk",
-    "loc",
-    "log",
-    "log_gamma",
-    "log10",
-    "logical",
-    "long",
-    "lshift",
-    "lstat",
-    "ltime",
-    "malloc",
-    "maskl",
-    "maskr",
-    "matmul",
-    "max",
-    "max0",
-    "maxexponent",
-    "maxloc",
-    "maxval",
-    "mclock",
-    "mclock8",
-    "merge",
-    "merge_bits",
-    "min",
-    "min0",
-    "minexponent",
-    "minloc",
-    "minval",
-    "mod",
-    "module",
-    "module procedure",
-    "modulo",
-    "move_alloc",
-    "mvbits",
-    "namelist",
-    "nearest",
-    "new_line",
-    "nint",
-    "non_overridable",
-    "none",
-    "nopass",
-    "norm2",
-    "not",
-    "null",
-    "nullify",
-    "num_images",
-    "only",
-    "open",
-    "or",
-    "operator",
-    "optional",
-    "pack",
-    "parameter",
-    "parity",
-    "pass",
-    "pause",
-    "pointer",
-    "perror",
-    "popcnt",
-    "poppar",
-    "precision",
-    "present",
-    "print",
-    "private",
-    "procedure",
-    "product",
-    "program",
-    "protected",
-    "public",
-    "pure",
-    "radix",
-    "ran",
-    "rand",
-    "random_number",
-    "random_seed",
-    "range",
-    "rank",
-    "read",
-    "real",
-    "recursive",
-    "rename",
-    "repeat",
-    "reshape",
-    "result",
-    "return",
-    "rewind",
-    "rewrite",
-    "rrspacing",
-    "rshift",
-    "same_type_as",
-    "save",
-    "scale",
-    "scan",
-    "secnds",
-    "second",
-    "select",
-    "select case",
-    "select type",
-    "selected_char_kind",
-    "selected_int_kind",
-    "selected_real_kind",
-    "sequence",
-    "set_exponent",
-    "shape",
-    "shifta",
-    "shiftl",
-    "shiftr",
-    "sign",
-    "signal",
-    "sin",
-    "sinh",
-    "size",
-    "sizeof",
-    "sleep",
-    "spacing",
-    "spread",
-    "sqrt",
-    "srand",
-    "stat",
-    "stop",
-    "storage_size",
-    "submodule",
-    "subroutine",
-    "sum",
-    "sync all",
-    "sync images",
-    "sync memory",
-    "symlnk",
-    "system",
-    "system_clock",
-    "tan",
-    "tanh",
-    "target",
-    "then",
-    "this_image",
-    "time",
-    "time8",
-    "tiny",
-    "trailz",
-    "transfer",
-    "transpose",
-    "trim",
-    "ttynam",
-    "type",
-    "type_as",
-    "ubound",
-    "ucobound",
-    "umask",
-    "unlock",
-    "unlink",
-    "unpack",
-    "use",
-    "value",
-    "verify",
-    "volatile",
-    "wait",
-    "where",
-    "while",
-    "write",
-    "xor",
-    "zabs",
-]
 
 base_url = ""
 
@@ -544,13 +93,10 @@ class FortranBase(object):
     }
 
     def __init__(
-        self, source, first_line, parent=None, inherited_permission=None, strings=[]
+        self, source, first_line, parent=None, inherited_permission="public", strings=[]
     ):
         self.visible = False
-        if inherited_permission is not None:
-            self.permission = inherited_permission.lower()
-        else:
-            self.permission = None
+        self.permission = inherited_permission.lower()
         self.strings = strings
         self.parent = parent
         if self.parent:
@@ -1071,7 +617,7 @@ class FortranContainer(FortranBase):
     )
 
     def __init__(
-        self, source, first_line, parent=None, inherited_permission=None, strings=[]
+        self, source, first_line, parent=None, inherited_permission="public", strings=[]
     ):
         self.num_lines = 0
         if not isinstance(self, FortranSourceFile):
@@ -1082,9 +628,9 @@ class FortranContainer(FortranBase):
             )
         incontains = False
         if type(self) is FortranSubmodule:
-            permission = "private"
+            self.permission = "private"
         else:
-            permission = "public"
+            self.permission = inherited_permission
 
         typestr = ""
         for vtype in self.settings["extra_vartypes"]:
@@ -1119,7 +665,7 @@ class FortranContainer(FortranBase):
                 if not incontains and type(self) in _can_have_contains:
                     incontains = True
                     if isinstance(self, FortranType):
-                        permission = "public"
+                        self.permission = "public"
                 elif incontains:
                     self.print_error(
                         line, "Multiple CONTAINS statements present in scope"
@@ -1132,11 +678,11 @@ class FortranContainer(FortranBase):
                         ),
                     )
             elif line.lower() == "public":
-                permission = "public"
+                self.permission = "public"
             elif line.lower() == "private":
-                permission = "private"
+                self.permission = "private"
             elif line.lower() == "protected":
-                permission = "protected"
+                self.permission = "protected"
             elif line.lower() == "sequence":
                 if type(self) == FortranType:
                     self.sequence = True
@@ -1225,7 +771,7 @@ class FortranContainer(FortranBase):
                     # Module procedure implementing an interface in a SUBMODULE
                     self.modprocedures.append(
                         FortranSubmoduleProcedure(
-                            source, self.MODPROC_RE.match(line), self, permission
+                            source, self.MODPROC_RE.match(line), self, self.permission
                         )
                     )
                     self.num_lines += self.modprocedures[-1].num_lines - 1
@@ -1294,7 +840,10 @@ class FortranContainer(FortranBase):
                 if hasattr(self, "subroutines"):
                     self.subroutines.append(
                         FortranSubroutine(
-                            source, self.SUBROUTINE_RE.match(line), self, permission
+                            source,
+                            self.SUBROUTINE_RE.match(line),
+                            self,
+                            self.permission,
                         )
                     )
                     self.num_lines += self.subroutines[-1].num_lines - 1
@@ -1311,7 +860,7 @@ class FortranContainer(FortranBase):
                 if hasattr(self, "functions"):
                     self.functions.append(
                         FortranFunction(
-                            source, self.FUNCTION_RE.match(line), self, permission
+                            source, self.FUNCTION_RE.match(line), self, self.permission
                         )
                     )
                     self.num_lines += self.functions[-1].num_lines - 1
@@ -1323,7 +872,9 @@ class FortranContainer(FortranBase):
             elif self.TYPE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "types"):
                     self.types.append(
-                        FortranType(source, self.TYPE_RE.match(line), self, permission)
+                        FortranType(
+                            source, self.TYPE_RE.match(line), self, self.permission
+                        )
                     )
                     self.num_lines += self.types[-1].num_lines - 1
                 else:
@@ -1336,7 +887,7 @@ class FortranContainer(FortranBase):
             elif self.INTERFACE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "interfaces"):
                     intr = FortranInterface(
-                        source, self.INTERFACE_RE.match(line), self, permission
+                        source, self.INTERFACE_RE.match(line), self, self.permission
                     )
                     self.num_lines += intr.num_lines - 1
                     if intr.abstract:
@@ -1353,7 +904,9 @@ class FortranContainer(FortranBase):
             elif self.ENUM_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "enums"):
                     self.enums.append(
-                        FortranEnum(source, self.ENUM_RE.match(line), self, permission)
+                        FortranEnum(
+                            source, self.ENUM_RE.match(line), self, self.permission
+                        )
                     )
                     self.num_lines += self.enums[-1].num_lines - 1
                 else:
@@ -1368,7 +921,10 @@ class FortranContainer(FortranBase):
                     if match.group(1).lower() == "generic" or len(split) == 1:
                         self.boundprocs.append(
                             FortranBoundProcedure(
-                                source, self.BOUNDPROC_RE.match(line), self, permission
+                                source,
+                                self.BOUNDPROC_RE.match(line),
+                                self,
+                                self.permission,
                             )
                         )
                     else:
@@ -1379,7 +935,7 @@ class FortranContainer(FortranBase):
                                     source,
                                     self.BOUNDPROC_RE.match(pseudo_line),
                                     self,
-                                    permission,
+                                    self.permission,
                                 )
                             )
                 else:
@@ -1448,7 +1004,7 @@ class FortranContainer(FortranBase):
             elif self.VARIABLE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "variables"):
                     self.variables.extend(
-                        line_to_variables(source, line, permission, self)
+                        line_to_variables(source, line, self.permission, self)
                     )
                 else:
                     self.print_error(
@@ -1584,40 +1140,26 @@ class FortranCodeUnit(FortranContainer):
                         proc.module = intr
                         intr.procedure.module = proc
 
+        def should_be_public(name: str) -> bool:
+            """Is name public?"""
+            return self.permission == "public" or name in self.public_list
+
+        def filter_public(collection: dict) -> dict:
+            """Return a new dict of only the public objects from collection"""
+            return {
+                name: obj for name, obj in collection.items() if should_be_public(name)
+            }
+
         # Add procedures and types from USED modules to our lists
         for mod, extra in self.uses:
             if type(mod) is str:
                 continue
             procs, absints, types, variables = mod.get_used_entities(extra)
             if self.obj == "module":
-                self.pub_procs.update(
-                    [
-                        (name, proc)
-                        for name, proc in procs.items()
-                        if name in self.public_list
-                    ]
-                )
-                self.pub_absints.update(
-                    [
-                        (name, absint)
-                        for name, absint in absints.items()
-                        if name in self.public_list
-                    ]
-                )
-                self.pub_types.update(
-                    [
-                        (name, dtype)
-                        for name, dtype in types.items()
-                        if name in self.public_list
-                    ]
-                )
-                self.pub_vars.update(
-                    [
-                        (name, var)
-                        for name, var in variables.items()
-                        if name in self.public_list
-                    ]
-                )
+                self.pub_procs.update(filter_public(procs))
+                self.pub_absints.update(filter_public(absints))
+                self.pub_types.update(filter_public(types))
+                self.pub_vars.update(filter_public(variables))
             self.all_procs.update(procs)
             self.all_absinterfaces.update(absints)
             self.all_types.update(types)
@@ -1711,9 +1253,11 @@ class FortranCodeUnit(FortranContainer):
             self.modsubroutines = [sub for sub in self.subroutines if sub.module]
             self.subroutines = [sub for sub in self.subroutines if not sub.module]
 
-        del self.public_list
-
     def process_attribs(self):
+        """Attach standalone attributes to the correct object, and compute the
+        list of public objects
+        """
+
         # IMPORTANT: Make sure types processed before interfaces--import when
         # determining permissions of derived types and overridden constructors
         for item in self.iterator(
@@ -1735,6 +1279,7 @@ class FortranCodeUnit(FortranContainer):
                 del self.attr_dict[item.name.lower()]
             except KeyError:
                 pass
+
         for var in self.variables:
             for attr in self.attr_dict.get(var.name.lower(), []):
                 if attr == "public" or attr == "private" or attr == "protected":
@@ -1756,10 +1301,22 @@ class FortranCodeUnit(FortranContainer):
                 del self.attr_dict[var.name.lower()]
             except KeyError:
                 pass
-        self.public_list = []
-        for item, attrs in self.attr_dict.items():
-            if "public" in attrs:
-                self.public_list.append(item)
+
+        # Now we want a list of all the objects we've declared, plus
+        # any we've imported that have a "public" attribute
+        self.public_list = [
+            item.name.lower()
+            for item in self.iterator(
+                "functions",
+                "subroutines",
+                "types",
+                "interfaces",
+                "absinterfaces",
+                "variables",
+            )
+            if item.permission == "public"
+        ] + [item for item, attr in self.attr_dict.items() if "public" in attr]
+
         del self.attr_dict
 
     def prune(self):
@@ -1911,8 +1468,8 @@ class FortranModule(FortranCodeUnit):
         self.param_dict = dict()
 
     def _cleanup(self):
-        # Create list of all local procedures. Ones coming from other modules
-        # will be added later, during correlation.
+        """Create list of all local procedures. Ones coming from other modules
+        will be added later, during correlation."""
         self.all_procs = {}
         for p in self.routines:
             self.all_procs[p.name.lower()] = p
@@ -1924,22 +1481,17 @@ class FortranModule(FortranCodeUnit):
                     self.all_procs[proc.name.lower()] = proc
         self.process_attribs()
         self.variables = [v for v in self.variables if "external" not in v.attribs]
-        self.pub_procs = {}
-        for p, proc in self.all_procs.items():
-            if proc.permission == "public":
-                self.pub_procs[p] = proc
-        self.pub_vars = {}
-        for var in self.variables:
-            if var.permission == "public" or var.permission == "protected":
-                self.pub_vars[var.name] = var
-        self.pub_types = {}
-        for dt in self.types:
-            if dt.permission == "public":
-                self.pub_types[dt.name] = dt
-        self.pub_absints = {}
-        for ai in self.absinterfaces:
-            if ai.permission == "public":
-                self.pub_absints[ai.name] = ai
+
+        def should_be_public(item: str) -> bool:
+            return item.permission == "public" or item.permission == "protected"
+
+        def filter_public(collection: list) -> dict:
+            return {obj.name: obj for obj in collection if should_be_public(obj)}
+
+        self.pub_procs = filter_public(self.all_procs.values())
+        self.pub_vars = filter_public(self.variables)
+        self.pub_types = filter_public(self.types)
+        self.pub_absints = filter_public(self.absinterfaces)
 
     def get_used_entities(self, use_specs):
         """
@@ -2007,6 +1559,31 @@ class FortranSubmodule(FortranModule):
                     self.all_procs[proc.name.lower()] = proc
 
 
+def _list_of_procedure_attributes(attribute_string: str) -> List[str]:
+    """Convert a string of attributes into a list of attributes"""
+    if not attribute_string:
+        return [], ""
+
+    attribute_list = []
+    attribute_string = attribute_string.lower()
+
+    for attribute in [
+        "impure",
+        "pure",
+        "elemental",
+        "non_recursive",
+        "recursive",
+        "module",
+    ]:
+        if attribute in attribute_string:
+            attribute_list.append(attribute)
+            attribute_string = re.sub(
+                attribute, "", attribute_string, flags=re.IGNORECASE
+            )
+
+    return attribute_list, attribute_string.replace(" ", "")
+
+
 class FortranSubroutine(FortranCodeUnit):
     """
     An object representing a Fortran subroutine and holding all of said
@@ -2019,29 +1596,9 @@ class FortranSubroutine(FortranCodeUnit):
         attribstr = line.group(1)
         self.module = False
         self.mp = False
-        if not attribstr:
-            attribstr = ""
-        self.attribs = []
-        if attribstr.find("impure") >= 0:
-            self.attribs.append("impure")
-            attribstr = attribstr.replace("impure", "", 1)
-        if attribstr.find("pure") >= 0:
-            self.attribs.append("pure")
-            attribstr = attribstr.replace("pure", "", 1)
-        if attribstr.find("elemental") >= 0:
-            self.attribs.append("elemental")
-            attribstr = attribstr.replace("elemental", "", 1)
-        if attribstr.find("non_recursive") >= 0:
-            self.attribs.append("non_recursive")
-            attribstr = attribstr.replace("non_recursive", "", 1)
-        if attribstr.find("recursive") >= 0:
-            self.attribs.append("recursive")
-            attribstr = attribstr.replace("recursive", "", 1)
-        if attribstr.find("module") >= 0:
-            self.module = True
-            attribstr = attribstr.replace("module", "", 1)
-        attribstr = re.sub(" ", "", attribstr)
-        # ~ self.name = line.group(2)
+        self.attribs, attribstr = _list_of_procedure_attributes(attribstr)
+        self.module = "module" in self.attribs
+
         self.args = []
         if line.group(3):
             if self.SPLIT_RE.split(line.group(3)[1:-1]):
@@ -2123,28 +1680,10 @@ class FortranFunction(FortranCodeUnit):
         attribstr = line.group(1)
         self.module = False
         self.mp = False
-        if not attribstr:
-            attribstr = ""
-        self.attribs = []
-        if attribstr.lower().find("impure") >= 0:
-            self.attribs.append("impure")
-            attribstr = re.sub("impure", "", attribstr, 0, re.IGNORECASE)
-        if attribstr.lower().find("pure") >= 0:
-            self.attribs.append("pure")
-            attribstr = re.sub("pure", "", attribstr, 0, re.IGNORECASE)
-        if attribstr.lower().find("elemental") >= 0:
-            self.attribs.append("elemental")
-            attribstr = re.sub("elemental", "", attribstr, 0, re.IGNORECASE)
-        if attribstr.lower().find("non_recursive") >= 0:
-            self.attribs.append("non_recursive")
-            attribstr = re.sub("non_recursive", "", attribstr, 0, re.IGNORECASE)
-        if attribstr.lower().find("recursive") >= 0:
-            self.attribs.append("recursive")
-            attribstr = re.sub("recursive", "", attribstr, 0, re.IGNORECASE)
-        if attribstr.lower().find("module") >= 0:
-            self.module = True
-            attribstr = re.sub("module", "", attribstr, 0, re.IGNORECASE)
-        attribstr = re.sub(" ", "", attribstr)
+
+        self.attribs, attribstr = _list_of_procedure_attributes(attribstr)
+        self.module = "module" in self.attribs
+
         if line.group(4):
             self.retvar = line.group(4)
         else:
@@ -2481,10 +2020,19 @@ class FortranEnum(FortranContainer):
         for var in self.variables:
             if not var.initial:
                 var.initial = prev_val + 1
+
+            initial = (
+                remove_kind_suffix(var.initial)
+                if isinstance(var.initial, str)
+                else var.initial
+            )
+
             try:
-                prev_val = int(var.initial)
+                prev_val = int(initial)
             except ValueError:
-                raise Exception("Non-integer assigned to enumerator.")
+                raise ValueError(
+                    f"Non-integer ('{var.initial}') assigned to enumerator '{var.name}'."
+                )
 
 
 class FortranInterface(FortranContainer):
@@ -3128,6 +2676,17 @@ _can_have_contains = [
 ]
 
 
+def remove_kind_suffix(literal, is_character: bool = False):
+    """Return the literal without the kind suffix of a numerical literal,
+    or the kind prefix of a character literal"""
+
+    kind_re = CHAR_KIND_SUFFIX_RE if is_character else KIND_SUFFIX_RE
+    kind_suffix = kind_re.match(literal)
+    if kind_suffix:
+        return kind_suffix.group("initial")
+    return literal
+
+
 def line_to_variables(source, line, inherit_permission, parent):
     """
     Returns a list of variables declared in the provided line of code. The
@@ -3279,55 +2838,63 @@ def parse_type(string, capture_strings, settings):
         and not kindstr.startswith("*")
     ):
         return (vartype, None, None, None, rest)
+
     match = VARKIND_RE.search(kindstr)
-    if match:
-        if match.group(1):
-            star = False
-            args = match.group(1).strip()
-        else:
-            star = True
-            args = match.group(2).strip()
-            if args.startswith("("):
-                args = args[1:-1].strip()
+    if not match:
+        raise ValueError(
+            "Bad declaration of variable type {}: {}".format(vartype, string)
+        )
 
-        args = re.sub(r"\s", "", args)
-        if vartype == "type" or vartype == "class" or vartype == "procedure":
-            PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
-            try:
-                proto = list(PROTO_RE.match(args).groups())
-                if not proto[1]:
-                    proto[1] = ""
-            except AttributeError:
-                raise Exception(
-                    "Bad type, class, or procedure prototype specification: {}".format(
-                        args
-                    )
-                )
-            return (vartype, None, None, proto, rest)
-        elif vartype == "character":
-            if star:
-                return (vartype, None, args, None, rest)
-            else:
-                kind = None
-                length = None
-                if KIND_RE.search(args):
-                    kind = KIND_RE.sub("", args)
-                    try:
-                        match = QUOTES_RE.search(kind)
-                        num = int(match.group()[1:-1])
-                        kind = QUOTES_RE.sub(capture_strings[num], kind)
-                    except AttributeError:
-                        pass
-                elif LEN_RE.search(args):
-                    length = LEN_RE.sub("", args)
-                else:
-                    length = args
-                return (vartype, kind, length, None, rest)
-        else:
-            kind = KIND_RE.sub("", args)
-            return (vartype, kind, None, None, rest)
+    if match.group(1):
+        star = False
+        args = match.group(1).strip()
+    else:
+        star = True
+        args = match.group(2).strip()
+        if args.startswith("("):
+            args = args[1:-1].strip()
 
-    raise Exception("Bad declaration of variable type {}: {}".format(vartype, string))
+    args = re.sub(r"\s", "", args)
+    if vartype == "type" or vartype == "class" or vartype == "procedure":
+        PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
+        try:
+            proto = list(PROTO_RE.match(args).groups())
+            if not proto[1]:
+                proto[1] = ""
+        except AttributeError:
+            raise Exception(
+                "Bad type, class, or procedure prototype specification: {}".format(args)
+            )
+        return (vartype, None, None, proto, rest)
+    elif vartype == "character":
+        if star:
+            return (vartype, None, args, None, rest)
+
+        args = args.split(",")
+
+        for arg in args:
+            kind = KIND_RE.match(arg)
+            if kind:
+                kind = kind.group(1)
+                try:
+                    match = QUOTES_RE.search(kind)
+                    num = int(match.group()[1:-1])
+                    kind = QUOTES_RE.sub(capture_strings[num], kind)
+                except AttributeError:
+                    pass
+                break
+
+        for arg in args:
+            length = LEN_RE.match(arg)
+            if length:
+                length = length.group(1) or length.group(2)
+                break
+
+        return (vartype, kind, length, None, rest)
+    else:
+        kind = KIND_RE.match(args)
+        kind = kind.group(1) if kind else args
+        return (vartype, kind, None, None, rest)
 
 
 def set_base_url(url):

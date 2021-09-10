@@ -1,16 +1,16 @@
-from ford.sourceform import FortranSourceFile, FortranModule
+from ford.sourceform import FortranSourceFile, FortranModule, parse_type
 
 from collections import defaultdict
+from dataclasses import dataclass
+from typing import Union
 
 import pytest
 
 
 @pytest.fixture
-def parse_fortran_file(tmp_path):
+def parse_fortran_file(copy_fortran_file):
     def parse_file(data):
-        filename = tmp_path / "test.f90"
-        with open(filename, "w") as f:
-            f.write(data)
+        filename = copy_fortran_file(data)
         settings = defaultdict(str)
         settings["docmark"] = "!"
         settings["encoding"] = "utf-8"
@@ -201,6 +201,9 @@ def test_component_access(parse_fortran_file):
 
 
 def test_format_statement(parse_fortran_file):
+    """No function calls in `format` statements are allowed, so don't
+    confuse them with format specifiers. Issue #350"""
+
     data = """\
     program test_format_statement
       implicit none
@@ -211,6 +214,36 @@ def test_format_statement(parse_fortran_file):
 
     fortran_file = parse_fortran_file(data)
     assert fortran_file.programs[0].calls == []
+
+
+def test_enumerator_with_kind(parse_fortran_file):
+    """Checking enumerators with specified kind, issue #293"""
+
+    data = """\
+    module some_enums
+      use, intrinsic :: iso_fortran_env, only : int32
+      enum, bind(c)
+        enumerator :: item1, item2
+        enumerator :: list1 = 100_int32, list2
+        enumerator :: fixed_item1 = 0, fixed_item2
+      end enum
+    end module some_enums
+    """
+
+    fortran_file = parse_fortran_file(data)
+    enum = fortran_file.modules[0].enums[0]
+    assert enum.variables[0].name == "item1"
+    assert enum.variables[0].initial == 0
+    assert enum.variables[1].name == "item2"
+    assert enum.variables[1].initial == 1
+    assert enum.variables[2].name == "list1"
+    assert enum.variables[2].initial == "100_int32"
+    assert enum.variables[3].name == "list2"
+    assert enum.variables[3].initial == 101
+    assert enum.variables[4].name == "fixed_item1"
+    assert enum.variables[4].initial == "0"
+    assert enum.variables[5].name == "fixed_item2"
+    assert enum.variables[5].initial == 1
 
 
 class FakeModule(FortranModule):
@@ -273,3 +306,339 @@ def test_module_get_used_entities_rename():
     assert interfaces == {}
     assert types == {}
     assert variables == {"x": mod_variables["x"]}
+
+
+def test_module_default_access(parse_fortran_file):
+    data = """\
+    module default_access
+      ! No access keyword
+      integer :: int_public, int_private
+      private :: int_private
+      real :: real_public
+      real, private :: real_private
+
+      type :: type_public
+        complex :: component_public
+        complex, private :: component_private
+      end type type_public
+
+      type :: type_private
+        character(len=1) :: string_public
+        character(len=1), private :: string_private
+      end type type_private
+
+      private :: sub_private, func_private, type_private
+
+    contains
+      subroutine sub_public
+      end subroutine sub_public
+
+      subroutine sub_private
+      end subroutine sub_private
+
+      integer function func_public()
+      end function func_public
+
+      integer function func_private()
+      end function func_private
+    end module default_access
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_file.modules[0].correlate(None)
+
+    assert set(fortran_file.modules[0].all_procs.keys()) == {
+        "sub_public",
+        "func_public",
+        "sub_private",
+        "func_private",
+    }
+    assert set(fortran_file.modules[0].pub_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(fortran_file.modules[0].all_types.keys()) == {
+        "type_public",
+        "type_private",
+    }
+    assert set(fortran_file.modules[0].pub_types.keys()) == {
+        "type_public",
+    }
+    assert set(fortran_file.modules[0].all_vars.keys()) == {
+        "int_public",
+        "int_private",
+        "real_public",
+        "real_private",
+    }
+    assert set(fortran_file.modules[0].pub_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }
+
+
+def test_module_public_access(parse_fortran_file):
+    data = """\
+    module public_access
+      public
+      integer :: int_public, int_private
+      private :: int_private
+      real :: real_public
+      real, private :: real_private
+
+      type :: type_public
+        complex :: component_public
+        complex, private :: component_private
+      end type type_public
+
+      type :: type_private
+        character(len=1) :: string_public
+        character(len=1), private :: string_private
+      end type type_private
+
+      private :: sub_private, func_private, type_private
+
+    contains
+      subroutine sub_public
+      end subroutine sub_public
+
+      subroutine sub_private
+      end subroutine sub_private
+
+      integer function func_public()
+      end function func_public
+
+      integer function func_private()
+      end function func_private
+    end module public_access
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_file.modules[0].correlate(None)
+
+    assert set(fortran_file.modules[0].all_procs.keys()) == {
+        "sub_public",
+        "func_public",
+        "sub_private",
+        "func_private",
+    }
+    assert set(fortran_file.modules[0].pub_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(fortran_file.modules[0].all_types.keys()) == {
+        "type_public",
+        "type_private",
+    }
+    assert set(fortran_file.modules[0].pub_types.keys()) == {
+        "type_public",
+    }
+    assert set(fortran_file.modules[0].all_vars.keys()) == {
+        "int_public",
+        "int_private",
+        "real_public",
+        "real_private",
+    }
+    assert set(fortran_file.modules[0].pub_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }
+
+
+def test_module_private_access(parse_fortran_file):
+    data = """\
+    module private_access
+      private
+      integer :: int_public, int_private
+      public :: int_public
+      real :: real_private
+      real, public :: real_public
+
+      type :: type_public
+        complex :: component_public
+        complex, private :: component_private
+      end type type_public
+
+      type :: type_private
+        character(len=1) :: string_public
+        character(len=1), private :: string_private
+      end type type_private
+
+      public :: sub_public, func_public, type_public
+
+    contains
+      subroutine sub_public
+      end subroutine sub_public
+
+      subroutine sub_private
+      end subroutine sub_private
+
+      integer function func_public()
+      end function func_public
+
+      integer function func_private()
+      end function func_private
+    end module private_access
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_file.modules[0].correlate(None)
+
+    assert set(fortran_file.modules[0].all_procs.keys()) == {
+        "sub_public",
+        "func_public",
+        "sub_private",
+        "func_private",
+    }
+    assert set(fortran_file.modules[0].pub_procs.keys()) == {
+        "sub_public",
+        "func_public",
+    }
+    assert set(fortran_file.modules[0].all_types.keys()) == {
+        "type_public",
+        "type_private",
+    }
+    assert set(fortran_file.modules[0].pub_types.keys()) == {
+        "type_public",
+    }
+    assert set(fortran_file.modules[0].all_vars.keys()) == {
+        "int_public",
+        "int_private",
+        "real_public",
+        "real_private",
+    }
+    assert set(fortran_file.modules[0].pub_vars.keys()) == {
+        "int_public",
+        "real_public",
+    }
+
+
+def test_module_procedure_case(parse_fortran_file):
+    """Check that submodule procedures in interface blocks are parsed correctly. Issue #353"""
+    data = """\
+    module a
+      implicit none
+      interface
+        MODULE SUBROUTINE square( x )
+          integer, intent(inout):: x
+        END SUBROUTINE square
+        module subroutine cube( x )
+          integer, intent(inout):: x
+        end subroutine cube
+        MODULE FUNCTION square_func( x )
+          integer, intent(in):: x
+        END FUNCTION square_func
+        module function cube_func( x )
+          integer, intent(inout):: x
+        end function cube_func
+      end interface
+    end module a
+
+    submodule (a) b
+      implicit none
+    contains
+      MODULE PROCEDURE square
+        x = x * x
+      END PROCEDURE square
+      module PROCEDURE cube
+        x = x * x * x
+      END PROCEDURE cube
+      MODULE PROCEDURE square_func
+        square_func = x * x
+      END PROCEDURE square_func
+      module procedure cube_func
+        cube_func = x * x * x
+      end procedure cube_func
+    end submodule b
+    """
+
+    fortran_file = parse_fortran_file(data)
+    module = fortran_file.modules[0]
+    assert len(module.interfaces) == 4
+    assert module.interfaces[0].procedure.module
+    assert module.interfaces[1].procedure.module
+    assert module.interfaces[2].procedure.module
+    assert module.interfaces[3].procedure.module
+
+
+@dataclass
+class ParsedType:
+    vartype: str
+    kind: Union[None, str]
+    strlen: Union[None, str]
+    proto: Union[None, str]
+    rest: str
+
+
+@pytest.mark.parametrize(
+    ["variable_decl", "expected"],
+    [
+        ("integer i", ParsedType("integer", None, None, None, "i")),
+        ("integer :: i", ParsedType("integer", None, None, None, ":: i")),
+        ("integer ( int32 ) :: i", ParsedType("integer", "int32", None, None, ":: i")),
+        ("real r", ParsedType("real", None, None, None, "r")),
+        ("real(real64) r", ParsedType("real", "real64", None, None, "r")),
+        (
+            "REAL( KIND  =  8) :: r, x, y",
+            ParsedType("real", "8", None, None, ":: r, x, y"),
+        ),
+        (
+            "REAL( 8 ) :: r, x, y",
+            ParsedType("real", "8", None, None, ":: r, x, y"),
+        ),
+        (
+            "complex*16 znum",
+            ParsedType("complex", "16", None, None, "znum"),
+        ),
+        (
+            "character(len=*) :: string",
+            ParsedType("character", None, "*", None, ":: string"),
+        ),
+        (
+            "character(len=:) :: string",
+            ParsedType("character", None, ":", None, ":: string"),
+        ),
+        (
+            "character(12) :: string",
+            ParsedType("character", None, "12", None, ":: string"),
+        ),
+        (
+            "character(LEN=12) :: string",
+            ParsedType("character", None, "12", None, ":: string"),
+        ),
+        (
+            "CHARACTER(KIND=kanji,  len =12) :: string",
+            ParsedType("character", "kanji", "12", None, ":: string"),
+        ),
+        (
+            "CHARACTER(  len =   12,KIND=kanji) :: string",
+            ParsedType("character", "kanji", "12", None, ":: string"),
+        ),
+        (
+            "CHARACTER(  kind=    kanji) :: string",
+            ParsedType("character", "kanji", None, None, ":: string"),
+        ),
+        ("double PRECISION dp", ParsedType("double precision", None, None, None, "dp")),
+        ("DOUBLE   complex dc", ParsedType("double complex", None, None, None, "dc")),
+        (
+            "type(something) :: thing",
+            ParsedType("type", None, None, ["something", ""], ":: thing"),
+        ),
+        (
+            "class(foo) :: thing",
+            ParsedType("class", None, None, ["foo", ""], ":: thing"),
+        ),
+        (
+            "procedure(bar) :: thing",
+            ParsedType("procedure", None, None, ["bar", ""], ":: thing"),
+        ),
+    ],
+)
+def test_parse_type(variable_decl, expected):
+    vartype, kind, strlen, proto, rest = parse_type(
+        variable_decl, [], {"extra_vartypes": []}
+    )
+    assert vartype == expected.vartype
+    assert kind == expected.kind
+    assert strlen == expected.strlen
+    assert proto == expected.proto
+    assert rest == expected.rest
