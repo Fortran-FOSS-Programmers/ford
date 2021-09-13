@@ -118,9 +118,7 @@ def get_page_tree(topdir, proj_copy_subdir, md, parent=None):
 
     # process index.md
     try:
-        node = PageNode(
-            md, os.path.join(topdir, "index.md"), proj_copy_subdir, parent
-        )
+        node = PageNode(md, os.path.join(topdir, "index.md"), proj_copy_subdir, parent)
     except Exception as e:
         print(
             "Warning: Error parsing {}.\n\t{}".format(
