@@ -34,10 +34,8 @@ class PageNode(object):
 
     def __init__(self, md, path, proj_copy_subdir, parent):
         print("Reading page {}".format(os.path.relpath(path)))
-        page = open(path, "r")
-        text = page.read()
-        page.close()
-        text = md.convert(text)
+        with open(path, "r") as page:
+            text = md.reset().convert(page.read())
 
         if "title" in md.Meta:
             self.title = "\n".join(md.Meta["title"])
