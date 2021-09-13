@@ -324,10 +324,8 @@ class FortranBase(object):
                     self.doc.insert(0, "")
                 self.doc.append("")
             self.doc = "\n".join(self.doc)
-            self.doc = md.convert(self.doc)
+            self.doc = md.reset().convert(self.doc)
             self.meta = md.Meta
-            md.reset()
-            md.Meta = {}
         else:
             if (
                 self.settings["warn"].lower() == "true"

@@ -278,11 +278,11 @@ FORD will look in the provided paths for a modules.json file.
         output_format="html5",
         extension_configs={"markdown_include.include": {"base_path": md_base}},
     )
-    md.reset()
+
     # Re-read the project file
-    proj_docs = md.convert(proj_docs)
+    proj_docs = md.reset().convert(proj_docs)
     proj_data = md.Meta
-    md.reset()
+
     # Get the default options, and any over-rides, straightened out
     options = [
         "src_dir",
@@ -603,7 +603,6 @@ FORD will look in the provided paths for a modules.json file.
 
     # Return project data, docs, and the Markdown reader
     md.reset()
-    md.Meta = {}
     return (proj_data, proj_docs, md)
 
 
