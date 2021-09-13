@@ -199,8 +199,9 @@ class Project(object):
 
         non_local_mods = INTRINSIC_MODS
         for item in self.settings["extra_mods"]:
-            i = item.index(":")
-            if i < 0:
+            try:
+                i = item.index(":")
+            except ValueError:
                 print('Warning: could not parse extra modules "{}"'.format(item))
                 continue
             name = item[:i].strip()
