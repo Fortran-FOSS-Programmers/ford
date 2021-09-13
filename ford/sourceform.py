@@ -26,6 +26,7 @@ import sys
 import re
 import os.path
 import copy
+import textwrap
 from typing import List
 
 # Python 2 or 3:
@@ -303,6 +304,10 @@ class FortranBase(object):
         Process the documentation with Markdown to produce HTML.
         """
         if len(self.doc) > 0:
+            # Remove any common leading whitespace from the docstring
+            # so that the markdown conversion is a bit more robust
+            self.doc = textwrap.dedent("\n".join(self.doc)).splitlines()
+
             if len(self.doc) == 1 and ":" in self.doc[0]:
                 words = self.doc[0].split(":")[0].strip()
                 if words.lower() not in [
@@ -319,10 +324,8 @@ class FortranBase(object):
                     self.doc.insert(0, "")
                 self.doc.append("")
             self.doc = "\n".join(self.doc)
-            self.doc = md.convert(self.doc)
+            self.doc = md.reset().convert(self.doc)
             self.meta = md.Meta
-            md.reset()
-            md.Meta = {}
         else:
             if (
                 self.settings["warn"].lower() == "true"

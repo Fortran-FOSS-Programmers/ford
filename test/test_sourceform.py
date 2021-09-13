@@ -4,6 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Union
 
+import markdown
 import pytest
 
 
@@ -642,3 +643,101 @@ def test_parse_type(variable_decl, expected):
     assert strlen == expected.strlen
     assert proto == expected.proto
     assert rest == expected.rest
+
+
+def test_markdown_header_bug286(parse_fortran_file):
+    """Check that markdown headers work, issue #286"""
+    data = """\
+    module myModule
+    contains
+      subroutine printSquare(x)
+        !! ## My Header
+        !! This should be one section, but the header doesn't work
+        integer, intent(in) :: x
+        write(*,*) x*x
+      end subroutine printSquare
+    end module myModule
+    """
+
+    fortran_file = parse_fortran_file(data)
+    md_ext = [
+        "markdown.extensions.meta",
+        "markdown.extensions.codehilite",
+        "markdown.extensions.extra",
+    ]
+    md = markdown.Markdown(
+        extensions=md_ext, output_format="html5", extension_configs={}
+    )
+
+    subroutine = fortran_file.modules[0].subroutines[0]
+    subroutine.markdown(md, None)
+
+    assert subroutine.doc.startswith("<h2>My Header</h2>")
+
+
+def test_markdown_codeblocks_bug286(parse_fortran_file):
+    """Check that markdown codeblocks work, issue #287"""
+    data = """\
+    module myModule
+    contains
+      subroutine printSquare(x)
+        !! This codeblock should not be inline:
+        !! ```
+        !! printSquare(4)
+        !! ```
+        integer, intent(in) :: x
+        write(*,*) x*x
+      end subroutine printSquare
+    end module myModule
+    """
+
+    fortran_file = parse_fortran_file(data)
+    md_ext = [
+        "markdown.extensions.meta",
+        "markdown.extensions.codehilite",
+        "markdown.extensions.extra",
+    ]
+    md = markdown.Markdown(
+        extensions=md_ext, output_format="html5", extension_configs={}
+    )
+
+    subroutine = fortran_file.modules[0].subroutines[0]
+    subroutine.markdown(md, None)
+
+    assert "<code>printSquare(4)" in subroutine.doc
+    assert "<div" in subroutine.doc
+
+
+def test_markdown_meta_reset(parse_fortran_file):
+    """Check that markdown metadata is reset between entities"""
+    data = """\
+    module myModule
+      !! version: 0.1.0
+    contains
+      subroutine printSquare(x)
+        !! author: Test name
+        integer, intent(in) :: x
+        write(*,*) x*x
+      end subroutine printSquare
+      subroutine printCube(x)
+        integer, intent(in) :: x
+        write(*,*) x*x*x
+      end subroutine printCube
+    end module myModule
+    """
+
+    fortran_file = parse_fortran_file(data)
+    md_ext = [
+        "markdown.extensions.meta",
+        "markdown.extensions.codehilite",
+        "markdown.extensions.extra",
+    ]
+    md = markdown.Markdown(
+        extensions=md_ext, output_format="html5", extension_configs={}
+    )
+
+    module = fortran_file.modules[0]
+    module.markdown(md, None)
+    assert module.meta["version"] == "0.1.0"
+    assert module.subroutines[0].meta["author"] == "Test name"
+    assert "author" not in module.subroutines[1].meta

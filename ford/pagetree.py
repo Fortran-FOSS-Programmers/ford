@@ -34,10 +34,8 @@ class PageNode(object):
 
     def __init__(self, md, path, proj_copy_subdir, parent):
         print("Reading page {}".format(os.path.relpath(path)))
-        page = open(path, "r")
-        text = page.read()
-        page.close()
-        text = md.convert(text)
+        with open(path, "r") as page:
+            text = md.reset().convert(page.read())
 
         if "title" in md.Meta:
             self.title = "\n".join(md.Meta["title"])
@@ -114,23 +112,22 @@ def get_page_tree(topdir, proj_copy_subdir, md, parent=None):
 
     # look for files within topdir
     filelist = sorted(os.listdir(topdir))
-    if "index.md" in filelist:
-        # process index.md
-        try:
-            node = PageNode(
-                md, os.path.join(topdir, "index.md"), proj_copy_subdir, parent
-            )
-        except Exception as e:
-            print(
-                "Warning: Error parsing {}.\n\t{}".format(
-                    os.path.relpath(os.path.join(topdir, "index.md")), e.args[0]
-                )
-            )
-            return None
-        filelist.remove("index.md")
-    else:
-        print("Warning: No index.md file in directory {}".format(topdir))
+    if "index.md" not in filelist:
+        print(f"Warning: No index.md file in directory {topdir}")
         return None
+
+    # process index.md
+    try:
+        node = PageNode(md, os.path.join(topdir, "index.md"), proj_copy_subdir, parent)
+    except Exception as e:
+        print(
+            "Warning: Error parsing {}.\n\t{}".format(
+                os.path.relpath(os.path.join(topdir, "index.md")), e.args[0]
+            )
+        )
+        return None
+    filelist.remove("index.md")
+
     if node.ordered_subpages:
         # Merge user given files and all files in folder, removing duplicates.
         mergedfilelist = list(OrderedDict.fromkeys(node.ordered_subpages + filelist))
