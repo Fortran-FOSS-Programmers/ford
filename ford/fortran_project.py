@@ -197,7 +197,7 @@ class Project(object):
 
         print("Correlating information from different parts of your project...")
 
-        non_local_mods = INTRINSIC_MODS
+        non_local_mods = INTRINSIC_MODS.copy()
         for item in self.settings["extra_mods"]:
             try:
                 i = item.index(":")
