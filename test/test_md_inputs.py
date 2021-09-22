@@ -16,6 +16,7 @@ def test_extra_mods_empty(
     end module test
     """
     settings = """\
+    search: false
     extra_mods:
     """
 
@@ -37,6 +38,7 @@ def test_extra_mods_intrinsic(
     end module test
     """
     settings = """\
+    search: false
     extra_mods: dummy: dummy_module
     """
     # Initial value of intrinsic mods
