@@ -1,8 +1,10 @@
 import shutil
+import sys
 import os
 import pathlib
 import re
-import subprocess
+
+import ford
 
 from bs4 import BeautifulSoup
 import pytest
@@ -17,7 +19,7 @@ def copy_project_files(tmp_path):
     return tmp_path / "external_project"
 
 
-def test_external_project(copy_project_files):
+def test_external_project(copy_project_files, monkeypatch, restore_macros):
     """Check that we can build external projects and get the links correct
 
     This is a rough-and-ready test that runs FORD via subprocess, and
@@ -31,11 +33,16 @@ def test_external_project(copy_project_files):
 
     # Run FORD in the two projects
     # First project has "externalize: True" and will generate JSON dump
-    os.chdir(external_project)
-    subprocess.run(["ford", "doc.md"], check=True)
+    with monkeypatch.context() as m:
+        os.chdir(external_project)
+        m.setattr(sys, "argv", ["ford", "doc.md"])
+        ford.run()
+
     # Second project uses JSON from first to link to external modules
-    os.chdir(top_level_project)
-    subprocess.run(["ford", "doc.md"], check=True)
+    with monkeypatch.context() as m:
+        os.chdir(top_level_project)
+        m.setattr(sys, "argv", ["ford", "doc.md"])
+        ford.run()
 
     # Read generated HTML
     with open(top_level_project / "doc/program/top_level.html", "r") as f:
