@@ -1,14 +1,6 @@
-import copy
 import pytest
 
 import ford
-
-
-@pytest.fixture
-def restore_macros():
-    old_macros = copy.copy(ford.utils._MACRO_DICT)
-    yield
-    ford.utils._MACRO_DICT = copy.copy(old_macros)
 
 
 def test_sub_macro(restore_macros):

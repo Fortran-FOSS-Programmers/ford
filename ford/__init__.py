@@ -620,18 +620,6 @@ def main(proj_data, proj_docs, md):
         )
         sys.exit(1)
 
-    # Convert the documentation from Markdown to HTML. Make sure to properly
-    # handle LateX and metadata.
-    if proj_data["relative"]:
-        project.markdown(md, "..")
-    else:
-        project.markdown(md, proj_data["project_url"])
-    project.correlate()
-    if proj_data["relative"]:
-        project.make_links("..")
-    else:
-        project.make_links(proj_data["project_url"])
-
     # Define core macros:
     ford.utils.register_macro("url = {0}".format(proj_data["project_url"]))
     ford.utils.register_macro(
@@ -644,6 +632,18 @@ def main(proj_data, proj_docs, md):
     # Register the user defined aliases:
     for alias in proj_data["alias"]:
         ford.utils.register_macro(alias)
+
+    # Convert the documentation from Markdown to HTML. Make sure to properly
+    # handle LateX and metadata.
+    if proj_data["relative"]:
+        project.markdown(md, "..")
+    else:
+        project.markdown(md, proj_data["project_url"])
+    project.correlate()
+    if proj_data["relative"]:
+        project.make_links("..")
+    else:
+        project.make_links(proj_data["project_url"])
 
     # Convert summaries and descriptions to HTML
     if proj_data["relative"]:
