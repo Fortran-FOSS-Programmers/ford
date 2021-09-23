@@ -373,7 +373,7 @@ class FortranBase(object):
 
         self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc))
 
-        if "summary" in self.meta:
+        if self.meta.get("summary", None) is not None:
             self.meta["summary"] = md.convert(self.meta["summary"])
             self.meta["summary"] = ford.utils.sub_macros(
                 ford.utils.sub_notes(self.meta["summary"])
@@ -507,7 +507,7 @@ class FortranBase(object):
         Process intra-site links to documentation of other parts of the program.
         """
         self.doc = ford.utils.sub_links(self.doc, project)
-        if "summary" in self.meta:
+        if self.meta["summary"] is not None:
             self.meta["summary"] = ford.utils.sub_links(self.meta["summary"], project)
 
         # Create links in the project

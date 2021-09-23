@@ -303,88 +303,36 @@ FORD will look in the provided paths for a modules.json file.
     proj_data = md.Meta
 
     # Get the default options, and any over-rides, straightened out
-    options = [
-        "src_dir",
-        "extensions",
-        "fpp_extensions",
-        "fixed_extensions",
-        "output_dir",
-        "css",
-        "exclude",
-        "external",
-        "externalize",
-        "project",
-        "author",
-        "author_description",
-        "author_pic",
-        "summary",
-        "github",
-        "gitlab",
-        "bitbucket",
-        "facebook",
-        "twitter",
-        "google_plus",
-        "linkedin",
-        "email",
-        "website",
-        "project_github",
-        "project_gitlab",
-        "project_bitbucket",
-        "project_website",
-        "project_download",
-        "project_sourceforge",
-        "project_url",
-        "doc_license",
-        "display",
-        "hide_undoc",
-        "version",
-        "year",
-        "docmark",
-        "predocmark",
-        "docmark_alt",
-        "predocmark_alt",
-        "media_dir",
-        "favicon",
-        "warn",
-        "extra_vartypes",
-        "page_dir",
-        "privacy_policy_url",
-        "terms_of_service_url",
-        "incl_src",
-        "force",
-        "copy_subdir",
-        "alias",
-        "source",
-        "exclude_dir",
-        "macro",
-        "include",
-        "preprocess",
-        "quiet",
-        "search",
-        "lower",
-        "sort",
-        "extra_mods",
-        "dbg",
-        "graph",
-        "graph_maxdepth",
-        "graph_maxnodes",
-        "license",
-        "extra_filetypes",
-        "preprocessor",
-        "creation_date",
-        "print_creation_date",
-        "proc_internals",
-        "coloured_edges",
-        "graph_dir",
-        "gitter_sidecar",
-        "mathjax_config",
-        "parallel",
-        "revision",
-        "fixed_length_limit",
-        "max_frontpage_items",
-        "encoding",
-    ]
     defaults = {
+        "css": None,
+        "author": None,
+        "author_description": None,
+        "author_pic": None,
+        "summary": None,
+        "github": None,
+        "gitlab": None,
+        "bitbucket": None,
+        "facebook": None,
+        "twitter": None,
+        "google_plus": None,
+        "linkedin": None,
+        "email": None,
+        "website": None,
+        "project_github": None,
+        "project_gitlab": None,
+        "project_bitbucket": None,
+        "project_website": None,
+        "project_download": None,
+        "project_sourceforge": None,
+        "version": None,
+        "media_dir": None,
+        "page_dir": None,
+        "privacy_policy_url": None,
+        "terms_of_service_url": None,
+        "graph_dir": None,
+        "gitter_sidecar": None,
+        "mathjax_config": None,
+        "revision": None,
         "src_dir": ["./src"],
         "extensions": ["f90", "f95", "f03", "f08", "f15"],
         "fpp_extensions": ["F90", "F95", "F03", "F08", "F15", "F", "FOR"],
@@ -437,7 +385,7 @@ FORD will look in the provided paths for a modules.json file.
         "encoding": "utf-8",
     }
 
-    for option in options:
+    for option, default in defaults.items():
         if hasattr(args, option) and getattr(args, option) is not None:
             proj_data[option] = getattr(args, option)
         elif option in proj_data:
@@ -447,8 +395,8 @@ FORD will look in the provided paths for a modules.json file.
                 proj_data[option] = convert_to_bool(option, proj_data[option])
             elif not isinstance(default_type, list):
                 proj_data[option] = "\n".join(proj_data[option])
-        elif option in defaults:
-            proj_data[option] = defaults[option]
+        else:
+            proj_data[option] = default
 
     # Evaluate paths relative to project file location
     base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
@@ -469,7 +417,7 @@ FORD will look in the provided paths for a modules.json file.
         "css",
         "mathjax_config",
     ]:
-        if var in proj_data:
+        if proj_data[var] is not None:
             proj_data[var] = os.path.normpath(
                 os.path.join(
                     base_dir, os.path.expanduser(os.path.expandvars(proj_data[var]))
@@ -537,7 +485,7 @@ FORD will look in the provided paths for a modules.json file.
         print("Error: predocmark and predocmark_alt are the same.")
         sys.exit(1)
     # Add gitter sidecar if specified in metadata
-    if "gitter_sidecar" in proj_data:
+    if proj_data["gitter_sidecar"] is not None:
         proj_docs += """
         <script>
             ((window.gitter = {{}}).chat = {{}}).options = {{
@@ -637,12 +585,12 @@ def main(proj_data, proj_docs, md):
     # Convert summaries and descriptions to HTML
     if proj_data["relative"]:
         ford.sourceform.set_base_url(".")
-    if "summary" in proj_data:
+    if proj_data["summary"] is not None:
         proj_data["summary"] = md.convert(proj_data["summary"])
         proj_data["summary"] = ford.utils.sub_links(
             ford.utils.sub_macros(ford.utils.sub_notes(proj_data["summary"])), project
         )
-    if "author_description" in proj_data:
+    if proj_data["author_description"] is not None:
         proj_data["author_description"] = md.convert(proj_data["author_description"])
         proj_data["author_description"] = ford.utils.sub_links(
             ford.utils.sub_macros(
@@ -654,7 +602,7 @@ def main(proj_data, proj_docs, md):
         ford.utils.sub_macros(ford.utils.sub_notes(proj_docs)), project
     )
     # Process any pages
-    if "page_dir" in proj_data:
+    if proj_data["page_dir"] is not None:
         page_tree = ford.pagetree.get_page_tree(
             os.path.normpath(proj_data["page_dir"]), proj_data["copy_subdir"], md
         )
