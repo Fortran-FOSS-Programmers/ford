@@ -118,6 +118,20 @@ LICENSES = {
 }
 
 
+def convert_to_bool(name, option):
+    """Convert value 'option' to a bool, with a nice error message on failure"""
+    if len(option) > 1:
+        raise ValueError(
+            f"Could not convert option '{name}' to bool: expected a single value but got a list ({option})"
+        )
+    try:
+        return ford.utils.str_to_bool(option[0])
+    except ValueError:
+        raise ValueError(
+            f"Could not convert option '{name}' to bool: expected 'true'/'false', got: {option[0]}"
+        )
+
+
 def initialize():
     """
     Method to parse and check configurations of FORD, get the project's
@@ -188,6 +202,7 @@ def initialize():
         "--warn",
         dest="warn",
         action="store_true",
+        default=None,
         help="display warnings for undocumented items",
     )
     parser.add_argument(
@@ -195,12 +210,14 @@ def initialize():
         "--force",
         dest="force",
         action="store_true",
+        default=None,
         help="continue to read file if fatal errors",
     )
     parser.add_argument(
         "--no-search",
         dest="search",
         action="store_false",
+        default=None,
         help="don't process documentation to produce a search feature",
     )
     parser.add_argument(
@@ -208,6 +225,7 @@ def initialize():
         "--quiet",
         dest="quiet",
         action="store_true",
+        default=None,
         help="do not print any description of progress",
     )
     parser.add_argument(
@@ -220,6 +238,7 @@ def initialize():
         "--debug",
         dest="dbg",
         action="store_true",
+        default=None,
         help="display traceback if fatal exception occurs and print faulty line",
     )
     parser.add_argument(
@@ -374,13 +393,13 @@ FORD will look in the provided paths for a modules.json file.
         "project": "Fortran Program",
         "project_url": "",
         "display": ["public", "protected"],
-        "hide_undoc": "false",
+        "hide_undoc": False,
         "year": date.today().year,
         "exclude": [],
         "exclude_dir": [],
         "copy_subdir": [],
         "external": [],
-        "externalize": "false",
+        "externalize": False,
         "docmark": "!",
         "docmark_alt": "*",
         "predocmark": ">",
@@ -388,32 +407,32 @@ FORD will look in the provided paths for a modules.json file.
         "alias": [],
         "favicon": "default-icon",
         "extra_vartypes": [],
-        "incl_src": "true",
-        "source": "false",
+        "incl_src": True,
+        "source": False,
         "macro": [],
         "include": [],
-        "preprocess": "true",
+        "preprocess": True,
         "preprocessor": "",
-        "proc_internals": "false",
-        "warn": "false",
-        "force": "false",
-        "quiet": "false",
-        "search": "true",
-        "lower": "false",
+        "proc_internals": False,
+        "warn": False,
+        "force": False,
+        "quiet": False,
+        "search": True,
+        "lower": False,
         "sort": "src",
         "extra_mods": [],
         "dbg": True,
-        "graph": "false",
+        "graph": False,
         "graph_maxdepth": "10000",
         "graph_maxnodes": "1000000000",
         "license": "",
         "doc_license": "",
         "extra_filetypes": [],
         "creation_date": "%Y-%m-%dT%H:%M:%S.%f%z",
-        "print_creation_date": "false",
-        "coloured_edges": "false",
+        "print_creation_date": False,
+        "coloured_edges": False,
         "parallel": ncpus,
-        "fixed_length_limit": "true",
+        "fixed_length_limit": True,
         "max_frontpage_items": 10,
         "encoding": "utf-8",
     }
@@ -434,33 +453,20 @@ FORD will look in the provided paths for a modules.json file.
         "copy_subdir",
         "alias",
     ]
-    # Evaluate paths relative to project file location
-    if args.warn:
-        args.warn = "true"
-    else:
-        del args.warn
-    if args.force:
-        args.force = "true"
-    else:
-        del args.force
-    if args.quiet:
-        args.quiet = "true"
-    else:
-        del args.quiet
-    if not args.search:
-        args.search = "false"
-    else:
-        del args.search
+
     for option in options:
-        if hasattr(args, option) and getattr(args, option):
+        if hasattr(args, option) and getattr(args, option) is not None:
             proj_data[option] = getattr(args, option)
         elif option in proj_data:
             # Think if there is a safe  way to evaluate any expressions found in this list
-            # proj_data[option] = proj_data[option]
-            if option not in listopts:
+            if isinstance(defaults.get(option, None), bool):
+                proj_data[option] = convert_to_bool(option, proj_data[option])
+            elif option not in listopts:
                 proj_data[option] = "\n".join(proj_data[option])
         elif option in defaults:
             proj_data[option] = defaults[option]
+
+    # Evaluate paths relative to project file location
     base_dir = os.path.abspath(os.path.dirname(args.project_file.name))
     proj_data["base_dir"] = base_dir
     for var in ["src_dir", "exclude_dir", "include"]:
@@ -492,7 +498,6 @@ FORD will look in the provided paths for a modules.json file.
             )
         )
     proj_data["display"] = [item.lower() for item in proj_data["display"]]
-    proj_data["incl_src"] = proj_data["incl_src"].lower()
     proj_data["creation_date"] = datetime.now().strftime(proj_data["creation_date"])
     relative = proj_data["project_url"] == ""
     proj_data["relative"] = relative
@@ -560,7 +565,7 @@ FORD will look in the provided paths for a modules.json file.
             proj_data["gitter_sidecar"].strip()
         )
     # Handle preprocessor:
-    if proj_data["preprocess"].lower() == "true":
+    if proj_data["preprocess"]:
         if proj_data["preprocessor"]:
             preprocessor = proj_data["preprocessor"].split()
         else:
@@ -681,7 +686,7 @@ def main(proj_data, proj_docs, md):
     docs = ford.output.Documentation(proj_data, proj_docs_, project, page_tree)
     docs.writeout()
 
-    if proj_data["externalize"].lower() == "true":
+    if proj_data["externalize"]:
         # save FortranModules to a JSON file which then can be used
         # for external modules
         ford.utils.external(project, make=True, path=proj_data["output_dir"])
@@ -692,7 +697,7 @@ def main(proj_data, proj_docs, md):
 
 def run():
     proj_data, proj_docs, md = initialize()
-    if proj_data["quiet"].lower() == "true":
+    if proj_data["quiet"]:
         f = StringIO()
         with stdout_redirector(f):
             main(proj_data, proj_docs, md)

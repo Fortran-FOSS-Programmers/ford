@@ -69,7 +69,7 @@ class Documentation(object):
 
         self.index = IndexPage(data, project, proj_docs)
         self.search = SearchPage(data, project)
-        if not graphviz_installed and data["graph"].lower() == "true":
+        if not graphviz_installed and data["graph"]:
             print(
                 "Warning: Will not be able to generate graphs. Graphviz not installed."
             )
@@ -122,14 +122,14 @@ class Documentation(object):
                 sys.exit("Error encountered.")
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
-        if graphviz_installed and data["graph"].lower() == "true":
+        if graphviz_installed and data["graph"]:
             print("Generating graphs...")
             self.graphs = GraphManager(
                 self.data["project_url"],
                 self.data["output_dir"],
                 self.data.get("graph_dir", ""),
                 graphparent,
-                self.data["coloured_edges"].lower() == "true",
+                self.data["coloured_edges"],
             )
             for item in project.types:
                 self.graphs.register(item)
@@ -158,13 +158,13 @@ class Documentation(object):
                 self.data["output_dir"],
                 self.data.get("graph_dir", ""),
                 graphparent,
-                self.data["coloured_edges"].lower() == "true",
+                self.data["coloured_edges"],
             )
             project.callgraph = ""
             project.typegraph = ""
             project.usegraph = ""
             project.filegraph = ""
-        if data["search"].lower() == "true":
+        if data["search"]:
             print("Creating search index...")
             if data["relative"]:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(
@@ -209,9 +209,9 @@ class Documentation(object):
         copytree(os.path.join(loc, "css"), os.path.join(out_dir, "css"))
         copytree(os.path.join(loc, "fonts"), os.path.join(out_dir, "fonts"))
         copytree(os.path.join(loc, "js"), os.path.join(out_dir, "js"))
-        if self.data["graph"].lower() == "true":
+        if self.data["graph"]:
             self.graphs.output_graphs(self.njobs)
-        if self.data["search"].lower() == "true":
+        if self.data["search"]:
             copytree(
                 os.path.join(loc, "tipuesearch"), os.path.join(out_dir, "tipuesearch")
             )

@@ -13,10 +13,13 @@ from bs4 import BeautifulSoup
 DEFAULT_SRC = "src"
 
 
-def run_ford(monkeypatch, md_file: pathlib.Path):
+def run_ford(monkeypatch, md_file: pathlib.Path, extra_args: list = None):
     """Modify command line args with argv"""
     with monkeypatch.context() as m:
-        m.setattr(sys, "argv", ["ford", str(md_file)])
+        command = ["ford", str(md_file)]
+        if extra_args is not None:
+            command = command[:1] + extra_args + command[1:]
+        m.setattr(sys, "argv", command)
         ford.run()
 
 
@@ -217,3 +220,71 @@ def test_multiple_aliases(
         "Test: But this bar should be 'bar', and this quaff 'quaff'",
     ]
     assert module_text == expected_module_text
+
+
+def test_quiet(
+    copy_fortran_file,
+    copy_settings_file,
+    monkeypatch,
+    restore_macros,
+    restore_nameselector,
+    capsys,
+):
+    """This checks that bool options like 'quiet' are parsed correctly in input md file"""
+
+    data = """\
+    module test
+    end module test
+    """
+    settings = """\
+    search: false
+    quiet: false
+    """
+
+    copy_fortran_file(data)
+    md_file = copy_settings_file(settings)
+
+    run_ford(monkeypatch, md_file)
+
+    captured_stdout = capsys.readouterr()
+    assert captured_stdout.out
+
+    settings = """\
+    search: false
+    quiet: TRUE
+    """
+
+    md_file = copy_settings_file(settings)
+
+    run_ford(monkeypatch, md_file)
+
+    captured_stdout = capsys.readouterr()
+    assert not captured_stdout.out
+
+
+def test_quiet_command_line(
+    copy_fortran_file,
+    copy_settings_file,
+    monkeypatch,
+    restore_macros,
+    restore_nameselector,
+    capsys,
+):
+    """Check that setting --quiet on the command line overrides project file"""
+
+    data = """\
+    module test
+    end module test
+    """
+    settings = """\
+    search: false
+    quiet: false
+    """
+
+    copy_fortran_file(data)
+    md_file = copy_settings_file(settings)
+
+    run_ford(monkeypatch, md_file, ["--quiet"])
+
+    captured_stdout = capsys.readouterr()
+    assert not captured_stdout.out

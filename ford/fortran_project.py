@@ -58,10 +58,10 @@ class Project(object):
         self.display = settings["display"]
         self.encoding = settings["encoding"]
 
-        if settings["preprocess"].lower() != "true":
+        if settings["preprocess"]:
             settings["fpp_extensions"] = []
 
-        html_incl_src = settings.get("incl_src", "true").lower() == "true"
+        html_incl_src = settings.get("incl_src", True)
 
         self.files = []
         self.modules = []
@@ -249,7 +249,7 @@ class Project(object):
                 if mod.ancestor:
                     if type(mod.ancestor) is ford.sourceform.FortranSubmodule:
                         uselist.insert(0, mod.ancestor)
-                    elif self.settings["warn"].lower() == "true":
+                    elif self.settings["warn"]:
                         print(
                             "Warning: could not identify parent SUBMODULE of SUBMODULE "
                             + mod.name
@@ -258,13 +258,13 @@ class Project(object):
                     uselist.insert(0, mod.ancestor_mod)
                 mod.deplist = uselist
                 deplist[mod] = set(uselist)
-            elif self.settings["warn"].lower() == "true":
+            elif self.settings["warn"]:
                 print(
                     "Warning: could not identify parent MODULE of SUBMODULE " + mod.name
                 )
         # Get dependencies for programs and top-level procedures as well,
         # if dependency graphs are to be produced
-        if self.settings["graph"].lower() == "true":
+        if self.settings["graph"]:
             for proc in self.procedures:
                 proc.deplist = set(
                     [
@@ -381,7 +381,7 @@ class Project(object):
         """
         print("\nProcessing documentation comments...")
         ford.sourceform.set_base_url(base_url)
-        if self.settings["warn"].lower() == "true":
+        if self.settings["warn"]:
             print()
         for src in self.allfiles:
             src.markdown(md, self)

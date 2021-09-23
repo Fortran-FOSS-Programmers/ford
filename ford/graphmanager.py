@@ -86,7 +86,7 @@ class GraphManager(object):
         ford.graphs.set_graphs_parentdir(parentdir)
 
     def register(self, obj):
-        if obj.meta["graph"].lower() == "true":
+        if obj.meta["graph"]:
             ford.graphs.FortranGraph.data.register(obj, type(obj))
             self.graph_objs.append(obj)
 
