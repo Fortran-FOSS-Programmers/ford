@@ -436,32 +436,16 @@ FORD will look in the provided paths for a modules.json file.
         "max_frontpage_items": 10,
         "encoding": "utf-8",
     }
-    listopts = [
-        "extensions",
-        "fpp_extensions",
-        "fixed_extensions",
-        "display",
-        "extra_vartypes",
-        "src_dir",
-        "exclude",
-        "exclude_dir",
-        "external",
-        "macro",
-        "include",
-        "extra_mods",
-        "extra_filetypes",
-        "copy_subdir",
-        "alias",
-    ]
 
     for option in options:
         if hasattr(args, option) and getattr(args, option) is not None:
             proj_data[option] = getattr(args, option)
         elif option in proj_data:
             # Think if there is a safe  way to evaluate any expressions found in this list
-            if isinstance(defaults.get(option, None), bool):
+            default_type = defaults.get(option, None)
+            if isinstance(default_type, bool):
                 proj_data[option] = convert_to_bool(option, proj_data[option])
-            elif option not in listopts:
+            elif not isinstance(default_type, list):
                 proj_data[option] = "\n".join(proj_data[option])
         elif option in defaults:
             proj_data[option] = defaults[option]
