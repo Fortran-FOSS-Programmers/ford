@@ -542,3 +542,14 @@ def external(project, make=False, path="."):
             # convert modules defined in the JSON database to module objects
             for extModule in extModules:
                 dict2obj(extModule, url)
+
+
+def str_to_bool(text):
+    """Convert string to bool. Only takes 'true'/'false', ignoring case"""
+    if text.capitalize() == "True":
+        return True
+    if text.capitalize() == "False":
+        return False
+    raise ValueError(
+        f"Could not convert string to bool: expected 'true'/'false', got '{text}'"
+    )
