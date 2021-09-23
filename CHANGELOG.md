@@ -1,5 +1,75 @@
 # Changelog
 
+## [v6.1.5](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.5) (2021-09-23)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.4...v6.1.5)
+
+**Closed issues:**
+
+- Question: comment in project file? [\#210](https://github.com/Fortran-FOSS-Programmers/ford/issues/210)
+
+**Merged pull requests:**
+
+- Enable aliases in docstrings [\#363](https://github.com/Fortran-FOSS-Programmers/ford/pull/363) ([ZedThree](https://github.com/ZedThree))
+- Fixed module variable INTRINSIC\_MODS being changed implicitly.  [\#362](https://github.com/Fortran-FOSS-Programmers/ford/pull/362) ([byornski](https://github.com/byornski))
+- Make sure "Find us on" present if `project_gitlab` set [\#359](https://github.com/Fortran-FOSS-Programmers/ford/pull/359) ([d7919](https://github.com/d7919))
+- Fixed invalid check for : character in extra\_mods. [\#358](https://github.com/Fortran-FOSS-Programmers/ford/pull/358) ([byornski](https://github.com/byornski))
+
+## [v6.1.4](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.4) (2021-09-13)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.3...v6.1.4)
+
+**Implemented enhancements:**
+
+- pybuilder and test coverage [\#13](https://github.com/Fortran-FOSS-Programmers/ford/issues/13)
+
+**Fixed bugs:**
+
+- Footnotes in Pages [\#327](https://github.com/Fortran-FOSS-Programmers/ford/issues/327)
+- Code blocks don't seem to work within subroutines [\#287](https://github.com/Fortran-FOSS-Programmers/ford/issues/287)
+- Markdown headers do not work as expected [\#286](https://github.com/Fortran-FOSS-Programmers/ford/issues/286)
+
+**Merged pull requests:**
+
+- Fix indentation in markdown blocks and footnotes appearing on multiple pages [\#356](https://github.com/Fortran-FOSS-Programmers/ford/pull/356) ([ZedThree](https://github.com/ZedThree))
+
+## [v6.1.3](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.3) (2021-09-10)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.2...v6.1.3)
+
+**Fixed bugs:**
+
+- Case sensitivity for MODULE SUBROUTINE [\#353](https://github.com/Fortran-FOSS-Programmers/ford/issues/353)
+- Release 6.0.0 does not contain `ford/js/MathJax-config` [\#325](https://github.com/Fortran-FOSS-Programmers/ford/issues/325)
+- Multi-line strings containing an exclamation mark [\#320](https://github.com/Fortran-FOSS-Programmers/ford/issues/320)
+- "Unknown Procedure Type" in call tree [\#319](https://github.com/Fortran-FOSS-Programmers/ford/issues/319)
+- Warning: Could not extract source code for proc [\#299](https://github.com/Fortran-FOSS-Programmers/ford/issues/299)
+- Exception: Alternate documentation lines can not be inline error [\#295](https://github.com/Fortran-FOSS-Programmers/ford/issues/295)
+- Support enums with kind specified for integer literals [\#243](https://github.com/Fortran-FOSS-Programmers/ford/issues/243)
+
+**Merged pull requests:**
+
+- Fix several bugs [\#354](https://github.com/Fortran-FOSS-Programmers/ford/pull/354) ([ZedThree](https://github.com/ZedThree))
+
+## [v6.1.2](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.2) (2021-09-06)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.1...v6.1.2)
+
+**Implemented enhancements:**
+
+- Automatic publishing of releases [\#332](https://github.com/Fortran-FOSS-Programmers/ford/issues/332)
+
+**Fixed bugs:**
+
+- jinja2.exceptions.UndefinedError: 'None' has no attribute 'meta' [\#352](https://github.com/Fortran-FOSS-Programmers/ford/issues/352)
+- somehow FORD takes number in Format  as subroutine to draw the graph [\#350](https://github.com/Fortran-FOSS-Programmers/ford/issues/350)
+- Unclear exception raised [\#292](https://github.com/Fortran-FOSS-Programmers/ford/issues/292)
+- Different results with space after '%' character. [\#240](https://github.com/Fortran-FOSS-Programmers/ford/issues/240)
+
+## [v6.1.1](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.1) (2021-07-20)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.0...v6.1.1)
+
 ## [v6.1.0](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.0) (2021-07-20)
 
 [Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.0.0...v6.1.0)
@@ -7,6 +77,7 @@
 **Implemented enhancements:**
 
 - Switch for ignoring undocumented entities [\#163](https://github.com/Fortran-FOSS-Programmers/ford/issues/163)
+- Automatic publishing of releases [\#332](https://github.com/Fortran-FOSS-Programmers/ford/issues/332)
 
 **Fixed bugs:**
 
