@@ -7,7 +7,7 @@ import ford
 import ford.fortran_project
 
 from bs4 import BeautifulSoup
-
+import pytest
 
 # Ford default src folder
 DEFAULT_SRC = "src"
@@ -288,3 +288,51 @@ def test_quiet_command_line(
 
     captured_stdout = capsys.readouterr()
     assert not captured_stdout.out
+
+
+def test_repeated_docmark(
+    copy_fortran_file,
+    copy_settings_file,
+    monkeypatch,
+    restore_macros,
+    restore_nameselector,
+):
+    """Check that setting --quiet on the command line overrides project file"""
+
+    data = """\
+    module test
+    end module test
+    """
+    settings = """\
+    search: false
+    docmark: !
+    predocmark: !
+    """
+
+    copy_fortran_file(data)
+    md_file = copy_settings_file(settings)
+
+    with pytest.raises(ValueError):
+        run_ford(monkeypatch, md_file)
+
+    settings = """\
+    search: false
+    docmark: !<
+    predocmark_alt: !<
+    """
+
+    md_file = copy_settings_file(settings)
+
+    with pytest.raises(ValueError):
+        run_ford(monkeypatch, md_file)
+
+    settings = """\
+    search: false
+    docmark_alt: !!
+    predocmark_alt: !!
+    """
+
+    md_file = copy_settings_file(settings)
+
+    with pytest.raises(ValueError):
+        run_ford(monkeypatch, md_file)

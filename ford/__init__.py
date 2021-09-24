@@ -25,6 +25,7 @@
 
 from contextlib import contextmanager
 from io import StringIO
+import itertools
 import sys
 import argparse
 import markdown
@@ -465,25 +466,15 @@ FORD will look in the provided paths for a modules.json file.
                 )
             )
             sys.exit(1)
+
     # Check that none of the docmarks are the same
-    if proj_data["docmark"] == proj_data["predocmark"] != "":
-        print("Error: docmark and predocmark are the same.")
-        sys.exit(1)
-    if proj_data["docmark"] == proj_data["docmark_alt"] != "":
-        print("Error: docmark and docmark_alt are the same.")
-        sys.exit(1)
-    if proj_data["docmark"] == proj_data["predocmark_alt"] != "":
-        print("Error: docmark and predocmark_alt are the same.")
-        sys.exit(1)
-    if proj_data["docmark_alt"] == proj_data["predocmark"] != "":
-        print("Error: docmark_alt and predocmark are the same.")
-        sys.exit(1)
-    if proj_data["docmark_alt"] == proj_data["predocmark_alt"] != "":
-        print("Error: docmark_alt and predocmark_alt are the same.")
-        sys.exit(1)
-    if proj_data["predocmark"] == proj_data["predocmark_alt"] != "":
-        print("Error: predocmark and predocmark_alt are the same.")
-        sys.exit(1)
+    docmarks = ["docmark", "predocmark", "docmark_alt", "predocmark_alt"]
+    for first, second in itertools.combinations(docmarks, 2):
+        if proj_data[first] == proj_data[second] != "":
+            raise ValueError(
+                f"{first} ('{proj_data[first]}') and {second} ('{proj_data[second]}') are the same"
+            )
+
     # Add gitter sidecar if specified in metadata
     if proj_data["gitter_sidecar"] is not None:
         proj_docs += """
