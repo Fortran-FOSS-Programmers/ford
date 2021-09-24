@@ -43,7 +43,11 @@ from ford.graphmanager import GraphManager
 from ford.graphs import graphviz_installed
 
 loc = os.path.dirname(__file__)
-env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
+env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")),
+    trim_blocks=True,
+    lstrip_blocks=True,
+)
 env.globals["path"] = os.path  # this lets us call path.* in templates
 
 
