@@ -56,13 +56,13 @@ def test_source_not_subdir_output():
 
     # This should be fine
     data, _, _ = ford.parse_arguments(
-        {"src_dir": ["/1/2/3"], "output_dir": "/3/4"}, "", "/prefix"
+        {"src_dir": ["/1/2/3", "4/5"], "output_dir": "/3/4"}, "", "/prefix"
     )
 
     # This shouldn't be
     with pytest.raises(ValueError):
         data, _, _ = ford.parse_arguments(
-            {"src_dir": ["/1/2/3"], "output_dir": "/1/2"}, "", "/prefix"
+            {"src_dir": ["4/5", "/1/2/3"], "output_dir": "/1/2"}, "", "/prefix"
         )
 
 

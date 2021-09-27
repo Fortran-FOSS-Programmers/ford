@@ -176,42 +176,6 @@ def quote_split(sep, string):
     return retlist
 
 
-def split_path(path):
-    """
-    Splits the argument into its constituent directories and returns them as
-    a list.
-    """
-
-    def recurse_path(path, retlist):
-        if len(retlist) > 100:
-            fullpath = os.path.join(
-                *(
-                    [
-                        path,
-                    ]
-                    + retlist
-                )
-            )
-            print("Directory '{}' contains too many levels".format(fullpath))
-            exit(1)
-        head, tail = os.path.split(path)
-        if len(tail) > 0:
-            retlist.insert(0, tail)
-            recurse_path(head, retlist)
-        elif len(head) > 1:
-            recurse_path(head, retlist)
-        else:
-            return
-
-    retlist = []
-    path = os.path.realpath(os.path.normpath(path))
-    drive, path = os.path.splitdrive(path)
-    if len(drive) > 0:
-        retlist.append(drive)
-    recurse_path(path, retlist)
-    return retlist
-
-
 def sub_links(string, project):
     """
     Replace links to different parts of the program, formatted as

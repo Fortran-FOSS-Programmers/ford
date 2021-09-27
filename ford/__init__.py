@@ -30,6 +30,7 @@ import sys
 import argparse
 import markdown
 import os
+import pathlib
 import subprocess
 from datetime import date, datetime
 from typing import Union
@@ -474,22 +475,12 @@ def parse_arguments(
         else:
             extdict[sp[0]] = (sp[1], sp[2])  # (comment_char and lexer_str)
     proj_data["extra_filetypes"] = extdict
+
     # Make sure no src_dir is contained within output_dir
     for projdir in proj_data["src_dir"]:
-        proj_path = ford.utils.split_path(projdir)
-        out_path = ford.utils.split_path(proj_data["output_dir"])
-        for directory in out_path:
-            if len(proj_path) == 0:
-                break
-            if directory == proj_path[0]:
-                proj_path.remove(directory)
-            else:
-                break
-        else:
+        if pathlib.Path(projdir).is_relative_to(proj_data["output_dir"]):
             raise ValueError(
-                "Directory containing source-code {} a subdirectory of output directory {}.".format(
-                    projdir, proj_data["output_dir"]
-                )
+                f"Directory containing source-code {projdir} is a subdirectory of output directory {proj_data['output_dir']}."
             )
 
     # Check that none of the docmarks are the same
