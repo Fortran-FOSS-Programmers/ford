@@ -436,8 +436,7 @@ FORD will look in the provided paths for a modules.json file.
         )
     proj_data["display"] = [item.lower() for item in proj_data["display"]]
     proj_data["creation_date"] = datetime.now().strftime(proj_data["creation_date"])
-    relative = proj_data["project_url"] == ""
-    proj_data["relative"] = relative
+    proj_data["relative"] = proj_data["project_url"] == ""
     proj_data["extensions"] += [
         ext for ext in proj_data["fpp_extensions"] if ext not in proj_data["extensions"]
     ]
@@ -567,15 +566,10 @@ def main(proj_data, proj_docs, md):
 
     # Convert the documentation from Markdown to HTML. Make sure to properly
     # handle LateX and metadata.
-    if proj_data["relative"]:
-        project.markdown(md, "..")
-    else:
-        project.markdown(md, proj_data["project_url"])
+    base_url = ".." if proj_data["relative"] else proj_data["project_url"]
+    project.markdown(md, base_url)
     project.correlate()
-    if proj_data["relative"]:
-        project.make_links("..")
-    else:
-        project.make_links(proj_data["project_url"])
+    project.make_links(base_url)
 
     # Convert summaries and descriptions to HTML
     if proj_data["relative"]:
