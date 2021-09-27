@@ -429,14 +429,13 @@ def parse_arguments(
     # Evaluate paths relative to project file location
     base_dir = os.path.abspath(directory)
     proj_data["base_dir"] = base_dir
-    for var in ["src_dir", "exclude_dir", "include"]:
-        if var in proj_data:
-            proj_data[var] = [
-                os.path.normpath(
-                    os.path.join(base_dir, os.path.expanduser(os.path.expandvars(p)))
-                )
-                for p in proj_data[var]
-            ]
+
+    def normalise_path(path):
+        """Tidy up path, making it absolute"""
+        return os.path.normpath(
+            os.path.join(base_dir, os.path.expanduser(os.path.expandvars(path)))
+        )
+
     for var in [
         "page_dir",
         "output_dir",
@@ -444,19 +443,20 @@ def parse_arguments(
         "media_dir",
         "css",
         "mathjax_config",
+        "src_dir",
+        "exclude_dir",
+        "include",
     ]:
-        if proj_data[var] is not None:
-            proj_data[var] = os.path.normpath(
-                os.path.join(
-                    base_dir, os.path.expanduser(os.path.expandvars(proj_data[var]))
-                )
-            )
+        if proj_data[var] is None:
+            continue
+        if isinstance(proj_data[var], list):
+            proj_data[var] = [normalise_path(p) for p in proj_data[var]]
+        else:
+            proj_data[var] = normalise_path(proj_data[var])
+
     if proj_data["favicon"].strip() != defaults["favicon"]:
-        proj_data["favicon"] = os.path.normpath(
-            os.path.join(
-                base_dir, os.path.expanduser(os.path.expandvars(proj_data["favicon"]))
-            )
-        )
+        proj_data["favicon"] = normalise_path(proj_data["favicon"])
+
     proj_data["display"] = [item.lower() for item in proj_data["display"]]
     proj_data["creation_date"] = datetime.now().strftime(proj_data["creation_date"])
     proj_data["relative"] = proj_data["project_url"] == ""
