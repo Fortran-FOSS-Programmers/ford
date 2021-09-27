@@ -120,7 +120,8 @@ LICENSES = {
 
 
 def convert_to_bool(name, option):
-    """Convert value 'option' to a bool, with a nice error message on failure"""
+    """Convert value 'option' to a bool, with a nice error message on
+    failure. Expects a list from the markdown meta-data extension"""
     if len(option) > 1:
         raise ValueError(
             f"Could not convert option '{name}' to bool: expected a single value but got a list ({option})"
@@ -395,6 +396,9 @@ FORD will look in the provided paths for a modules.json file.
             if isinstance(default_type, bool):
                 proj_data[option] = convert_to_bool(option, proj_data[option])
             elif not isinstance(default_type, list):
+                # If it's not supposed to be a list, then it's
+                # probably supposed to be a single big block of text,
+                # like a description
                 proj_data[option] = "\n".join(proj_data[option])
         else:
             proj_data[option] = default
