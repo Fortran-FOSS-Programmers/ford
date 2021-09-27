@@ -434,7 +434,9 @@ class FortranBase(object):
             if "proc_internals" not in self.meta:
                 self.meta["proc_internals"] = self.settings["proc_internals"]
             else:
-                self.meta["proc_internals"] = ford.utils.str_to_bool(self.meta["proc_internals"])
+                self.meta["proc_internals"] = ford.utils.str_to_bool(
+                    self.meta["proc_internals"]
+                )
 
         # Create Markdown
         for item in self.iterator(
