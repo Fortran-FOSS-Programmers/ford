@@ -47,8 +47,11 @@ def test_path_normalisation():
              src2
     """
     data, _, _ = ford.parse_arguments({}, dedent(settings), "/prefix/path")
-    assert data["page_dir"] == "/prefix/path/my_pages"
-    assert data["src_dir"] == ["/prefix/path/src1", "/prefix/path/src2"]
+    assert str(data["page_dir"]) == "/prefix/path/my_pages"
+    assert [str(p) for p in data["src_dir"]] == [
+        "/prefix/path/src1",
+        "/prefix/path/src2",
+    ]
 
 
 def test_source_not_subdir_output():
@@ -63,6 +66,11 @@ def test_source_not_subdir_output():
     with pytest.raises(ValueError):
         data, _, _ = ford.parse_arguments(
             {"src_dir": ["4/5", "/1/2/3"], "output_dir": "/1/2"}, "", "/prefix"
+        )
+    # src_dir == output_dir
+    with pytest.raises(ValueError):
+        data, _, _ = ford.parse_arguments(
+            {"src_dir": ["/1/2/"], "output_dir": "/1/2"}, "", "/prefix"
         )
 
 

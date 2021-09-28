@@ -428,14 +428,12 @@ def parse_arguments(
             proj_data[option] = default
 
     # Evaluate paths relative to project file location
-    base_dir = os.path.abspath(directory)
+    base_dir = pathlib.Path(directory).absolute()
     proj_data["base_dir"] = base_dir
 
     def normalise_path(path):
-        """Tidy up path, making it absolute"""
-        return os.path.normpath(
-            os.path.join(base_dir, os.path.expanduser(os.path.expandvars(path)))
-        )
+        """Tidy up path, making it absolute, relative to base_dir"""
+        return (base_dir / os.path.expandvars(path)).absolute()
 
     for var in [
         "page_dir",
@@ -477,10 +475,11 @@ def parse_arguments(
     proj_data["extra_filetypes"] = extdict
 
     # Make sure no src_dir is contained within output_dir
-    for projdir in proj_data["src_dir"]:
-        if pathlib.Path(projdir).is_relative_to(proj_data["output_dir"]):
+    for srcdir in proj_data["src_dir"]:
+        # In Python 3.9+ we can use pathlib.Path.is_relative_to
+        if proj_data["output_dir"] in (srcdir, *srcdir.parents):
             raise ValueError(
-                f"Directory containing source-code {projdir} is a subdirectory of output directory {proj_data['output_dir']}."
+                f"Source directory {srcdir} is a subdirectory of output directory {proj_data['output_dir']}."
             )
 
     # Check that none of the docmarks are the same
