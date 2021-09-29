@@ -23,6 +23,7 @@
 #
 
 import os
+import pathlib
 import sys
 from multiprocessing import Pool
 
@@ -68,7 +69,14 @@ class GraphManager(object):
         The location of the graphs within the output tree.
     """
 
-    def __init__(self, base_url, outdir, graphdir, parentdir, coloured_edges):
+    def __init__(
+        self,
+        base_url: os.PathLike,
+        outdir: os.PathLike,
+        graphdir: os.PathLike,
+        parentdir: os.PathLike,
+        coloured_edges: bool,
+    ):
         self.graph_objs = []
         self.modules = set()
         self.programs = set()
@@ -77,7 +85,7 @@ class GraphManager(object):
         self.sourcefiles = set()
         self.blockdata = set()
         self.graphdir = graphdir or ""
-        self.webdir = base_url + "/" + self.graphdir
+        self.webdir = pathlib.Path(base_url) / self.graphdir
         self.usegraph = None
         self.typegraph = None
         self.callgraph = None

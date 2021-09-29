@@ -132,8 +132,9 @@ class FortranReader(object):
             # prepend to an empty string as 'cpp ... -D file.F90' doesn't do
             # what is desired; use filter to remove these.
             macros = ["-D" + mac.strip() for mac in filter(None, macros)]
-            incdirs = ["-I" + d.strip() for d in filter(None, inc_dirs)]
+            incdirs = [f"-I{d}" for d in inc_dirs]
             preprocessor = preprocessor + macros + incdirs + [filename]
+            print(f"Preprocessing {filename}")
             fpp = subprocess.Popen(
                 preprocessor,
                 stdout=subprocess.PIPE,
