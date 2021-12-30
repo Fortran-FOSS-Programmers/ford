@@ -1425,8 +1425,8 @@ class FortranSourceFile(FortranContainer):
         )
 
         FortranContainer.__init__(self, source, "")
-        readobj = open(self.path, "r", encoding=settings["encoding"])
-        self.raw_src = readobj.read()
+        with open(self.path, "r", encoding=settings["encoding"]) as readobj:
+            self.raw_src = readobj.read()
         if self.fixed:
             self.src = highlight(
                 self.raw_src,

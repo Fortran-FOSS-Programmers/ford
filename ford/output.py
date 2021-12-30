@@ -287,9 +287,8 @@ class BasePage(object):
         return self.render(self.data, self.proj, self.obj)
 
     def writeout(self):
-        out = open(self.outfile, "wb")
-        out.write(self.html.encode("utf8"))
-        out.close()
+        with open(self.outfile, "wb") as out:
+            out.write(self.html.encode("utf8"))
 
     def render(self, data, proj, obj):
         """

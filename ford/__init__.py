@@ -568,10 +568,10 @@ FORD will look in the provided paths for a modules.json file.
 
         # Check whether preprocessor works (reading nothing from stdin)
         try:
-            devnull = open(os.devnull)
-            subprocess.Popen(
-                preprocessor, stdin=devnull, stdout=devnull, stderr=devnull
-            ).communicate()
+            with open(os.devnull) as devnull:
+                subprocess.Popen(
+                    preprocessor, stdin=devnull, stdout=devnull, stderr=devnull
+                ).communicate()
         except OSError as ex:
             print("Warning: Testing preprocessor failed")
             print("  Preprocessor command: {}".format(preprocessor))
