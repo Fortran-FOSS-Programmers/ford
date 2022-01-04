@@ -105,6 +105,5 @@ class Tipue_Search_JSON_Generator(object):
         output = json.dumps(root_node, separators=(",", ":"), ensure_ascii=False)
         output = "var tipuesearch = " + output
 
-        out = open(path, "w", encoding="utf-8")
-        out.write(output)
-        out.close()
+        with open(path, "w", encoding="utf-8") as out:
+            out.write(output)

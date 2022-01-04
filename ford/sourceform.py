@@ -1425,8 +1425,8 @@ class FortranSourceFile(FortranContainer):
         )
 
         FortranContainer.__init__(self, source, "")
-        readobj = open(self.path, "r", encoding=settings["encoding"])
-        self.raw_src = readobj.read()
+        with open(self.path, "r", encoding=settings["encoding"]) as readobj:
+            self.raw_src = readobj.read()
         if self.fixed:
             self.src = highlight(
                 self.raw_src,
@@ -3029,10 +3029,14 @@ class NameSelector(object):
             else:
                 num = 1
             self._counts[item.get_dir()][item.name] = num
-            name = item.name.lower().replace("<", "lt")
-            # name is already lower
-            name = name.replace(">", "gt")
-            name = name.replace("/", "SLASH")
+            name = item.name.lower()
+            for symbol, replacement in {
+                "<": "lt",
+                ">": "gt",
+                "/": "SLASH",
+                "*": "ASTERISK",
+            }.items():
+                name = name.replace(symbol, replacement)
             if name == "":
                 name = "__unnamed__"
             if num > 1:
