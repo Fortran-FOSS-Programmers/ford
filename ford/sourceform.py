@@ -1511,9 +1511,9 @@ class FortranModule(FortranCodeUnit):
         for item in map(str.strip, use_specs.split(",")):
             match = self.RENAME_RE.search(item)
             if match:
-                used_names[match.group(2).lower()] = match.group(1)
+                used_names[match.group(2).lower()] = match.group(1).lower()
             else:
-                used_names[item.lower()] = item
+                used_names[item.lower()] = item.lower()
 
         def used_objects(object_type: str, only: bool) -> dict:
             """Get the objects that are actually used"""

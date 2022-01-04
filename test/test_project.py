@@ -364,3 +364,45 @@ def test_module_use_everything_reexport(copy_fortran_file):
         "int_public",
         "real_public",
     }
+
+
+def test_member_in_other_module(copy_fortran_file):
+    data = """\
+    module module1
+      use module2, only: testInterface
+      type, public, abstract :: external_type
+      contains
+        procedure(testInterface), nopass, deferred :: testProc
+      end type external_type
+    end module module1
+
+    module module2
+      type, public, abstract :: internal_type
+      contains
+        procedure(testInterface), nopass, deferred :: testProc
+      end type internal_type
+
+      abstract interface
+        pure function testInterface(input) result(output)
+          real, intent(in) :: input
+          real :: output
+        end function testInterface
+      end interface
+    end module module2
+    """
+
+    settings = copy_fortran_file(data)
+    project = Project(settings)
+    project.correlate()
+
+    module1 = project.modules[0]
+    module2 = project.modules[1]
+
+    assert (
+        module1.all_types["external_type"].boundprocs[0].proto
+        is module2.all_types["internal_type"].boundprocs[0].proto
+    )
+
+    assert (
+        module2.all_types["internal_type"].boundprocs[0].proto.name == "testInterface"
+    )
