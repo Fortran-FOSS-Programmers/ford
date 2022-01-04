@@ -383,7 +383,7 @@ def parse_arguments(
         "predocmark": ">",
         "predocmark_alt": "|",
         "preprocess": True,
-        "preprocessor": "",
+        "preprocessor": "cpp -traditional-cpp -E -D__GFORTRAN__",
         "print_creation_date": False,
         "privacy_policy_url": None,
         "proc_internals": False,
@@ -504,26 +504,24 @@ def parse_arguments(
         )
     # Handle preprocessor:
     if proj_data["preprocess"]:
-        if proj_data["preprocessor"]:
-            preprocessor = proj_data["preprocessor"].split()
-        else:
-            preprocessor = ["cpp", "-traditional-cpp", "-E", "-D__GFORTRAN__"]
+        preprocessor = proj_data["preprocessor"].split()
 
         # Check whether preprocessor works (reading nothing from stdin)
         try:
-            devnull = open(os.devnull)
-            subprocess.Popen(
-                preprocessor, stdin=devnull, stdout=devnull, stderr=devnull
-            ).communicate()
-        except OSError as ex:
+            subprocess.run(
+                preprocessor,
+                check=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+            )
+        except (subprocess.CalledProcessError, OSError) as ex:
             print("Warning: Testing preprocessor failed")
             print("  Preprocessor command: {}".format(preprocessor))
             print("  Exception: {}".format(ex))
             print("  -> Preprocessing turned off")
-            proj_data["preprocess"] = "false"
-        else:
-            proj_data["preprocess"] = "true"
-            proj_data["preprocessor"] = preprocessor
+            proj_data["preprocess"] = False
+    else:
+        proj_data["fpp_extensions"] = []
 
     # Get the correct license for project license or use value as a custom license value.
     try:

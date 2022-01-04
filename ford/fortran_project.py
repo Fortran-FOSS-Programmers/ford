@@ -58,9 +58,6 @@ class Project(object):
         self.display = settings["display"]
         self.encoding = settings["encoding"]
 
-        if not settings["preprocess"]:
-            settings["fpp_extensions"] = []
-
         html_incl_src = settings.get("incl_src", True)
 
         self.files = []

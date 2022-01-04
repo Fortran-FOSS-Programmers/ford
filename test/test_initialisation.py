@@ -100,3 +100,22 @@ def test_repeated_docmark():
 
     with pytest.raises(ValueError):
         ford.parse_arguments({}, dedent(settings))
+
+
+def test_no_preprocessor():
+    data, _, _ = ford.parse_arguments({}, "preprocess: False")
+
+    assert data["fpp_extensions"] == []
+
+
+def test_bad_preprocessor():
+    data, _, _ = ford.parse_arguments({}, "preprocessor: false")
+
+    assert data["preprocess"] is False
+
+
+def test_maybe_ok_preprocessor():
+    data, _, _ = ford.parse_arguments({}, "preprocessor: true")
+
+    if data["preprocess"] is True:
+        assert len(data["preprocessor"]) > 0
