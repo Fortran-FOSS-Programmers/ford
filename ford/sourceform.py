@@ -27,7 +27,7 @@ import re
 import os.path
 import copy
 import textwrap
-from typing import List
+from typing import List, Tuple
 
 # Python 2 or 3:
 if sys.version_info[0] > 2:
@@ -1428,8 +1428,8 @@ class FortranSourceFile(FortranContainer):
         )
 
         FortranContainer.__init__(self, source, "")
-        readobj = open(self.path, "r", encoding=settings["encoding"])
-        self.raw_src = readobj.read()
+        with open(self.path, "r", encoding=settings["encoding"]) as readobj:
+            self.raw_src = readobj.read()
         if self.fixed:
             self.src = highlight(
                 self.raw_src,
@@ -1488,7 +1488,7 @@ class FortranModule(FortranCodeUnit):
         self.process_attribs()
         self.variables = [v for v in self.variables if "external" not in v.attribs]
 
-        def should_be_public(item: str) -> bool:
+        def should_be_public(item: FortranBase) -> bool:
             return item.permission == "public" or item.permission == "protected"
 
         def filter_public(collection: list) -> dict:
@@ -1514,9 +1514,9 @@ class FortranModule(FortranCodeUnit):
         for item in map(str.strip, use_specs.split(",")):
             match = self.RENAME_RE.search(item)
             if match:
-                used_names[match.group(2).lower()] = match.group(1)
+                used_names[match.group(2).lower()] = match.group(1).lower()
             else:
-                used_names[item.lower()] = item
+                used_names[item.lower()] = item.lower()
 
         def used_objects(object_type: str, only: bool) -> dict:
             """Get the objects that are actually used"""
@@ -1565,7 +1565,7 @@ class FortranSubmodule(FortranModule):
                     self.all_procs[proc.name.lower()] = proc
 
 
-def _list_of_procedure_attributes(attribute_string: str) -> List[str]:
+def _list_of_procedure_attributes(attribute_string: str) -> Tuple[List[str], str]:
     """Convert a string of attributes into a list of attributes"""
     if not attribute_string:
         return [], ""
@@ -3032,10 +3032,14 @@ class NameSelector(object):
             else:
                 num = 1
             self._counts[item.get_dir()][item.name] = num
-            name = item.name.lower().replace("<", "lt")
-            # name is already lower
-            name = name.replace(">", "gt")
-            name = name.replace("/", "SLASH")
+            name = item.name.lower()
+            for symbol, replacement in {
+                "<": "lt",
+                ">": "gt",
+                "/": "SLASH",
+                "*": "ASTERISK",
+            }.items():
+                name = name.replace(symbol, replacement)
             if name == "":
                 name = "__unnamed__"
             if num > 1:
