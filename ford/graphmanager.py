@@ -76,7 +76,7 @@ class GraphManager(object):
         self.types = set()
         self.sourcefiles = set()
         self.blockdata = set()
-        self.graphdir = graphdir if graphdir is not None else ""
+        self.graphdir = graphdir or ""
         self.webdir = base_url + "/" + self.graphdir
         self.usegraph = None
         self.typegraph = None
