@@ -1,5 +1,17 @@
 # Changelog
 
+## [v6.1.6](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.6) (2022-01-04)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.5...v6.1.6)
+
+**Fixed bugs:**
+
+- 'str object' has no attribute 'meta' - error when abstract interface imported from different module [\#372](https://github.com/Fortran-FOSS-Programmers/ford/issues/372)
+
+**Merged pull requests:**
+
+- add asterisks to list of mangled symbols [\#374](https://github.com/Fortran-FOSS-Programmers/ford/pull/374) ([chucklesoclock](https://github.com/chucklesoclock))
+
 ## [v6.1.5](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.5) (2021-09-23)
 
 [Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.4...v6.1.5)
