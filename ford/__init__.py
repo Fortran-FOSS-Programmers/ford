@@ -628,11 +628,9 @@ def main(proj_data, proj_docs, md):
 
 def run():
     proj_data, proj_docs, md = initialize()
-    if proj_data["quiet"]:
-        f = StringIO()
-        with stdout_redirector(f):
-            main(proj_data, proj_docs, md)
-    else:
+
+    f = StringIO() if proj_data["quiet"] else sys.stdout
+    with stdout_redirector(f):
         main(proj_data, proj_docs, md)
 
 
