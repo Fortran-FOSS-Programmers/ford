@@ -27,7 +27,7 @@ import re
 import os.path
 import copy
 import textwrap
-from typing import List
+from typing import List, Tuple
 
 # Python 2 or 3:
 if sys.version_info[0] > 2:
@@ -1485,7 +1485,7 @@ class FortranModule(FortranCodeUnit):
         self.process_attribs()
         self.variables = [v for v in self.variables if "external" not in v.attribs]
 
-        def should_be_public(item: str) -> bool:
+        def should_be_public(item: FortranBase) -> bool:
             return item.permission == "public" or item.permission == "protected"
 
         def filter_public(collection: list) -> dict:
@@ -1562,7 +1562,7 @@ class FortranSubmodule(FortranModule):
                     self.all_procs[proc.name.lower()] = proc
 
 
-def _list_of_procedure_attributes(attribute_string: str) -> List[str]:
+def _list_of_procedure_attributes(attribute_string: str) -> Tuple[List[str], str]:
     """Convert a string of attributes into a list of attributes"""
     if not attribute_string:
         return [], ""
