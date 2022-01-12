@@ -5,3 +5,4 @@ bs4
 graphviz
 pygments
 jinja2
+importlib-metadata
