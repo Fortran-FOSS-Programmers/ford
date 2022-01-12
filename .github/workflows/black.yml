@@ -1,6 +1,9 @@
 name: black
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - '**.py'
 
 defaults:
   run:
@@ -9,26 +12,23 @@ defaults:
 jobs:
   black:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
+    - name: Setup Python
+      uses: actions/setup-python@v2
       with:
-        ref: ${{ github.head_ref }}
-
+        python-version: 3.x
     - name: Install black
       run: |
-        sudo apt update -y
-        sudo apt -y install python3-pip python3-setuptools python3-wheel
-        pip3 install black
+        python -m pip install --upgrade pip
+        pip install black
     - name: Version
       run: |
-        python3 --version
-        $HOME/.local/bin/black --version
+        python --version
+        black --version
     - name: Run black
       run: |
-        pwd
-        ls
-        $HOME/.local/bin/black ford setup.py
+        black ford setup.py test
     - uses: stefanzweifel/git-auto-commit-action@v4
       with:
         commit_message: "[skip ci] Apply black changes"
