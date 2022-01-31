@@ -1,5 +1,16 @@
 # Changelog
 
+## [v6.1.7](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.7) (2022-01-31)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.6...v6.1.7)
+
+**Merged pull requests:**
+
+- Fix multiline attributes [\#379](https://github.com/Fortran-FOSS-Programmers/ford/pull/379) ([ZedThree](https://github.com/ZedThree))
+- Fix black action to work on forks; only run on changes to .py files [\#376](https://github.com/Fortran-FOSS-Programmers/ford/pull/376) ([ZedThree](https://github.com/ZedThree))
+- deps: need `importlib-metadata` [\#375](https://github.com/Fortran-FOSS-Programmers/ford/pull/375) ([chenrui333](https://github.com/chenrui333))
+- Tidy up and refactor initialisation [\#365](https://github.com/Fortran-FOSS-Programmers/ford/pull/365) ([ZedThree](https://github.com/ZedThree))
+
 ## [v6.1.6](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.6) (2022-01-04)
 
 [Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.5...v6.1.6)
@@ -178,15 +189,15 @@
 - added support for specifying lexer of extra\_filetypes [\#217](https://github.com/Fortran-FOSS-Programmers/ford/pull/217) ([cmacmackin](https://github.com/cmacmackin))
 - Fix graphlimiting [\#216](https://github.com/Fortran-FOSS-Programmers/ford/pull/216) ([haraldkl](https://github.com/haraldkl))
 - Filter empty preprocessor flags; don't treat arithmetic gotos as function references [\#214](https://github.com/Fortran-FOSS-Programmers/ford/pull/214) ([ibarrass-qmul](https://github.com/ibarrass-qmul))
-- Be case insensitive when searching for entities which are imported by a use statement. [\#201](https://github.com/Fortran-FOSS-Programmers/ford/pull/201) ([Schildkroete23](https://github.com/Schildkroete23))
+- Be case insensitive when searching for entities which are imported by a use statement. [\#201](https://github.com/Fortran-FOSS-Programmers/ford/pull/201) ([sch1ldkr0ete](https://github.com/sch1ldkr0ete))
 - Introduced a maximal graph depth option to limit graph sizes. [\#197](https://github.com/Fortran-FOSS-Programmers/ford/pull/197) ([haraldkl](https://github.com/haraldkl))
 - Added an option mathjax\_config for custom setting. [\#195](https://github.com/Fortran-FOSS-Programmers/ford/pull/195) ([mrestelli](https://github.com/mrestelli))
 - Skip subdirectories of directories listed in exclude\_dir [\#194](https://github.com/Fortran-FOSS-Programmers/ford/pull/194) ([mrestelli](https://github.com/mrestelli))
 - bug: fixed replacements in name conversion [\#192](https://github.com/Fortran-FOSS-Programmers/ford/pull/192) ([zerothi](https://github.com/zerothi))
 - enh: reduced memory consumption and speeded up process [\#191](https://github.com/Fortran-FOSS-Programmers/ford/pull/191) ([zerothi](https://github.com/zerothi))
 - Fix minor typo in tipuesearch create\_node call [\#186](https://github.com/Fortran-FOSS-Programmers/ford/pull/186) ([d7919](https://github.com/d7919))
-- Fix for hidden anchors within pages. [\#178](https://github.com/Fortran-FOSS-Programmers/ford/pull/178) ([Schildkroete23](https://github.com/Schildkroete23))
-- Reducing page rendering time [\#175](https://github.com/Fortran-FOSS-Programmers/ford/pull/175) ([Schildkroete23](https://github.com/Schildkroete23))
+- Fix for hidden anchors within pages. [\#178](https://github.com/Fortran-FOSS-Programmers/ford/pull/178) ([sch1ldkr0ete](https://github.com/sch1ldkr0ete))
+- Reducing page rendering time [\#175](https://github.com/Fortran-FOSS-Programmers/ford/pull/175) ([sch1ldkr0ete](https://github.com/sch1ldkr0ete))
 - Better example [\#169](https://github.com/Fortran-FOSS-Programmers/ford/pull/169) ([zbeekman](https://github.com/zbeekman))
 
 ## [v5.0.6](https://github.com/Fortran-FOSS-Programmers/ford/tree/v5.0.6) (2016-09-16)
