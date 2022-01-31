@@ -734,10 +734,8 @@ class FortranContainer(FortranBase):
                                 name = split[0].strip().lower()
                                 self.param_dict[name] = split[1]
                             name = name.strip().lower()
-                            if name in self.attr_dict:
-                                self.attr_dict[name].append(attr)
-                            else:
-                                self.attr_dict[name] = [attr]
+                            self.attr_dict[name].append(attr)
+
                 elif attr.lower() == "data" and self.obj == "sourcefile":
                     # TODO: This is just a fix to keep FORD from crashing on
                     # encountering a block data structure. At some point I
@@ -1265,7 +1263,7 @@ class FortranCodeUnit(FortranContainer):
         for item in self.iterator(
             "functions", "subroutines", "types", "interfaces", "absinterfaces"
         ):
-            for attr in self.attr_dict.get(item.name.lower(), []):
+            for attr in self.attr_dict[item.name.lower()]:
                 if attr == "public" or attr == "private" or attr == "protected":
                     item.permission = attr
                 elif attr[0:4] == "bind":
@@ -1283,7 +1281,7 @@ class FortranCodeUnit(FortranContainer):
                 pass
 
         for var in self.variables:
-            for attr in self.attr_dict.get(var.name.lower(), []):
+            for attr in self.attr_dict[var.name.lower()]:
                 if attr == "public" or attr == "private" or attr == "protected":
                     var.permission = attr
                 elif attr[0:6] == "intent":
@@ -2415,11 +2413,9 @@ class FortranBlockData(FortranContainer):
 
     def process_attribs(self):
         for item in self.types:
-            for attr in self.attr_dict.get(item.name.lower(), []):
-                if "public" in self.attr_dict[item.name.lower()]:
-                    item.permission = "public"
-                elif "private" in self.attr_dict[item.name.lower()]:
-                    item.permission = "private"
+            for attr in self.attr_dict[item.name.lower()]:
+                if attr == "public" or attr == "private" or attr == "protected":
+                    item.permission = attr
                 elif attr[0:4] == "bind":
                     if hasattr(item, "bindC"):
                         item.bindC = attr[5:-1]
@@ -2428,7 +2424,7 @@ class FortranBlockData(FortranContainer):
                     else:
                         item.attribs.append(attr[5:-1])
         for var in self.variables:
-            for attr in self.attr_dict.get(var.name.lower(), []):
+            for attr in self.attr_dict[var.name.lower()]:
                 if attr == "public" or attr == "private" or attr == "protected":
                     var.permission = attr
                 elif attr[0:6] == "intent":
