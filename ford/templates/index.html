@@ -82,7 +82,7 @@
        {% endif %}
       </div>
       {% set count=0 %}
-      {% if incl_src == "true" %}{% set count = count + 1 %}{% endif %}
+      {% if incl_src %}{% set count = count + 1 %}{% endif %}
       {% if project.modules|length > 0 %}{% set count = count + 1 %}{% endif %}
       {% if project.procedures|length > 0 %}{% set count = count + 1 %}{% endif %}
       {% if project.types|length > 0 %}{% set count = count + 1 %}{% endif %}
@@ -90,7 +90,7 @@
 		{% set width = (12/count)|int %}
         {% set max_length = max_frontpage_items|int %}
       <div class="row">
-        {% if incl_src == "true" %}
+        {% if incl_src %}
         <div class="col-xs-6 col-sm-{{ width }}">
               <h3>Source Files</h3>
               <ul>

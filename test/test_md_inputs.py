@@ -8,15 +8,17 @@ import ford.fortran_project
 
 from bs4 import BeautifulSoup
 
-
 # Ford default src folder
 DEFAULT_SRC = "src"
 
 
-def run_ford(monkeypatch, md_file: pathlib.Path):
+def run_ford(monkeypatch, md_file: pathlib.Path, extra_args: list = None):
     """Modify command line args with argv"""
     with monkeypatch.context() as m:
-        m.setattr(sys, "argv", ["ford", str(md_file)])
+        command = ["ford", str(md_file)]
+        if extra_args is not None:
+            command = command[:1] + extra_args + command[1:]
+        m.setattr(sys, "argv", command)
         ford.run()
 
 

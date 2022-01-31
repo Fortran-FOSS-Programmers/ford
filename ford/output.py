@@ -43,7 +43,11 @@ from ford.graphmanager import GraphManager
 from ford.graphs import graphviz_installed
 
 loc = os.path.dirname(__file__)
-env = jinja2.Environment(loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")))
+env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")),
+    trim_blocks=True,
+    lstrip_blocks=True,
+)
 env.globals["path"] = os.path  # this lets us call path.* in templates
 
 
@@ -54,22 +58,24 @@ class Documentation(object):
     """
 
     def __init__(self, data, proj_docs, project, pagetree):
-        env.globals[
-            "projectData"
-        ] = data  # This lets us use meta data anywhere within the template.
+        # This lets us use meta data anywhere within the template.
         # Also, in future for other template, we may not need to
         # pass the data obj.
+        env.globals["projectData"] = data
         self.project = project
-        self.data = data
+        # Jinja2's `if` statement counts `None` as truthy, so to avoid
+        # lots of refactoring and messiness in the templates, just get
+        # rid of None values
+        self.data = {k: v for k, v in data.items() if v is not None}
         self.pagetree = []
         self.lists = []
         self.docs = []
         self.njobs = int(self.data["parallel"])
         self.parallel = self.njobs > 0
 
-        self.index = IndexPage(data, project, proj_docs)
-        self.search = SearchPage(data, project)
-        if not graphviz_installed and data["graph"].lower() == "true":
+        self.index = IndexPage(self.data, project, proj_docs)
+        self.search = SearchPage(self.data, project)
+        if not graphviz_installed and data["graph"]:
             print(
                 "Warning: Will not be able to generate graphs. Graphviz not installed."
             )
@@ -79,57 +85,57 @@ class Documentation(object):
             graphparent = ""
         print("Creating HTML documentation...")
         try:
-            if data["incl_src"] == "true":
+            if data["incl_src"]:
                 for item in project.allfiles:
-                    self.docs.append(FilePage(data, project, item))
+                    self.docs.append(FilePage(self.data, project, item))
             for item in project.types:
-                self.docs.append(TypePage(data, project, item))
+                self.docs.append(TypePage(self.data, project, item))
             for item in project.absinterfaces:
-                self.docs.append(AbsIntPage(data, project, item))
+                self.docs.append(AbsIntPage(self.data, project, item))
             for item in project.procedures:
-                self.docs.append(ProcPage(data, project, item))
+                self.docs.append(ProcPage(self.data, project, item))
             for item in project.submodprocedures:
-                self.docs.append(ProcPage(data, project, item))
+                self.docs.append(ProcPage(self.data, project, item))
             for item in project.modules:
-                self.docs.append(ModulePage(data, project, item))
+                self.docs.append(ModulePage(self.data, project, item))
             for item in project.submodules:
-                self.docs.append(ModulePage(data, project, item))
+                self.docs.append(ModulePage(self.data, project, item))
             for item in project.programs:
-                self.docs.append(ProgPage(data, project, item))
+                self.docs.append(ProgPage(self.data, project, item))
             for item in project.blockdata:
-                self.docs.append(BlockPage(data, project, item))
+                self.docs.append(BlockPage(self.data, project, item))
             if len(project.procedures) > 0:
-                self.lists.append(ProcList(data, project))
-            if data["incl_src"] == "true":
+                self.lists.append(ProcList(self.data, project))
+            if data["incl_src"]:
                 if len(project.files) + len(project.extra_files) > 1:
-                    self.lists.append(FileList(data, project))
+                    self.lists.append(FileList(self.data, project))
             if len(project.modules) + len(project.submodules) > 0:
-                self.lists.append(ModList(data, project))
+                self.lists.append(ModList(self.data, project))
             if len(project.programs) > 1:
-                self.lists.append(ProgList(data, project))
+                self.lists.append(ProgList(self.data, project))
             if len(project.types) > 0:
-                self.lists.append(TypeList(data, project))
+                self.lists.append(TypeList(self.data, project))
             if len(project.absinterfaces) > 0:
-                self.lists.append(AbsIntList(data, project))
+                self.lists.append(AbsIntList(self.data, project))
             if len(project.blockdata) > 1:
-                self.lists.append(BlockList(data, project))
+                self.lists.append(BlockList(self.data, project))
             if pagetree:
                 for item in pagetree:
-                    self.pagetree.append(PagetreePage(data, project, item))
+                    self.pagetree.append(PagetreePage(self.data, project, item))
         except Exception:
             if data["dbg"]:
                 traceback.print_exc()
                 sys.exit("Error encountered.")
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
-        if graphviz_installed and data["graph"].lower() == "true":
+        if graphviz_installed and data["graph"]:
             print("Generating graphs...")
             self.graphs = GraphManager(
                 self.data["project_url"],
                 self.data["output_dir"],
                 self.data.get("graph_dir", ""),
                 graphparent,
-                self.data["coloured_edges"].lower() == "true",
+                self.data["coloured_edges"],
             )
             for item in project.types:
                 self.graphs.register(item)
@@ -158,13 +164,13 @@ class Documentation(object):
                 self.data["output_dir"],
                 self.data.get("graph_dir", ""),
                 graphparent,
-                self.data["coloured_edges"].lower() == "true",
+                self.data["coloured_edges"],
             )
             project.callgraph = ""
             project.typegraph = ""
             project.usegraph = ""
             project.filegraph = ""
-        if data["search"].lower() == "true":
+        if data["search"]:
             print("Creating search index...")
             if data["relative"]:
                 self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(
@@ -209,33 +215,39 @@ class Documentation(object):
         copytree(os.path.join(loc, "css"), os.path.join(out_dir, "css"))
         copytree(os.path.join(loc, "fonts"), os.path.join(out_dir, "fonts"))
         copytree(os.path.join(loc, "js"), os.path.join(out_dir, "js"))
-        if self.data["graph"].lower() == "true":
+        if self.data["graph"]:
             self.graphs.output_graphs(self.njobs)
-        if self.data["search"].lower() == "true":
+        if self.data["search"]:
             copytree(
                 os.path.join(loc, "tipuesearch"), os.path.join(out_dir, "tipuesearch")
             )
             self.tipue.print_output()
-        if "media_dir" in self.data:
-            try:
-                copytree(self.data["media_dir"], os.path.join(out_dir, "media"))
-            except OSError:
-                print(
-                    "Warning: error copying media directory {}".format(
-                        self.data["media_dir"]
-                    )
+
+        try:
+            copytree(self.data["media_dir"], os.path.join(out_dir, "media"))
+        except OSError:
+            print(
+                "Warning: error copying media directory {}".format(
+                    self.data["media_dir"]
                 )
+            )
+        except KeyError:
+            pass
+
         if "css" in self.data:
             shutil.copy(self.data["css"], os.path.join(out_dir, "css", "user.css"))
+
         if self.data["favicon"] == "default-icon":
             shutil.copy(
                 os.path.join(loc, "favicon.png"), os.path.join(out_dir, "favicon.png")
             )
         else:
             shutil.copy(self.data["favicon"], os.path.join(out_dir, "favicon.png"))
-        if self.data["incl_src"] == "true":
+
+        if self.data["incl_src"]:
             for src in self.project.allfiles:
                 shutil.copy(src.path, os.path.join(out_dir, "src", src.name))
+
         if "mathjax_config" in self.data:
             os.mkdir(os.path.join(out_dir, "js", "MathJax-config"))
             shutil.copy(

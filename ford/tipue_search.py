@@ -33,7 +33,8 @@ Adapted from the Pelican plugin by Talha Mansoor
 https://github.com/getpelican/pelican-plugins/tree/master/tipue_search
 """
 
-import os.path
+import os
+import pathlib
 import json
 from bs4 import BeautifulSoup, FeatureNotFound, SoupStrainer
 from codecs import open
@@ -45,9 +46,9 @@ except ImportError:
 
 
 class Tipue_Search_JSON_Generator(object):
-    def __init__(self, output_path, project_url):
+    def __init__(self, output_path: os.PathLike, project_url: str):
 
-        self.output_path = output_path
+        self.output_path = pathlib.Path(output_path)
         self.siteurl = project_url
         self.json_nodes = []
         self.only_text = SoupStrainer("div", id="text")
@@ -99,7 +100,7 @@ class Tipue_Search_JSON_Generator(object):
         self.json_nodes.append(node)
 
     def print_output(self):
-        path = os.path.join(self.output_path, "tipuesearch", "tipuesearch_content.js")
+        path = self.output_path / "tipuesearch" / "tipuesearch_content.js"
 
         root_node = {"pages": self.json_nodes}
         output = json.dumps(root_node, separators=(",", ":"), ensure_ascii=False)

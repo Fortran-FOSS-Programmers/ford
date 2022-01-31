@@ -329,7 +329,7 @@ class FortranBase(object):
             self.meta = md.Meta
         else:
             if (
-                self.settings["warn"].lower() == "true"
+                self.settings["warn"]
                 and self.obj != "sourcefile"
                 and self.obj != "genericsource"
             ):
@@ -374,7 +374,7 @@ class FortranBase(object):
 
         self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc))
 
-        if "summary" in self.meta:
+        if self.meta.get("summary", None) is not None:
             self.meta["summary"] = md.convert(self.meta["summary"])
             self.meta["summary"] = ford.utils.sub_macros(
                 ford.utils.sub_notes(self.meta["summary"])
@@ -398,7 +398,8 @@ class FortranBase(object):
         if "graph" not in self.meta:
             self.meta["graph"] = self.settings["graph"]
         else:
-            self.meta["graph"] = self.meta["graph"].lower()
+            self.meta["graph"] = ford.utils.str_to_bool(self.meta["graph"])
+
         if "graph_maxdepth" not in self.meta:
             self.meta["graph_maxdepth"] = self.settings["graph_maxdepth"]
         if "graph_maxnodes" not in self.meta:
@@ -406,9 +407,9 @@ class FortranBase(object):
 
         if self.obj == "proc" or self.obj == "type" or self.obj == "program":
             if "source" not in self.meta:
-                self.meta["source"] = self.settings["source"].lower()
+                self.meta["source"] = self.settings["source"]
             else:
-                self.meta["source"] = self.meta["source"].lower()
+                self.meta["source"] = ford.utils.str_to_bool(self.meta["source"])
             if self.meta["source"] == "true":
                 if self.obj == "proc":
                     obj = self.proctype.lower()
@@ -423,7 +424,7 @@ class FortranBase(object):
                     self.src = highlight(match.group(), FortranLexer(), HtmlFormatter())
                 else:
                     self.src = ""
-                    if self.settings["warn"].lower() == "true":
+                    if self.settings["warn"]:
                         print(
                             "Warning: Could not extract source code for {} {} in file {}".format(
                                 self.obj, self.name, self.hierarchy[0].name
@@ -432,9 +433,11 @@ class FortranBase(object):
 
         if self.obj == "proc":
             if "proc_internals" not in self.meta:
-                self.meta["proc_internals"] = self.settings["proc_internals"].lower()
+                self.meta["proc_internals"] = self.settings["proc_internals"]
             else:
-                self.meta["proc_internals"] = self.meta["proc_internals"].lower()
+                self.meta["proc_internals"] = ford.utils.str_to_bool(
+                    self.meta["proc_internals"]
+                )
 
         # Create Markdown
         for item in self.iterator(
@@ -507,7 +510,7 @@ class FortranBase(object):
         Process intra-site links to documentation of other parts of the program.
         """
         self.doc = ford.utils.sub_links(self.doc, project)
-        if "summary" in self.meta:
+        if self.meta["summary"] is not None:
             self.meta["summary"] = ford.utils.sub_links(self.meta["summary"], project)
 
         # Create links in the project
@@ -663,7 +666,7 @@ class FortranContainer(FortranBase):
                 search_from += QUOTES_RE.search(line[search_from:]).end(0)
 
             # Check the various possibilities for what is on this line
-            if self.settings["lower"].lower() == "true":
+            if self.settings["lower"]:
                 line = line.lower()
             if line.lower() == "contains":
                 if not incontains and type(self) in _can_have_contains:
@@ -1326,7 +1329,7 @@ class FortranCodeUnit(FortranContainer):
 
         def to_include(obj):
             inc = obj.permission in self.display
-            if self.settings["hide_undoc"].lower() == "true" and not obj.doc:
+            if self.settings["hide_undoc"] and not obj.doc:
                 inc = False
             return inc
 
@@ -1414,7 +1417,7 @@ class FortranSourceFile(FortranContainer):
             settings["docmark_alt"],
             settings["predocmark_alt"],
             fixed,
-            settings["fixed_length_limit"].lower() == "true",
+            settings["fixed_length_limit"],
             preprocessor,
             settings["macro"],
             settings["include"],

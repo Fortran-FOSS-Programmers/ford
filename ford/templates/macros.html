@@ -31,7 +31,7 @@
     title="{{line_info}}">{{meta['num_lines']}} statements</a>
      </li> 
      {% endif %}
-     {% if incl_src  == "true" %}
+     {% if incl_src %}
      {% if hierarchy[0] %}
     <li><i class="fa fa-code"></i><a href="{{ base_url }}/src/{{ hierarchy[0].name }}"> Source File</a></li>
      {% else %}
@@ -40,7 +40,7 @@
      {% endif %}
   </ul>
   <ol class="breadcrumb in-well text-right">
-  {% if incl_src  == "true" %}
+  {% if incl_src %}
     {% for item in hierarchy %}
      <li>{{ item }}</li>
     {% endfor %}

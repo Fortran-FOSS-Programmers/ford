@@ -25,3 +25,13 @@ def test_register_macro_clash(restore_macros):
 
     with pytest.raises(RuntimeError):
         ford.utils.register_macro("a=c")
+
+
+@pytest.mark.parametrize("string", ["true", "True", "TRUE", "tRuE"])
+def test_str_to_bool_true(string):
+    assert ford.utils.str_to_bool(string)
+
+
+@pytest.mark.parametrize("string", ["false", "False", "FALSE", "fAlSe"])
+def test_str_to_bool_false(string):
+    assert not ford.utils.str_to_bool(string)
