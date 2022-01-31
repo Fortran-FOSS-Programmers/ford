@@ -741,3 +741,31 @@ def test_markdown_meta_reset(parse_fortran_file):
     assert module.meta["version"] == "0.1.0"
     assert module.subroutines[0].meta["author"] == "Test name"
     assert "author" not in module.subroutines[1].meta
+
+
+def test_multiline_attributes(parse_fortran_file):
+    """Check that specifying attributes over multiple lines works"""
+
+    data = """\
+    program prog
+      real x
+      dimension x(:)
+      allocatable x
+      integer, allocatable, dimension(:) :: y
+      complex z
+      allocatable z(:)
+
+      allocate(x(1), y(1), z(1))
+    end program prog
+    """
+
+    fortran_file = parse_fortran_file(data)
+    prog = fortran_file.programs[0]
+
+    for variable in prog.variables:
+        assert (
+            "allocatable" in variable.attribs
+        ), f"Missing 'allocatable' in '{variable}' attributes"
+        assert (
+            variable.dimension == "(:)" or "dimension(:)" in variable.attribs
+        ), f"Wrong dimension for '{variable}'"

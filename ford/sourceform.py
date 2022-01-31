@@ -22,6 +22,7 @@
 #
 #
 
+from collections import defaultdict
 import sys
 import re
 import os.path
@@ -700,21 +701,19 @@ class FortranContainer(FortranBase):
                 if hasattr(self, "attr_dict"):
                     if attr == "data":
                         pass
-                    elif (
-                        attr == "dimension"
-                        or attr == "allocatable"
-                        or attr == "pointer"
-                    ):
+                    elif attr in ["dimension", "allocatable", "pointer"]:
                         names = ford.utils.paren_split(",", match.group(2))
                         for name in names:
                             name = name.strip().lower()
-                            i = name.index("(")
-                            n = name[:i]
-                            sh = name[i:]
-                            if n in self.attr_dict:
-                                self.attr_dict[n].append(attr + sh)
-                            else:
-                                self.attr_dict[n] = [attr + sh]
+                            try:
+                                open_parenthesis = name.index("(")
+                                var_name = name[:open_parenthesis]
+                                dimensions = name[open_parenthesis:]
+                            except ValueError:
+                                var_name = name
+                                dimensions = ""
+
+                            self.attr_dict[var_name].append(attr + dimensions)
                     else:
                         stmnt = match.group(2)
                         if attr == "parameter":
@@ -1467,7 +1466,7 @@ class FortranModule(FortranCodeUnit):
         self.descendants = []
         self.common = []
         self.visible = True
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.param_dict = dict()
 
     def _cleanup(self):
@@ -1620,7 +1619,7 @@ class FortranSubroutine(FortranCodeUnit):
         self.absinterfaces = []
         self.types = []
         self.common = []
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.param_dict = dict()
         self.associate_blocks = []
 
@@ -1736,7 +1735,7 @@ class FortranFunction(FortranCodeUnit):
         self.absinterfaces = []
         self.types = []
         self.common = []
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.param_dict = dict()
         self.associate_blocks = []
 
@@ -1817,7 +1816,7 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.interfaces = []
         self.absinterfaces = []
         self.types = []
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.mp = True
         self.param_dict = dict()
         self.associate_blocks = []
@@ -1855,7 +1854,7 @@ class FortranProgram(FortranCodeUnit):
         self.uses = []
         self.calls = []
         self.absinterfaces = []
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.param_dict = dict()
         self.associate_blocks = []
         self.common = []
@@ -2356,7 +2355,7 @@ class FortranBlockData(FortranContainer):
         self.types = []
         self.common = []
         self.visible = True
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.param_dict = dict()
 
     def correlate(self, project):
