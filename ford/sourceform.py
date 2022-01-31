@@ -22,6 +22,7 @@
 #
 #
 
+from collections import defaultdict
 import sys
 import re
 import os.path
@@ -700,21 +701,19 @@ class FortranContainer(FortranBase):
                 if hasattr(self, "attr_dict"):
                     if attr == "data":
                         pass
-                    elif (
-                        attr == "dimension"
-                        or attr == "allocatable"
-                        or attr == "pointer"
-                    ):
+                    elif attr in ["dimension", "allocatable", "pointer"]:
                         names = ford.utils.paren_split(",", match.group(2))
                         for name in names:
                             name = name.strip().lower()
-                            i = name.index("(")
-                            n = name[:i]
-                            sh = name[i:]
-                            if n in self.attr_dict:
-                                self.attr_dict[n].append(attr + sh)
-                            else:
-                                self.attr_dict[n] = [attr + sh]
+                            try:
+                                open_parenthesis = name.index("(")
+                                var_name = name[:open_parenthesis]
+                                dimensions = name[open_parenthesis:]
+                            except ValueError:
+                                var_name = name
+                                dimensions = ""
+
+                            self.attr_dict[var_name].append(attr + dimensions)
                     else:
                         stmnt = match.group(2)
                         if attr == "parameter":
@@ -735,10 +734,8 @@ class FortranContainer(FortranBase):
                                 name = split[0].strip().lower()
                                 self.param_dict[name] = split[1]
                             name = name.strip().lower()
-                            if name in self.attr_dict:
-                                self.attr_dict[name].append(attr)
-                            else:
-                                self.attr_dict[name] = [attr]
+                            self.attr_dict[name].append(attr)
+
                 elif attr.lower() == "data" and self.obj == "sourcefile":
                     # TODO: This is just a fix to keep FORD from crashing on
                     # encountering a block data structure. At some point I
@@ -1266,7 +1263,7 @@ class FortranCodeUnit(FortranContainer):
         for item in self.iterator(
             "functions", "subroutines", "types", "interfaces", "absinterfaces"
         ):
-            for attr in self.attr_dict.get(item.name.lower(), []):
+            for attr in self.attr_dict[item.name.lower()]:
                 if attr == "public" or attr == "private" or attr == "protected":
                     item.permission = attr
                 elif attr[0:4] == "bind":
@@ -1284,7 +1281,7 @@ class FortranCodeUnit(FortranContainer):
                 pass
 
         for var in self.variables:
-            for attr in self.attr_dict.get(var.name.lower(), []):
+            for attr in self.attr_dict[var.name.lower()]:
                 if attr == "public" or attr == "private" or attr == "protected":
                     var.permission = attr
                 elif attr[0:6] == "intent":
@@ -1467,7 +1464,7 @@ class FortranModule(FortranCodeUnit):
         self.descendants = []
         self.common = []
         self.visible = True
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.param_dict = dict()
 
     def _cleanup(self):
@@ -1620,7 +1617,7 @@ class FortranSubroutine(FortranCodeUnit):
         self.absinterfaces = []
         self.types = []
         self.common = []
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.param_dict = dict()
         self.associate_blocks = []
 
@@ -1736,7 +1733,7 @@ class FortranFunction(FortranCodeUnit):
         self.absinterfaces = []
         self.types = []
         self.common = []
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.param_dict = dict()
         self.associate_blocks = []
 
@@ -1817,7 +1814,7 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.interfaces = []
         self.absinterfaces = []
         self.types = []
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.mp = True
         self.param_dict = dict()
         self.associate_blocks = []
@@ -1855,7 +1852,7 @@ class FortranProgram(FortranCodeUnit):
         self.uses = []
         self.calls = []
         self.absinterfaces = []
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.param_dict = dict()
         self.associate_blocks = []
         self.common = []
@@ -2356,7 +2353,7 @@ class FortranBlockData(FortranContainer):
         self.types = []
         self.common = []
         self.visible = True
-        self.attr_dict = dict()
+        self.attr_dict = defaultdict(list)
         self.param_dict = dict()
 
     def correlate(self, project):
@@ -2416,11 +2413,9 @@ class FortranBlockData(FortranContainer):
 
     def process_attribs(self):
         for item in self.types:
-            for attr in self.attr_dict.get(item.name.lower(), []):
-                if "public" in self.attr_dict[item.name.lower()]:
-                    item.permission = "public"
-                elif "private" in self.attr_dict[item.name.lower()]:
-                    item.permission = "private"
+            for attr in self.attr_dict[item.name.lower()]:
+                if attr == "public" or attr == "private" or attr == "protected":
+                    item.permission = attr
                 elif attr[0:4] == "bind":
                     if hasattr(item, "bindC"):
                         item.bindC = attr[5:-1]
@@ -2429,7 +2424,7 @@ class FortranBlockData(FortranContainer):
                     else:
                         item.attribs.append(attr[5:-1])
         for var in self.variables:
-            for attr in self.attr_dict.get(var.name.lower(), []):
+            for attr in self.attr_dict[var.name.lower()]:
                 if attr == "public" or attr == "private" or attr == "protected":
                     var.permission = attr
                 elif attr[0:6] == "intent":
