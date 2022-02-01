@@ -17,8 +17,8 @@ ANY_TEXT = re.compile(r"h[1-4]|p")
 @pytest.fixture(scope="module")
 def example_project(tmp_path_factory):
     this_dir = pathlib.Path(__file__).parent
-    tmp_path = tmp_path_factory.mktemp("example")
-    shutil.copytree(this_dir / "../example", tmp_path, dirs_exist_ok=True)
+    tmp_path = tmp_path_factory.getbasetemp() / "example"
+    shutil.copytree(this_dir / "../example", tmp_path)
 
     with pytest.MonkeyPatch.context() as m:
         os.chdir(tmp_path)
