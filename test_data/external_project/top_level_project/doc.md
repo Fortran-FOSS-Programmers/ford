@@ -1,3 +1,4 @@
 project: top-level-project
 search: false
-external: exturl = ../external_project/doc
+external: local = ../external_project/doc
+          remote = https://geb.sts.nt.uni-siegen.de/doxy/aotus

@@ -3,6 +3,7 @@ import sys
 import os
 import pathlib
 import re
+from urllib.parse import urlparse
 
 import ford
 
@@ -25,6 +26,9 @@ def test_external_project(copy_project_files, monkeypatch, restore_macros):
     This is a rough-and-ready test that runs FORD via subprocess, and
     so won't work unless FORD has been installed.
 
+    It also relies on access to the internet and an external URL out
+    of our control.
+
     """
 
     path = copy_project_files
@@ -44,14 +48,23 @@ def test_external_project(copy_project_files, monkeypatch, restore_macros):
         m.setattr(sys, "argv", ["ford", "doc.md"])
         ford.run()
 
+    # Make sure we're in a directory where relative paths won't
+    # resolve correctly
+    os.chdir("/")
+
     # Read generated HTML
     with open(top_level_project / "doc/program/top_level.html", "r") as f:
         top_program_html = BeautifulSoup(f.read(), features="html.parser")
 
-    # Find link to external module and check it's correct
-    external_link = top_program_html.find_all(
-        href=re.compile("external_project/doc/module/external_module.html")
-    )
+    # Find links to external modules
+    uses_box = top_program_html.find(string="Uses").parent.parent.parent
+    links = {tag.text: tag.a["href"] for tag in uses_box("li", class_=None)}
 
-    assert len(external_link) == 1
-    assert external_link[0].text == "external_module"
+    assert len(links) == 2
+    assert "external_module" in links
+    local_url = urlparse(links["external_module"])
+    assert pathlib.Path(local_url.path).is_file()
+
+    assert "aot_out_module" in links
+    remote_url = urlparse(links["aot_out_module"])
+    assert remote_url.scheme == "https"
