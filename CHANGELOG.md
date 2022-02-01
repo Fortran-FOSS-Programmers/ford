@@ -1,5 +1,23 @@
 # Changelog
 
+## [v6.1.8](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.8) (2022-02-01)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.7...v6.1.8)
+
+**Fixed bugs:**
+
+- Fails with TypeError for preprocessing file [\#380](https://github.com/Fortran-FOSS-Programmers/ford/issues/380)
+
+**Closed issues:**
+
+- LaTeX macros [\#361](https://github.com/Fortran-FOSS-Programmers/ford/issues/361)
+- Installing on macOS Big Sur [\#351](https://github.com/Fortran-FOSS-Programmers/ford/issues/351)
+
+**Merged pull requests:**
+
+- Fix local external project [\#382](https://github.com/Fortran-FOSS-Programmers/ford/pull/382) ([ZedThree](https://github.com/ZedThree))
+- Fix preprocessor command [\#381](https://github.com/Fortran-FOSS-Programmers/ford/pull/381) ([ZedThree](https://github.com/ZedThree))
+
 ## [v6.1.7](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.7) (2022-01-31)
 
 [Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.6...v6.1.7)
@@ -115,7 +133,6 @@
 
 - black? [\#334](https://github.com/Fortran-FOSS-Programmers/ford/issues/334)
 - Crash with macro [\#45](https://github.com/Fortran-FOSS-Programmers/ford/issues/45)
-- markdown output: feature request [\#3](https://github.com/Fortran-FOSS-Programmers/ford/issues/3)
 
 **Merged pull requests:**
 
