@@ -504,19 +504,19 @@ def parse_arguments(
         )
     # Handle preprocessor:
     if proj_data["preprocess"]:
-        preprocessor = proj_data["preprocessor"].split()
+        proj_data["preprocessor"] = proj_data["preprocessor"].split()
 
         # Check whether preprocessor works (reading nothing from stdin)
         try:
             subprocess.run(
-                preprocessor,
+                proj_data["preprocessor"],
                 check=True,
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
             )
         except (subprocess.CalledProcessError, OSError) as ex:
             print("Warning: Testing preprocessor failed")
-            print("  Preprocessor command: {}".format(preprocessor))
+            print("  Preprocessor command: {}".format(proj_data["preprocessor"]))
             print("  Exception: {}".format(ex))
             print("  -> Preprocessing turned off")
             proj_data["preprocess"] = False

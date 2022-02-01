@@ -1,4 +1,6 @@
-src_dir: ./src-example/
+---
+project: Example Project
+src_dir: ./src
 output_dir: ./doc
 project_github: https://github.com/cmacmackin/futility
 project_website: https://github.com
@@ -6,8 +8,10 @@ summary: Some Fortran program which I wrote.
 author: John Doe
 author_description: I program stuff in Fortran.
 github: https://github.com/cmacmackin
-email: john.doe@address.com
+email: john.doe@example.com
 fpp_extensions: fpp
+preprocess: true
+macro: HAS_DECREMENT
 predocmark: >
 media_dir: ./media
 docmark_alt: #
@@ -18,12 +22,12 @@ display: public
 source: false
 graph: true
 search: true
-macro: TEST
-       LOGIC=.true.
 extra_mods: json_module: http://jacobwilliams.github.io/json-fortran/
             futility: http://cmacmackin.github.io
 license: by-nc
 extra_filetypes: sh #
+max_frontpage_items: 4
+---
 
 Hi, my name is ${USER}.
 

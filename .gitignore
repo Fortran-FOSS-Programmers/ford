@@ -2,7 +2,6 @@ structure.ods
 *.pyc
 *~
 doc/
-src/
 #README.rst
 FORD.egg-info/
 dist/
