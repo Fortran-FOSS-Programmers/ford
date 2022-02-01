@@ -29,6 +29,7 @@ import json
 import ford.sourceform
 from urllib.request import urlopen, URLError
 from urllib.parse import urljoin
+import pathlib
 
 
 NOTE_TYPE = {
@@ -411,7 +412,7 @@ def external(project, make=False, path="."):
                         extDict[attrib][key] = extItem
         return extDict
 
-    def modules_from_local(url):
+    def modules_from_local(url: pathlib.Path):
         """
         Get module information from an external project but on the
         local file system.
@@ -419,13 +420,10 @@ def external(project, make=False, path="."):
         """
         from io import open
 
-        with open(
-            os.path.join(url, "modules.json"), mode="r", encoding="utf-8"
-        ) as extfile:
-            extModules = json.loads(extfile.read())
-        return extModules
+        with open(url / "modules.json", mode="r", encoding="utf-8") as extfile:
+            return json.loads(extfile.read())
 
-    def dict2obj(extDict, url, parent=None):
+    def dict2obj(extDict, url, parent=None, remote: bool = False):
         """
         Converts a dictionary to an object.
         """
@@ -454,8 +452,11 @@ def external(project, make=False, path="."):
             project.extVariables.append(extObj)
         extObj.name = extDict["name"]
         if extDict["external_url"]:
-            extDict["external_url"] = "/" + extDict["external_url"].split("/", 1)[-1]
-            extObj.external_url = url + extDict["external_url"]
+            extDict["external_url"] = extDict["external_url"].split("/", 1)[-1]
+            if remote:
+                extObj.external_url = urljoin(url, extDict["external_url"])
+            else:
+                extObj.external_url = url / extDict["external_url"]
         else:
             extObj.external_url = extDict["external_url"]
         extObj.obj = extDict["obj"]
@@ -468,12 +469,12 @@ def external(project, make=False, path="."):
             elif type(extDict[key]) == list:
                 tmpLs = []
                 for item in extDict[key]:
-                    tmpLs.append(dict2obj(item, url, extObj))
+                    tmpLs.append(dict2obj(item, url, extObj, remote))
                 setattr(extObj, key, tmpLs)
             elif type(extDict[key]) == dict:
                 tmpDict = {}
                 for key2, val in extDict[key].items():
-                    tmpDict[key2] = dict2obj(val, url, extObj)
+                    tmpDict[key2] = dict2obj(val, url, extObj, remote)
                 setattr(extObj, key, tmpDict)
         return extObj
 
@@ -489,8 +490,9 @@ def external(project, make=False, path="."):
         for urldef in project.external:
             # get the external modules from the external URL
             url, short = register_macro(urldef)
+            remote = re.match("https?://", url)
             try:
-                if re.match("https?://", url):
+                if remote:
                     # Ensure the URL ends with '/' to have urljoin work as
                     # intentend.
                     if url[-1] != "/":
@@ -499,13 +501,14 @@ def external(project, make=False, path="."):
                         urlopen(urljoin(url, "modules.json")).read().decode("utf8")
                     )
                 else:
+                    url = pathlib.Path(url).resolve()
                     extModules = modules_from_local(url)
             except (URLError, json.JSONDecodeError) as error:
                 extModules = []
                 print("Could not open external URL '{}', reason: {}".format(url, error))
             # convert modules defined in the JSON database to module objects
             for extModule in extModules:
-                dict2obj(extModule, url)
+                dict2obj(extModule, url, remote=remote)
 
 
 def str_to_bool(text):
