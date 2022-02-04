@@ -40,6 +40,7 @@ import ford.sourceform
 import ford.output
 import ford.utils
 import ford.pagetree
+from ford.md_environ import EnvironExtension
 
 try:
     from importlib.metadata import version, PackageNotFoundError
@@ -301,7 +302,7 @@ def parse_arguments(
         "markdown.extensions.codehilite",
         "markdown.extensions.extra",
         "mdx_math",
-        "md_environ.environ",
+        EnvironExtension(),
     ]
     md = markdown.Markdown(
         extensions=md_ext, output_format="html5", extension_configs={}
