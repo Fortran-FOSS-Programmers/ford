@@ -39,6 +39,7 @@ import ford.fortran_project
 import ford.sourceform
 import ford.output
 from ford.mdx_math import MathExtension
+from ford.md_table import ZebraTableCSSExtension
 import ford.utils
 import ford.pagetree
 
@@ -302,6 +303,7 @@ def parse_arguments(
         "markdown.extensions.codehilite",
         "markdown.extensions.extra",
         MathExtension(),
+        ZebraTableCSSExtension(),
         "md_environ.environ",
     ]
     md = markdown.Markdown(
