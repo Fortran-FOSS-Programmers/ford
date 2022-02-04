@@ -28,17 +28,18 @@ from os import getenv
 from markdown import Extension
 from markdown.inlinepatterns import Pattern
 
-ENVIRON_RE = r'\$\{(\w+)\}'
+ENVIRON_RE = r"\$\{(\w+)\}"
 
 
 class EnvironPattern(Pattern):
     """
     Pattern to pick out environment variables and insert their value.
     """
+
     def handleMatch(self, m):
         var = m.group(2)
-        return getenv(var,'')
-        
+        return getenv(var, "")
+
 
 def makeExtension(*args, **kwargs):
     """Inform Markdown of the existence of the extension."""
@@ -53,7 +54,4 @@ class EnvironExtension(Extension):
 
     def extendMarkdown(self, md, md_globals):
         """Insert 'environ' pattern before 'not_strong' pattern."""
-        md.inlinePatterns.add('environ',
-                              EnvironPattern(ENVIRON_RE),
-                              '<not_strong')
-            
+        md.inlinePatterns.add("environ", EnvironPattern(ENVIRON_RE), "<not_strong")
