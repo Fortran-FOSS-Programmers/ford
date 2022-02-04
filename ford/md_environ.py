@@ -21,8 +21,6 @@
 #
 #
 
-from __future__ import print_function
-from __future__ import unicode_literals
 from os import getenv
 
 from markdown import Extension
@@ -41,9 +39,9 @@ class EnvironPattern(Pattern):
         return getenv(var, "")
 
 
-def makeExtension(*args, **kwargs):
+def makeExtension(**kwargs):
     """Inform Markdown of the existence of the extension."""
-    return EnvironExtension(*args, **kwargs)
+    return EnvironExtension(**kwargs)
 
 
 class EnvironExtension(Extension):
@@ -52,6 +50,7 @@ class EnvironExtension(Extension):
     variable VARNAME, it it is defined, or by an empty string otherwise.
     """
 
-    def extendMarkdown(self, md, md_globals):
+    def extendMarkdown(self, md, *args, **kwargs):
         """Insert 'environ' pattern before 'not_strong' pattern."""
-        md.inlinePatterns.add("environ", EnvironPattern(ENVIRON_RE), "<not_strong")
+        md.inlinePatterns.register(EnvironPattern(ENVIRON_RE), "environ", 65)
+        md.registerExtension(self)
