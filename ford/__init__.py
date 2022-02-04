@@ -38,7 +38,6 @@ from typing import Union
 import ford.fortran_project
 import ford.sourceform
 import ford.output
-from ford.mdx_math import MathExtension
 import ford.utils
 import ford.pagetree
 
@@ -301,7 +300,7 @@ def parse_arguments(
         "markdown.extensions.meta",
         "markdown.extensions.codehilite",
         "markdown.extensions.extra",
-        MathExtension(),
+        "mdx_math",
         "md_environ.environ",
     ]
     md = markdown.Markdown(
