@@ -23,6 +23,22 @@ def copy_fortran_file(tmp_path):
     return copy_file
 
 
+def create_project(settings: dict):
+    md_ext = [
+        "markdown.extensions.meta",
+        "markdown.extensions.codehilite",
+        "markdown.extensions.extra",
+    ]
+    md = markdown.Markdown(
+        extensions=md_ext, output_format="html5", extension_configs={}
+    )
+
+    project = Project(settings)
+    project.markdown(md, "..")
+    project.correlate()
+    return project
+
+
 def test_use_without_rename(copy_fortran_file):
     data = """\
     module module1
@@ -48,8 +64,7 @@ def test_use_without_rename(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
     assert set(project.modules[0].all_procs.keys()) == {"routine_1", "routine"}
 
 
@@ -78,8 +93,7 @@ def test_use_and_rename(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
     assert set(project.modules[0].all_procs.keys()) == {"routine_1", "routine"}
 
 
@@ -124,8 +138,7 @@ def test_module_use_only_everything(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
 
     # Double-check we're looking at the right module
     assert project.modules[1].name == "use_only_everything"
@@ -196,8 +209,7 @@ def test_module_use_only_everything_change_access(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
 
     # Double-check we're looking at the right module
     assert project.modules[1].name == "use_only_change_access"
@@ -262,8 +274,7 @@ def test_module_use_everything(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
 
     # Double-check we're looking at the right module
     assert project.modules[1].name == "use_everything"
@@ -336,8 +347,7 @@ def test_module_use_everything_reexport(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
 
     # Double-check we're looking at the right module
     assert project.modules[2].name == "reexport"
@@ -391,8 +401,7 @@ def test_member_in_other_module(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
 
     module1 = project.modules[0]
     module2 = project.modules[1]
@@ -427,18 +436,7 @@ def test_display_internal_procedures(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    md_ext = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html5", extension_configs={}
-    )
-
-    project.markdown(md, "..")
-    project.correlate()
+    project = create_project(settings)
 
     subroutine1 = project.procedures[0]
     subroutine2 = project.procedures[1]
