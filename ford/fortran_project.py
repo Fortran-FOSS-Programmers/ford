@@ -97,7 +97,7 @@ class Project(object):
                         preprocessor = settings["preprocessor"]
                     else:
                         preprocessor = None
-                    if settings["dbg"]:
+                    try:
                         self.files.append(
                             ford.sourceform.FortranSourceFile(
                                 os.path.join(curdir, item),
@@ -108,26 +108,17 @@ class Project(object):
                                 encoding=self.encoding,
                             )
                         )
-                    else:
-                        try:
-                            self.files.append(
-                                ford.sourceform.FortranSourceFile(
-                                    os.path.join(curdir, item),
-                                    settings,
-                                    preprocessor,
-                                    extension in self.fixed_extensions,
-                                    incl_src=html_incl_src,
-                                    encoding=self.encoding,
-                                )
+                    except Exception as e:
+                        if not settings["dbg"]:
+                            raise e
+
+                        print(
+                            "Warning: Error parsing {}.\n\t{}".format(
+                                os.path.relpath(os.path.join(curdir, item)),
+                                e.args[0],
                             )
-                        except Exception as e:
-                            print(
-                                "Warning: Error parsing {}.\n\t{}".format(
-                                    os.path.relpath(os.path.join(curdir, item)),
-                                    e.args[0],
-                                )
-                            )
-                            continue
+                        )
+                        continue
                     for module in self.files[-1].modules:
                         self.modules.append(module)
                     for submod in self.files[-1].submodules:
@@ -149,27 +140,23 @@ class Project(object):
                             os.path.relpath(os.path.join(curdir, item))
                         )
                     )
-                    if settings["dbg"]:
+                    try:
                         self.extra_files.append(
                             ford.sourceform.GenericSource(
                                 os.path.join(curdir, item), settings
                             )
                         )
-                    else:
-                        try:
-                            self.extra_files.append(
-                                ford.sourceform.GenericSource(
-                                    os.path.join(curdir, item), settings
-                                )
+                    except Exception as e:
+                        if not settings["dbg"]:
+                            raise e
+
+                        print(
+                            "Warning: Error parsing {}.\n\t{}".format(
+                                os.path.relpath(os.path.join(curdir, item)),
+                                e.args[0],
                             )
-                        except Exception as e:
-                            print(
-                                "Warning: Error parsing {}.\n\t{}".format(
-                                    os.path.relpath(os.path.join(curdir, item)),
-                                    e.args[0],
-                                )
-                            )
-                            continue
+                        )
+                        continue
 
     @property
     def allfiles(self):
