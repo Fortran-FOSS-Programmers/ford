@@ -1,6 +1,7 @@
 import ford
 from textwrap import dedent
 import pytest
+import subprocess
 
 
 def test_quiet_false():
@@ -120,3 +121,18 @@ def test_maybe_ok_preprocessor():
     if data["preprocess"] is True:
         assert isinstance(data["preprocessor"], list)
         assert len(data["preprocessor"]) > 0
+
+
+def gfortran_is_not_installed():
+    """Returns False if gfortran is not (detectably) installed"""
+    out = subprocess.run("command -v gfortran", shell=True, check=False)
+    return out.returncode != 0
+
+
+@pytest.mark.skipif(
+    gfortran_is_not_installed(), reason="Requires gfortran to be installed"
+)
+def test_gfortran_preprocessor():
+    data, _, _ = ford.parse_arguments({}, "preprocessor: gfortran -E")
+
+    assert data["preprocess"] is True

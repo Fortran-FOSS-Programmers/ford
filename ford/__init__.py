@@ -509,9 +509,9 @@ def parse_arguments(
         # Check whether preprocessor works (reading nothing from stdin)
         try:
             subprocess.run(
-                proj_data["preprocessor"],
+                proj_data["preprocessor"] + [os.devnull],
                 check=True,
-                stdin=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
             )
         except (subprocess.CalledProcessError, OSError) as ex:
