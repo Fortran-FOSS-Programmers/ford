@@ -25,6 +25,8 @@ contains
   end subroutine do_foo_stuff
 
   subroutine do_stuff(repeat)
+    !! source: True
+    !!
     !! This is documentation for our subroutine that does stuff and things.
     !! This text is captured by ford
     integer, intent(in) :: repeat

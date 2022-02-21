@@ -121,6 +121,89 @@ LICENSES = {
 }
 
 
+DEFAULT_SETTINGS = {
+    "alias": [],
+    "author": None,
+    "author_description": None,
+    "author_pic": None,
+    "bitbucket": None,
+    "coloured_edges": False,
+    "copy_subdir": [],
+    "creation_date": "%Y-%m-%dT%H:%M:%S.%f%z",
+    "css": None,
+    "dbg": True,
+    "display": ["public", "protected"],
+    "doc_license": "",
+    "docmark": "!",
+    "docmark_alt": "*",
+    "email": None,
+    "encoding": "utf-8",
+    "exclude": [],
+    "exclude_dir": [],
+    "extensions": ["f90", "f95", "f03", "f08", "f15"],
+    "external": [],
+    "externalize": False,
+    "extra_filetypes": [],
+    "extra_mods": [],
+    "extra_vartypes": [],
+    "facebook": None,
+    "favicon": "default-icon",
+    "fixed_extensions": ["f", "for", "F", "FOR"],
+    "fixed_length_limit": True,
+    "force": False,
+    "fpp_extensions": ["F90", "F95", "F03", "F08", "F15", "F", "FOR"],
+    "github": None,
+    "gitlab": None,
+    "gitter_sidecar": None,
+    "google_plus": None,
+    "graph": False,
+    "graph_dir": None,
+    "graph_maxdepth": "10000",
+    "graph_maxnodes": "1000000000",
+    "hide_undoc": False,
+    "incl_src": True,
+    "include": [],
+    "license": "",
+    "linkedin": None,
+    "lower": False,
+    "macro": [],
+    "mathjax_config": None,
+    "max_frontpage_items": 10,
+    "media_dir": None,
+    "output_dir": "./doc",
+    "page_dir": None,
+    "parallel": 1,
+    "predocmark": ">",
+    "predocmark_alt": "|",
+    "preprocess": True,
+    "preprocessor": "cpp -traditional-cpp -E -D__GFORTRAN__",
+    "print_creation_date": False,
+    "privacy_policy_url": None,
+    "proc_internals": False,
+    "project": "Fortran Program",
+    "project_bitbucket": None,
+    "project_download": None,
+    "project_github": None,
+    "project_gitlab": None,
+    "project_sourceforge": None,
+    "project_url": "",
+    "project_website": None,
+    "quiet": False,
+    "revision": None,
+    "search": True,
+    "sort": "src",
+    "source": False,
+    "src_dir": ["./src"],
+    "summary": None,
+    "terms_of_service_url": None,
+    "twitter": None,
+    "version": None,
+    "warn": False,
+    "website": None,
+    "year": date.today().year,
+}
+
+
 def convert_to_bool(name, option):
     """Convert value 'option' to a bool, with a nice error message on
     failure. Expects a list from the markdown meta-data extension"""
@@ -296,6 +379,8 @@ def parse_arguments(
     except (ImportError, NotImplementedError):
         ncpus = "0"
 
+    DEFAULT_SETTINGS["parallel"] = ncpus
+
     # Set up Markdown reader
     md_ext = [
         "markdown.extensions.meta",
@@ -328,95 +413,13 @@ def parse_arguments(
     proj_data = md.Meta
 
     # Get the default options, and any over-rides, straightened out
-    defaults = {
-        "alias": [],
-        "author": None,
-        "author_description": None,
-        "author_pic": None,
-        "bitbucket": None,
-        "coloured_edges": False,
-        "copy_subdir": [],
-        "creation_date": "%Y-%m-%dT%H:%M:%S.%f%z",
-        "css": None,
-        "dbg": True,
-        "display": ["public", "protected"],
-        "doc_license": "",
-        "docmark": "!",
-        "docmark_alt": "*",
-        "email": None,
-        "encoding": "utf-8",
-        "exclude": [],
-        "exclude_dir": [],
-        "extensions": ["f90", "f95", "f03", "f08", "f15"],
-        "external": [],
-        "externalize": False,
-        "extra_filetypes": [],
-        "extra_mods": [],
-        "extra_vartypes": [],
-        "facebook": None,
-        "favicon": "default-icon",
-        "fixed_extensions": ["f", "for", "F", "FOR"],
-        "fixed_length_limit": True,
-        "force": False,
-        "fpp_extensions": ["F90", "F95", "F03", "F08", "F15", "F", "FOR"],
-        "github": None,
-        "gitlab": None,
-        "gitter_sidecar": None,
-        "google_plus": None,
-        "graph": False,
-        "graph_dir": None,
-        "graph_maxdepth": "10000",
-        "graph_maxnodes": "1000000000",
-        "hide_undoc": False,
-        "incl_src": True,
-        "include": [],
-        "license": "",
-        "linkedin": None,
-        "lower": False,
-        "macro": [],
-        "mathjax_config": None,
-        "max_frontpage_items": 10,
-        "media_dir": None,
-        "output_dir": "./doc",
-        "page_dir": None,
-        "parallel": ncpus,
-        "predocmark": ">",
-        "predocmark_alt": "|",
-        "preprocess": True,
-        "preprocessor": "cpp -traditional-cpp -E -D__GFORTRAN__",
-        "print_creation_date": False,
-        "privacy_policy_url": None,
-        "proc_internals": False,
-        "project": "Fortran Program",
-        "project_bitbucket": None,
-        "project_download": None,
-        "project_github": None,
-        "project_gitlab": None,
-        "project_sourceforge": None,
-        "project_url": "",
-        "project_website": None,
-        "quiet": False,
-        "revision": None,
-        "search": True,
-        "sort": "src",
-        "source": False,
-        "src_dir": ["./src"],
-        "summary": None,
-        "terms_of_service_url": None,
-        "twitter": None,
-        "version": None,
-        "warn": False,
-        "website": None,
-        "year": date.today().year,
-    }
-
-    for option, default in defaults.items():
+    for option, default in DEFAULT_SETTINGS.items():
         args_option = command_line_args.get(option, None)
         if args_option is not None:
             proj_data[option] = args_option
         elif option in proj_data:
             # Think if there is a safe  way to evaluate any expressions found in this list
-            default_type = defaults.get(option, None)
+            default_type = DEFAULT_SETTINGS.get(option, None)
             if isinstance(default_type, bool):
                 proj_data[option] = convert_to_bool(option, proj_data[option])
             elif not isinstance(default_type, list):
@@ -453,7 +456,7 @@ def parse_arguments(
         else:
             proj_data[var] = normalise_path(proj_data[var])
 
-    if proj_data["favicon"].strip() != defaults["favicon"]:
+    if proj_data["favicon"].strip() != DEFAULT_SETTINGS["favicon"]:
         proj_data["favicon"] = normalise_path(proj_data["favicon"])
 
     proj_data["display"] = [item.lower() for item in proj_data["display"]]
