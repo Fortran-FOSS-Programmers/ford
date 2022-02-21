@@ -1,8 +1,13 @@
-from ford.sourceform import FortranSourceFile, FortranModule, parse_type
+from ford.sourceform import (
+    FortranSourceFile,
+    FortranModule,
+    parse_type,
+    line_to_variables,
+)
 
 from collections import defaultdict
-from dataclasses import dataclass
-from typing import Union
+from dataclasses import dataclass, field
+from typing import Union, List, Optional
 
 import markdown
 import pytest
@@ -50,6 +55,77 @@ def test_extends(parse_fortran_file):
     assert len(program.types) == 3
     assert program.types[1].extends == "base"
     assert program.types[2].extends == "base"
+
+
+def test_type_visibility_attributes(parse_fortran_file):
+    """Check that we can set visibility attributes on types, #388"""
+
+    data = """\
+    module default_public
+      type no_attrs
+      end type no_attrs
+
+      type, public :: public_attr
+      end type public_attr
+
+      type, private :: private_attr
+      end type private_attr
+
+      type, public :: public_attr_private_components
+        private
+      end type public_attr
+
+      type, private :: private_attr_public_components
+        public
+      end type private_attr
+    end module default_public
+
+    module default_private
+      private
+
+      type no_attrs
+      end type no_attrs
+
+      type, public :: public_attr
+      end type public_attr
+
+      type, private :: private_attr
+      end type private_attr
+
+      type, public :: public_attr_private_components
+        private
+      end type public_attr
+
+      type, private :: private_attr_public_components
+        public
+      end type private_attr
+    end module default_private
+    """
+
+    source = parse_fortran_file(data)
+    public_no_attrs = source.modules[0].types[0]
+    public_public_attr = source.modules[0].types[1]
+    public_private_attr = source.modules[0].types[2]
+    public_public_attr_components = source.modules[0].types[3]
+    public_private_attr_components = source.modules[0].types[4]
+
+    assert public_no_attrs.permission == "public"
+    assert public_public_attr.permission == "public"
+    assert public_private_attr.permission == "private"
+    assert public_public_attr_components.permission == "public"
+    assert public_private_attr_components.permission == "private"
+
+    private_no_attrs = source.modules[1].types[0]
+    private_public_attr = source.modules[1].types[1]
+    private_private_attr = source.modules[1].types[2]
+    private_public_attr_components = source.modules[1].types[3]
+    private_private_attr_components = source.modules[1].types[4]
+
+    assert private_no_attrs.permission == "private"
+    assert private_public_attr.permission == "public"
+    assert private_private_attr.permission == "private"
+    assert private_public_attr_components.permission == "public"
+    assert private_private_attr_components.permission == "private"
 
 
 def test_submodule_procedure_contains(parse_fortran_file):
@@ -564,9 +640,9 @@ def test_module_procedure_case(parse_fortran_file):
 @dataclass
 class ParsedType:
     vartype: str
-    kind: Union[None, str]
-    strlen: Union[None, str]
-    proto: Union[None, str]
+    kind: Optional[str]
+    strlen: Optional[str]
+    proto: Union[None, str, List[str]]
     rest: str
 
 
@@ -643,6 +719,123 @@ def test_parse_type(variable_decl, expected):
     assert strlen == expected.strlen
     assert proto == expected.proto
     assert rest == expected.rest
+
+
+class FakeSource:
+    def __init__(self):
+        self.text = iter(["end subroutine", "end module"])
+
+    def __next__(self):
+        return next(self.text)
+
+    def pass_back(self, line):
+        pass
+
+
+@dataclass
+class FakeParent:
+    strings: List[str] = field(default_factory=lambda: ['"Hello"', "'World'"])
+    settings = {"extra_vartypes": [], "docmark": "!"}
+    obj: str = "module"
+    parent = None
+
+
+@dataclass
+class FakeVariable:
+    name: str
+    vartype: str
+    parent: Optional[FakeParent] = FakeParent()
+    attribs: Optional[List[str]] = field(default_factory=list)
+    intent: str = ""
+    optional: bool = False
+    permission: str = "public"
+    parameter: bool = False
+    kind: Optional[str] = None
+    strlen: Optional[str] = None
+    proto: Union[None, str, List[str]] = None
+    doc: List[str] = field(default_factory=list)
+    points: bool = False
+    initial: Optional[str] = None
+
+
+@pytest.mark.parametrize(
+    ["line", "expected_variables"],
+    [
+        ("integer foo", [FakeVariable("foo", "integer")]),
+        ("integer :: foo", [FakeVariable("foo", "integer")]),
+        (
+            "real :: foo, bar",
+            [FakeVariable("foo", "real"), FakeVariable("bar", "real")],
+        ),
+        (
+            "real, allocatable :: foo",
+            [FakeVariable("foo", "real", attribs=["allocatable"])],
+        ),
+        (
+            "integer, intent ( in  out)::zing",
+            [FakeVariable("zing", "integer", intent="inout")],
+        ),
+        (
+            "real(real64), optional, intent(in) :: foo, bar",
+            [
+                FakeVariable("foo", "real", kind="real64", optional=True, intent="in"),
+                FakeVariable("bar", "real", kind="real64", optional=True, intent="in"),
+            ],
+        ),
+        (
+            "character ( len = 24 , kind = 4), parameter :: char = '0', far = '1'",
+            [
+                FakeVariable(
+                    "char",
+                    "character",
+                    strlen="24",
+                    kind="4",
+                    parameter=True,
+                    initial='"Hello"',
+                ),
+                FakeVariable(
+                    "far",
+                    "character",
+                    strlen="24",
+                    kind="4",
+                    parameter=True,
+                    initial="'World'",
+                ),
+            ],
+        ),
+        (
+            "procedure(foo) :: bar",
+            [FakeVariable("bar", "procedure", proto=["foo", ""])],
+        ),
+        (
+            "type(foo) :: bar = 42",
+            [FakeVariable("bar", "type", proto=["foo", ""], initial="42")],
+        ),
+    ],
+)
+def test_line_to_variable(line, expected_variables):
+    variables = line_to_variables(FakeSource(), line, "public", FakeParent())
+
+    for variable, expected in zip(variables, expected_variables):
+        for attr in [
+            "name",
+            "vartype",
+            "parent",
+            "attribs",
+            "intent",
+            "optional",
+            "permission",
+            "parameter",
+            "kind",
+            "strlen",
+            "proto",
+            "doc",
+            "points",
+            "initial",
+        ]:
+            variable_attr = getattr(variable, attr)
+            expected_attr = getattr(expected, attr)
+            assert variable_attr == expected_attr, attr
 
 
 def test_markdown_header_bug286(parse_fortran_file):

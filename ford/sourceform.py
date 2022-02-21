@@ -636,8 +636,6 @@ class FortranContainer(FortranBase):
         incontains = False
         if type(self) is FortranSubmodule:
             self.permission = "private"
-        else:
-            self.permission = inherited_permission
 
         typestr = ""
         for vtype in self.settings["extra_vartypes"]:
@@ -684,12 +682,9 @@ class FortranContainer(FortranBase):
                             type(self).__name__[7:].upper()
                         ),
                     )
-            elif line.lower() == "public":
-                self.permission = "public"
-            elif line.lower() == "private":
-                self.permission = "private"
-            elif line.lower() == "protected":
-                self.permission = "protected"
+            elif line.lower() in ["public", "private", "protected"]:
+                if not isinstance(self, FortranType):
+                    self.permission = line.lower()
             elif line.lower() == "sequence":
                 if type(self) == FortranType:
                     self.sequence = True
@@ -1409,6 +1404,7 @@ class FortranSourceFile(FortranContainer):
         self.obj = "sourcefile"
         self.display = settings["display"]
         self.encoding = kwargs.get("encoding", True)
+        self.permission = "public"
 
         source = ford.reader.FortranReader(
             self.path,
