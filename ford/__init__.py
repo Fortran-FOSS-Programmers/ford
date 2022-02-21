@@ -38,9 +38,9 @@ from typing import Union
 import ford.fortran_project
 import ford.sourceform
 import ford.output
-from ford.mdx_math import MathExtension
 import ford.utils
 import ford.pagetree
+from ford.md_environ import EnvironExtension
 
 try:
     from importlib.metadata import version, PackageNotFoundError
@@ -301,8 +301,8 @@ def parse_arguments(
         "markdown.extensions.meta",
         "markdown.extensions.codehilite",
         "markdown.extensions.extra",
-        MathExtension(),
-        "md_environ.environ",
+        "mdx_math",
+        EnvironExtension(),
     ]
     md = markdown.Markdown(
         extensions=md_ext, output_format="html5", extension_configs={}
