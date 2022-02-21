@@ -85,14 +85,12 @@ class Project(object):
                 if item in settings["exclude"]:
                     continue
 
+                filename = curdir / item
+                relative_path = os.path.relpath(filename)
                 extension = str(item.suffix)[1:]  # Don't include the initial '.'
                 if extension in self.extensions or extension in self.fixed_extensions:
                     # Get contents of the file
-                    print(
-                        "Reading file {}".format(
-                            os.path.relpath(os.path.join(curdir, item))
-                        )
-                    )
+                    print(f"Reading file {relative_path}")
                     if extension in settings["fpp_extensions"]:
                         preprocessor = settings["preprocessor"]
                     else:
@@ -100,7 +98,7 @@ class Project(object):
                     try:
                         self.files.append(
                             ford.sourceform.FortranSourceFile(
-                                os.path.join(curdir, item),
+                                str(filename),
                                 settings,
                                 preprocessor,
                                 extension in self.fixed_extensions,
@@ -112,12 +110,7 @@ class Project(object):
                         if not settings["dbg"]:
                             raise e
 
-                        print(
-                            "Warning: Error parsing {}.\n\t{}".format(
-                                os.path.relpath(os.path.join(curdir, item)),
-                                e.args[0],
-                            )
-                        )
+                        print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
                         continue
                     for module in self.files[-1].modules:
                         self.modules.append(module)
@@ -135,27 +128,16 @@ class Project(object):
                     for block in self.files[-1].blockdata:
                         self.blockdata.append(block)
                 elif extension in self.extra_filetypes:
-                    print(
-                        "Reading file {}".format(
-                            os.path.relpath(os.path.join(curdir, item))
-                        )
-                    )
+                    print(f"Reading file {relative_path}")
                     try:
                         self.extra_files.append(
-                            ford.sourceform.GenericSource(
-                                os.path.join(curdir, item), settings
-                            )
+                            ford.sourceform.GenericSource(str(filename), settings)
                         )
                     except Exception as e:
                         if not settings["dbg"]:
                             raise e
 
-                        print(
-                            "Warning: Error parsing {}.\n\t{}".format(
-                                os.path.relpath(os.path.join(curdir, item)),
-                                e.args[0],
-                            )
-                        )
+                        print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
                         continue
 
     @property
