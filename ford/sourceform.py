@@ -1266,7 +1266,7 @@ class FortranCodeUnit(FortranContainer):
             "functions", "subroutines", "types", "interfaces", "absinterfaces"
         ):
             for attr in self.attr_dict[item.name.lower()]:
-                if attr == "public" or attr == "private" or attr == "protected":
+                if attr in ["public", "private", "protected"]:
                     item.permission = attr
                 elif attr[0:4] == "bind":
                     if hasattr(item, "bindC"):
@@ -1284,7 +1284,7 @@ class FortranCodeUnit(FortranContainer):
 
         for var in self.variables:
             for attr in self.attr_dict[var.name.lower()]:
-                if attr == "public" or attr == "private" or attr == "protected":
+                if attr in ["public", "private", "protected"]:
                     var.permission = attr
                 elif attr[0:6] == "intent":
                     var.intent = attr[7:-1]
@@ -1889,13 +1889,12 @@ class FortranType(FortranContainer):
             attribstr = line.group(1)[1:].strip()
             attriblist = self.SPLIT_RE.split(attribstr.strip())
             for attrib in attriblist:
+                attrib_lower = attrib.strip().lower()
                 if EXTENDS_RE.search(attrib):
                     self.extends = EXTENDS_RE.search(attrib).group(1)
-                elif attrib.strip().lower() == "public":
-                    self.permission = "public"
-                elif attrib.strip().lower() == "private":
-                    self.permission = "private"
-                elif attrib.strip().lower() == "external":
+                elif attrib_lower in ["public", "private"]:
+                    self.permission = attrib_lower
+                elif attrib_lower == "external":
                     self.attributes.append("external")
                 else:
                     self.attributes.append(attrib.strip())
