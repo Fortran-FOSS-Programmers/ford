@@ -1,6 +1,7 @@
 from ford.sourceform import FortranSourceFile
 from ford.fortran_project import Project
 from ford import DEFAULT_SETTINGS
+from ford.utils import normalise_path
 
 from copy import deepcopy
 
@@ -17,7 +18,7 @@ def copy_fortran_file(tmp_path):
         with open(filename, "w") as f:
             f.write(data)
         settings = deepcopy(DEFAULT_SETTINGS)
-        settings["src_dir"] = [str(src_dir)]
+        settings["src_dir"] = [src_dir]
         return settings
 
     return copy_file
@@ -444,3 +445,43 @@ def test_display_internal_procedures(copy_fortran_file):
     assert subroutine1.variables == []
     assert len(subroutine2.variables) == 1
     assert subroutine2.variables[0].name == "local_variable"
+
+
+def test_exclude_dir(tmp_path):
+    exclude_dir = tmp_path / "sub1" / "sub2"
+    exclude_dir.mkdir(parents=True)
+    src = tmp_path / "src"
+    src.mkdir()
+
+    with open(src / "include.f90", "w") as f:
+        f.write("program foo\nend program")
+    with open(exclude_dir / "exclude.f90", "w") as f:
+        f.write("program bar\nend program")
+
+    settings = deepcopy(DEFAULT_SETTINGS)
+    settings["src_dir"] = [tmp_path]
+    settings["exclude_dir"] = [normalise_path(tmp_path, "sub1")]
+    project = Project(settings)
+
+    program_names = {program.name for program in project.programs}
+    assert program_names == {"foo"}
+
+
+def test_exclude(tmp_path):
+    exclude_dir = tmp_path / "sub1" / "sub2"
+    exclude_dir.mkdir(parents=True)
+    src = tmp_path / "src"
+    src.mkdir()
+
+    with open(src / "include.f90", "w") as f:
+        f.write("program foo\nend program")
+    with open(exclude_dir / "exclude.f90", "w") as f:
+        f.write("program bar\nend program")
+
+    settings = deepcopy(DEFAULT_SETTINGS)
+    settings["src_dir"] = [tmp_path]
+    settings["exclude"] = [normalise_path(tmp_path, "sub1/sub2/exclude.f90")]
+    project = Project(settings)
+
+    program_names = {program.name for program in project.programs}
+    assert program_names == {"foo"}

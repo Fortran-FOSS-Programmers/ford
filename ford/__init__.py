@@ -434,10 +434,6 @@ def parse_arguments(
     base_dir = pathlib.Path(directory).absolute()
     proj_data["base_dir"] = base_dir
 
-    def normalise_path(path):
-        """Tidy up path, making it absolute, relative to base_dir"""
-        return (base_dir / os.path.expandvars(path)).absolute()
-
     for var in [
         "page_dir",
         "output_dir",
@@ -446,18 +442,21 @@ def parse_arguments(
         "css",
         "mathjax_config",
         "src_dir",
+        "exclude",
         "exclude_dir",
         "include",
     ]:
         if proj_data[var] is None:
             continue
         if isinstance(proj_data[var], list):
-            proj_data[var] = [normalise_path(p) for p in proj_data[var]]
+            proj_data[var] = [
+                ford.utils.normalise_path(base_dir, p) for p in proj_data[var]
+            ]
         else:
-            proj_data[var] = normalise_path(proj_data[var])
+            proj_data[var] = ford.utils.normalise_path(base_dir, proj_data[var])
 
     if proj_data["favicon"].strip() != DEFAULT_SETTINGS["favicon"]:
-        proj_data["favicon"] = normalise_path(proj_data["favicon"])
+        proj_data["favicon"] = ford.utils.normalise_path(base_dir, proj_data["favicon"])
 
     proj_data["display"] = [item.lower() for item in proj_data["display"]]
     proj_data["creation_date"] = datetime.now().strftime(proj_data["creation_date"])

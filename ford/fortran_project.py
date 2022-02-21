@@ -23,6 +23,7 @@
 #
 
 import os
+import pathlib
 import toposort
 import ford.utils
 import ford.sourceform
@@ -80,14 +81,10 @@ class Project(object):
         # Get all files within topdir, recursively
         srcdir_list = self.make_srcdir_list(settings["exclude_dir"])
         for curdir in srcdir_list:
-            for item in [
-                f
-                for f in os.listdir(curdir)
-                if not os.path.isdir(os.path.join(curdir, f))
-            ]:
-                ext = item.split(".")[-1]
+            for item in [f for f in curdir.iterdir() if f.is_file()]:
+                extension = str(item.suffix)[1:]  # Don't include the initial '.'
                 if (
-                    ext in self.extensions or ext in self.fixed_extensions
+                    extension in self.extensions or extension in self.fixed_extensions
                 ) and item not in settings["exclude"]:
                     # Get contents of the file
                     print(
@@ -95,7 +92,7 @@ class Project(object):
                             os.path.relpath(os.path.join(curdir, item))
                         )
                     )
-                    if item.split(".")[-1] in settings["fpp_extensions"]:
+                    if extension in settings["fpp_extensions"]:
                         preprocessor = settings["preprocessor"]
                     else:
                         preprocessor = None
@@ -105,7 +102,7 @@ class Project(object):
                                 os.path.join(curdir, item),
                                 settings,
                                 preprocessor,
-                                ext in self.fixed_extensions,
+                                extension in self.fixed_extensions,
                                 incl_src=html_incl_src,
                                 encoding=self.encoding,
                             )
@@ -117,7 +114,7 @@ class Project(object):
                                     os.path.join(curdir, item),
                                     settings,
                                     preprocessor,
-                                    ext in self.fixed_extensions,
+                                    extension in self.fixed_extensions,
                                     incl_src=html_incl_src,
                                     encoding=self.encoding,
                                 )
@@ -146,7 +143,7 @@ class Project(object):
                     for block in self.files[-1].blockdata:
                         self.blockdata.append(block)
                 elif (
-                    item.split(".")[-1] in self.extra_filetypes
+                    extension in self.extra_filetypes
                     and item not in settings["exclude"]
                 ):
                     print(
@@ -408,8 +405,8 @@ class Project(object):
     def recursive_dir_list(self, topdir, skip):
         dir_list = []
         for entry in os.listdir(topdir):
-            abs_entry = os.path.join(topdir, entry)
-            if os.path.isdir(abs_entry) and (abs_entry not in skip):
+            abs_entry = ford.utils.normalise_path(topdir, entry)
+            if abs_entry.is_dir() and (abs_entry not in skip):
                 dir_list.append(abs_entry)
                 dir_list += self.recursive_dir_list(abs_entry, skip)
         return dir_list

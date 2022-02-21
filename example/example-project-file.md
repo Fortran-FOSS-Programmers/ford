@@ -27,6 +27,8 @@ extra_mods: json_module: http://jacobwilliams.github.io/json-fortran/
 license: by-nc
 extra_filetypes: sh #
 max_frontpage_items: 4
+exclude: src/excluded_file.f90
+exclude_dir: src/excluded_directory
 ---
 
 Hi, my name is ${USER}.
