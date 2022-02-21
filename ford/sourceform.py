@@ -663,10 +663,14 @@ class FortranContainer(FortranBase):
                 )
                 search_from += QUOTES_RE.search(line[search_from:]).end(0)
 
-            # Check the various possibilities for what is on this line
+            # Cache the lowercased line
+            line_lower = line.lower()
+
             if self.settings["lower"]:
-                line = line.lower()
-            if line.lower() == "contains":
+                line = line_lower
+
+            # Check the various possibilities for what is on this line
+            if line_lower == "contains":
                 if not incontains and type(self) in _can_have_contains:
                     incontains = True
                     if isinstance(self, FortranType):
@@ -682,10 +686,10 @@ class FortranContainer(FortranBase):
                             type(self).__name__[7:].upper()
                         ),
                     )
-            elif line.lower() in ["public", "private", "protected"]:
+            elif line_lower in ["public", "private", "protected"]:
                 if not isinstance(self, FortranType):
-                    self.permission = line.lower()
-            elif line.lower() == "sequence":
+                    self.permission = line_lower
+            elif line_lower == "sequence":
                 if type(self) == FortranType:
                     self.sequence = True
             elif self.FORMAT_RE.match(line):
