@@ -82,10 +82,11 @@ class Project(object):
         srcdir_list = self.make_srcdir_list(settings["exclude_dir"])
         for curdir in srcdir_list:
             for item in [f for f in curdir.iterdir() if f.is_file()]:
+                if item in settings["exclude"]:
+                    continue
+
                 extension = str(item.suffix)[1:]  # Don't include the initial '.'
-                if (
-                    extension in self.extensions or extension in self.fixed_extensions
-                ) and item not in settings["exclude"]:
+                if extension in self.extensions or extension in self.fixed_extensions:
                     # Get contents of the file
                     print(
                         "Reading file {}".format(
@@ -142,10 +143,7 @@ class Project(object):
                         self.programs.append(program)
                     for block in self.files[-1].blockdata:
                         self.blockdata.append(block)
-                elif (
-                    extension in self.extra_filetypes
-                    and item not in settings["exclude"]
-                ):
+                elif extension in self.extra_filetypes:
                     print(
                         "Reading file {}".format(
                             os.path.relpath(os.path.join(curdir, item))
