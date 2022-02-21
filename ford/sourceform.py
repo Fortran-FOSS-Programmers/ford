@@ -1328,7 +1328,7 @@ class FortranCodeUnit(FortranContainer):
                 inc = False
             return inc
 
-        if self.obj == "proc" and self.meta["proc_internals"] == "false":
+        if self.obj == "proc" and not self.meta["proc_internals"]:
             self.functions = []
             self.subroutines = []
             self.types = []
