@@ -395,7 +395,7 @@ def external(project, make=False, path="."):
         if hasattr(intObj, "proctype"):
             extDict["proctype"] = intObj.proctype
         if hasattr(intObj, "extends"):
-            if type(intObj.extends) == ford.sourceform.FortranType:
+            if isinstance(intObj.extends, ford.sourceform.FortranType):
                 extDict["extends"] = obj2dict(intObj.extends)
             else:
                 extDict["extends"] = intObj.extends
