@@ -4,11 +4,57 @@ import os
 import pathlib
 import re
 from urllib.parse import urlparse
+import json
 
 import ford
 
 from bs4 import BeautifulSoup
 import pytest
+
+
+REMOTE_MODULES_JSON = [
+    {
+        "name": "remote_module",
+        "external_url": "./module/remote_module.html",
+        "obj": "module",
+        "pub_procs": {
+            "remote_sub": {
+                "name": "remote_sub",
+                "external_url": "./proc/remote_sub.html",
+                "obj": "proc",
+                "proctype": "Subroutine",
+                "functions": [],
+                "subroutines": [],
+                "interfaces": [],
+                "absinterfaces": [],
+                "types": [],
+                "variables": [],
+            },
+        },
+        "pub_absints": {},
+        "pub_types": {},
+        "pub_vars": {},
+        "functions": [],
+        "subroutines": [
+            {
+                "name": "remote_sub",
+                "external_url": "./proc/remote_sub.html",
+                "obj": "proc",
+                "proctype": "Subroutine",
+                "functions": [],
+                "subroutines": [],
+                "interfaces": [],
+                "absinterfaces": [],
+                "types": [],
+                "variables": [],
+            }
+        ],
+        "interfaces": [],
+        "absinterfaces": [],
+        "types": [],
+        "variables": [],
+    }
+]
 
 
 @pytest.fixture
@@ -18,6 +64,12 @@ def copy_project_files(tmp_path):
         this_dir / "../../test_data/external_project", tmp_path / "external_project"
     )
     return tmp_path / "external_project"
+
+
+class MockResponse:
+    @staticmethod
+    def read():
+        return json.dumps(REMOTE_MODULES_JSON).encode("utf-8")
 
 
 def test_external_project(copy_project_files, monkeypatch, restore_macros):
@@ -42,10 +94,14 @@ def test_external_project(copy_project_files, monkeypatch, restore_macros):
         m.setattr(sys, "argv", ["ford", "doc.md"])
         ford.run()
 
+    def mock_open(*args, **kwargs):
+        return MockResponse()
+
     # Second project uses JSON from first to link to external modules
     with monkeypatch.context() as m:
         os.chdir(top_level_project)
         m.setattr(sys, "argv", ["ford", "doc.md"])
+        m.setattr(ford.utils, "urlopen", mock_open)
         ford.run()
 
     # Make sure we're in a directory where relative paths won't
@@ -65,6 +121,6 @@ def test_external_project(copy_project_files, monkeypatch, restore_macros):
     local_url = urlparse(links["external_module"])
     assert pathlib.Path(local_url.path).is_file()
 
-    assert "aot_out_module" in links
-    remote_url = urlparse(links["aot_out_module"])
+    assert "remote_module" in links
+    remote_url = urlparse(links["remote_module"])
     assert remote_url.scheme == "https"
