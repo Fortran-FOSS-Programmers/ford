@@ -3047,41 +3047,68 @@ namelist = NameSelector()
 
 
 class ExternalModule(FortranModule):
-    def __init__(self):
-        self.name = ""
+    _project_list = "extModules"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "module"
         self.uses = []
         self.pub_procs = {}
         self.pub_absints = {}
         self.pub_types = {}
         self.pub_vars = {}
-        self.external_url = ""
 
 
 class ExternalFunction(FortranFunction):
-    def __init__(self):
-        self.name = ""
-        self.external_url = ""
+    _project_list = "extProcedures"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "proc"
+        self.proctype = "function"
 
 
 class ExternalSubroutine(FortranSubroutine):
-    def __init__(self):
-        self.name = ""
-        self.external_url = ""
+    _project_list = "extProcedures"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "proc"
+        self.proctype = "subroutine"
 
 
 class ExternalInterface(FortranInterface):
-    def __init__(self):
-        self.name = ""
-        self.external_url = ""
+    _project_list = "extProcedures"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "proc"
+        self.proctype = "interface"
 
 
 class ExternalType(FortranType):
-    def __init__(self):
-        self.name = ""
-        self.external_url = ""
+    _project_list = "extTypes"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "type"
 
 
 class ExternalVariable(FortranVariable):
-    def __init__(self):
-        self.name = ""
-        self.external_url = ""
+    _project_list = "extVariables"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "variable"
