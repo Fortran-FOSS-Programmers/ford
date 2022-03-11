@@ -34,6 +34,7 @@ import pathlib
 import subprocess
 from datetime import date, datetime
 from typing import Union
+from textwrap import dedent
 
 import ford.fortran_project
 import ford.sourceform
@@ -505,21 +506,22 @@ def parse_arguments(
     # Handle preprocessor:
     if proj_data["preprocess"]:
         proj_data["preprocessor"] = proj_data["preprocessor"].split()
-
+        command = proj_data["preprocessor"] + [os.devnull]
         # Check whether preprocessor works (reading nothing from stdin)
         try:
-            subprocess.run(
-                proj_data["preprocessor"] + [os.devnull],
-                check=True,
-                stderr=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-            )
+            subprocess.run(command, check=True, capture_output=True, text=True)
         except (subprocess.CalledProcessError, OSError) as ex:
-            print("Warning: Testing preprocessor failed")
-            print("  Preprocessor command: {}".format(proj_data["preprocessor"]))
-            print("  Exception: {}".format(ex))
-            print("  -> Preprocessing turned off")
-            proj_data["preprocess"] = False
+            project_file = command_line_args["project_file"].name
+            exit(
+                dedent(
+                    f"""\
+                    Error: Testing preprocessor command (`{" ".join(command)}`) failed with error:
+                        {ex.stderr.strip() if isinstance(ex, subprocess.CalledProcessError) else ex}
+
+                    If you need to preprocess files, please fix the 'preprocessor' option in '{project_file}'.
+                    Otherwise, please set 'preprocess: False' in '{project_file}'"""
+                )
+            )
     else:
         proj_data["fpp_extensions"] = []
 

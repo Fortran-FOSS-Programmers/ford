@@ -110,9 +110,11 @@ def test_no_preprocessor():
 
 
 def test_bad_preprocessor():
-    data, _, _ = ford.parse_arguments({}, "preprocessor: false")
+    class FakeFile:
+        name = "test file"
 
-    assert data["preprocess"] is False
+    with pytest.raises(SystemExit):
+        ford.parse_arguments({"project_file": FakeFile()}, "preprocessor: false")
 
 
 def test_maybe_ok_preprocessor():
