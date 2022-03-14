@@ -818,6 +818,10 @@ class FakeVariable:
                 FakeVariable("var2", "class", proto=["foo", ""]),
             ],
         ),
+        (
+            "class(*) :: polymorphic",
+            [FakeVariable("polymorphic", "class", proto=["*", ""])],
+        ),
     ],
 )
 def test_line_to_variable(line, expected_variables):

@@ -2208,18 +2208,20 @@ class FortranVariable(FortranBase):
         self.hierarchy.reverse()
 
     def correlate(self, project):
-        if (
-            (self.vartype == "type" or self.vartype == "class")
-            and self.proto
-            and self.proto[0] != "*"
-        ):
-            if self.proto[0].lower() in self.parent.all_types:
-                self.proto[0] = self.parent.all_types[self.proto[0].lower()]
-        elif self.vartype == "procedure" and self.proto and self.proto[0] != "*":
-            if self.proto[0].lower() in self.parent.all_procs:
-                self.proto[0] = self.parent.all_procs[self.proto[0].lower()]
-            elif self.proto[0].lower() in self.parent.all_absinterfaces:
-                self.proto[0] = self.parent.all_absinterfaces[self.proto[0].lower()]
+        if not self.proto:
+            return
+
+        proto_name = self.proto[0].lower()
+        if proto_name == "*":
+            return
+
+        if self.vartype in ("type", "class"):
+            self.proto[0] = self.parent.all_types.get(proto_name, self.proto[0])
+        elif self.vartype == "procedure":
+            abstract_prototype = self.parent.all_absinterfaces.get(
+                proto_name, self.proto[0]
+            )
+            self.proto[0] = self.parent.all_procs.get(proto_name, abstract_prototype)
 
 
 class FortranBoundProcedure(FortranBase):
