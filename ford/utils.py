@@ -30,6 +30,7 @@ import ford.sourceform
 from urllib.request import urlopen, URLError
 from urllib.parse import urljoin
 import pathlib
+from typing import Union
 
 
 NOTE_TYPE = {
@@ -527,3 +528,10 @@ def str_to_bool(text):
     raise ValueError(
         f"Could not convert string to bool: expected 'true'/'false', got '{text}'"
     )
+
+
+def normalise_path(
+    base_dir: pathlib.Path, path: Union[str, pathlib.Path]
+) -> pathlib.Path:
+    """Tidy up path, making it absolute, relative to base_dir"""
+    return (base_dir / os.path.expandvars(path)).absolute()

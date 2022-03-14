@@ -23,6 +23,7 @@
 #
 
 import os
+import pathlib
 import toposort
 import ford.utils
 import ford.sourceform
@@ -80,56 +81,37 @@ class Project(object):
         # Get all files within topdir, recursively
         srcdir_list = self.make_srcdir_list(settings["exclude_dir"])
         for curdir in srcdir_list:
-            for item in [
-                f
-                for f in os.listdir(curdir)
-                if not os.path.isdir(os.path.join(curdir, f))
-            ]:
-                ext = item.split(".")[-1]
-                if (
-                    ext in self.extensions or ext in self.fixed_extensions
-                ) and item not in settings["exclude"]:
+            for item in [f for f in curdir.iterdir() if f.is_file()]:
+                if item in settings["exclude"]:
+                    continue
+
+                filename = curdir / item
+                relative_path = os.path.relpath(filename)
+                extension = str(item.suffix)[1:]  # Don't include the initial '.'
+                if extension in self.extensions or extension in self.fixed_extensions:
                     # Get contents of the file
-                    print(
-                        "Reading file {}".format(
-                            os.path.relpath(os.path.join(curdir, item))
-                        )
-                    )
-                    if item.split(".")[-1] in settings["fpp_extensions"]:
+                    print(f"Reading file {relative_path}")
+                    if extension in settings["fpp_extensions"]:
                         preprocessor = settings["preprocessor"]
                     else:
                         preprocessor = None
-                    if settings["dbg"]:
+                    try:
                         self.files.append(
                             ford.sourceform.FortranSourceFile(
-                                os.path.join(curdir, item),
+                                str(filename),
                                 settings,
                                 preprocessor,
-                                ext in self.fixed_extensions,
+                                extension in self.fixed_extensions,
                                 incl_src=html_incl_src,
                                 encoding=self.encoding,
                             )
                         )
-                    else:
-                        try:
-                            self.files.append(
-                                ford.sourceform.FortranSourceFile(
-                                    os.path.join(curdir, item),
-                                    settings,
-                                    preprocessor,
-                                    ext in self.fixed_extensions,
-                                    incl_src=html_incl_src,
-                                    encoding=self.encoding,
-                                )
-                            )
-                        except Exception as e:
-                            print(
-                                "Warning: Error parsing {}.\n\t{}".format(
-                                    os.path.relpath(os.path.join(curdir, item)),
-                                    e.args[0],
-                                )
-                            )
-                            continue
+                    except Exception as e:
+                        if not settings["dbg"]:
+                            raise e
+
+                        print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
+                        continue
                     for module in self.files[-1].modules:
                         self.modules.append(module)
                     for submod in self.files[-1].submodules:
@@ -145,36 +127,18 @@ class Project(object):
                         self.programs.append(program)
                     for block in self.files[-1].blockdata:
                         self.blockdata.append(block)
-                elif (
-                    item.split(".")[-1] in self.extra_filetypes
-                    and item not in settings["exclude"]
-                ):
-                    print(
-                        "Reading file {}".format(
-                            os.path.relpath(os.path.join(curdir, item))
-                        )
-                    )
-                    if settings["dbg"]:
+                elif extension in self.extra_filetypes:
+                    print(f"Reading file {relative_path}")
+                    try:
                         self.extra_files.append(
-                            ford.sourceform.GenericSource(
-                                os.path.join(curdir, item), settings
-                            )
+                            ford.sourceform.GenericSource(str(filename), settings)
                         )
-                    else:
-                        try:
-                            self.extra_files.append(
-                                ford.sourceform.GenericSource(
-                                    os.path.join(curdir, item), settings
-                                )
-                            )
-                        except Exception as e:
-                            print(
-                                "Warning: Error parsing {}.\n\t{}".format(
-                                    os.path.relpath(os.path.join(curdir, item)),
-                                    e.args[0],
-                                )
-                            )
-                            continue
+                    except Exception as e:
+                        if not settings["dbg"]:
+                            raise e
+
+                        print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
+                        continue
 
     @property
     def allfiles(self):
@@ -408,8 +372,8 @@ class Project(object):
     def recursive_dir_list(self, topdir, skip):
         dir_list = []
         for entry in os.listdir(topdir):
-            abs_entry = os.path.join(topdir, entry)
-            if os.path.isdir(abs_entry) and (abs_entry not in skip):
+            abs_entry = ford.utils.normalise_path(topdir, entry)
+            if abs_entry.is_dir() and (abs_entry not in skip):
                 dir_list.append(abs_entry)
                 dir_list += self.recursive_dir_list(abs_entry, skip)
         return dir_list
