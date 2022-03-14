@@ -811,31 +811,37 @@ class FakeVariable:
             "type(foo) :: bar = 42",
             [FakeVariable("bar", "type", proto=["foo", ""], initial="42")],
         ),
+        (
+            "class(foo) :: var1, var2",
+            [
+                FakeVariable("var1", "class", proto=["foo", ""]),
+                FakeVariable("var2", "class", proto=["foo", ""]),
+            ],
+        ),
+        (
+            "class(*) :: polymorphic",
+            [FakeVariable("polymorphic", "class", proto=["*", ""])],
+        ),
     ],
 )
 def test_line_to_variable(line, expected_variables):
     variables = line_to_variables(FakeSource(), line, "public", FakeParent())
+    attributes = expected_variables[0].__dict__
 
     for variable, expected in zip(variables, expected_variables):
-        for attr in [
-            "name",
-            "vartype",
-            "parent",
-            "attribs",
-            "intent",
-            "optional",
-            "permission",
-            "parameter",
-            "kind",
-            "strlen",
-            "proto",
-            "doc",
-            "points",
-            "initial",
-        ]:
+        for attr in attributes:
             variable_attr = getattr(variable, attr)
             expected_attr = getattr(expected, attr)
             assert variable_attr == expected_attr, attr
+
+    if len(expected_variables) > 1:
+        attributes.pop("parent")
+        for attr in attributes:
+            attribute = getattr(variable, attr)
+            if not isinstance(attribute, list):
+                continue
+            proto_ids = [id(getattr(variable, attr)) for variable in variables]
+            assert len(proto_ids) == len(set(proto_ids)), attr
 
 
 def test_markdown_header_bug286(parse_fortran_file):

@@ -2156,7 +2156,7 @@ class FortranVariable(FortranBase):
         kind=None,
         strlen=None,
         proto=None,
-        doc=[],
+        doc=None,
         points=False,
         initial=None,
     ):
@@ -2170,17 +2170,16 @@ class FortranVariable(FortranBase):
             self.parobj = None
             self.settings = None
         self.obj = type(self).__name__[7:].lower()
-        self.attribs = attribs
+        self.attribs = copy.copy(attribs)
         self.intent = intent
         self.optional = optional
         self.kind = kind
         self.strlen = strlen
-        self.proto = proto
-        self.doc = doc
+        self.proto = copy.copy(proto)
+        self.doc = copy.copy(doc) or []
         self.permission = permission
         self.points = points
         self.parameter = parameter
-        self.doc = []
         self.initial = initial
         self.dimension = ""
         self.meta = {}
@@ -2209,18 +2208,20 @@ class FortranVariable(FortranBase):
         self.hierarchy.reverse()
 
     def correlate(self, project):
-        if (
-            (self.vartype == "type" or self.vartype == "class")
-            and self.proto
-            and self.proto[0] != "*"
-        ):
-            if self.proto[0].lower() in self.parent.all_types:
-                self.proto[0] = self.parent.all_types[self.proto[0].lower()]
-        elif self.vartype == "procedure" and self.proto and self.proto[0] != "*":
-            if self.proto[0].lower() in self.parent.all_procs:
-                self.proto[0] = self.parent.all_procs[self.proto[0].lower()]
-            elif self.proto[0].lower() in self.parent.all_absinterfaces:
-                self.proto[0] = self.parent.all_absinterfaces[self.proto[0].lower()]
+        if not self.proto:
+            return
+
+        proto_name = self.proto[0].lower()
+        if proto_name == "*":
+            return
+
+        if self.vartype in ("type", "class"):
+            self.proto[0] = self.parent.all_types.get(proto_name, self.proto[0])
+        elif self.vartype == "procedure":
+            abstract_prototype = self.parent.all_absinterfaces.get(
+                proto_name, self.proto[0]
+            )
+            self.proto[0] = self.parent.all_procs.get(proto_name, abstract_prototype)
 
 
 class FortranBoundProcedure(FortranBase):
@@ -2725,6 +2726,14 @@ def line_to_variables(source, line, inherit_permission, parent):
         declarestr = ATTRIBSPLIT2_RE.match(rest).group(2)
     declarations = ford.utils.paren_split(",", declarestr)
 
+    doc = []
+    docline = next(source)
+    docmark = f"!{parent.settings['docmark']}"
+    while docline.startswith(docmark):
+        doc.append(docline[2:])
+        docline = next(source)
+    source.pass_back(docline)
+
     varlist = []
     for dec in declarations:
         dec = re.sub(" ", "", dec)
@@ -2767,20 +2776,12 @@ def line_to_variables(source, line, inherit_permission, parent):
                 kind,
                 strlen,
                 proto,
-                [],
+                doc,
                 points,
                 initial,
             )
         )
 
-    doc = []
-    docline = next(source)
-    while docline[0:2] == "!" + parent.settings["docmark"]:
-        doc.append(docline[2:])
-        docline = next(source)
-    source.pass_back(docline)
-    for var in varlist:
-        var.doc = doc
     return varlist
 
 

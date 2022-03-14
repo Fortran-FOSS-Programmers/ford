@@ -538,6 +538,90 @@ def test_display_private_derived_types(copy_fortran_file):
     assert type_names == {"no_attrs", "public_attr", "private_attr"}
 
 
+def test_interface_type_name(copy_fortran_file):
+    """Check for shared prototype list"""
+    data = """\
+    module foo
+      type name_t
+      end type name_t
+
+      type(name_t) :: var, var2
+    end module foo
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+    proto_names = [var.proto[0].name for var in project.modules[0].variables]
+    assert proto_names == ["name_t", "name_t"]
+
+
+def test_imported_interface_type_name(copy_fortran_file):
+    """Check for shared prototype list"""
+    data = """\
+    module foo
+      type name_t
+      end type name_t
+    end module foo
+
+    module bar
+      use foo
+      type(name_t), allocatable :: var(:), var2(:)
+    end module bar
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+    proto_names = [var.proto[0].name for var in project.modules[1].variables]
+    assert proto_names == ["name_t", "name_t"]
+
+
+def test_abstract_interface_type_name(copy_fortran_file):
+    """Check for shared prototype list"""
+    data = """\
+    module foo
+      abstract interface
+        subroutine hello
+        end subroutine hello
+      end interface
+
+      procedure(hello) :: proc1, proc2
+    end module foo
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+    proto_names = [var.proto[0].name for var in project.modules[0].variables]
+    assert proto_names == ["hello", "hello"]
+
+
+def test_imported_abstract_interface_type_name(copy_fortran_file):
+    """Check for shared prototype list"""
+    data = """\
+    module foo
+      abstract interface
+        subroutine hello
+        end subroutine hello
+      end interface
+
+    contains
+      integer function goodbye()
+        goodbye = 1
+      end function goodbye
+    end module foo
+
+    module bar
+      use foo
+      procedure(hello) :: proc1, proc2
+      procedure(goodbye) :: proc3, proc4
+    end module bar
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+    proto_names = [var.proto[0].name for var in project.modules[1].variables]
+    assert proto_names == ["hello", "hello", "goodbye", "goodbye"]
+
+
 def test_display_internal_procedures(copy_fortran_file):
     """_very_ basic test of 'proc_internals' setting"""
 
