@@ -1,4 +1,4 @@
-from ford.md_table import ZebraTableCSSExtension
+from ford.md_striped_table import StripedTableCSSExtension
 import markdown
 from bs4 import BeautifulSoup
 import textwrap
@@ -7,7 +7,7 @@ import textwrap
 def test_zebra_table():
     """Check that alternate rows have different classes"""
     md = markdown.Markdown(
-        extensions=["markdown.extensions.extra", ZebraTableCSSExtension()],
+        extensions=["markdown.extensions.extra", StripedTableCSSExtension()],
         output_format="html5",
     )
 
@@ -27,20 +27,13 @@ def test_zebra_table():
 
     print(soup)
     assert "table" in soup.table.attrs["class"]
-
-    body = soup.table.find("tbody")
-    rows = body.find_all("tr")
-    assert "active" in rows[0].attrs["class"]
-    assert "active" in rows[2].attrs["class"]
-
-    assert "active" not in rows[1].attrs["class"]
-    assert "active" not in rows[3].attrs["class"]
+    assert "table-striped" in soup.table.attrs["class"]
 
 
 def test_no_clobber_html_table():
     """Check that tables with CSS already applied don't get modified"""
     md = markdown.Markdown(
-        extensions=["markdown.extensions.extra", ZebraTableCSSExtension()],
+        extensions=["markdown.extensions.extra", StripedTableCSSExtension()],
         output_format="html5",
     )
 
