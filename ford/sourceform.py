@@ -2175,7 +2175,7 @@ class FortranVariable(FortranBase):
         self.optional = optional
         self.kind = kind
         self.strlen = strlen
-        self.proto = proto
+        self.proto = copy.copy(proto)
         self.doc = doc
         self.permission = permission
         self.points = points

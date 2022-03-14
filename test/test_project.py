@@ -538,6 +538,23 @@ def test_display_private_derived_types(copy_fortran_file):
     assert type_names == {"no_attrs", "public_attr", "private_attr"}
 
 
+def test_interface_type_name(copy_fortran_file):
+    """Check for shared prototype list"""
+    data = """\
+    module foo
+      type name_t
+      end type name_t
+
+      type(name_t) :: var, var2
+    end module foo
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+    proto_names = [var.proto[0].name for var in project.modules[0].variables]
+    assert proto_names == ["name_t", "name_t"]
+
+
 def test_display_internal_procedures(copy_fortran_file):
     """_very_ basic test of 'proc_internals' setting"""
 
