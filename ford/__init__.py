@@ -38,10 +38,10 @@ from typing import Union
 import ford.fortran_project
 import ford.sourceform
 import ford.output
-from ford.mdx_math import MathExtension
-from ford.md_table import ZebraTableCSSExtension
 import ford.utils
 import ford.pagetree
+from ford.md_environ import EnvironExtension
+from ford.md_table import ZebraTableCSSExtension
 
 try:
     from importlib.metadata import version, PackageNotFoundError
@@ -302,9 +302,9 @@ def parse_arguments(
         "markdown.extensions.meta",
         "markdown.extensions.codehilite",
         "markdown.extensions.extra",
-        MathExtension(),
+        "mdx_math",
+        EnvironExtension(),
         ZebraTableCSSExtension(),
-        "md_environ.environ",
     ]
     md = markdown.Markdown(
         extensions=md_ext, output_format="html5", extension_configs={}
