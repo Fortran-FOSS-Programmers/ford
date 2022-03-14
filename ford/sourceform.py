@@ -631,8 +631,6 @@ class FortranContainer(FortranBase):
         incontains = False
         if type(self) is FortranSubmodule:
             self.permission = "private"
-        else:
-            self.permission = inherited_permission
 
         typestr = ""
         for vtype in self.settings["extra_vartypes"]:
@@ -660,10 +658,14 @@ class FortranContainer(FortranBase):
                 )
                 search_from += QUOTES_RE.search(line[search_from:]).end(0)
 
-            # Check the various possibilities for what is on this line
+            # Cache the lowercased line
+            line_lower = line.lower()
+
             if self.settings["lower"]:
-                line = line.lower()
-            if line.lower() == "contains":
+                line = line_lower
+
+            # Check the various possibilities for what is on this line
+            if line_lower == "contains":
                 if not incontains and type(self) in _can_have_contains:
                     incontains = True
                     if isinstance(self, FortranType):
@@ -679,13 +681,10 @@ class FortranContainer(FortranBase):
                             type(self).__name__[7:].upper()
                         ),
                     )
-            elif line.lower() == "public":
-                self.permission = "public"
-            elif line.lower() == "private":
-                self.permission = "private"
-            elif line.lower() == "protected":
-                self.permission = "protected"
-            elif line.lower() == "sequence":
+            elif line_lower in ["public", "private", "protected"]:
+                if not isinstance(self, FortranType):
+                    self.permission = line_lower
+            elif line_lower == "sequence":
                 if type(self) == FortranType:
                     self.sequence = True
             elif self.FORMAT_RE.match(line):
@@ -1262,7 +1261,7 @@ class FortranCodeUnit(FortranContainer):
             "functions", "subroutines", "types", "interfaces", "absinterfaces"
         ):
             for attr in self.attr_dict[item.name.lower()]:
-                if attr == "public" or attr == "private" or attr == "protected":
+                if attr in ["public", "private", "protected"]:
                     item.permission = attr
                 elif attr[0:4] == "bind":
                     if hasattr(item, "bindC"):
@@ -1280,7 +1279,7 @@ class FortranCodeUnit(FortranContainer):
 
         for var in self.variables:
             for attr in self.attr_dict[var.name.lower()]:
-                if attr == "public" or attr == "private" or attr == "protected":
+                if attr in ["public", "private", "protected"]:
                     var.permission = attr
                 elif attr[0:6] == "intent":
                     var.intent = attr[7:-1]
@@ -1404,6 +1403,7 @@ class FortranSourceFile(FortranContainer):
         self.obj = "sourcefile"
         self.display = settings["display"]
         self.encoding = kwargs.get("encoding", True)
+        self.permission = "public"
 
         source = ford.reader.FortranReader(
             self.path,
@@ -1884,13 +1884,12 @@ class FortranType(FortranContainer):
             attribstr = line.group(1)[1:].strip()
             attriblist = self.SPLIT_RE.split(attribstr.strip())
             for attrib in attriblist:
+                attrib_lower = attrib.strip().lower()
                 if EXTENDS_RE.search(attrib):
                     self.extends = EXTENDS_RE.search(attrib).group(1)
-                elif attrib.strip().lower() == "public":
-                    self.permission = "public"
-                elif attrib.strip().lower() == "private":
-                    self.permission = "private"
-                elif attrib.strip().lower() == "external":
+                elif attrib_lower in ["public", "private"]:
+                    self.permission = attrib_lower
+                elif attrib_lower == "external":
                     self.attributes.append("external")
                 else:
                     self.attributes.append(attrib.strip())
@@ -2696,32 +2695,32 @@ def line_to_variables(source, line, inherit_permission, parent):
     optional = False
     permission = inherit_permission
     parameter = False
+    if proto:
+        proto = list(proto)
 
     attribmatch = ATTRIBSPLIT_RE.match(rest)
     if attribmatch:
         attribstr = attribmatch.group(1).strip()
         declarestr = attribmatch.group(2).strip()
-        tmp_attribs = ford.utils.paren_split(",", attribstr)
-        for i in range(len(tmp_attribs)):
-            tmp_attribs[i] = tmp_attribs[i].strip()
-            if tmp_attribs[i].lower() == "public":
-                permission = "public"
-            elif tmp_attribs[i].lower() == "private":
-                permission = "private"
-            elif tmp_attribs[i].lower() == "protected":
-                permission = "protected"
-            elif tmp_attribs[i].lower() == "optional":
+        tmp_attribs = [attr.strip() for attr in ford.utils.paren_split(",", attribstr)]
+        for tmp_attrib in tmp_attribs:
+            # Lowercase and remove whitespace so checking intent is cleaner
+            tmp_attrib_lower = tmp_attrib.lower().replace(" ", "")
+
+            if tmp_attrib_lower in ["public", "private", "protected"]:
+                permission = tmp_attrib_lower
+            elif tmp_attrib_lower == "optional":
                 optional = True
-            elif tmp_attribs[i].lower() == "parameter":
+            elif tmp_attrib_lower == "parameter":
                 parameter = True
-            elif tmp_attribs[i].lower().replace(" ", "") == "intent(in)":
+            elif tmp_attrib_lower == "intent(in)":
                 intent = "in"
-            elif tmp_attribs[i].lower().replace(" ", "") == "intent(out)":
+            elif tmp_attrib_lower == "intent(out)":
                 intent = "out"
-            elif tmp_attribs[i].lower().replace(" ", "") == "intent(inout)":
+            elif tmp_attrib_lower == "intent(inout)":
                 intent = "inout"
             else:
-                attribs.append(tmp_attribs[i])
+                attribs.append(tmp_attrib)
     else:
         declarestr = ATTRIBSPLIT2_RE.match(rest).group(2)
     declarations = ford.utils.paren_split(",", declarestr)
@@ -2732,12 +2731,11 @@ def line_to_variables(source, line, inherit_permission, parent):
         split = ford.utils.paren_split("=", dec)
         if len(split) > 1:
             name = split[0]
-            if split[1][0] == ">":
+            points = split[1][0] == ">"
+            if points:
                 initial = split[1][1:]
-                points = True
             else:
                 initial = split[1]
-                points = False
         else:
             name = dec.strip()
             initial = None
@@ -2745,6 +2743,7 @@ def line_to_variables(source, line, inherit_permission, parent):
 
         if initial:
             initial = COMMA_RE.sub(", ", initial)
+            # TODO: pull out into standalone function?
             search_from = 0
             while QUOTES_RE.search(initial[search_from:]):
                 num = int(QUOTES_RE.search(initial[search_from:]).group()[1:-1])
@@ -2755,50 +2754,30 @@ def line_to_variables(source, line, inherit_permission, parent):
                 )
                 search_from += QUOTES_RE.search(initial[search_from:]).end(0)
 
-        if proto:
-            varlist.append(
-                FortranVariable(
-                    name,
-                    vartype,
-                    parent,
-                    copy.copy(attribs),
-                    intent,
-                    optional,
-                    permission,
-                    parameter,
-                    kind,
-                    strlen,
-                    list(proto),
-                    [],
-                    points,
-                    initial,
-                )
+        varlist.append(
+            FortranVariable(
+                name,
+                vartype,
+                parent,
+                copy.copy(attribs),
+                intent,
+                optional,
+                permission,
+                parameter,
+                kind,
+                strlen,
+                proto,
+                [],
+                points,
+                initial,
             )
-        else:
-            varlist.append(
-                FortranVariable(
-                    name,
-                    vartype,
-                    parent,
-                    copy.copy(attribs),
-                    intent,
-                    optional,
-                    permission,
-                    parameter,
-                    kind,
-                    strlen,
-                    proto,
-                    [],
-                    points,
-                    initial,
-                )
-            )
+        )
 
     doc = []
-    docline = source.__next__()
+    docline = next(source)
     while docline[0:2] == "!" + parent.settings["docmark"]:
         doc.append(docline[2:])
-        docline = source.__next__()
+        docline = next(source)
     source.pass_back(docline)
     for var in varlist:
         var.doc = doc

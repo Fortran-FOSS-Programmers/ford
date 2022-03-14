@@ -116,6 +116,15 @@ def test_module_use_only_everything(copy_fortran_file):
         character(len=1), private :: string_private
       end type type_private
 
+      type type_public_no_attr
+      end type type_public_no_attr
+
+      type, public :: type_public_attr
+      end type type_public_attr
+
+      type, private :: type_private_attr
+      end type type_private_attr
+
       private :: sub_private, func_private, type_private
 
     contains
@@ -185,6 +194,15 @@ def test_module_use_only_everything_change_access(copy_fortran_file):
         character(len=1), private :: string_private
       end type type_private
 
+      type type_public_no_attr
+      end type type_public_no_attr
+
+      type, public :: type_public_attr
+      end type type_public_attr
+
+      type, private :: type_private_attr
+      end type type_private_attr
+
       private :: sub_private, func_private, type_private
 
     contains
@@ -252,6 +270,15 @@ def test_module_use_everything(copy_fortran_file):
         character(len=1), private :: string_private
       end type type_private
 
+      type type_no_attr
+      end type type_no_attr
+
+      type, public :: type_public_attr
+      end type type_public_attr
+
+      type, private :: type_private_attr
+      end type type_private_attr
+
       private :: sub_private, func_private, type_private
 
     contains
@@ -288,9 +315,13 @@ def test_module_use_everything(copy_fortran_file):
     }
     assert set(project.modules[1].all_types.keys()) == {
         "type_public",
+        "type_no_attr",
+        "type_public_attr",
     }
     assert set(project.modules[1].pub_types.keys()) == {
         "type_public",
+        "type_no_attr",
+        "type_public_attr",
     }
     assert set(project.modules[1].all_vars.keys()) == {
         "int_public",
@@ -320,6 +351,15 @@ def test_module_use_everything_reexport(copy_fortran_file):
         character(len=1) :: string_public
         character(len=1), private :: string_private
       end type type_private
+
+      type type_no_attr
+      end type type_no_attr
+
+      type, public :: type_public_attr
+      end type type_public_attr
+
+      type, private :: type_private_attr
+      end type type_private_attr
 
       private :: sub_private, func_private, type_private
 
@@ -361,9 +401,13 @@ def test_module_use_everything_reexport(copy_fortran_file):
     }
     assert set(project.modules[2].all_types.keys()) == {
         "type_public",
+        "type_no_attr",
+        "type_public_attr",
     }
     assert set(project.modules[2].pub_types.keys()) == {
         "type_public",
+        "type_no_attr",
+        "type_public_attr",
     }
     assert set(project.modules[2].all_vars.keys()) == {
         "int_public",
@@ -414,6 +458,83 @@ def test_member_in_other_module(copy_fortran_file):
     assert (
         module2.all_types["internal_type"].boundprocs[0].proto.name == "testInterface"
     )
+
+
+def test_display_derived_types(copy_fortran_file):
+    """Check that we can set visibility attributes on types, #388"""
+
+    data = """\
+    module foo
+      type no_attrs
+      end type no_attrs
+
+      type, public :: public_attr
+      end type public_attr
+
+      type, private :: private_attr
+      end type private_attr
+    end module foo
+    """
+
+    settings = copy_fortran_file(data)
+    settings["display"] = ["public"]
+    project = Project(settings)
+    project.correlate()
+
+    type_names = set([t.name for t in project.types])
+    assert type_names == {"no_attrs", "public_attr"}
+
+
+def test_display_derived_types_default_private(copy_fortran_file):
+    """Check that we can set visibility attributes on types, #388"""
+
+    data = """\
+    module foo
+      private
+
+      type no_attrs
+      end type no_attrs
+
+      type, public :: public_attr
+      end type public_attr
+
+      type, private :: private_attr
+      end type private_attr
+    end module foo
+    """
+
+    settings = copy_fortran_file(data)
+    settings["display"] = ["public"]
+    project = create_project(settings)
+
+    type_names = set([t.name for t in project.types])
+    assert type_names == {"public_attr"}
+
+
+def test_display_private_derived_types(copy_fortran_file):
+    """Check that we can set visibility attributes on types, #388"""
+
+    data = """\
+    module foo
+      private
+
+      type no_attrs
+      end type no_attrs
+
+      type, public :: public_attr
+      end type public_attr
+
+      type, private :: private_attr
+      end type private_attr
+    end module foo
+    """
+
+    settings = copy_fortran_file(data)
+    settings["display"] = ["public", "private"]
+    project = create_project(settings)
+
+    type_names = set([t.name for t in project.types])
+    assert type_names == {"no_attrs", "public_attr", "private_attr"}
 
 
 def test_display_internal_procedures(copy_fortran_file):
