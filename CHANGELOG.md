@@ -1,5 +1,33 @@
 # Changelog
 
+## [v6.1.9](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.9) (2022-03-14)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.8...v6.1.9)
+
+**Fixed bugs:**
+
+- FORD tries to run the preprocessor even if preprocessor test failed [\#398](https://github.com/Fortran-FOSS-Programmers/ford/issues/398)
+- exclude\_dir is broken in 6.1.8 [\#391](https://github.com/Fortran-FOSS-Programmers/ford/issues/391)
+- Preprocessing broken? [\#389](https://github.com/Fortran-FOSS-Programmers/ford/issues/389)
+- Derived Types header missing [\#388](https://github.com/Fortran-FOSS-Programmers/ford/issues/388)
+- source display broken [\#387](https://github.com/Fortran-FOSS-Programmers/ford/issues/387)
+
+**Closed issues:**
+
+- ford-6.1.8 test: test\_projects/test\_external\_project.py is broken  [\#395](https://github.com/Fortran-FOSS-Programmers/ford/issues/395)
+- Ugly tables in markdown pages [\#373](https://github.com/Fortran-FOSS-Programmers/ford/issues/373)
+
+**Merged pull requests:**
+
+- Fix external project test [\#397](https://github.com/Fortran-FOSS-Programmers/ford/pull/397) ([ZedThree](https://github.com/ZedThree))
+- External projects: deal with extended types [\#396](https://github.com/Fortran-FOSS-Programmers/ford/pull/396) ([haraldkl](https://github.com/haraldkl))
+- Fix `exclude_dirs` [\#394](https://github.com/Fortran-FOSS-Programmers/ford/pull/394) ([ZedThree](https://github.com/ZedThree))
+- Fix for preprocessors that can't read from stdin [\#393](https://github.com/Fortran-FOSS-Programmers/ford/pull/393) ([ZedThree](https://github.com/ZedThree))
+- Fix `type` permission attributes [\#392](https://github.com/Fortran-FOSS-Programmers/ford/pull/392) ([ZedThree](https://github.com/ZedThree))
+- Fix showing source in generated docs [\#390](https://github.com/Fortran-FOSS-Programmers/ford/pull/390) ([ZedThree](https://github.com/ZedThree))
+- Update math and environ markdown extensions [\#385](https://github.com/Fortran-FOSS-Programmers/ford/pull/385) ([ZedThree](https://github.com/ZedThree))
+- Fix CSS for markdown tables and add optional striped-table extension [\#384](https://github.com/Fortran-FOSS-Programmers/ford/pull/384) ([ZedThree](https://github.com/ZedThree))
+
 ## [v6.1.8](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.8) (2022-02-01)
 
 [Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.7...v6.1.8)
