@@ -1,8 +1,10 @@
 from ford.sourceform import FortranSourceFile
 from ford.fortran_project import Project
+from ford import DEFAULT_SETTINGS
 
-from collections import defaultdict
+from copy import deepcopy
 
+import markdown
 import pytest
 
 
@@ -14,14 +16,27 @@ def copy_fortran_file(tmp_path):
         filename = src_dir / "test.f90"
         with open(filename, "w") as f:
             f.write(data)
-        settings = defaultdict(str)
-        settings["docmark"] = "!"
-        settings["encoding"] = "utf-8"
+        settings = deepcopy(DEFAULT_SETTINGS)
         settings["src_dir"] = [str(src_dir)]
-        settings["extensions"] = ["f90"]
         return settings
 
     return copy_file
+
+
+def create_project(settings: dict):
+    md_ext = [
+        "markdown.extensions.meta",
+        "markdown.extensions.codehilite",
+        "markdown.extensions.extra",
+    ]
+    md = markdown.Markdown(
+        extensions=md_ext, output_format="html5", extension_configs={}
+    )
+
+    project = Project(settings)
+    project.markdown(md, "..")
+    project.correlate()
+    return project
 
 
 def test_use_without_rename(copy_fortran_file):
@@ -49,8 +64,7 @@ def test_use_without_rename(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
     assert set(project.modules[0].all_procs.keys()) == {"routine_1", "routine"}
 
 
@@ -79,8 +93,7 @@ def test_use_and_rename(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
     assert set(project.modules[0].all_procs.keys()) == {"routine_1", "routine"}
 
 
@@ -125,8 +138,7 @@ def test_module_use_only_everything(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
 
     # Double-check we're looking at the right module
     assert project.modules[1].name == "use_only_everything"
@@ -197,8 +209,7 @@ def test_module_use_only_everything_change_access(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
 
     # Double-check we're looking at the right module
     assert project.modules[1].name == "use_only_change_access"
@@ -263,8 +274,7 @@ def test_module_use_everything(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
 
     # Double-check we're looking at the right module
     assert project.modules[1].name == "use_everything"
@@ -337,8 +347,7 @@ def test_module_use_everything_reexport(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
 
     # Double-check we're looking at the right module
     assert project.modules[2].name == "reexport"
@@ -392,8 +401,7 @@ def test_member_in_other_module(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    project = Project(settings)
-    project.correlate()
+    project = create_project(settings)
 
     module1 = project.modules[0]
     module2 = project.modules[1]
@@ -406,3 +414,33 @@ def test_member_in_other_module(copy_fortran_file):
     assert (
         module2.all_types["internal_type"].boundprocs[0].proto.name == "testInterface"
     )
+
+
+def test_display_internal_procedures(copy_fortran_file):
+    """_very_ basic test of 'proc_internals' setting"""
+
+    data = """\
+    subroutine no_display_internals
+    !! some docs
+    integer :: local_variable
+    !! This shouldn't be displayed
+    end subroutine no_display_internals
+
+    subroutine display_internals
+    !! proc_internals: true
+    !!
+    !! some docs
+    integer :: local_variable
+    !! This shouldn't be displayed
+    end subroutine display_internals
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+
+    subroutine1 = project.procedures[0]
+    subroutine2 = project.procedures[1]
+
+    assert subroutine1.variables == []
+    assert len(subroutine2.variables) == 1
+    assert subroutine2.variables[0].name == "local_variable"

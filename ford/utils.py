@@ -518,6 +518,8 @@ def external(project, make=False, path="."):
 
 def str_to_bool(text):
     """Convert string to bool. Only takes 'true'/'false', ignoring case"""
+    if isinstance(text, bool):
+        return text
     if text.capitalize() == "True":
         return True
     if text.capitalize() == "False":
