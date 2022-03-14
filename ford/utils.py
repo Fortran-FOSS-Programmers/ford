@@ -369,9 +369,17 @@ def external(project, make=False, path="."):
     """
     Reads and writes the information needed for processing external modules.
     """
+    from ford.sourceform import (
+        ExternalModule,
+        ExternalFunction,
+        ExternalSubroutine,
+        ExternalInterface,
+        ExternalType,
+        ExternalVariable,
+    )
 
     # attributes of a module object needed for further processing
-    attribs = [
+    ATTRIBUTES = [
         "pub_procs",
         "pub_absints",
         "pub_types",
@@ -384,32 +392,44 @@ def external(project, make=False, path="."):
         "variables",
     ]
 
+    # Mapping between entity name and its type
+    ENTITIES = {
+        "module": ExternalModule,
+        "interface": ExternalInterface,
+        "type": ExternalType,
+        "variable": ExternalVariable,
+        "function": ExternalFunction,
+        "subroutine": ExternalSubroutine,
+    }
+
     def obj2dict(intObj):
         """
         Converts an object to a dictionary.
         """
-        extDict = {}
-        extDict["name"] = intObj.name
-        extDict["external_url"] = intObj.get_url()
-        extDict["obj"] = intObj.obj
+        extDict = {
+            "name": intObj.name,
+            "external_url": intObj.get_url(),
+            "obj": intObj.obj,
+        }
         if hasattr(intObj, "proctype"):
             extDict["proctype"] = intObj.proctype
         if hasattr(intObj, "extends"):
-            extDict["extends"] = intObj.extends
-        for attrib in attribs:
-            if hasattr(intObj, attrib):
-                if type(getattr(intObj, attrib)) == str:
-                    extDict[attrib] = getattr(intObj, attrib)
-                elif type(getattr(intObj, attrib)) == list:
-                    extDict[attrib] = []
-                    for item in getattr(intObj, attrib):
-                        extItem = obj2dict(item)
-                        extDict[attrib].append(extItem)
-                elif type(getattr(intObj, attrib)) == dict:
-                    extDict[attrib] = {}
-                    for key, val in getattr(intObj, attrib).items():
-                        extItem = obj2dict(val)
-                        extDict[attrib][key] = extItem
+            if isinstance(intObj.extends, ford.sourceform.FortranType):
+                extDict["extends"] = obj2dict(intObj.extends)
+            else:
+                extDict["extends"] = intObj.extends
+        for attrib in ATTRIBUTES:
+            if not hasattr(intObj, attrib):
+                continue
+
+            attribute = getattr(intObj, attrib)
+
+            if isinstance(attribute, str):
+                extDict[attrib] = attribute
+            elif isinstance(attribute, list):
+                extDict[attrib] = [obj2dict(item) for item in attribute]
+            elif isinstance(attribute, dict):
+                extDict[attrib] = {key: obj2dict(val) for key, val in attribute.items()}
         return extDict
 
     def modules_from_local(url: pathlib.Path):
@@ -423,66 +443,51 @@ def external(project, make=False, path="."):
         with open(url / "modules.json", mode="r", encoding="utf-8") as extfile:
             return json.loads(extfile.read())
 
-    def dict2obj(extDict, url, parent=None, remote: bool = False):
+    def dict2obj(extDict, url, parent=None, remote: bool = False) -> None:
         """
-        Converts a dictionary to an object.
+        Converts a dictionary to an object and immediately adds it to the project
         """
-        if extDict["obj"].lower() == "module":
-            extObj = ford.sourceform.ExternalModule()
-            project.extModules.append(extObj)
-        elif extDict["obj"].lower() == "proc":
-            if extDict["proctype"].lower() == "function":
-                extObj = ford.sourceform.ExternalFunction()
-            elif extDict["proctype"].lower() == "subroutine":
-                extObj = ford.sourceform.ExternalSubroutine()
-            elif extDict["proctype"].lower() == "interface":
-                extObj = ford.sourceform.ExternalInterface()
-            project.extProcedures.append(extObj)
-            extObj.proctype = extDict["proctype"]
-        elif extDict["obj"].lower() == "interface":
-            extObj = ford.sourceform.ExternalInterface()
-            project.extInterfaces.append(extObj)
-            extObj.proctype = extDict["proctype"]
-        elif extDict["obj"].lower() == "type":
-            extObj = ford.sourceform.ExternalType()
-            project.extTypes.append(extObj)
-            extObj.extends = extDict["extends"]
-        elif extDict["obj"].lower() == "variable":
-            extObj = ford.sourceform.ExternalVariable()
-            project.extVariables.append(extObj)
-        extObj.name = extDict["name"]
+        name = extDict["name"]
         if extDict["external_url"]:
             extDict["external_url"] = extDict["external_url"].split("/", 1)[-1]
             if remote:
-                extObj.external_url = urljoin(url, extDict["external_url"])
+                external_url = urljoin(url, extDict["external_url"])
             else:
-                extObj.external_url = url / extDict["external_url"]
+                external_url = url / extDict["external_url"]
         else:
-            extObj.external_url = extDict["external_url"]
-        extObj.obj = extDict["obj"]
-        extObj.parent = parent
-        for key in attribs:
+            external_url = extDict["external_url"]
+
+        # Look up what type of entity this is
+        obj_type = extDict.get("proctype", extDict["obj"]).lower()
+        # Construct the entity
+        extObj: FortranBase = ENTITIES[obj_type](name, external_url, parent)
+        # Now add it to the correct project list
+        project_list = getattr(project, extObj._project_list)
+        project_list.append(extObj)
+
+        if obj_type == "interface":
+            extObj.proctype = extDict["proctype"]
+        elif obj_type == "type":
+            extObj.extends = extDict["extends"]
+
+        for key in ATTRIBUTES:
             if key not in extDict:
                 continue
-            if type(extDict[key]) == str:
+            if isinstance(extDict[key], str):
                 setattr(extObj, key, extDict[key])
-            elif type(extDict[key]) == list:
-                tmpLs = []
-                for item in extDict[key]:
-                    tmpLs.append(dict2obj(item, url, extObj, remote))
+            elif isinstance(extDict[key], list):
+                tmpLs = [dict2obj(item, url, extObj, remote) for item in extDict[key]]
                 setattr(extObj, key, tmpLs)
-            elif type(extDict[key]) == dict:
-                tmpDict = {}
-                for key2, val in extDict[key].items():
-                    tmpDict[key2] = dict2obj(val, url, extObj, remote)
+            elif isinstance(extDict[key], dict):
+                tmpDict = {
+                    key2: dict2obj(item, url, extObj, remote)
+                    for key2, item in extDict[key].items()
+                }
                 setattr(extObj, key, tmpDict)
-        return extObj
 
     if make:
         # convert internal module object to a JSON database
-        extModules = []
-        for module in project.modules:
-            extModules.append(obj2dict(module))
+        extModules = [obj2dict(module) for module in project.modules]
         with open(os.path.join(path, "modules.json"), "w") as modFile:
             modFile.write(json.dumps(extModules))
     else:
@@ -513,6 +518,8 @@ def external(project, make=False, path="."):
 
 def str_to_bool(text):
     """Convert string to bool. Only takes 'true'/'false', ignoring case"""
+    if isinstance(text, bool):
+        return text
     if text.capitalize() == "True":
         return True
     if text.capitalize() == "False":

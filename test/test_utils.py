@@ -35,3 +35,8 @@ def test_str_to_bool_true(string):
 @pytest.mark.parametrize("string", ["false", "False", "FALSE", "fAlSe"])
 def test_str_to_bool_false(string):
     assert not ford.utils.str_to_bool(string)
+
+
+def test_str_to_bool_already_bool():
+    assert ford.utils.str_to_bool(True)
+    assert not ford.utils.str_to_bool(False)

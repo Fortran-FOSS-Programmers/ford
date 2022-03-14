@@ -300,6 +300,14 @@ class FortranBase(object):
         """
         return self.ident < other.ident
 
+    def _ensure_meta_key_set(self, key: str, transform=None):
+        """Ensure that 'key' is set in self.meta, after applying an optional transform"""
+        value = self.meta.get(key, self.settings[key])
+        if transform:
+            self.meta[key] = transform(value)
+        else:
+            self.meta[key] = value
+
     def markdown(self, md, project):
         """
         Process the documentation with Markdown to produce HTML.
@@ -395,22 +403,14 @@ class FortranBase(object):
             ] += '<a href="{}" class="pull-right"><emph>Read more&hellip;</emph></a>'.format(
                 self.get_url()
             )
-        if "graph" not in self.meta:
-            self.meta["graph"] = self.settings["graph"]
-        else:
-            self.meta["graph"] = ford.utils.str_to_bool(self.meta["graph"])
 
-        if "graph_maxdepth" not in self.meta:
-            self.meta["graph_maxdepth"] = self.settings["graph_maxdepth"]
-        if "graph_maxnodes" not in self.meta:
-            self.meta["graph_maxnodes"] = self.settings["graph_maxnodes"]
+        self._ensure_meta_key_set("graph", ford.utils.str_to_bool)
+        self._ensure_meta_key_set("graph_maxdepth")
+        self._ensure_meta_key_set("graph_maxnodes")
 
-        if self.obj == "proc" or self.obj == "type" or self.obj == "program":
-            if "source" not in self.meta:
-                self.meta["source"] = self.settings["source"]
-            else:
-                self.meta["source"] = ford.utils.str_to_bool(self.meta["source"])
-            if self.meta["source"] == "true":
+        if self.obj in ["proc", "type", "program"]:
+            self._ensure_meta_key_set("source", ford.utils.str_to_bool)
+            if self.meta["source"]:
                 if self.obj == "proc":
                     obj = self.proctype.lower()
                 else:
@@ -432,12 +432,7 @@ class FortranBase(object):
                         )
 
         if self.obj == "proc":
-            if "proc_internals" not in self.meta:
-                self.meta["proc_internals"] = self.settings["proc_internals"]
-            else:
-                self.meta["proc_internals"] = ford.utils.str_to_bool(
-                    self.meta["proc_internals"]
-                )
+            self._ensure_meta_key_set("proc_internals", ford.utils.str_to_bool)
 
         # Create Markdown
         for item in self.iterator(
@@ -1332,7 +1327,7 @@ class FortranCodeUnit(FortranContainer):
                 inc = False
             return inc
 
-        if self.obj == "proc" and self.meta["proc_internals"] == "false":
+        if self.obj == "proc" and not self.meta["proc_internals"]:
             self.functions = []
             self.subroutines = []
             self.types = []
@@ -3026,41 +3021,68 @@ namelist = NameSelector()
 
 
 class ExternalModule(FortranModule):
-    def __init__(self):
-        self.name = ""
+    _project_list = "extModules"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "module"
         self.uses = []
         self.pub_procs = {}
         self.pub_absints = {}
         self.pub_types = {}
         self.pub_vars = {}
-        self.external_url = ""
 
 
 class ExternalFunction(FortranFunction):
-    def __init__(self):
-        self.name = ""
-        self.external_url = ""
+    _project_list = "extProcedures"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "proc"
+        self.proctype = "function"
 
 
 class ExternalSubroutine(FortranSubroutine):
-    def __init__(self):
-        self.name = ""
-        self.external_url = ""
+    _project_list = "extProcedures"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "proc"
+        self.proctype = "subroutine"
 
 
 class ExternalInterface(FortranInterface):
-    def __init__(self):
-        self.name = ""
-        self.external_url = ""
+    _project_list = "extProcedures"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "proc"
+        self.proctype = "interface"
 
 
 class ExternalType(FortranType):
-    def __init__(self):
-        self.name = ""
-        self.external_url = ""
+    _project_list = "extTypes"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "type"
 
 
 class ExternalVariable(FortranVariable):
-    def __init__(self):
-        self.name = ""
-        self.external_url = ""
+    _project_list = "extVariables"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "variable"

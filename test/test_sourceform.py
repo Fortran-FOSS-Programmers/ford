@@ -4,8 +4,9 @@ from ford.sourceform import (
     parse_type,
     line_to_variables,
 )
+from ford import DEFAULT_SETTINGS
 
-from collections import defaultdict
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Union, List, Optional
 
@@ -15,11 +16,10 @@ import pytest
 
 @pytest.fixture
 def parse_fortran_file(copy_fortran_file):
-    def parse_file(data):
+    def parse_file(data, **kwargs):
         filename = copy_fortran_file(data)
-        settings = defaultdict(str)
-        settings["docmark"] = "!"
-        settings["encoding"] = "utf-8"
+        settings = deepcopy(DEFAULT_SETTINGS)
+        settings.update(kwargs)
 
         return FortranSourceFile(str(filename), settings)
 
@@ -962,3 +962,57 @@ def test_multiline_attributes(parse_fortran_file):
         assert (
             variable.dimension == "(:)" or "dimension(:)" in variable.attribs
         ), f"Wrong dimension for '{variable}'"
+
+
+def test_markdown_source_meta(parse_fortran_file):
+    """Check that specifying 'source' in the procedure meta block is processed"""
+
+    data = """\
+    subroutine with_source
+    !! source: true
+    !!
+    !! some docs
+    end subroutine with_source
+    """
+
+    md_ext = [
+        "markdown.extensions.meta",
+        "markdown.extensions.codehilite",
+        "markdown.extensions.extra",
+    ]
+    md = markdown.Markdown(
+        extensions=md_ext, output_format="html5", extension_configs={}
+    )
+
+    fortran_file = parse_fortran_file(data)
+    subroutine = fortran_file.subroutines[0]
+    subroutine.markdown(md, None)
+
+    assert subroutine.meta["source"]
+    assert "with_source" in subroutine.src
+
+
+def test_markdown_source_settings(parse_fortran_file):
+    """Check that specifying 'source' in the settings works"""
+
+    data = """\
+    subroutine with_source
+    !! some docs
+    end subroutine with_source
+    """
+
+    md_ext = [
+        "markdown.extensions.meta",
+        "markdown.extensions.codehilite",
+        "markdown.extensions.extra",
+    ]
+    md = markdown.Markdown(
+        extensions=md_ext, output_format="html5", extension_configs={}
+    )
+
+    fortran_file = parse_fortran_file(data, source=True)
+    subroutine = fortran_file.subroutines[0]
+    subroutine.markdown(md, None)
+
+    assert subroutine.meta["source"]
+    assert "with_source" in subroutine.src
