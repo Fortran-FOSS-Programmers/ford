@@ -2944,7 +2944,7 @@ def sort_items(self, items, args=False):
             if i.strlen:
                 retstr = retstr + "-" + str(i.strlen)
             if i.proto:
-                retstr = retstr + "-" + i.proto[0]
+                retstr = f"{retstr}-{i.proto[0]}"
             return retstr
         elif i.obj == "proc":
             if i.proctype != "Function":
