@@ -690,3 +690,146 @@ def test_exclude(tmp_path):
 
     program_names = {program.name for program in project.programs}
     assert program_names == {"foo"}
+
+
+@pytest.mark.parametrize(
+    "sort_kind, expected_order",
+    [
+        (
+            "src",
+            {
+                "variables": ["b", "a", "d", "f", "c", "e", "g", "h", "j", "i"],
+                "types": ["bet", "alef", "gimel"],
+                "subroutines": ["bravo", "alpha", "charlie"],
+                "functions": ["beaver", "aardvark", "cat"],
+                "absinterfaces": ["apple", "carrot", "banana"],
+            },
+        ),
+        (
+            "alpha",
+            {
+                "variables": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+                "types": ["alef", "bet", "gimel"],
+                "subroutines": ["alpha", "bravo", "charlie"],
+                "functions": ["aardvark", "beaver", "cat"],
+                "absinterfaces": ["apple", "banana", "carrot"],
+            },
+        ),
+        (
+            "permission",
+            {
+                "variables": ["d", "f", "c", "e", "b", "a", "g", "h", "j", "i"],
+                "types": ["gimel", "alef", "bet"],
+                "subroutines": ["charlie", "alpha", "bravo"],
+                "functions": ["cat", "aardvark", "beaver"],
+                "absinterfaces": ["apple", "carrot", "banana"],
+            },
+        ),
+        (
+            "permission-alpha",
+            {
+                "variables": ["d", "f", "c", "e", "a", "b", "g", "h", "i", "j"],
+                "types": ["gimel", "alef", "bet"],
+                "subroutines": ["charlie", "alpha", "bravo"],
+                "functions": ["cat", "aardvark", "beaver"],
+                "absinterfaces": ["apple", "banana", "carrot"],
+            },
+        ),
+        (
+            "type",
+            {
+                "variables": ["h", "g", "j", "i", "b", "a", "c", "e", "d", "f"],
+                "types": ["bet", "alef", "gimel"],
+                "subroutines": ["bravo", "alpha", "charlie"],
+                "functions": ["cat", "beaver", "aardvark"],
+                "absinterfaces": ["apple", "carrot", "banana"],
+            },
+        ),
+        (
+            "type-alpha",
+            {
+                "variables": ["h", "g", "i", "j", "a", "b", "c", "e", "d", "f"],
+                "types": ["alef", "bet", "gimel"],
+                "subroutines": ["alpha", "bravo", "charlie"],
+                "functions": ["cat", "aardvark", "beaver"],
+                "absinterfaces": ["apple", "banana", "carrot"],
+            },
+        ),
+    ],
+)
+def test_sort(copy_fortran_file, sort_kind, expected_order):
+    data = """\
+    module mod_a
+      type :: bet
+      end type bet
+
+      type :: alef
+      end type alef
+
+      type :: gimel
+      end type gimel
+
+      integer, private :: b, a
+      type(gimel), public :: d, f
+      type(alef), protected :: c, e
+
+      character(len=2, kind=4) :: g
+      character(len=1, kind=4) :: h
+      character(len=1, kind=8) :: j, i
+      private :: g, h, i, j
+
+      abstract interface
+        subroutine banana
+        end subroutine banana
+
+        function apple()
+          import gimel
+          class(gimel), allocatable :: apple
+        end function apple
+
+        type(alef) function carrot()
+          import alef
+        end function carrot
+      end interface
+
+      public :: gimel, charlie, cat
+      protected :: alef, alpha, aardvark
+      private :: bet, bravo, beaver
+
+    contains
+      subroutine bravo
+      end subroutine bravo
+
+      subroutine alpha
+      end subroutine alpha
+
+      subroutine charlie
+      end subroutine charlie
+
+      type(gimel) function beaver()
+      end function beaver
+
+      function aardvark()
+        class(gimel), allocatable :: aardvark
+      end function aardvark
+
+      type(alef) function cat()
+      end function cat
+    end module mod_a
+    """
+
+    settings = copy_fortran_file(data)
+    settings["sort"] = sort_kind
+    settings["display"] = ["public", "private", "protected"]
+    project = create_project(settings)
+    module = project.modules[0]
+
+    for entity_type in [
+        "variables",
+        "types",
+        "subroutines",
+        "functions",
+        "absinterfaces",
+    ]:
+        entity_names = [entity.name for entity in getattr(module, entity_type)]
+        assert entity_names == expected_order[entity_type], (sort_kind, entity_type)

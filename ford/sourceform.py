@@ -464,41 +464,70 @@ class FortranBase(object):
                 self.procedure.markdown(md, project)
         return
 
-    def sort(self):
+    def sort_components(self):
+        """Sorts components using the method specified in the object
+        meta/project settings
+
         """
-        Sorts components of the object.
-        """
-        if hasattr(self, "variables"):
-            sort_items(self, self.variables)
-        if hasattr(self, "modules"):
-            sort_items(self, self.modules)
-        if hasattr(self, "submodules"):
-            sort_items(self, self.submodules)
-        if hasattr(self, "common"):
-            sort_items(self, self.common)
-        if hasattr(self, "subroutines"):
-            sort_items(self, self.subroutines)
-        if hasattr(self, "modprocedures"):
-            sort_items(self, self.modprocedures)
-        if hasattr(self, "functions"):
-            sort_items(self, self.functions)
-        if hasattr(self, "interfaces"):
-            sort_items(self, self.interfaces)
-        if hasattr(self, "absinterfaces"):
-            sort_items(self, self.absinterfaces)
-        if hasattr(self, "types"):
-            sort_items(self, self.types)
-        if hasattr(self, "programs"):
-            sort_items(self, self.programs)
-        if hasattr(self, "blockdata"):
-            sort_items(self, self.blockdata)
-        if hasattr(self, "boundprocs"):
-            sort_items(self, self.boundprocs)
-        if hasattr(self, "finalprocs"):
-            sort_items(self, self.finalprocs)
-        if hasattr(self, "args"):
-            # sort_items(self.args,args=True)
-            pass
+
+        def permission(item):
+            permission_type = getattr(item, "permission", "default")
+            sorting = {"default": 0, "public": 1, "protected": 2, "private": 3}
+            return sorting[permission_type]
+
+        def fortran_type_name(item):
+            if item.obj == "variable":
+                retstr = item.vartype
+                if retstr == "class":
+                    retstr = "type"
+                if item.kind:
+                    retstr += f"-{item.kind}"
+                if item.strlen:
+                    retstr += f"-{item.strlen}"
+                if item.proto:
+                    retstr += f"-{item.proto[0]}"
+                return retstr
+            if item.obj == "proc":
+                return_var = (
+                    f"-{fortran_type_name(item.retvar)}"
+                    if item.proctype == "Function"
+                    else ""
+                )
+                return f"{item.proctype.lower()}{return_var}"
+
+            return item.obj
+
+        SORT_KEY_FUNCTIONS = {
+            "alpha": lambda item: item.name,
+            "permission": permission,
+            "permission-alpha": lambda item: f"{permission(item)}-{item.name}",
+            "type": fortran_type_name,
+            "type-alpha": lambda item: f"{fortran_type_name(item)}-{item.name}",
+            "src": None,
+        }
+
+        sort_key = SORT_KEY_FUNCTIONS[self.settings["sort"].lower()]
+        if sort_key is None:
+            return
+
+        for entities in [
+            "variables",
+            "modules",
+            "submodules",
+            "common",
+            "subroutines",
+            "modprocedures",
+            "functions",
+            "interfaces",
+            "absinterfaces",
+            "types",
+            "programs",
+            "blockdata",
+            "boundprocs",
+            "finalprocs",
+        ]:
+            entity = getattr(self, entities, [])
+            entity.sort(key=sort_key)
 
     def make_links(self, project):
         """
@@ -1240,8 +1269,7 @@ class FortranCodeUnit(FortranContainer):
         if hasattr(self, "retvar") and not getattr(self, "mp", False):
             self.retvar.correlate(project)
 
-        # Sort content
-        self.sort()
+        self.sort_components()
 
         # Separate module subroutines/functions from normal ones
         if self.obj == "submodule":
@@ -1975,8 +2003,9 @@ class FortranType(FortranContainer):
             self.num_lines += getattr(
                 self.constructor, "num_lines_all", self.constructor.num_lines
             )
-        # Sort content
-        self.sort()
+
+        self.sort_components()
+
         # Get total num_lines, including implementations
         for proc in self.finalprocs:
             self.num_lines_all += proc.procedure.num_lines
@@ -2070,8 +2099,8 @@ class FortranInterface(FortranContainer):
                 func.correlate(project)
         else:
             self.procedure.correlate(project)
-        # Sort content
-        self.sort()
+
+        self.sort_components()
 
     def _cleanup(self):
         if self.abstract:
@@ -2300,8 +2329,8 @@ class FortranBoundProcedure(FortranBase):
                     break
             # else:
             #    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
-        # Sort content
-        self.sort()
+
+        self.sort_components()
 
 
 class FortranModuleProcedure(FortranBase):
@@ -2393,8 +2422,8 @@ class FortranBlockData(FortranContainer):
             var.correlate(project)
         for com in self.common:
             com.correlate(project)
-        # Sort content
-        self.sort()
+
+        self.sort_components()
 
     def prune(self):
         self.types = [obj for obj in self.types if obj.permission in self.display]
@@ -2474,13 +2503,11 @@ class FortranCommon(FortranBase):
             self.other_uses = project.common[self.name]
             self.other_uses.append(self)
         else:
-            lst = [
-                self,
-            ]
+            lst = [self]
             project.common[self.name] = lst
             self.other_uses = lst
-        # Sort content
-        self.sort()
+
+        self.sort_components()
 
 
 class FortranSpoof(object):
@@ -2899,74 +2926,6 @@ def get_mod_procs(source, line, parent):
     retlist[-1].doc = doc
 
     return retlist
-
-
-def sort_items(self, items, args=False):
-    """
-    Sort the `self`'s contents, as contained in the list `items` as
-    specified in `self`'s meta-data.
-    """
-    if self.settings["sort"].lower() == "src":
-        return
-
-    def alpha(i):
-        return i.name
-
-    def permission(i):
-        if args:
-            if i.intent == "in":
-                return "b"
-            if i.intent == "inout":
-                return "c"
-            if i.intent == "out":
-                return "d"
-            if i.intent == "":
-                return "e"
-        perm = getattr(i, "permission", "")
-        if perm == "public":
-            return "b"
-        if perm == "protected":
-            return "c"
-        if perm == "private":
-            return "d"
-        return "a"
-
-    def permission_alpha(i):
-        return permission(i) + "-" + i.name
-
-    def itype(i):
-        if i.obj == "variable":
-            retstr = i.vartype
-            if retstr == "class":
-                retstr = "type"
-            if i.kind:
-                retstr = retstr + "-" + str(i.kind)
-            if i.strlen:
-                retstr = retstr + "-" + str(i.strlen)
-            if i.proto:
-                retstr = retstr + "-" + i.proto[0]
-            return retstr
-        elif i.obj == "proc":
-            if i.proctype != "Function":
-                return i.proctype.lower()
-            else:
-                return i.proctype.lower() + "-" + itype(i.retvar)
-        else:
-            return i.obj
-
-    def itype_alpha(i):
-        return itype(i) + "-" + i.name
-
-    if self.settings["sort"].lower() == "alpha":
-        items.sort(key=alpha)
-    elif self.settings["sort"].lower() == "permission":
-        items.sort(key=permission)
-    elif self.settings["sort"].lower() == "permission-alpha":
-        items.sort(key=permission_alpha)
-    elif self.settings["sort"].lower() == "type":
-        items.sort(key=itype)
-    elif self.settings["sort"].lower() == "type-alpha":
-        items.sort(key=itype_alpha)
 
 
 class NameSelector(object):
