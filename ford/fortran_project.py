@@ -82,7 +82,7 @@ class Project(object):
         srcdir_list = self.make_srcdir_list(settings["exclude_dir"])
         for curdir in srcdir_list:
             for item in [f for f in curdir.iterdir() if f.is_file()]:
-                if item in settings["exclude"]:
+                if item.name in settings["exclude"]:
                     continue
 
                 filename = curdir / item

@@ -685,7 +685,7 @@ def test_exclude(tmp_path):
 
     settings = deepcopy(DEFAULT_SETTINGS)
     settings["src_dir"] = [tmp_path]
-    settings["exclude"] = [normalise_path(tmp_path, "sub1/sub2/exclude.f90")]
+    settings["exclude"] = ["exclude.f90"]
     project = Project(settings)
 
     program_names = {program.name for program in project.programs}

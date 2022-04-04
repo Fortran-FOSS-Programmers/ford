@@ -443,7 +443,6 @@ def parse_arguments(
         "css",
         "mathjax_config",
         "src_dir",
-        "exclude",
         "exclude_dir",
         "include",
     ]:
