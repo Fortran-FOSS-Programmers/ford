@@ -17,8 +17,9 @@ License: [BSD](https://opensource.org/licenses/bsd-license.php)
 
 """
 
-from . import Extension
-from ..blockprocessors import BlockProcessor
+from markdown.extensions import Extension
+from markdown.blockprocessors import BlockProcessor
+from markdown.preprocessors import Preprocessor
 import xml.etree.ElementTree as etree
 import re
 
