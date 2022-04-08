@@ -24,21 +24,23 @@ import re
 
 
 class AdmonitionExtension(Extension):
-    """ Admonition extension for Python-Markdown. """
+    """Admonition extension for Python-Markdown."""
 
     def extendMarkdown(self, md):
-        """ Add Admonition to Markdown instance. """
+        """Add Admonition to Markdown instance."""
         md.registerExtension(self)
 
-        md.parser.blockprocessors.register(AdmonitionProcessor(md.parser), 'admonition', 105)
+        md.parser.blockprocessors.register(
+            AdmonitionProcessor(md.parser), "admonition", 105
+        )
 
 
 class AdmonitionProcessor(BlockProcessor):
 
-    CLASSNAME = 'admonition'
-    CLASSNAME_TITLE = 'admonition-title'
+    CLASSNAME = "admonition"
+    CLASSNAME_TITLE = "admonition-title"
     RE = re.compile(r'(?:^|\n)!!! ?([\w\-]+(?: +[\w\-]+)*)(?: +"(.*?)")? *(?:\n|$)')
-    RE_SPACES = re.compile('  +')
+    RE_SPACES = re.compile("  +")
 
     def __init__(self, parser):
         """Initialization."""
@@ -50,14 +52,12 @@ class AdmonitionProcessor(BlockProcessor):
 
     def parse_content(self, parent, block):
         """Get sibling admonition.
-
         Retrieve the appropriate sibling element. This can get tricky when
         dealing with lists.
-
         """
 
         old_block = block
-        the_rest = ''
+        the_rest = ""
 
         # We already acquired the block via test
         if self.current_sibling is not None:
@@ -69,7 +69,7 @@ class AdmonitionProcessor(BlockProcessor):
 
         sibling = self.lastChild(parent)
 
-        if sibling is None or sibling.get('class', '').find(self.CLASSNAME) == -1:
+        if sibling is None or sibling.get("class", "").find(self.CLASSNAME) == -1:
             sibling = None
         else:
             # If the last child is a list and the content is sufficiently indented
@@ -78,8 +78,10 @@ class AdmonitionProcessor(BlockProcessor):
             indent = 0
             while last_child:
                 if (
-                    sibling and block.startswith(' ' * self.tab_length * 2) and
-                    last_child and last_child.tag in ('ul', 'ol', 'dl')
+                    sibling
+                    and block.startswith(" " * self.tab_length * 2)
+                    and last_child
+                    and last_child.tag in ("ul", "ol", "dl")
                 ):
 
                     # The expectation is that we'll find an <li> or <dt>.
@@ -90,12 +92,12 @@ class AdmonitionProcessor(BlockProcessor):
                     # Context has been lost at this point, so we must adjust the
                     # text's indentation level so it will be evaluated correctly
                     # under the list.
-                    block = block[self.tab_length:]
+                    block = block[self.tab_length :]
                     indent += self.tab_length
                 else:
                     last_child = None
 
-            if not block.startswith(' ' * self.tab_length):
+            if not block.startswith(" " * self.tab_length):
                 sibling = None
 
             if sibling is not None:
@@ -119,26 +121,26 @@ class AdmonitionProcessor(BlockProcessor):
 
         if m:
             if m.start() > 0:
-                self.parser.parseBlocks(parent, [block[:m.start()]])
-            block = block[m.end():]  # removes the first line
+                self.parser.parseBlocks(parent, [block[: m.start()]])
+            block = block[m.end() :]  # removes the first line
             block, theRest = self.detab(block)
         else:
             sibling, block, theRest = self.parse_content(parent, block)
 
         if m:
             klass, title = self.get_class_and_title(m)
-            div = etree.SubElement(parent, 'div')
-            div.set('class', '{} {}'.format(self.CLASSNAME, klass))
+            div = etree.SubElement(parent, "div")
+            div.set("class", "{} {}".format(self.CLASSNAME, klass))
             if title:
-                p = etree.SubElement(div, 'p')
+                p = etree.SubElement(div, "p")
                 p.text = title
-                p.set('class', self.CLASSNAME_TITLE)
+                p.set("class", self.CLASSNAME_TITLE)
         else:
             # Sibling is a list item, but we need to wrap it's content should be wrapped in <p>
-            if sibling.tag in ('li', 'dd') and sibling.text:
+            if sibling.tag in ("li", "dd") and sibling.text:
                 text = sibling.text
-                sibling.text = ''
-                p = etree.SubElement(sibling, 'p')
+                sibling.text = ""
+                p = etree.SubElement(sibling, "p")
                 p.text = text
 
             div = sibling
@@ -153,13 +155,13 @@ class AdmonitionProcessor(BlockProcessor):
 
     def get_class_and_title(self, match):
         klass, title = match.group(1).lower(), match.group(2)
-        klass = self.RE_SPACES.sub(' ', klass)
+        klass = self.RE_SPACES.sub(" ", klass)
         if title is None:
             # no title was provided, use the capitalized classname as title
             # e.g.: `!!! note` will render
             # `<p class="admonition-title">Note</p>`
-            title = klass.split(' ', 1)[0].capitalize()
-        elif title == '':
+            title = klass.split(" ", 1)[0].capitalize()
+        elif title == "":
             # an explicit blank title should not be rendered
             # e.g.: `!!! warning ""` will *not* render `p` with a title
             title = None
