@@ -22,6 +22,16 @@ from markdown.blockprocessors import BlockProcessor
 from markdown.preprocessors import Preprocessor
 import xml.etree.ElementTree as etree
 import re
+from dataclasses import dataclass
+from typing import List, Optional, ClassVar
+
+ADMONITION_TYPE = {
+    "note": "info",
+    "warning": "warning",
+    "todo": "success",
+    "bug": "danger",
+    "history": "history",
+}
 
 
 class AdmonitionExtension(Extension):
@@ -30,7 +40,7 @@ class AdmonitionExtension(Extension):
     def extendMarkdown(self, md):
         """Add Admonition to Markdown instance."""
         md.registerExtension(self)
-
+        md.preprocessors.register(AdmonitionPreprocessor(md), "admonition-pre", 105)
         md.parser.blockprocessors.register(
             AdmonitionProcessor(md.parser), "admonition", 105
         )
@@ -169,5 +179,104 @@ class AdmonitionProcessor(BlockProcessor):
         return klass, title
 
 
-def makeExtension(**kwargs):  # pragma: no cover
-    return AdmonitionExtension(**kwargs)
+class AdmonitionPreprocessor(Preprocessor):
+    """Markdown preprocessor for dealing with FORD style admonitions.
+
+    This preprocessor converts the FORD syntax for admonitions (`@note`,
+    `@bug`, etc.) to the markdown admonition syntax (`!!! Note`)
+
+    A FORD admonition starts with `@<type>`, where `<type>` is one of:
+    `note`, `warning`, `todo`, `bug`, or `history`.
+    An admonition ends at (in this order of preference):
+        1. `@end<type>`, where <type>` must match the start marker
+        2. an empty line
+        3. a new note (`@<type>`)
+        4. the end of the documentation lines
+
+    The admonitions are converted to the markdown syntax, i.e. `!!! Note`,
+    followed by an indented block. Possible end markers are removed, as well
+    as empty lines if they mark the end of an admonition.
+
+    Todo:
+        - Error handling
+        - Support for lists in admonitions
+        - Support for one line admonitions with start marker and text on the same line
+        - Support for end marker embedded in line.
+
+    """
+
+    INDENT_SIZE: ClassVar[int] = 4
+    ADMONITION_RE: ClassVar[re.Pattern] = re.compile(
+        r"@(?P<end>end)?(?P<type>{})\s*".format("|".join(ADMONITION_TYPE.keys())),
+        re.IGNORECASE,
+    )
+    admonitions: List["Admonition"] = []
+
+    @dataclass
+    class Admonition:
+        type: str
+        start_idx: int
+        end_idx: Optional[int] = None
+
+    def run(self, lines: List[str]) -> List[str]:
+        self.lines = lines
+        self._find_admonitions()
+        self._process_admonitions()
+        return self.lines
+
+    def _process_admonitions(self):
+        """Processes the admonitions."""
+
+        # We handle the admonitions in the reverse order since
+        # we may be deleting lines.
+        for admonition in self.admonitions[::-1]:
+            self.lines[admonition.start_idx] = "!!! " + admonition.type.capitalize()
+
+            for idx in range(admonition.start_idx + 1, admonition.end_idx + 1):
+                if idx == admonition.end_idx:
+                    if self.lines[idx] == "" or "@end" in self.lines[idx].lower():
+                        del self.lines[admonition.end_idx]
+                        continue
+                    elif self.lines[idx].startswith("!!!"):
+                        continue
+                if self.lines[idx] != "":
+                    self.lines[idx] = " " * self.INDENT_SIZE + self.lines[idx]
+
+    def _find_admonitions(self):
+        """Scans the lines to search for admonitions."""
+        self.admonitions = []
+        current_admonition = None
+
+        for idx, line in enumerate(self.lines):
+            match = self.ADMONITION_RE.search(line)
+
+            if match and not match.group("end"):
+                if current_admonition:
+                    if not current_admonition.end_idx:
+                        current_admonition.end_idx = idx
+                    self.admonitions.append(current_admonition)
+                current_admonition = self.Admonition(
+                    type=match.group("type"), start_idx=idx
+                )
+
+            elif match and match.group("end"):
+                if current_admonition:
+                    if match.group("type").lower() != current_admonition.type.lower():
+                        pass  # error: type of start and end marker dont' match
+                    current_admonition.end_idx = idx
+                    self.admonitions.append(current_admonition)
+                    current_admonition = None
+                else:
+                    pass  # error: end marker found without start marker
+
+            elif line == "" and current_admonition and not current_admonition.end_idx:
+                # white line encountered while in an admonition. We set end_line but don't
+                # move it to the list yet since an end marker (@end...) may follow
+                # later.
+                current_admonition.end_idx = idx
+
+        if current_admonition:
+            # We reached the last line and the last admonition wasn't moved to the list yet.
+            if not current_admonition.end_idx:
+                current_admonition.end_idx = idx
+            self.admonitions.append(current_admonition)
