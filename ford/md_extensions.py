@@ -197,7 +197,6 @@ class AdmonitionPreprocessor(Preprocessor):
 
     Todo:
         - Error handling
-        - Support for lists in admonitions
         - Support for one line admonitions with start marker and text on the same line
         - Support for end marker embedded in line.
 
