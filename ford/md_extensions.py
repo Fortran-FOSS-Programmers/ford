@@ -48,7 +48,7 @@ class AdmonitionExtension(Extension):
 
 class AdmonitionProcessor(BlockProcessor):
 
-    CLASSNAME = "{} {}".format("alert", "alert-info")
+    CLASSNAME = "alert"
     RE = re.compile(r'(?:^|\n)!!! ?([\w\-]+(?: +[\w\-]+)*)(?: +"(.*?)")? *(?:\n|$)')
     RE_SPACES = re.compile("  +")
 
