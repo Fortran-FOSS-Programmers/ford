@@ -48,8 +48,7 @@ class AdmonitionExtension(Extension):
 
 class AdmonitionProcessor(BlockProcessor):
 
-    CLASSNAME = "admonition"
-    CLASSNAME_TITLE = "admonition-title"
+    CLASSNAME = "{} {}".format("alert", "alert-info")
     RE = re.compile(r'(?:^|\n)!!! ?([\w\-]+(?: +[\w\-]+)*)(?: +"(.*?)")? *(?:\n|$)')
     RE_SPACES = re.compile("  +")
 
@@ -141,11 +140,10 @@ class AdmonitionProcessor(BlockProcessor):
         if m:
             klass, title = self.get_class_and_title(m)
             div = etree.SubElement(parent, "div")
-            div.set("class", "{} {}".format(self.CLASSNAME, klass))
-            if title:
-                p = etree.SubElement(div, "p")
-                p.text = title
-                p.set("class", self.CLASSNAME_TITLE)
+            div.set("class", "alert alert-{}".format(ADMONITION_TYPE[klass]))
+            div.set("role", "{}".format("alert"))
+            header = etree.SubElement(div, "h4")
+            header.text = klass.capitalize()
         else:
             # Sibling is a list item, but we need to wrap it's content should be wrapped in <p>
             if sibling.tag in ("li", "dd") and sibling.text:
