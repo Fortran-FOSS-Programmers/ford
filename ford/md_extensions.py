@@ -232,30 +232,6 @@ class AdmonitionPreprocessor(Preprocessor):
         self._process_admonitions()
         return self.lines
 
-    def _process_admonitions(self):
-        """Processes the admonitions to convert the lines to the markdown syntax."""
-
-        # We handle the admonitions in the reverse order since
-        # we may be deleting lines.
-        for admonition in self.admonitions[::-1]:
-            for idx in range(admonition.start_idx + 1, admonition.end_idx + 1):
-                if idx == admonition.end_idx:
-                    if self.lines[idx] == "" or "@end" in self.lines[idx].lower():
-                        del self.lines[admonition.end_idx]
-                        continue
-                    elif self.lines[idx].startswith("!!!"):
-                        continue
-                if self.lines[idx] != "":
-                    self.lines[idx] = " " * self.INDENT_SIZE + self.lines[idx]
-
-            # first line
-            self.lines[admonition.start_idx] = "!!! " + admonition.type.capitalize()
-            if admonition.start_line_txt:
-                self.lines.insert(
-                    admonition.start_idx + 1,
-                    " " * self.INDENT_SIZE + admonition.start_line_txt,
-                )
-
     def _find_admonitions(self):
         """Scans the lines to search for admonitions."""
         self.admonitions = []
@@ -296,3 +272,27 @@ class AdmonitionPreprocessor(Preprocessor):
             if not current_admonition.end_idx:
                 current_admonition.end_idx = idx
             self.admonitions.append(current_admonition)
+
+    def _process_admonitions(self):
+        """Processes the admonitions to convert the lines to the markdown syntax."""
+
+        # We handle the admonitions in the reverse order since
+        # we may be deleting lines.
+        for admonition in self.admonitions[::-1]:
+            for idx in range(admonition.start_idx + 1, admonition.end_idx + 1):
+                if idx == admonition.end_idx:
+                    if self.lines[idx] == "" or "@end" in self.lines[idx].lower():
+                        del self.lines[admonition.end_idx]
+                        continue
+                    elif self.lines[idx].startswith("!!!"):
+                        continue
+                if self.lines[idx] != "":
+                    self.lines[idx] = " " * self.INDENT_SIZE + self.lines[idx]
+
+            # first line
+            self.lines[admonition.start_idx] = "!!! " + admonition.type.capitalize()
+            if admonition.start_line_txt:
+                self.lines.insert(
+                    admonition.start_idx + 1,
+                    " " * self.INDENT_SIZE + admonition.start_line_txt,
+                )
