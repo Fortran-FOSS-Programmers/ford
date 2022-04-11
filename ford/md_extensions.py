@@ -197,12 +197,11 @@ class AdmonitionPreprocessor(Preprocessor):
 
     Todo:
         - Error handling
-        - Support for end marker embedded in line.
     """
 
     INDENT_SIZE: ClassVar[int] = 4
     ADMONITION_RE: ClassVar[re.Pattern] = re.compile(
-        r"@(?P<end>end)?(?P<type>{})\s*(?P<txt>.*)".format(
+        r"(?P<pretxt>.*)\s*@(?P<end>end)?(?P<type>{})\s*(?P<posttxt>.*)".format(
             "|".join(ADMONITION_TYPE.keys())
         ),
         re.IGNORECASE,
@@ -277,9 +276,16 @@ class AdmonitionPreprocessor(Preprocessor):
         # we may be deleting lines.
         for admonition in self.admonitions[::-1]:
 
-            # last line
+            # last line--deal with possible text before or after end marker
             idx = admonition.end_idx
-            if self.lines[idx] == "" or "@end" in self.lines[idx].lower():
+            m = self.ADMONITION_RE.search(self.lines[idx])
+            if m:
+                if m.group("posttxt"):
+                    self.lines.insert(idx + 1, m.group("posttxt"))
+                del self.lines[idx]
+                if m.group("pretxt"):
+                    self.lines.insert(idx, " " * self.INDENT_SIZE + m.group("pretxt"))
+            if self.lines[idx] == "":
                 del self.lines[idx]
 
             # intermediate lines
@@ -291,8 +297,8 @@ class AdmonitionPreprocessor(Preprocessor):
             idx = admonition.start_idx
             m = self.ADMONITION_RE.search(self.lines[idx])
             self.lines[idx] = "!!! " + admonition.type.capitalize()
-            if m.group("txt"):
+            if m.group("posttxt"):
                 self.lines.insert(
                     idx + 1,
-                    " " * self.INDENT_SIZE + m.group("txt"),
+                    " " * self.INDENT_SIZE + m.group("posttxt"),
                 )
