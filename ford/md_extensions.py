@@ -180,8 +180,8 @@ class AdmonitionProcessor(BlockProcessor):
 class AdmonitionPreprocessor(Preprocessor):
     """Markdown preprocessor for dealing with FORD style admonitions.
 
-    This preprocessor converts the FORD syntax for admonitions (`@note`,
-    `@bug`, etc.) to the markdown admonition syntax (`!!! Note`)
+    This preprocessor converts the FORD syntax for admonitions to
+    the markdown admonition syntax.
 
     A FORD admonition starts with `@<type>`, where `<type>` is one of:
     `note`, `warning`, `todo`, `bug`, or `history`.
@@ -198,7 +198,6 @@ class AdmonitionPreprocessor(Preprocessor):
     Todo:
         - Error handling
         - Support for end marker embedded in line.
-
     """
 
     INDENT_SIZE: ClassVar[int] = 4
@@ -212,6 +211,16 @@ class AdmonitionPreprocessor(Preprocessor):
 
     @dataclass
     class Admonition:
+        """A single admonition block in the text.
+
+        Attributes:
+            type: admonition type (note, bug, etc.)
+            start_idx: line index of start marker
+            end_idx: end line index, one of: @end..., empty line,
+                start marker of next  admonition, last line of text.
+            start_line_txt: possible text after start marker
+        """
+
         type: str
         start_idx: int
         end_idx: Optional[int] = None
@@ -224,7 +233,7 @@ class AdmonitionPreprocessor(Preprocessor):
         return self.lines
 
     def _process_admonitions(self):
-        """Processes the admonitions."""
+        """Processes the admonitions to convert the lines to the markdown syntax."""
 
         # We handle the admonitions in the reverse order since
         # we may be deleting lines.
@@ -239,6 +248,7 @@ class AdmonitionPreprocessor(Preprocessor):
                 if self.lines[idx] != "":
                     self.lines[idx] = " " * self.INDENT_SIZE + self.lines[idx]
 
+            # first line
             self.lines[admonition.start_idx] = "!!! " + admonition.type.capitalize()
             if admonition.start_line_txt:
                 self.lines.insert(
@@ -276,7 +286,7 @@ class AdmonitionPreprocessor(Preprocessor):
                     pass  # error: end marker found without start marker
 
             elif line == "" and current_admonition and not current_admonition.end_idx:
-                # white line encountered while in an admonition. We set end_line but don't
+                # empty line encountered while in an admonition. We set end_line but don't
                 # move it to the list yet since an end marker (@end...) may follow
                 # later.
                 current_admonition.end_idx = idx
