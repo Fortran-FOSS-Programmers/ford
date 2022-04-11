@@ -218,13 +218,11 @@ class AdmonitionPreprocessor(Preprocessor):
             start_idx: line index of start marker
             end_idx: end line index, one of: @end..., empty line,
                 start marker of next  admonition, last line of text.
-            start_line_txt: possible text after start marker
         """
 
         type: str
         start_idx: int
         end_idx: Optional[int] = None
-        start_line_txt: Optional[str] = None
 
     def run(self, lines: List[str]) -> List[str]:
         self.lines = lines
@@ -248,7 +246,6 @@ class AdmonitionPreprocessor(Preprocessor):
                 current_admonition = self.Admonition(
                     type=match.group("type"),
                     start_idx=idx,
-                    start_line_txt=match.group("txt"),
                 )
 
             elif match and match.group("end"):
@@ -279,20 +276,23 @@ class AdmonitionPreprocessor(Preprocessor):
         # We handle the admonitions in the reverse order since
         # we may be deleting lines.
         for admonition in self.admonitions[::-1]:
-            for idx in range(admonition.start_idx + 1, admonition.end_idx + 1):
-                if idx == admonition.end_idx:
-                    if self.lines[idx] == "" or "@end" in self.lines[idx].lower():
-                        del self.lines[admonition.end_idx]
-                        continue
-                    elif self.lines[idx].startswith("!!!"):
-                        continue
+
+            # last line
+            idx = admonition.end_idx
+            if self.lines[idx] == "" or "@end" in self.lines[idx].lower():
+                del self.lines[idx]
+
+            # intermediate lines
+            for idx in range(admonition.start_idx + 1, admonition.end_idx):
                 if self.lines[idx] != "":
                     self.lines[idx] = " " * self.INDENT_SIZE + self.lines[idx]
 
-            # first line
-            self.lines[admonition.start_idx] = "!!! " + admonition.type.capitalize()
-            if admonition.start_line_txt:
+            # first line--deal with possible text following start marker
+            idx = admonition.start_idx
+            m = self.ADMONITION_RE.search(self.lines[idx])
+            self.lines[idx] = "!!! " + admonition.type.capitalize()
+            if m.group("txt"):
                 self.lines.insert(
-                    admonition.start_idx + 1,
-                    " " * self.INDENT_SIZE + admonition.start_line_txt,
+                    idx + 1,
+                    " " * self.INDENT_SIZE + m.group("txt"),
                 )
