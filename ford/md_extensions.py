@@ -197,14 +197,15 @@ class AdmonitionPreprocessor(Preprocessor):
 
     Todo:
         - Error handling
-        - Support for one line admonitions with start marker and text on the same line
         - Support for end marker embedded in line.
 
     """
 
     INDENT_SIZE: ClassVar[int] = 4
     ADMONITION_RE: ClassVar[re.Pattern] = re.compile(
-        r"@(?P<end>end)?(?P<type>{})\s*".format("|".join(ADMONITION_TYPE.keys())),
+        r"@(?P<end>end)?(?P<type>{})\s*(?P<txt>.*)".format(
+            "|".join(ADMONITION_TYPE.keys())
+        ),
         re.IGNORECASE,
     )
     admonitions: List["Admonition"] = []
@@ -214,6 +215,7 @@ class AdmonitionPreprocessor(Preprocessor):
         type: str
         start_idx: int
         end_idx: Optional[int] = None
+        start_line_txt: Optional[str] = None
 
     def run(self, lines: List[str]) -> List[str]:
         self.lines = lines
@@ -227,8 +229,6 @@ class AdmonitionPreprocessor(Preprocessor):
         # We handle the admonitions in the reverse order since
         # we may be deleting lines.
         for admonition in self.admonitions[::-1]:
-            self.lines[admonition.start_idx] = "!!! " + admonition.type.capitalize()
-
             for idx in range(admonition.start_idx + 1, admonition.end_idx + 1):
                 if idx == admonition.end_idx:
                     if self.lines[idx] == "" or "@end" in self.lines[idx].lower():
@@ -238,6 +238,13 @@ class AdmonitionPreprocessor(Preprocessor):
                         continue
                 if self.lines[idx] != "":
                     self.lines[idx] = " " * self.INDENT_SIZE + self.lines[idx]
+
+            self.lines[admonition.start_idx] = "!!! " + admonition.type.capitalize()
+            if admonition.start_line_txt:
+                self.lines.insert(
+                    admonition.start_idx + 1,
+                    " " * self.INDENT_SIZE + admonition.start_line_txt,
+                )
 
     def _find_admonitions(self):
         """Scans the lines to search for admonitions."""
@@ -253,7 +260,9 @@ class AdmonitionPreprocessor(Preprocessor):
                         current_admonition.end_idx = idx
                     self.admonitions.append(current_admonition)
                 current_admonition = self.Admonition(
-                    type=match.group("type"), start_idx=idx
+                    type=match.group("type"),
+                    start_idx=idx,
+                    start_line_txt=match.group("txt"),
                 )
 
             elif match and match.group("end"):
