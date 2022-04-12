@@ -293,7 +293,7 @@ class AdmonitionPreprocessor(Preprocessor):
                 if self.lines[idx] != "":
                     self.lines[idx] = " " * self.INDENT_SIZE + self.lines[idx]
 
-            # first line--deal with possible text following start marker
+            # first line--deal with possible text before or after end marker
             idx = admonition.start_idx
             m = self.ADMONITION_RE.search(self.lines[idx])
             self.lines[idx] = "!!! " + admonition.type.capitalize()
@@ -302,3 +302,5 @@ class AdmonitionPreprocessor(Preprocessor):
                     idx + 1,
                     " " * self.INDENT_SIZE + m.group("posttxt"),
                 )
+            if m.group("pretxt"):
+                    self.lines.insert(idx, m.group("pretxt"))
