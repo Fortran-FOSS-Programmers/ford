@@ -40,6 +40,7 @@ class AdmonitionExtension(Extension):
     def extendMarkdown(self, md):
         """Add Admonition to Markdown instance."""
         md.registerExtension(self)
+        md.parser.blockprocessors.deregister("admonition", strict=False)
         md.preprocessors.register(AdmonitionPreprocessor(md), "admonition-pre", 105)
         md.parser.blockprocessors.register(
             AdmonitionProcessor(md.parser), "admonition", 105
