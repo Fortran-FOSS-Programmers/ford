@@ -304,4 +304,4 @@ class AdmonitionPreprocessor(Preprocessor):
                     " " * self.INDENT_SIZE + m.group("posttxt"),
                 )
             if m.group("pretxt"):
-                    self.lines.insert(idx, m.group("pretxt"))
+                self.lines.insert(idx, m.group("pretxt"))
