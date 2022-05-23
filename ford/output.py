@@ -249,14 +249,12 @@ class Documentation(object):
                 shutil.copy(src.path, os.path.join(out_dir, "src", src.name))
 
         if "mathjax_config" in self.data:
-            os.mkdir(os.path.join(out_dir, "js", "MathJax-config"))
+            mathjax_path = os.mkdir(os.path.join(out_dir, "js", "MathJax-config"))
+            if not os.path.join(mathjax_config)
+                os.mkdir(mathjax_config)
             shutil.copy(
                 self.data["mathjax_config"],
-                os.path.join(
-                    out_dir,
-                    "js",
-                    "MathJax-config",
-                    os.path.basename(self.data["mathjax_config"]),
+                os.path.join(mathjax_config, os.path.basename(self.data["mathjax_config"]),
                 ),
             )
         # By doing this we omit a duplication of data.
