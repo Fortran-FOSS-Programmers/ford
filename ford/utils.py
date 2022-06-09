@@ -391,6 +391,7 @@ def external(project, make=False, path="."):
         "absinterfaces",
         "types",
         "variables",
+        "boundprocs",
     ]
 
     # Mapping between entity name and its type

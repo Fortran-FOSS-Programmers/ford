@@ -3036,6 +3036,7 @@ class ExternalType(FortranType):
         self.external_url = url
         self.parent = parent
         self.obj = "type"
+        self.boundprocs = []
 
 
 class ExternalVariable(FortranVariable):
