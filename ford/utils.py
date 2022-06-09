@@ -485,6 +485,7 @@ def external(project, make=False, path="."):
                     for key2, item in extDict[key].items()
                 }
                 setattr(extObj, key, tmpDict)
+        return extObj
 
     if make:
         # convert internal module object to a JSON database
