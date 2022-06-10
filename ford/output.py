@@ -32,8 +32,6 @@ from itertools import chain
 
 import jinja2
 
-if sys.version_info[0] > 2:
-    jinja2.utils.Cycler.next = jinja2.utils.Cycler.__next__
 from tqdm import tqdm
 
 import ford.sourceform
