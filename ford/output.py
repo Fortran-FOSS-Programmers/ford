@@ -255,8 +255,7 @@ class Documentation(object):
             shutil.copy(
                 self.data["mathjax_config"],
                 os.path.join(
-                    mathjax_path,
-                    os.path.basename(self.data["mathjax_config"])
+                    mathjax_path, os.path.basename(self.data["mathjax_config"])
                 ),
             )
         # By doing this we omit a duplication of data.
