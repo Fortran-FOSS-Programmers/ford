@@ -521,39 +521,14 @@ class PagetreePage(BasePage):
                 print(f"Warning: could not copy file '{item_path}'. Error: {e.args[0]}")
 
 
-def copytree(src, dst):
-    """Replaces shutil.copytree to avoid problems on certain file systems.
-
-    shutil.copytree() and shutil.copystat() invoke os.setxattr(), which seems
-    to fail when called for directories on at least one NFS file system.
-    The current routine is a simple replacement, which should be good enough for
-    Ford.
+def copytree(src: pathlib.Path, dst: pathlib.Path) -> None:
+    """Wrapper around `shutil.copytree` that:
+    a) doesn't try to set xattrs; and
+    b) ensures modification time is time of current FORD run
     """
-
-    def touch(path):
-        now = time.time()
-        try:
-            # assume it's there
-            os.utime(path, (now, now))
-        except os.error:
-            # if it isn't, try creating the directory,
-            # a file with that name
-            os.makedirs(os.path.dirname(path))
-            open(path, "w").close()
-            os.utime(path, (now, now))
-
-    for root, dirs, files in os.walk(src):
-        relsrcdir = os.path.relpath(root, src)
-        dstdir = os.path.join(dst, relsrcdir)
-        if not os.path.exists(dstdir):
-            try:
-                os.makedirs(dstdir)
-            except OSError as ex:
-                if ex.errno != errno.EEXIST:
-                    raise
-        for ff in files:
-            shutil.copy(os.path.join(root, ff), os.path.join(dstdir, ff))
-            touch(os.path.join(dstdir, ff))
+    shutil.copytree(src, dst, copy_function=shutil.copy, dirs_exist_ok=True)
+    for file in dst.rglob("*"):
+        file.touch()
 
 
 def truncate(string, width):
