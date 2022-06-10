@@ -68,7 +68,6 @@ class Documentation(object):
         # lots of refactoring and messiness in the templates, just get
         # rid of None values
         self.data = {k: v for k, v in data.items() if v is not None}
-        self.pagetree = []
         self.lists = []
         self.docs = []
         self.njobs = int(self.data["parallel"])
@@ -107,9 +106,8 @@ class Documentation(object):
             # Create lists of each entity type
             if len(project.procedures) > 0:
                 self.lists.append(ProcList(self.data, project))
-            if data["incl_src"]:
-                if len(project.files) + len(project.extra_files) > 1:
-                    self.lists.append(FileList(self.data, project))
+            if data["incl_src"] and (len(project.files) + len(project.extra_files) > 1):
+                self.lists.append(FileList(self.data, project))
             if len(project.modules) + len(project.submodules) > 0:
                 self.lists.append(ModList(self.data, project))
             if len(project.programs) > 1:
@@ -120,15 +118,18 @@ class Documentation(object):
                 self.lists.append(AbsIntList(self.data, project))
             if len(project.blockdata) > 1:
                 self.lists.append(BlockList(self.data, project))
-            if pagetree:
-                for item in pagetree:
-                    self.pagetree.append(PagetreePage(self.data, project, item))
+
+            # Create static pages
+            self.pagetree = [
+                PagetreePage(self.data, project, item) for item in (pagetree or [])
+            ]
         except Exception:
             if data["dbg"]:
                 traceback.print_exc()
                 sys.exit("Error encountered.")
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
+
         if graphviz_installed and data["graph"]:
             print("Generating graphs...")
             self.graphs = GraphManager(
@@ -170,14 +171,10 @@ class Documentation(object):
             project.filegraph = ""
         if data["search"]:
             print("Creating search index...")
-            if data["relative"]:
-                self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(
-                    data["output_dir"], ""
-                )
-            else:
-                self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(
-                    data["output_dir"], data["project_url"]
-                )
+            url = "" if data["relative"] else data["project_url"]
+            self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(
+                data["output_dir"], url
+            )
             self.tipue.create_node(self.index.html, "index.html", {"category": "home"})
             jobs = len(self.docs) + len(self.pagetree)
             progbar = tqdm(
