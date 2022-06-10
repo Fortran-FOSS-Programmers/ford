@@ -29,6 +29,7 @@ import shutil
 import time
 import traceback
 from itertools import chain
+import pathlib
 
 import jinja2
 
@@ -40,9 +41,9 @@ import ford.utils
 from ford.graphmanager import GraphManager
 from ford.graphs import graphviz_installed
 
-loc = os.path.dirname(__file__)
+loc = pathlib.Path(__file__).parent
 env = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(os.path.join(loc, "templates")),
+    loader=jinja2.FileSystemLoader(loc / "templates"),
     trim_blocks=True,
     lstrip_blocks=True,
 )
@@ -194,38 +195,42 @@ class Documentation(object):
 
     def writeout(self):
         print("Writing resulting documentation.")
-        out_dir = self.data["output_dir"]
-        try:
-            if os.path.isfile(out_dir):
-                os.remove(out_dir)
-            elif os.path.isdir(out_dir):
-                shutil.rmtree(out_dir)
-            os.makedirs(out_dir, USER_WRITABLE_ONLY)
-        except Exception as e:
-            print("Error: Could not create output directory. {}".format(e.args[0]))
+        out_dir: pathlib.Path = self.data["output_dir"]
+        # Remove any existing file/directory
+        if out_dir.is_file():
+            out_dir.unlink()
+        else:
+            shutil.rmtree(out_dir, ignore_errors=True)
 
-        os.mkdir(os.path.join(out_dir, "lists"), USER_WRITABLE_ONLY)
-        os.mkdir(os.path.join(out_dir, "sourcefile"), USER_WRITABLE_ONLY)
-        os.mkdir(os.path.join(out_dir, "type"), USER_WRITABLE_ONLY)
-        os.mkdir(os.path.join(out_dir, "proc"), USER_WRITABLE_ONLY)
-        os.mkdir(os.path.join(out_dir, "interface"), USER_WRITABLE_ONLY)
-        os.mkdir(os.path.join(out_dir, "module"), USER_WRITABLE_ONLY)
-        os.mkdir(os.path.join(out_dir, "program"), USER_WRITABLE_ONLY)
-        os.mkdir(os.path.join(out_dir, "src"), USER_WRITABLE_ONLY)
-        os.mkdir(os.path.join(out_dir, "blockdata"), USER_WRITABLE_ONLY)
-        copytree(os.path.join(loc, "css"), os.path.join(out_dir, "css"))
-        copytree(os.path.join(loc, "fonts"), os.path.join(out_dir, "fonts"))
-        copytree(os.path.join(loc, "js"), os.path.join(out_dir, "js"))
+        try:
+            out_dir.mkdir(USER_WRITABLE_ONLY, parents=True)
+        except Exception as e:
+            print(f"Error: Could not create output directory. {e.args[0]}")
+
+        for directory in [
+            "lists",
+            "sourcefile",
+            "type",
+            "proc",
+            "interface",
+            "module",
+            "program",
+            "src",
+            "blockdata",
+        ]:
+            (out_dir / directory).mkdir(USER_WRITABLE_ONLY)
+
+        for directory in ["css", "fonts", "js"]:
+            copytree(loc / directory, out_dir / directory)
+
         if self.data["graph"]:
             self.graphs.output_graphs(self.njobs)
         if self.data["search"]:
-            copytree(
-                os.path.join(loc, "tipuesearch"), os.path.join(out_dir, "tipuesearch")
-            )
+            copytree(loc / "tipuesearch", out_dir / "tipuesearch")
             self.tipue.print_output()
 
         try:
-            copytree(self.data["media_dir"], os.path.join(out_dir, "media"))
+            copytree(self.data["media_dir"], out_dir / "media")
         except OSError:
             print(
                 "Warning: error copying media directory {}".format(
@@ -236,29 +241,27 @@ class Documentation(object):
             pass
 
         if "css" in self.data:
-            shutil.copy(self.data["css"], os.path.join(out_dir, "css", "user.css"))
+            shutil.copy(self.data["css"], out_dir / "css" / "user.css")
 
         if self.data["favicon"] == "default-icon":
-            shutil.copy(
-                os.path.join(loc, "favicon.png"), os.path.join(out_dir, "favicon.png")
-            )
+            favicon_path = loc / "favicon.png"
         else:
-            shutil.copy(self.data["favicon"], os.path.join(out_dir, "favicon.png"))
+            favicon_path = self.data["favicon"]
+
+        shutil.copy(favicon_path, out_dir / "favicon.png")
 
         if self.data["incl_src"]:
             for src in self.project.allfiles:
-                shutil.copy(src.path, os.path.join(out_dir, "src", src.name))
+                shutil.copy(src.path, out_dir / "src" / src.name)
 
         if "mathjax_config" in self.data:
-            mathjax_path = os.path.join(out_dir, "js", "MathJax-config")
-            if not os.path.isdir(mathjax_path):
-                os.mkdir(mathjax_path)
+            mathjax_path = out_dir / "js" / "MathJax-config"
+            mathjax_path.mkdir(parents=True, exist_ok=True)
             shutil.copy(
                 self.data["mathjax_config"],
-                os.path.join(
-                    mathjax_path, os.path.basename(self.data["mathjax_config"])
-                ),
+                mathjax_path / os.path.basename(self.data["mathjax_config"]),
             )
+
         # By doing this we omit a duplication of data.
         for p in self.docs:
             p.writeout()
@@ -270,7 +273,7 @@ class Documentation(object):
         self.search.writeout()
 
 
-class BasePage(object):
+class BasePage:
     """
     Abstract class for representation of pages in the documentation.
 
@@ -287,11 +290,8 @@ class BasePage(object):
         self.proj = proj
         self.obj = obj
         self.meta = getattr(obj, "meta", {})
-
-    @property
-    def out_dir(self):
-        """Returns the output directory of the project"""
-        return self.data["output_dir"]
+        self.out_dir = self.data["output_dir"]
+        self.page_dir = self.out_dir / "page"
 
     @property
     def html(self):
@@ -314,7 +314,7 @@ class BasePage(object):
 class IndexPage(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir, "index.html")
+        return self.out_dir / "index.html"
 
     def render(self, data, proj, obj):
         if data["relative"]:
@@ -328,7 +328,7 @@ class IndexPage(BasePage):
 class SearchPage(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir, "search.html")
+        return self.out_dir / "search.html"
 
     def render(self, data, proj, obj):
         if data["relative"]:
@@ -342,7 +342,7 @@ class SearchPage(BasePage):
 class ProcList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir, "lists", "procedures.html")
+        return self.out_dir / "lists" / "procedures.html"
 
     def render(self, data, proj, obj):
         if data["relative"]:
@@ -356,7 +356,7 @@ class ProcList(BasePage):
 class FileList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir, "lists", "files.html")
+        return self.out_dir / "lists" / "files.html"
 
     def render(self, data, proj, obj):
         if data["relative"]:
@@ -370,7 +370,7 @@ class FileList(BasePage):
 class ModList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir, "lists", "modules.html")
+        return self.out_dir / "lists" / "modules.html"
 
     def render(self, data, proj, obj):
         if data["relative"]:
@@ -384,7 +384,7 @@ class ModList(BasePage):
 class ProgList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir, "lists", "programs.html")
+        return self.out_dir / "lists" / "programs.html"
 
     def render(self, data, proj, obj):
         if data["relative"]:
@@ -398,7 +398,7 @@ class ProgList(BasePage):
 class TypeList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir, "lists", "types.html")
+        return self.out_dir / "lists" / "types.html"
 
     def render(self, data, proj, obj):
         if data["relative"]:
@@ -412,7 +412,7 @@ class TypeList(BasePage):
 class AbsIntList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir, "lists", "absint.html")
+        return self.out_dir / "lists" / "absint.html"
 
     def render(self, data, proj, obj):
         if data["relative"]:
@@ -426,7 +426,7 @@ class AbsIntList(BasePage):
 class BlockList(BasePage):
     @property
     def outfile(self):
-        return os.path.join(self.out_dir, "lists", "blockdata.html")
+        return self.out_dir / "lists" / "blockdata.html"
 
     def render(self, data, proj, obj):
         if data["relative"]:
@@ -443,12 +443,16 @@ class DocPage(BasePage):
     """
 
     @property
+    def object_page(self):
+        return self.obj.ident + ".html"
+
+    @property
     def loc(self):
-        return self.obj.get_dir() + "/" + self.obj.ident + ".html"
+        return pathlib.Path(self.obj.get_dir()) / self.object_page
 
     @property
     def outfile(self):
-        return os.path.join(self.out_dir, self.obj.get_dir(), self.obj.ident + ".html")
+        return self.out_dir / self.obj.get_dir() / self.object_page
 
 
 class FilePage(DocPage):
@@ -530,14 +534,16 @@ class BlockPage(DocPage):
 
 class PagetreePage(BasePage):
     @property
+    def object_page(self):
+        return self.obj.filename + ".html"
+
+    @property
     def loc(self):
-        return "page/" + self.obj.location + "/" + self.obj.filename + ".html"
+        return pathlib.Path("page") / self.obj.location / self.object_page
 
     @property
     def outfile(self):
-        return os.path.join(
-            self.out_dir, "page", self.obj.location, self.obj.filename + ".html"
-        )
+        return self.page_dir / self.obj.location / self.object_page
 
     def render(self, data, proj, obj):
         if data["relative"]:
@@ -558,39 +564,24 @@ class PagetreePage(BasePage):
 
     def writeout(self):
         if self.obj.filename == "index":
-            os.mkdir(
-                os.path.join(self.out_dir, "page", self.obj.location),
-                USER_WRITABLE_ONLY,
-            )
+            (self.page_dir / self.obj.location).mkdir(USER_WRITABLE_ONLY, exist_ok=True)
         super(PagetreePage, self).writeout()
 
         for item in self.obj.copy_subdir:
+            item_path = self.data["page_dir"] / self.obj.location / item
             try:
-                copytree(
-                    os.path.join(self.data["page_dir"], self.obj.location, item),
-                    os.path.join(self.out_dir, "page", self.obj.location, item),
-                )
+                copytree(item_path, self.page_dir / self.obj.location / item)
             except Exception as e:
                 print(
-                    "Warning: could not copy directory {}. Error: {}".format(
-                        os.path.join(self.data["page_dir"], self.obj.location, item),
-                        e.args[0],
-                    )
+                    f"Warning: could not copy directory '{item_path}'. Error: {e.args[0]}"
                 )
 
         for item in self.obj.files:
+            item_path = self.data["page_dir"] / self.obj.location / item
             try:
-                shutil.copy(
-                    os.path.join(self.data["page_dir"], self.obj.location, item),
-                    os.path.join(self.out_dir, "page", self.obj.location),
-                )
+                shutil.copy(item_path, self.page_dir / self.obj.location)
             except Exception as e:
-                print(
-                    "Warning: could not copy file {}. Error: {}".format(
-                        os.path.join(self.data["page_dir"], self.obj.location, item),
-                        e.args[0],
-                    )
-                )
+                print(f"Warning: could not copy file '{item_path}'. Error: {e.args[0]}")
 
 
 def copytree(src, dst):
