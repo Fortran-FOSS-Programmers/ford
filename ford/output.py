@@ -311,136 +311,101 @@ class BasePage:
         raise NotImplementedError("Should not instantiate BasePage type")
 
 
-class IndexPage(BasePage):
+class ListTopPage(BasePage):
+    @property
+    def list_page(self):
+        raise NotImplementedError("ListTopPage subclass missing 'list_page' property")
+
     @property
     def outfile(self):
-        return self.out_dir / "index.html"
+        return self.out_dir / self.list_page
 
     def render(self, data, proj, obj):
         if data["relative"]:
             data["project_url"] = "."
             ford.sourceform.set_base_url(".")
             ford.pagetree.set_base_url(".")
-        template = env.get_template("index.html")
+        template = env.get_template(self.list_page)
         return template.render(data, project=proj, proj_docs=obj)
 
 
-class SearchPage(BasePage):
+class IndexPage(ListTopPage):
+    list_page = "index.html"
+
+
+class SearchPage(ListTopPage):
+    list_page = "search.html"
+
+
+class ListPage(BasePage):
+    @property
+    def out_page(self):
+        raise NotImplementedError("ListPage subclass missing 'out_page' property")
+
+    @property
+    def list_page(self):
+        raise NotImplementedError("ListPage subclass missing 'list_page' property")
+
     @property
     def outfile(self):
-        return self.out_dir / "search.html"
-
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = "."
-            ford.sourceform.set_base_url(".")
-            ford.pagetree.set_base_url(".")
-        template = env.get_template("search.html")
-        return template.render(data, project=proj)
-
-
-class ProcList(BasePage):
-    @property
-    def outfile(self):
-        return self.out_dir / "lists" / "procedures.html"
-
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template("proc_list.html")
-        return template.render(data, project=proj)
-
-
-class FileList(BasePage):
-    @property
-    def outfile(self):
-        return self.out_dir / "lists" / "files.html"
+        return self.out_dir / "lists" / self.out_page
 
     def render(self, data, proj, obj):
         if data["relative"]:
             data["project_url"] = ".."
             ford.sourceform.set_base_url("..")
             ford.pagetree.set_base_url("..")
-        template = env.get_template("file_list.html")
+        template = env.get_template(self.list_page)
         return template.render(data, project=proj)
 
 
-class ModList(BasePage):
-    @property
-    def outfile(self):
-        return self.out_dir / "lists" / "modules.html"
-
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template("mod_list.html")
-        return template.render(data, project=proj)
+class ProcList(ListPage):
+    out_page = "procedures.html"
+    list_page = "proc_list.html"
 
 
-class ProgList(BasePage):
-    @property
-    def outfile(self):
-        return self.out_dir / "lists" / "programs.html"
-
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template("prog_list.html")
-        return template.render(data, project=proj)
+class FileList(ListPage):
+    out_page = "files.html"
+    list_page = "file_list.html"
 
 
-class TypeList(BasePage):
-    @property
-    def outfile(self):
-        return self.out_dir / "lists" / "types.html"
-
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template("types_list.html")
-        return template.render(data, project=proj)
+class ModList(ListPage):
+    out_page = "modules.html"
+    list_page = "mod_list.html"
 
 
-class AbsIntList(BasePage):
-    @property
-    def outfile(self):
-        return self.out_dir / "lists" / "absint.html"
+class ProgList(ListPage):
+    out_page = "programs.html"
+    list_page = "prog_list.html"
 
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template("absint_list.html")
-        return template.render(data, project=proj)
+
+class TypeList(ListPage):
+    out_page = "types.html"
+    list_page = "types_list.html"
+
+
+class AbsIntList(ListPage):
+    out_page = "absint.html"
+    list_page = "absint_list.html"
 
 
 class BlockList(BasePage):
-    @property
-    def outfile(self):
-        return self.out_dir / "lists" / "blockdata.html"
-
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template("block_list.html")
-        return template.render(data, project=proj)
+    out_page = "blockdata.html"
+    list_page = "block_list.html"
 
 
 class DocPage(BasePage):
     """
     Abstract class to be inherited by all pages for items in the code.
     """
+
+    @property
+    def page_path(self):
+        raise NotImplementedError("DocPage subclass missing 'page_path'")
+
+    @property
+    def payload_key(self):
+        raise NotImplementedError("DocPage subclass missing 'payload_key'")
 
     @property
     def object_page(self):
@@ -454,82 +419,67 @@ class DocPage(BasePage):
     def outfile(self):
         return self.out_dir / self.obj.get_dir() / self.object_page
 
-
-class FilePage(DocPage):
-    def render(self, data, proj, obj):
+    def render(self, data, project, object):
         if data["relative"]:
             data["project_url"] = ".."
             ford.sourceform.set_base_url("..")
             ford.pagetree.set_base_url("..")
-        template = env.get_template("file_page.html")
-        return template.render(data, src=obj, project=proj)
+        template = env.get_template(self.page_path)
+        return template.render(data, project=project, **{self.payload_key: object})
+
+
+class FilePage(DocPage):
+    page_path = "file_page.html"
+    payload_key = "src"
 
 
 class TypePage(DocPage):
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template("type_page.html")
-        return template.render(data, dtype=obj, project=proj)
+    page_path = "type_page.html"
+    payload_key = "dtype"
 
 
 class AbsIntPage(DocPage):
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template("nongenint_page.html")
-        return template.render(data, interface=obj, project=proj)
-
-
-class ProcPage(DocPage):
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        if obj.obj == "proc":
-            template = env.get_template("proc_page.html")
-            return template.render(data, procedure=obj, project=proj)
-        else:
-            if obj.generic:
-                template = env.get_template("genint_page.html")
-            else:
-                template = env.get_template("nongenint_page.html")
-            return template.render(data, interface=obj, project=proj)
+    page_path = "nongenint_page.html"
+    payload_key = "interface"
 
 
 class ModulePage(DocPage):
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template("mod_page.html")
-        return template.render(data, module=obj, project=proj)
+    page_path = "mod_page.html"
+    payload_key = "module"
 
 
 class ProgPage(DocPage):
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template("prog_page.html")
-        return template.render(data, program=obj, project=proj)
+    page_path = "prog_page.html"
+    payload_key = "program"
 
 
 class BlockPage(DocPage):
-    def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template("block_page.html")
-        return template.render(data, blockdat=obj, project=proj)
+    page_path = "block_page.html"
+    payload_key = "blockdat"
+
+
+class ProcedurePage(DocPage):
+    page_path = "proc_page.html"
+    payload_key = "procedure"
+
+
+class GenericInterfacePage(DocPage):
+    page_path = "genint_page.html"
+    payload_key = "interface"
+
+
+class InterfacePage(DocPage):
+    page_path = "nongenint_page.html"
+    payload_key = "interface"
+
+
+def ProcPage(data, proj, obj):
+    """Factory function for creating procedure or interface pages"""
+    if obj.obj == "proc":
+        return ProcedurePage(data, proj, obj)
+    if obj.generic:
+        return GenericInterfacePage(data, proj, obj)
+    return InterfacePage(data, proj, obj)
 
 
 class PagetreePage(BasePage):
