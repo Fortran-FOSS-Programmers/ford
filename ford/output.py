@@ -175,13 +175,7 @@ class Documentation(object):
             )
             self.tipue.create_node(self.index.html, "index.html", {"category": "home"})
             jobs = len(self.docs) + len(self.pagetree)
-            progbar = tqdm(
-                chain(iter(self.docs), iter(self.pagetree)),
-                total=jobs,
-                unit="",
-                file=sys.stdout,
-            )
-            for i, p in enumerate(progbar):
+            for p in tqdm(chain(self.docs, self.pagetree), total=jobs, unit=""):
                 self.tipue.create_node(p.html, p.loc, p.meta)
             print("")
 
