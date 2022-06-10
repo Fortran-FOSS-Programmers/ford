@@ -22,11 +22,9 @@
 #
 #
 
-import errno
 import sys
 import os
 import shutil
-import time
 import traceback
 from itertools import chain
 import pathlib
