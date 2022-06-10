@@ -13,7 +13,6 @@ fpp_extensions: fpp
 preprocess: true
 macro: HAS_DECREMENT
 predocmark: >
-media_dir: ./media
 docmark_alt: #
 predocmark_alt: <
 display: public
