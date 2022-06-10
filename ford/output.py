@@ -182,7 +182,8 @@ class Documentation(object):
     def writeout(self):
         print("Writing resulting documentation.")
         out_dir: pathlib.Path = self.data["output_dir"]
-        # Remove any existing file/directory
+        # Remove any existing file/directory. This avoids errors coming from
+        # `shutils.copytree` for Python < 3.8, where we can't explicitly ignore them
         if out_dir.is_file():
             out_dir.unlink()
         else:
@@ -516,6 +517,6 @@ def copytree(src: pathlib.Path, dst: pathlib.Path) -> None:
     a) doesn't try to set xattrs; and
     b) ensures modification time is time of current FORD run
     """
-    shutil.copytree(src, dst, copy_function=shutil.copy, dirs_exist_ok=True)
+    shutil.copytree(src, dst, copy_function=shutil.copy)
     for file in dst.rglob("*"):
         file.touch()
