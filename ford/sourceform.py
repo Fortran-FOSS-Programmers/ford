@@ -1960,7 +1960,7 @@ class FortranType(FortranContainer):
         ]
         self.local_variables = self.variables
         for invar in inherited:
-            if not hasattr(invar, 'doc'):
+            if not hasattr(invar, "doc"):
                 invar.doc = "Inherited from [[{0}]]".format(self.extends)
                 invar.meta = {}
         self.variables = inherited + self.variables
