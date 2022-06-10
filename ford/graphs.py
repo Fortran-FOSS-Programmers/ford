@@ -306,6 +306,10 @@ class TypeNode(BaseNode):
         self.comp_types = dict()
         self.comp_of = dict()
         if not self.fromstr:
+            if hasattr(obj, "external_url"):
+                # Stop following chain, as this object is in an external project
+                return
+
             if obj.extends:
                 if obj.extends in hist:
                     self.ancestor = hist[obj.extends]
@@ -315,10 +319,6 @@ class TypeNode(BaseNode):
                     )
                 self.ancestor.children.add(self)
                 self.ancestor.visible = getattr(obj.extends, "visible", True)
-
-            if hasattr(obj, "external_url"):
-                # Stop following chain, as this object is in an external project
-                return
 
             for var in obj.local_variables:
                 if (var.vartype == "type" or var.vartype == "class") and var.proto[

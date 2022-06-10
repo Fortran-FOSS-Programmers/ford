@@ -534,7 +534,7 @@ class FortranBase(object):
         Process intra-site links to documentation of other parts of the program.
         """
         self.doc = ford.utils.sub_links(self.doc, project)
-        if self.meta["summary"] is not None:
+        if self.meta.get("summary", None) is not None:
             self.meta["summary"] = ford.utils.sub_links(self.meta["summary"], project)
 
         # Create links in the project
@@ -553,7 +553,7 @@ class FortranBase(object):
             "args",
             "bindings",
         ):
-            if isinstance(item, FortranBase):
+            if isinstance(item, FortranBase) and hasattr(item, "doc"):
                 item.make_links(project)
         if hasattr(self, "retvar"):
             if self.retvar:
@@ -1959,6 +1959,10 @@ class FortranType(FortranContainer):
             if var.permission == "public"
         ]
         self.local_variables = self.variables
+        for invar in inherited:
+            if not hasattr(invar, 'doc'):
+                invar.doc = "Inherited from [[{0}]]".format(self.extends)
+                invar.meta = {}
         self.variables = inherited + self.variables
 
         # Match boundprocs with procedures
