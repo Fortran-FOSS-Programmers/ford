@@ -225,11 +225,9 @@ class Documentation(object):
 
         try:
             copytree(self.data["media_dir"], out_dir / "media")
-        except OSError:
+        except OSError as e:
             print(
-                "Warning: error copying media directory {}".format(
-                    self.data["media_dir"]
-                )
+                f"Warning: error copying media directory {self.data['media_dir']}, {e}"
             )
         except KeyError:
             pass
