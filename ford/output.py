@@ -86,25 +86,25 @@ class Documentation(object):
             graphparent = ""
         print("Creating HTML documentation...")
         try:
+            # Create individual entity pages
+            entity_list_page_map = [
+                (project.types, TypePage),
+                (project.absinterfaces, AbsIntPage),
+                (project.procedures, ProcPage),
+                (project.submodprocedures, ProcPage),
+                (project.modules, ModulePage),
+                (project.submodules, ModulePage),
+                (project.programs, ProgPage),
+                (project.blockdata, BlockPage),
+            ]
             if data["incl_src"]:
-                for item in project.allfiles:
-                    self.docs.append(FilePage(self.data, project, item))
-            for item in project.types:
-                self.docs.append(TypePage(self.data, project, item))
-            for item in project.absinterfaces:
-                self.docs.append(AbsIntPage(self.data, project, item))
-            for item in project.procedures:
-                self.docs.append(ProcPage(self.data, project, item))
-            for item in project.submodprocedures:
-                self.docs.append(ProcPage(self.data, project, item))
-            for item in project.modules:
-                self.docs.append(ModulePage(self.data, project, item))
-            for item in project.submodules:
-                self.docs.append(ModulePage(self.data, project, item))
-            for item in project.programs:
-                self.docs.append(ProgPage(self.data, project, item))
-            for item in project.blockdata:
-                self.docs.append(BlockPage(self.data, project, item))
+                entity_list_page_map.append((project.allfiles, FilePage))
+
+            for entity_list, page_class in entity_list_page_map:
+                for item in entity_list:
+                    self.docs.append(page_class(self.data, project, item))
+
+            # Create lists of each entity type
             if len(project.procedures) > 0:
                 self.lists.append(ProcList(self.data, project))
             if data["incl_src"]:
@@ -138,22 +138,19 @@ class Documentation(object):
                 graphparent,
                 self.data["coloured_edges"],
             )
-            for item in project.types:
-                self.graphs.register(item)
-            for item in project.procedures:
-                self.graphs.register(item)
-            for item in project.submodprocedures:
-                self.graphs.register(item)
-            for item in project.modules:
-                self.graphs.register(item)
-            for item in project.submodules:
-                self.graphs.register(item)
-            for item in project.programs:
-                self.graphs.register(item)
-            for item in project.files:
-                self.graphs.register(item)
-            for item in project.blockdata:
-                self.graphs.register(item)
+            for entity_list in [
+                project.types,
+                project.procedures,
+                project.submodprocedures,
+                project.modules,
+                project.submodules,
+                project.programs,
+                project.files,
+                project.blockdata,
+            ]:
+                for item in entity_list:
+                    self.graphs.register(item)
+
             self.graphs.graph_all()
             project.callgraph = self.graphs.callgraph
             project.typegraph = self.graphs.typegraph
@@ -262,15 +259,8 @@ class Documentation(object):
                 mathjax_path / os.path.basename(self.data["mathjax_config"]),
             )
 
-        # By doing this we omit a duplication of data.
-        for p in self.docs:
+        for p in chain(self.docs, self.lists, self.pagetree, [self.index, self.search]):
             p.writeout()
-        for p in self.lists:
-            p.writeout()
-        for p in self.pagetree:
-            p.writeout()
-        self.index.writeout()
-        self.search.writeout()
 
 
 class BasePage:
