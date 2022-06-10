@@ -48,6 +48,8 @@ env = jinja2.Environment(
 )
 env.globals["path"] = os.path  # this lets us call path.* in templates
 
+USER_WRITABLE_ONLY = 0o755
+
 
 class Documentation(object):
     """
@@ -198,18 +200,19 @@ class Documentation(object):
                 os.remove(out_dir)
             elif os.path.isdir(out_dir):
                 shutil.rmtree(out_dir)
-            os.makedirs(out_dir, 0o755)
+            os.makedirs(out_dir, USER_WRITABLE_ONLY)
         except Exception as e:
             print("Error: Could not create output directory. {}".format(e.args[0]))
-        os.mkdir(os.path.join(out_dir, "lists"), 0o755)
-        os.mkdir(os.path.join(out_dir, "sourcefile"), 0o755)
-        os.mkdir(os.path.join(out_dir, "type"), 0o755)
-        os.mkdir(os.path.join(out_dir, "proc"), 0o755)
-        os.mkdir(os.path.join(out_dir, "interface"), 0o755)
-        os.mkdir(os.path.join(out_dir, "module"), 0o755)
-        os.mkdir(os.path.join(out_dir, "program"), 0o755)
-        os.mkdir(os.path.join(out_dir, "src"), 0o755)
-        os.mkdir(os.path.join(out_dir, "blockdata"), 0o755)
+
+        os.mkdir(os.path.join(out_dir, "lists"), USER_WRITABLE_ONLY)
+        os.mkdir(os.path.join(out_dir, "sourcefile"), USER_WRITABLE_ONLY)
+        os.mkdir(os.path.join(out_dir, "type"), USER_WRITABLE_ONLY)
+        os.mkdir(os.path.join(out_dir, "proc"), USER_WRITABLE_ONLY)
+        os.mkdir(os.path.join(out_dir, "interface"), USER_WRITABLE_ONLY)
+        os.mkdir(os.path.join(out_dir, "module"), USER_WRITABLE_ONLY)
+        os.mkdir(os.path.join(out_dir, "program"), USER_WRITABLE_ONLY)
+        os.mkdir(os.path.join(out_dir, "src"), USER_WRITABLE_ONLY)
+        os.mkdir(os.path.join(out_dir, "blockdata"), USER_WRITABLE_ONLY)
         copytree(os.path.join(loc, "css"), os.path.join(out_dir, "css"))
         copytree(os.path.join(loc, "fonts"), os.path.join(out_dir, "fonts"))
         copytree(os.path.join(loc, "js"), os.path.join(out_dir, "js"))
@@ -555,7 +558,10 @@ class PagetreePage(BasePage):
 
     def writeout(self):
         if self.obj.filename == "index":
-            os.mkdir(os.path.join(self.out_dir, "page", self.obj.location), 0o755)
+            os.mkdir(
+                os.path.join(self.out_dir, "page", self.obj.location),
+                USER_WRITABLE_ONLY,
+            )
         super(PagetreePage, self).writeout()
 
         for item in self.obj.copy_subdir:
