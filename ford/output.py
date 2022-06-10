@@ -527,14 +527,3 @@ def copytree(src: pathlib.Path, dst: pathlib.Path) -> None:
     shutil.copytree(src, dst, copy_function=shutil.copy, dirs_exist_ok=True)
     for file in dst.rglob("*"):
         file.touch()
-
-
-def truncate(string, width):
-    """
-    Truncates/pads the string to be the the specified length,
-    including ellipsis dots if truncation occurs.
-    """
-    if len(string) > width:
-        return string[: width - 3] + "..."
-    else:
-        return string.ljust(width)
