@@ -3031,6 +3031,15 @@ class ExternalInterface(FortranInterface):
         self.obj = "proc"
         self.proctype = "interface"
 
+class ExternalBoundProcedure(FortranBoundProcedure):
+    _project_list = "extProcedures"
+
+    def __init__(self, name: str, url: str = "", parent=None):
+        self.name = name
+        self.external_url = url
+        self.parent = parent
+        self.obj = "proc"
+
 
 class ExternalType(FortranType):
     _project_list = "extTypes"

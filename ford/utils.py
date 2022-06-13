@@ -377,6 +377,7 @@ def external(project, make=False, path="."):
         ExternalInterface,
         ExternalType,
         ExternalVariable,
+        ExternalBoundProcedure,
     )
 
     # attributes of a module object needed for further processing
@@ -404,6 +405,7 @@ def external(project, make=False, path="."):
         "variable": ExternalVariable,
         "function": ExternalFunction,
         "subroutine": ExternalSubroutine,
+        "boundprocedure": ExternalBoundProcedure,
     }
 
     def obj2dict(intObj):
