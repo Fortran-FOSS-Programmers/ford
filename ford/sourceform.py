@@ -3031,6 +3031,7 @@ class ExternalInterface(FortranInterface):
         self.obj = "proc"
         self.proctype = "interface"
 
+
 class ExternalBoundProcedure(FortranBoundProcedure):
     _project_list = "extProcedures"
 
