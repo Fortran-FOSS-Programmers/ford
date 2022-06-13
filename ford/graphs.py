@@ -627,7 +627,8 @@ class FortranGraph(object):
             return False
         else:
             for n in nodes:
-                self.dot.node(n.ident, **n.attribs)
+                strattribs = {key: str(a) for key, a in n.attribs.items()}
+                self.dot.node(n.ident, **strattribs)
             for e in edges:
                 if len(e) == 5:
                     self.dot.edge(
