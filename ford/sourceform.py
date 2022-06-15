@@ -1512,7 +1512,9 @@ class FortranModule(FortranCodeUnit):
             return item.permission == "public" or item.permission == "protected"
 
         def filter_public(collection: list) -> dict:
-            return {obj.name: obj for obj in collection if should_be_public(obj)}
+            return {
+                obj.name.lower(): obj for obj in collection if should_be_public(obj)
+            }
 
         self.pub_procs = filter_public(self.all_procs.values())
         self.pub_vars = filter_public(self.variables)
