@@ -403,7 +403,11 @@ class DocPage(BasePage):
             ford.sourceform.set_base_url("..")
             ford.pagetree.set_base_url("..")
         template = env.get_template(self.page_path)
-        return template.render(data, project=project, **{self.payload_key: object})
+        try:
+            return template.render(data, project=project, **{self.payload_key: object})
+        except jinja2.exceptions.TemplateError:
+            print(f"Error rendering page '{self.outfile}'")
+            raise
 
 
 class FilePage(DocPage):
