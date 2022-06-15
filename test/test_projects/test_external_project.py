@@ -116,7 +116,7 @@ def test_external_project(copy_project_files, monkeypatch, restore_macros):
     uses_box = top_program_html.find(string="Uses").parent.parent.parent
     links = {tag.text: tag.a["href"] for tag in uses_box("li", class_=None)}
 
-    assert len(links) == 2
+    assert len(links) == 3
     assert "external_module" in links
     local_url = urlparse(links["external_module"])
     assert pathlib.Path(local_url.path).is_file()
