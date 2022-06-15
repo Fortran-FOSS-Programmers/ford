@@ -299,7 +299,7 @@ def sub_links(string, project):
 
             for obj in searchlist:
                 if match.group(3).lower() == obj.name.lower():
-                    url = url + "#" + obj.anchor
+                    url = str(url) + "#" + obj.anchor
                     name = obj.name
                     item = obj
                     break
@@ -413,6 +413,8 @@ def external(project, make=False, path="."):
         """
         Converts an object to a dictionary.
         """
+        if hasattr(intObj, "external_url"):
+            return None
         extDict = {
             "name": intObj.name,
             "external_url": intObj.get_url(),
@@ -481,12 +483,12 @@ def external(project, make=False, path="."):
             if key not in extDict:
                 continue
             if isinstance(extDict[key], list):
-                tmpLs = [dict2obj(item, url, extObj, remote) for item in extDict[key]]
+                tmpLs = [dict2obj(item, url, extObj, remote) for item in extDict[key] if item]
                 setattr(extObj, key, tmpLs)
             elif isinstance(extDict[key], dict):
                 tmpDict = {
                     key2: dict2obj(item, url, extObj, remote)
-                    for key2, item in extDict[key].items()
+                    for key2, item in extDict[key].items() if item
                 }
                 setattr(extObj, key, tmpDict)
             else:
