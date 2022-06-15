@@ -483,12 +483,15 @@ def external(project, make=False, path="."):
             if key not in extDict:
                 continue
             if isinstance(extDict[key], list):
-                tmpLs = [dict2obj(item, url, extObj, remote) for item in extDict[key] if item]
+                tmpLs = [
+                    dict2obj(item, url, extObj, remote) for item in extDict[key] if item
+                ]
                 setattr(extObj, key, tmpLs)
             elif isinstance(extDict[key], dict):
                 tmpDict = {
                     key2: dict2obj(item, url, extObj, remote)
-                    for key2, item in extDict[key].items() if item
+                    for key2, item in extDict[key].items()
+                    if item
                 }
                 setattr(extObj, key, tmpDict)
             else:
