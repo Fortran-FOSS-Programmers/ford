@@ -1994,7 +1994,7 @@ class FortranType(FortranContainer):
         # Match up generic type-bound procedures to their particular bindings
         for proc in self.boundprocs:
             for bp in inherited_generic:
-                if bp.name.lower() == proc.name.lower():
+                if bp.name.lower() == proc.name.lower() and hasattr(bp, "bindings"):
                     proc.bindings = bp.bindings + proc.bindings
                     break
             if proc.generic:

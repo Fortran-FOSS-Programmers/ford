@@ -395,6 +395,7 @@ def external(project, make=False, path="."):
         "boundprocs",
         "vartype",
         "permission",
+        "generic",
     ]
 
     # Mapping between entity name and its type
@@ -430,12 +431,12 @@ def external(project, make=False, path="."):
 
             attribute = getattr(intObj, attrib)
 
-            if isinstance(attribute, str):
-                extDict[attrib] = attribute
-            elif isinstance(attribute, list):
+            if isinstance(attribute, list):
                 extDict[attrib] = [obj2dict(item) for item in attribute]
             elif isinstance(attribute, dict):
                 extDict[attrib] = {key: obj2dict(val) for key, val in attribute.items()}
+            else:
+                extDict[attrib] = str(attribute)
         return extDict
 
     def modules_from_local(url: pathlib.Path):
@@ -479,9 +480,7 @@ def external(project, make=False, path="."):
         for key in ATTRIBUTES:
             if key not in extDict:
                 continue
-            if isinstance(extDict[key], str):
-                setattr(extObj, key, extDict[key])
-            elif isinstance(extDict[key], list):
+            if isinstance(extDict[key], list):
                 tmpLs = [dict2obj(item, url, extObj, remote) for item in extDict[key]]
                 setattr(extObj, key, tmpLs)
             elif isinstance(extDict[key], dict):
@@ -490,6 +489,8 @@ def external(project, make=False, path="."):
                     for key2, item in extDict[key].items()
                 }
                 setattr(extObj, key, tmpDict)
+            else:
+                setattr(extObj, key, extDict[key])
         return extObj
 
     if make:
