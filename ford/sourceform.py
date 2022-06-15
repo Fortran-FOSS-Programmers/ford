@@ -131,6 +131,13 @@ class FortranBase(object):
             cur = cur.parent
         self.hierarchy.reverse()
 
+    @property
+    def filename(self):
+        """Name of the file containing this entity"""
+        # If `hierarchy` is empty, it's probably because it's a source
+        # file, so we can use its name directly
+        return self.hierarchy[0].name if self.hierarchy else self.name
+
     def get_dir(self):
         if (
             type(self)
