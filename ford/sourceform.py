@@ -1104,7 +1104,7 @@ class FortranContainer(FortranBase):
         if force is None:
             force = self.settings["force"]
         if dbg:
-            print(f"{line}: {msg}")
+            print(f"ERROR in file '{self.filename}': {msg}:\n\t{line}")
         else:
             if force:
                 return
