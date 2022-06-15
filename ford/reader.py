@@ -134,22 +134,23 @@ class FortranReader(object):
             macros = ["-D" + mac.strip() for mac in filter(None, macros)]
             incdirs = [f"-I{d}" for d in inc_dirs]
             preprocessor = preprocessor + macros + incdirs + [filename]
+            command = " ".join(preprocessor)
             print(f"Preprocessing {filename}")
-            fpp = subprocess.Popen(
-                preprocessor,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True,
-                encoding=encoding,
-            )
-            (out, err) = fpp.communicate()
-
-            if len(err) > 0:
-                print("Warning: error preprocessing " + filename)
-                print(err)
+            try:
+                out = subprocess.run(
+                    preprocessor, encoding=encoding, check=True, capture_output=True
+                )
+                if out.stderr:
+                    print(
+                        f"Warning when preprocessing {filename}:\n{command}\n{out.stderr}"
+                    )
+                self.reader = StringIO(out.stdout)
+            except subprocess.CalledProcessError as err:
+                print(
+                    f"Warning: error when preprocessing {filename}:\n{command}\n{err.stderr}"
+                )
+                print("Reverting to unpreprocessed file")
                 self.reader = open(filename, "r", encoding=encoding)
-            else:
-                self.reader = StringIO(out)
         else:
             self.reader = open(filename, "r", encoding=encoding)
 
