@@ -299,7 +299,7 @@ def sub_links(string, project):
 
             for obj in searchlist:
                 if match.group(3).lower() == obj.name.lower():
-                    url = url + "#" + obj.anchor
+                    url = str(url) + "#" + obj.anchor
                     name = obj.name
                     item = obj
                     break
@@ -377,6 +377,7 @@ def external(project, make=False, path="."):
         ExternalInterface,
         ExternalType,
         ExternalVariable,
+        ExternalBoundProcedure,
     )
 
     # attributes of a module object needed for further processing
@@ -391,6 +392,10 @@ def external(project, make=False, path="."):
         "absinterfaces",
         "types",
         "variables",
+        "boundprocs",
+        "vartype",
+        "permission",
+        "generic",
     ]
 
     # Mapping between entity name and its type
@@ -401,12 +406,15 @@ def external(project, make=False, path="."):
         "variable": ExternalVariable,
         "function": ExternalFunction,
         "subroutine": ExternalSubroutine,
+        "boundprocedure": ExternalBoundProcedure,
     }
 
     def obj2dict(intObj):
         """
         Converts an object to a dictionary.
         """
+        if hasattr(intObj, "external_url"):
+            return None
         extDict = {
             "name": intObj.name,
             "external_url": intObj.get_url(),
@@ -425,12 +433,12 @@ def external(project, make=False, path="."):
 
             attribute = getattr(intObj, attrib)
 
-            if isinstance(attribute, str):
-                extDict[attrib] = attribute
-            elif isinstance(attribute, list):
+            if isinstance(attribute, list):
                 extDict[attrib] = [obj2dict(item) for item in attribute]
             elif isinstance(attribute, dict):
                 extDict[attrib] = {key: obj2dict(val) for key, val in attribute.items()}
+            else:
+                extDict[attrib] = str(attribute)
         return extDict
 
     def modules_from_local(url: pathlib.Path):
@@ -474,17 +482,20 @@ def external(project, make=False, path="."):
         for key in ATTRIBUTES:
             if key not in extDict:
                 continue
-            if isinstance(extDict[key], str):
-                setattr(extObj, key, extDict[key])
-            elif isinstance(extDict[key], list):
-                tmpLs = [dict2obj(item, url, extObj, remote) for item in extDict[key]]
+            if isinstance(extDict[key], list):
+                tmpLs = [
+                    dict2obj(item, url, extObj, remote) for item in extDict[key] if item
+                ]
                 setattr(extObj, key, tmpLs)
             elif isinstance(extDict[key], dict):
                 tmpDict = {
                     key2: dict2obj(item, url, extObj, remote)
                     for key2, item in extDict[key].items()
+                    if item
                 }
                 setattr(extObj, key, tmpDict)
+            else:
+                setattr(extObj, key, extDict[key])
         return extObj
 
     if make:
