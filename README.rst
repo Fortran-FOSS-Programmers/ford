@@ -88,6 +88,10 @@ a terminal:
 If you would like to install the latest development (master) branch from github,
 simply add the :code:`--HEAD` flag: :code:`brew install --HEAD FORD`
 
+FORD is also available through the `spack <https://spack.readthedocs.io/en/latest/>`__ package
+manager by running the following command:
+::
+    spack install py-ford
 
 Documentation
 -------------
