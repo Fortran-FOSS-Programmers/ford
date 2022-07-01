@@ -99,9 +99,7 @@ class GraphManager(object):
             self.graph_objs.append(obj)
 
     def graph_all(self):
-        for obj in tqdm(
-            iter(self.graph_objs), file=sys.stdout, total=len(self.graph_objs), unit=""
-        ):
+        for obj in tqdm(self.graph_objs, unit="", desc="Generating graphs"):
             if isinstance(obj, FortranModule):
                 obj.usesgraph = ford.graphs.UsesGraph(obj, self.webdir)
                 obj.usedbygraph = ford.graphs.UsedByGraph(obj, self.webdir)
