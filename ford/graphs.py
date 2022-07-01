@@ -224,7 +224,7 @@ class GraphData(object):
             return self.get_node(obj, cls, hist)
 
 
-class BaseNode(object):
+class BaseNode:
     colour = "#777777"
 
     def __init__(self, obj):
@@ -270,7 +270,7 @@ class ModNode(BaseNode):
     colour = "#337AB7"
 
     def __init__(self, obj, gd):
-        super(ModNode, self).__init__(obj)
+        super().__init__(obj)
         self.uses = set()
         self.used_by = set()
         self.children = set()
@@ -287,7 +287,7 @@ class SubmodNode(ModNode):
     colour = "#5bc0de"
 
     def __init__(self, obj, gd):
-        super(SubmodNode, self).__init__(obj, gd)
+        super().__init__(obj, gd)
         del self.used_by
         if not self.fromstr:
             if obj.ancestor:
@@ -303,7 +303,7 @@ class TypeNode(BaseNode):
     colour = "#5cb85c"
 
     def __init__(self, obj, gd, hist=None):
-        super(TypeNode, self).__init__(obj)
+        super().__init__(obj)
         self.ancestor = None
         self.children = set()
         self.comp_types = dict()
@@ -414,7 +414,7 @@ class ProgNode(BaseNode):
     colour = "#f0ad4e"
 
     def __init__(self, obj, gd):
-        super(ProgNode, self).__init__(obj)
+        super().__init__(obj)
         self.uses = set()
         self.calls = set()
         if not self.fromstr:
@@ -433,7 +433,7 @@ class BlockNode(BaseNode):
     colour = "#5cb85c"
 
     def __init__(self, obj, gd):
-        super(BlockNode, self).__init__(obj)
+        super().__init__(obj)
         self.uses = set()
         if not self.fromstr:
             for u in obj.uses:
@@ -446,7 +446,7 @@ class FileNode(BaseNode):
     colour = "#f0ad4e"
 
     def __init__(self, obj, gd, hist=None):
-        super(FileNode, self).__init__(obj)
+        super().__init__(obj)
         self.afferent = set()  # Things depending on this file
         self.efferent = set()  # Things this file depends on
         hist = hist or {}
