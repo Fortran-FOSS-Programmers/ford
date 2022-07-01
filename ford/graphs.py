@@ -27,6 +27,7 @@ import shutil
 import re
 import copy
 import colorsys
+import itertools
 
 from graphviz import Digraph
 
@@ -450,77 +451,30 @@ class FileNode(BaseNode):
         self.afferent = set()  # Things depending on this file
         self.efferent = set()  # Things this file depends on
         hist = hist or {}
-        if not self.fromstr:
-            for mod in obj.modules:
-                for dep in mod.deplist:
-                    if dep.hierarchy[0] == obj:
-                        continue
-                    elif dep.hierarchy[0] in hist:
-                        n = hist[dep.hierarchy[0]]
-                    else:
-                        n = gd.get_node(
-                            dep.hierarchy[0],
-                            FortranSourceFile,
-                            newdict(hist, obj, self),
-                        )
-                    n.afferent.add(self)
-                    self.efferent.add(n)
-            for mod in obj.submodules:
-                for dep in mod.deplist:
-                    if dep.hierarchy[0] == obj:
-                        continue
-                    elif dep.hierarchy[0] in hist:
-                        n = hist[dep.hierarchy[0]]
-                    else:
-                        n = gd.get_node(
-                            dep.hierarchy[0],
-                            FortranSourceFile,
-                            newdict(hist, obj, self),
-                        )
-                    n.afferent.add(self)
-                    self.efferent.add(n)
-            for proc in obj.functions + obj.subroutines:
-                for dep in proc.deplist:
-                    if dep.hierarchy[0] == obj:
-                        continue
-                    elif dep.hierarchy[0] in hist:
-                        n = hist[dep.hierarchy[0]]
-                    else:
-                        n = gd.get_node(
-                            dep.hierarchy[0],
-                            FortranSourceFile,
-                            newdict(hist, obj, self),
-                        )
-                    n.afferent.add(self)
-                    self.efferent.add(n)
-            for prog in obj.programs:
-                for dep in prog.deplist:
-                    if dep.hierarchy[0] == obj:
-                        continue
-                    elif dep.hierarchy[0] in hist:
-                        n = hist[dep.hierarchy[0]]
-                    else:
-                        n = gd.get_node(
-                            dep.hierarchy[0],
-                            FortranSourceFile,
-                            newdict(hist, obj, self),
-                        )
-                    n.afferent.add(self)
-                    self.efferent.add(n)
-            for block in obj.blockdata:
-                for dep in block.deplist:
-                    if dep.hierarchy[0] == obj:
-                        continue
-                    elif dep.hierarchy[0] in hist:
-                        n = hist[dep.hierarchy[0]]
-                    else:
-                        n = gd.get_node(
-                            dep.hierarchy[0],
-                            FortranSourceFile,
-                            newdict(hist, obj, self),
-                        )
-                    n.afferent.add(self)
-                    self.efferent.add(n)
+        if self.fromstr:
+            return
+
+        for mod in itertools.chain(
+            obj.modules,
+            obj.submodules,
+            obj.functions,
+            obj.subroutines,
+            obj.programs,
+            obj.blockdata,
+        ):
+            for dep in mod.deplist:
+                if dep.hierarchy[0] == obj:
+                    continue
+                if dep.hierarchy[0] in hist:
+                    n = hist[dep.hierarchy[0]]
+                else:
+                    n = gd.get_node(
+                        dep.hierarchy[0],
+                        FortranSourceFile,
+                        newdict(hist, obj, self),
+                    )
+                n.afferent.add(self)
+                self.efferent.add(n)
 
 
 class FortranGraph(object):
