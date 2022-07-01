@@ -348,17 +348,11 @@ class TypeNode(BaseNode):
 
 
 class ProcNode(BaseNode):
+    COLOURS = {"subroutine": "#d9534f", "function": "#d94e8f", "interface": "#A7506F"}
+
     @property
     def colour(self):
-        if self.proctype.lower() == "subroutine":
-            return "#d9534f"
-        elif self.proctype.lower() == "function":
-            return "#d94e8f"
-        elif self.proctype.lower() == "interface":
-            return "#A7506F"
-            # ~ return '#c77c25'
-        else:
-            return super(ProcNode, self).colour
+        return ProcNode.COLOURS.get(self.proctype.lower(), super().colour)
 
     def __init__(self, obj, gd, hist=None):
         # ToDo: Figure out appropriate way to handle interfaces to routines in submodules.
