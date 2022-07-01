@@ -25,9 +25,9 @@
 import os
 import pathlib
 import sys
-from multiprocessing import Pool
 
 from tqdm import tqdm
+from tqdm.contrib.concurrent import process_map
 
 from ford.sourceform import (
     FortranFunction,
@@ -221,11 +221,12 @@ class GraphManager(object):
             )
             args.extend([(m.usesgraph, self.graphdir) for m in self.blockdata])
 
-            np = min(njobs, len(args))
-            pool = Pool(processes=np)
-            results = pool.map(outputFuncWrap, args, len(args) / np)  # noqa F841
-            pool.close()
-            pool.join()
+            process_map(
+                outputFuncWrap,
+                args,
+                max_workers=njobs,
+                desc="Writing graphs",
+            )
 
         if self.usegraph:
             self.usegraph.create_svg(self.graphdir)

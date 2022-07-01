@@ -260,7 +260,8 @@ class BaseNode(object):
         return self.ident == other.ident
 
     def __hash__(self):
-        return hash(self.ident)
+        """Hash required to insert into dict"""
+        return id(self)
 
 
 class ModNode(BaseNode):
