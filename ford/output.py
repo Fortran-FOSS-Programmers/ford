@@ -129,7 +129,6 @@ class Documentation(object):
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
 
         if graphviz_installed and data["graph"]:
-            print("Generating graphs...")
             self.graphs = GraphManager(
                 self.data["project_url"],
                 self.data["output_dir"],
@@ -168,14 +167,18 @@ class Documentation(object):
             project.usegraph = ""
             project.filegraph = ""
         if data["search"]:
-            print("Creating search index...")
             url = "" if data["relative"] else data["project_url"]
             self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(
                 data["output_dir"], url
             )
             self.tipue.create_node(self.index.html, "index.html", {"category": "home"})
             jobs = len(self.docs) + len(self.pagetree)
-            for p in tqdm(chain(self.docs, self.pagetree), total=jobs, unit=""):
+            for p in tqdm(
+                chain(self.docs, self.pagetree),
+                total=jobs,
+                unit="",
+                desc="Creating search index",
+            ):
                 self.tipue.create_node(p.html, p.loc, p.meta)
             print("")
 

@@ -27,6 +27,7 @@ import shutil
 import re
 import copy
 import colorsys
+import itertools
 
 from graphviz import Digraph
 
@@ -165,11 +166,12 @@ class GraphData(object):
         self.sourcefiles = {}
         self.blockdata = {}
 
-    def register(self, obj, cls=type(None), hist={}):
+    def register(self, obj, cls=type(None), hist=None):
         """
         Takes a FortranObject and adds it to the appropriate list, if
         not already present.
         """
+        hist = hist or {}
         # ~ ident = getattr(obj,'ident',obj)
         if is_submodule(obj, cls):
             if obj not in self.submodules:
@@ -197,12 +199,13 @@ class GraphData(object):
                 "Object type {} not recognized by GraphData".format(type(obj).__name__)
             )
 
-    def get_node(self, obj, cls=type(None), hist={}):
+    def get_node(self, obj, cls=type(None), hist=None):
         """
         Returns the node corresponding to obj. If does not already exist
         then it will create it.
         """
-        # ~ ident = getattr(obj,'ident',obj)
+        hist = hist or {}
+
         if obj in self.modules and is_module(obj, cls):
             return self.modules[obj]
         elif obj in self.submodules and is_submodule(obj, cls):
@@ -222,7 +225,7 @@ class GraphData(object):
             return self.get_node(obj, cls, hist)
 
 
-class BaseNode(object):
+class BaseNode:
     colour = "#777777"
 
     def __init__(self, obj):
@@ -268,7 +271,7 @@ class ModNode(BaseNode):
     colour = "#337AB7"
 
     def __init__(self, obj, gd):
-        super(ModNode, self).__init__(obj)
+        super().__init__(obj)
         self.uses = set()
         self.used_by = set()
         self.children = set()
@@ -285,7 +288,7 @@ class SubmodNode(ModNode):
     colour = "#5bc0de"
 
     def __init__(self, obj, gd):
-        super(SubmodNode, self).__init__(obj, gd)
+        super().__init__(obj, gd)
         del self.used_by
         if not self.fromstr:
             if obj.ancestor:
@@ -300,12 +303,13 @@ class SubmodNode(ModNode):
 class TypeNode(BaseNode):
     colour = "#5cb85c"
 
-    def __init__(self, obj, gd, hist={}):
-        super(TypeNode, self).__init__(obj)
+    def __init__(self, obj, gd, hist=None):
+        super().__init__(obj)
         self.ancestor = None
         self.children = set()
         self.comp_types = dict()
         self.comp_of = dict()
+        hist = hist or {}
         if not self.fromstr:
             if hasattr(obj, "external_url"):
                 # Stop following chain, as this object is in an external project
@@ -345,27 +349,24 @@ class TypeNode(BaseNode):
 
 
 class ProcNode(BaseNode):
+    COLOURS = {"subroutine": "#d9534f", "function": "#d94e8f", "interface": "#A7506F"}
+
     @property
     def colour(self):
-        if self.proctype.lower() == "subroutine":
-            return "#d9534f"
-        elif self.proctype.lower() == "function":
-            return "#d94e8f"
-        elif self.proctype.lower() == "interface":
-            return "#A7506F"
-            # ~ return '#c77c25'
-        else:
-            return super(ProcNode, self).colour
+        return ProcNode.COLOURS.get(self.proctype.lower(), super().colour)
 
-    def __init__(self, obj, gd, hist={}):
+    def __init__(self, obj, gd, hist=None):
         # ToDo: Figure out appropriate way to handle interfaces to routines in submodules.
         self.proctype = getattr(obj, "proctype", "")
-        super(ProcNode, self).__init__(obj)
+        super().__init__(obj)
         self.uses = set()
         self.calls = set()
         self.called_by = set()
         self.interfaces = set()
         self.interfaced_by = set()
+
+        hist = hist or {}
+
         if not self.fromstr:
             for u in getattr(obj, "uses", []):
                 n = gd.get_node(u, FortranModule)
@@ -414,7 +415,7 @@ class ProgNode(BaseNode):
     colour = "#f0ad4e"
 
     def __init__(self, obj, gd):
-        super(ProgNode, self).__init__(obj)
+        super().__init__(obj)
         self.uses = set()
         self.calls = set()
         if not self.fromstr:
@@ -433,7 +434,7 @@ class BlockNode(BaseNode):
     colour = "#5cb85c"
 
     def __init__(self, obj, gd):
-        super(BlockNode, self).__init__(obj)
+        super().__init__(obj)
         self.uses = set()
         if not self.fromstr:
             for u in obj.uses:
@@ -445,81 +446,35 @@ class BlockNode(BaseNode):
 class FileNode(BaseNode):
     colour = "#f0ad4e"
 
-    def __init__(self, obj, gd, hist={}):
-        super(FileNode, self).__init__(obj)
+    def __init__(self, obj, gd, hist=None):
+        super().__init__(obj)
         self.afferent = set()  # Things depending on this file
         self.efferent = set()  # Things this file depends on
-        if not self.fromstr:
-            for mod in obj.modules:
-                for dep in mod.deplist:
-                    if dep.hierarchy[0] == obj:
-                        continue
-                    elif dep.hierarchy[0] in hist:
-                        n = hist[dep.hierarchy[0]]
-                    else:
-                        n = gd.get_node(
-                            dep.hierarchy[0],
-                            FortranSourceFile,
-                            newdict(hist, obj, self),
-                        )
-                    n.afferent.add(self)
-                    self.efferent.add(n)
-            for mod in obj.submodules:
-                for dep in mod.deplist:
-                    if dep.hierarchy[0] == obj:
-                        continue
-                    elif dep.hierarchy[0] in hist:
-                        n = hist[dep.hierarchy[0]]
-                    else:
-                        n = gd.get_node(
-                            dep.hierarchy[0],
-                            FortranSourceFile,
-                            newdict(hist, obj, self),
-                        )
-                    n.afferent.add(self)
-                    self.efferent.add(n)
-            for proc in obj.functions + obj.subroutines:
-                for dep in proc.deplist:
-                    if dep.hierarchy[0] == obj:
-                        continue
-                    elif dep.hierarchy[0] in hist:
-                        n = hist[dep.hierarchy[0]]
-                    else:
-                        n = gd.get_node(
-                            dep.hierarchy[0],
-                            FortranSourceFile,
-                            newdict(hist, obj, self),
-                        )
-                    n.afferent.add(self)
-                    self.efferent.add(n)
-            for prog in obj.programs:
-                for dep in prog.deplist:
-                    if dep.hierarchy[0] == obj:
-                        continue
-                    elif dep.hierarchy[0] in hist:
-                        n = hist[dep.hierarchy[0]]
-                    else:
-                        n = gd.get_node(
-                            dep.hierarchy[0],
-                            FortranSourceFile,
-                            newdict(hist, obj, self),
-                        )
-                    n.afferent.add(self)
-                    self.efferent.add(n)
-            for block in obj.blockdata:
-                for dep in block.deplist:
-                    if dep.hierarchy[0] == obj:
-                        continue
-                    elif dep.hierarchy[0] in hist:
-                        n = hist[dep.hierarchy[0]]
-                    else:
-                        n = gd.get_node(
-                            dep.hierarchy[0],
-                            FortranSourceFile,
-                            newdict(hist, obj, self),
-                        )
-                    n.afferent.add(self)
-                    self.efferent.add(n)
+        hist = hist or {}
+        if self.fromstr:
+            return
+
+        for mod in itertools.chain(
+            obj.modules,
+            obj.submodules,
+            obj.functions,
+            obj.subroutines,
+            obj.programs,
+            obj.blockdata,
+        ):
+            for dep in mod.deplist:
+                if dep.hierarchy[0] == obj:
+                    continue
+                if dep.hierarchy[0] in hist:
+                    n = hist[dep.hierarchy[0]]
+                else:
+                    n = gd.get_node(
+                        dep.hierarchy[0],
+                        FortranSourceFile,
+                        newdict(hist, obj, self),
+                    )
+                n.afferent.add(self)
+                self.efferent.add(n)
 
 
 class FortranGraph(object):
