@@ -165,11 +165,12 @@ class GraphData(object):
         self.sourcefiles = {}
         self.blockdata = {}
 
-    def register(self, obj, cls=type(None), hist={}):
+    def register(self, obj, cls=type(None), hist=None):
         """
         Takes a FortranObject and adds it to the appropriate list, if
         not already present.
         """
+        hist = hist or {}
         # ~ ident = getattr(obj,'ident',obj)
         if is_submodule(obj, cls):
             if obj not in self.submodules:
@@ -197,12 +198,13 @@ class GraphData(object):
                 "Object type {} not recognized by GraphData".format(type(obj).__name__)
             )
 
-    def get_node(self, obj, cls=type(None), hist={}):
+    def get_node(self, obj, cls=type(None), hist=None):
         """
         Returns the node corresponding to obj. If does not already exist
         then it will create it.
         """
-        # ~ ident = getattr(obj,'ident',obj)
+        hist = hist or {}
+
         if obj in self.modules and is_module(obj, cls):
             return self.modules[obj]
         elif obj in self.submodules and is_submodule(obj, cls):
@@ -300,12 +302,13 @@ class SubmodNode(ModNode):
 class TypeNode(BaseNode):
     colour = "#5cb85c"
 
-    def __init__(self, obj, gd, hist={}):
+    def __init__(self, obj, gd, hist=None):
         super(TypeNode, self).__init__(obj)
         self.ancestor = None
         self.children = set()
         self.comp_types = dict()
         self.comp_of = dict()
+        hist = hist or {}
         if not self.fromstr:
             if hasattr(obj, "external_url"):
                 # Stop following chain, as this object is in an external project
@@ -357,15 +360,18 @@ class ProcNode(BaseNode):
         else:
             return super(ProcNode, self).colour
 
-    def __init__(self, obj, gd, hist={}):
+    def __init__(self, obj, gd, hist=None):
         # ToDo: Figure out appropriate way to handle interfaces to routines in submodules.
         self.proctype = getattr(obj, "proctype", "")
-        super(ProcNode, self).__init__(obj)
+        super().__init__(obj)
         self.uses = set()
         self.calls = set()
         self.called_by = set()
         self.interfaces = set()
         self.interfaced_by = set()
+
+        hist = hist or {}
+
         if not self.fromstr:
             for u in getattr(obj, "uses", []):
                 n = gd.get_node(u, FortranModule)
@@ -445,10 +451,11 @@ class BlockNode(BaseNode):
 class FileNode(BaseNode):
     colour = "#f0ad4e"
 
-    def __init__(self, obj, gd, hist={}):
+    def __init__(self, obj, gd, hist=None):
         super(FileNode, self).__init__(obj)
         self.afferent = set()  # Things depending on this file
         self.efferent = set()  # Things this file depends on
+        hist = hist or {}
         if not self.fromstr:
             for mod in obj.modules:
                 for dep in mod.deplist:
