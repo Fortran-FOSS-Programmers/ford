@@ -308,6 +308,14 @@ def get_command_line_arguments() -> argparse.Namespace:
         help="continue to read file if fatal errors",
     )
     parser.add_argument(
+        "-g",
+        "--graph",
+        dest="graph",
+        action="store_true",
+        default=None,
+        help="generate graphs for documentation output",
+    )
+    parser.add_argument(
         "--no-search",
         dest="search",
         action="store_false",
