@@ -26,9 +26,11 @@ import os
 import pathlib
 import toposort
 import itertools
+from typing import List
 
 import ford.utils
 import ford.sourceform
+from ford.sourceform import FortranModule
 
 
 INTRINSIC_MODS = {
@@ -199,17 +201,17 @@ class Project(object):
                 uselist.extend(get_deps(procedure))
             return uselist
 
+        def filter_modules(entity) -> List[FortranModule]:
+            """Return a list of `FortranModule` from the dependencies of `entity`"""
+            return [dep for dep in get_deps(entity) if type(dep) is FortranModule]
+
         for mod in self.modules:
-            uselist = get_deps(mod)
-            uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
-            deplist[mod] = set(uselist)
-            mod.deplist = uselist
+            mod.deplist = filter_modules(mod)
+            deplist[mod] = set(mod.deplist)
+
         for mod in self.submodules:
             if type(mod.ancestor_mod) is ford.sourceform.FortranModule:
-                uselist = get_deps(mod)
-                uselist = [
-                    m for m in uselist if type(m) == ford.sourceform.FortranModule
-                ]
+                uselist = filter_modules(mod)
                 if mod.ancestor:
                     if type(mod.ancestor) is ford.sourceform.FortranSubmodule:
                         uselist.insert(0, mod.ancestor)
@@ -229,30 +231,11 @@ class Project(object):
         # Get dependencies for programs and top-level procedures as well,
         # if dependency graphs are to be produced
         if self.settings["graph"]:
-            for proc in self.procedures:
-                proc.deplist = set(
-                    [
-                        m
-                        for m in get_deps(proc)
-                        if type(m) == ford.sourceform.FortranModule
-                    ]
-                )
-            for prog in self.programs:
-                prog.deplist = set(
-                    [
-                        m
-                        for m in get_deps(prog)
-                        if type(m) == ford.sourceform.FortranModule
-                    ]
-                )
-            for block in self.blockdata:
-                block.deplist = set(
-                    [
-                        m
-                        for m in get_deps(block)
-                        if type(m) == ford.sourceform.FortranModule
-                    ]
-                )
+            for entity in itertools.chain(
+                self.procedures, self.programs, self.blockdata
+            ):
+                entity.deplist = set(filter_modules(entity))
+
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:
             if proc.parobj == "sourcefile":
