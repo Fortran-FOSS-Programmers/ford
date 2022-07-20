@@ -365,7 +365,7 @@ class Project(object):
         return dir_list
 
 
-def id_mods(obj, modlist, intrinsic_mods={}, submodlist=[], extMods=[]):
+def id_mods(obj, modlist, intrinsic_mods, submodlist, extMods):
     """
     Match USE statements up with the right modules
     """
@@ -396,4 +396,4 @@ def id_mods(obj, modlist, intrinsic_mods={}, submodlist=[], extMods=[]):
         getattr(obj, "functions", []),
         getattr(obj, "subroutines", []),
     ):
-        id_mods(procedure, modlist, intrinsic_mods, extMods)
+        id_mods(procedure, modlist, intrinsic_mods, submodlist, extMods)

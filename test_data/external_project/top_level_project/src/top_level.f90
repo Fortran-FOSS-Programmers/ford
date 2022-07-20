@@ -14,6 +14,7 @@ module myAbort
 contains
 
   subroutine abortCriteria_load(me, conf)
+    use external_module, only: abort_fraction
     ! -------------------------------------------------------------------- !
     !> Object to hold the solver specific configuration parameters.
     class(vel_abortCriteria_type), intent(inout) :: me
@@ -21,7 +22,7 @@ contains
     !> Handle to the configuration.
     integer, intent(in) :: conf
 
-    me%velmax = real(conf)*0.15
+    me%velmax = real(conf)*abort_fraction()
 
   end subroutine mus_abortCriteria_load
 
