@@ -987,7 +987,7 @@ class FortranContainer(FortranBase):
                     self.print_error(line, "Unexpected variable")
             elif self.USE_RE.match(line):
                 if hasattr(self, "uses"):
-                    self.uses.append(self.USE_RE.match(line).groups())
+                    self.uses.append(list(self.USE_RE.match(line).groups()))
                 else:
                     self.print_error(line, "Unexpected USE statement")
             else:

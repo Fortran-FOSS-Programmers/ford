@@ -30,7 +30,12 @@ from typing import List
 
 import ford.utils
 import ford.sourceform
-from ford.sourceform import FortranModule
+from ford.sourceform import (
+    FortranCodeUnit,
+    FortranModule,
+    FortranSubmodule,
+    ExternalModule,
+)
 
 
 INTRINSIC_MODS = {
@@ -184,7 +189,7 @@ class Project(object):
             self.submodules,
             self.blockdata,
         ):
-            id_mods(
+            find_used_modules(
                 entity, self.modules, non_local_mods, self.submodules, self.extModules
             )
 
@@ -365,35 +370,66 @@ class Project(object):
         return dir_list
 
 
-def id_mods(obj, modlist, intrinsic_mods, submodlist, extMods):
+def find_used_modules(
+    entity: FortranCodeUnit,
+    modules: List[FortranModule],
+    intrinsic_modules: List[str],
+    submodules: List[FortranSubmodule],
+    external_modules: List[ExternalModule],
+) -> None:
+    """Find the module objects (or links to intrinsic/external
+    module) for all of the ``USED``d names in `entity`
+
+    Parameters
+    ----------
+    entity
+        A program, module, submodule or procedure
+    modules
+        Known Fortran modules
+    intrinsic_modules
+        Known intrinsic Fortran modules
+    submodules
+        Known Fortran submodules
+    external_modules
+        Known external Fortran modules
+
     """
-    Match USE statements up with the right modules
-    """
-    for i in range(len(obj.uses)):
-        for candidate in modlist + extMods:
-            if obj.uses[i][0].lower() == candidate.name.lower():
-                obj.uses[i] = [candidate, obj.uses[i][1]]
+    # Find the modules that this entity uses
+    for dependency in entity.uses:
+        dependency_name = dependency[0].lower()
+
+        # FIXME: We should capture whether or not the `use`d is
+        # `intrinsic`, and modify the lookup appropriately
+        for candidate in itertools.chain(modules, external_modules):
+            if dependency_name == candidate.name.lower():
+                dependency[0] = candidate
                 break
         else:
-            if obj.uses[i][0].lower() in intrinsic_mods:
-                obj.uses[i] = [intrinsic_mods[obj.uses[i][0].lower()], obj.uses[i][1]]
+            if dependency_name in intrinsic_modules:
+                dependency[0] = intrinsic_modules[dependency_name]
                 continue
 
-    if getattr(obj, "ancestor", None):
-        for submod in submodlist:
-            if obj.ancestor.lower() == submod.name.lower():
-                obj.ancestor = submod
+    # Find the ancestor of this submodule (if entity is one)
+    if getattr(entity, "ancestor", None):
+        ancestor_name = entity.ancestor.lower()
+        for submod in submodules:
+            if ancestor_name == submod.name.lower():
+                entity.ancestor = submod
                 break
 
-    if hasattr(obj, "ancestor_mod"):
-        for mod in modlist:
-            if obj.ancestor_mod.lower() == mod.name.lower():
-                obj.ancestor_mod = mod
+    if hasattr(entity, "ancestor_mod"):
+        ancestor_mod_name = entity.ancestor_mod.lower()
+        for mod in modules:
+            if ancestor_mod_name == mod.name.lower():
+                entity.ancestor_mod = mod
                 break
 
+    # Find the modules that this entity's procedures use
     for procedure in itertools.chain(
-        getattr(obj, "modprocedures", []),
-        getattr(obj, "functions", []),
-        getattr(obj, "subroutines", []),
+        getattr(entity, "modprocedures", []),
+        getattr(entity, "functions", []),
+        getattr(entity, "subroutines", []),
     ):
-        id_mods(procedure, modlist, intrinsic_mods, submodlist, extMods)
+        find_used_modules(
+            procedure, modules, intrinsic_modules, submodules, external_modules
+        )
