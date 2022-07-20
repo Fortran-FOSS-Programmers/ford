@@ -25,6 +25,8 @@
 import os
 import pathlib
 import toposort
+import itertools
+
 import ford.utils
 import ford.sourceform
 
@@ -173,27 +175,28 @@ class Project(object):
         ford.utils.external(self)
 
         # Match USE statements up with the right modules
-        for s in self.modules:
-            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
-        for s in self.procedures:
-            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
-        for s in self.programs:
-            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
-        for s in self.submodules:
-            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
-        for s in self.blockdata:
-            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
+        for entity in itertools.chain(
+            self.modules,
+            self.procedures,
+            self.programs,
+            self.submodules,
+            self.blockdata,
+        ):
+            id_mods(
+                entity, self.modules, non_local_mods, self.submodules, self.extModules
+            )
+
         # Get the order to process other correlations with
         deplist = {}
 
         def get_deps(item):
             uselist = [m[0] for m in item.uses]
-            for proc in getattr(item, "subroutines", []):
-                uselist.extend(get_deps(proc))
-            for proc in getattr(item, "functions", []):
-                uselist.extend(get_deps(proc))
-            for proc in getattr(item, "modprocedures", []):
-                uselist.extend(get_deps(proc))
+            for procedure in itertools.chain(
+                getattr(item, "subroutines", []),
+                getattr(item, "functions", []),
+                getattr(item, "modprocedures", []),
+            ):
+                uselist.extend(get_deps(procedure))
             return uselist
 
         for mod in self.modules:
@@ -392,19 +395,22 @@ def id_mods(obj, modlist, intrinsic_mods={}, submodlist=[], extMods=[]):
             if obj.uses[i][0].lower() in intrinsic_mods:
                 obj.uses[i] = [intrinsic_mods[obj.uses[i][0].lower()], obj.uses[i][1]]
                 continue
+
     if getattr(obj, "ancestor", None):
         for submod in submodlist:
             if obj.ancestor.lower() == submod.name.lower():
                 obj.ancestor = submod
                 break
+
     if hasattr(obj, "ancestor_mod"):
         for mod in modlist:
             if obj.ancestor_mod.lower() == mod.name.lower():
                 obj.ancestor_mod = mod
                 break
-    for modproc in getattr(obj, "modprocedures", []):
-        id_mods(modproc, modlist, intrinsic_mods, extMods)
-    for func in getattr(obj, "functions", []):
-        id_mods(func, modlist, intrinsic_mods, extMods)
-    for subroutine in getattr(obj, "subroutines", []):
-        id_mods(subroutine, modlist, intrinsic_mods, extMods)
+
+    for procedure in itertools.chain(
+        getattr(obj, "modprocedures", []),
+        getattr(obj, "functions", []),
+        getattr(obj, "subroutines", []),
+    ):
+        id_mods(procedure, modlist, intrinsic_mods, extMods)
