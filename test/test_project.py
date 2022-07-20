@@ -7,6 +7,7 @@ from copy import deepcopy
 
 import markdown
 import pytest
+from bs4 import BeautifulSoup
 
 
 @pytest.fixture
@@ -833,3 +834,51 @@ def test_sort(copy_fortran_file, sort_kind, expected_order):
     ]:
         entity_names = [entity.name for entity in getattr(module, entity_type)]
         assert entity_names == expected_order[entity_type], (sort_kind, entity_type)
+
+
+def test_uses(copy_fortran_file):
+    """Check that module `USE`s are matched up correctly"""
+
+    data = """\
+    module mod_a
+    end module mod_a
+
+    module mod_b
+      use mod_a
+    end module mod_b
+
+    module mod_c
+      use mod_a
+      use mod_b
+    end module mod_c
+
+    module mod_d
+      use unquoted_external_module
+      use quoted_external_module
+    end module mod_d
+    """
+
+    extra_mods = {
+        "unquoted_external_module": "http://unquoted.example.com",
+        "quoted_external_module": '"http://quoted.example.org"',
+    }
+
+    settings = copy_fortran_file(data)
+    settings["extra_mods"] = [f"{key}: {value}" for key, value in extra_mods.items()]
+
+    project = create_project(settings)
+    mod_a = project.modules[0]
+    mod_b = project.modules[1]
+    mod_c = project.modules[2]
+    mod_d = project.modules[3]
+
+    assert mod_a.uses == set()
+    assert mod_b.uses == {mod_a}
+    assert mod_c.uses == {mod_a, mod_b}
+
+    mod_d_links = list(mod_d.uses)
+    for link in mod_d_links:
+        soup = BeautifulSoup(link, features="html.parser")
+        link = soup.a
+        expected_link = extra_mods[soup.text].strip(r"\"'")
+        assert link["href"] == expected_link, link

@@ -161,13 +161,13 @@ class Project(object):
         non_local_mods = INTRINSIC_MODS.copy()
         for item in self.settings["extra_mods"]:
             try:
-                i = item.index(":")
+                name, url = item.split(":", 1)
             except ValueError:
                 print('Warning: could not parse extra modules "{}"'.format(item))
                 continue
-            name = item[:i].strip()
-            url = item[i + 1 :].strip()
-            non_local_mods[name.lower()] = '<a href="{}">{}</a>'.format(url, name)
+            name = name.strip()
+            url = url.strip().strip(r"\"'").strip()
+            non_local_mods[name.lower()] = f'<a href="{url}">{name}</a>'
 
         # load external FORD FortranModules
         ford.utils.external(self)

@@ -23,6 +23,7 @@ graph: true
 search: true
 extra_mods: json_module: http://jacobwilliams.github.io/json-fortran/
             futility: http://cmacmackin.github.io
+            iso_fortran_env: "https://gcc.gnu.org/onlinedocs/gfortran/ISO_005fFORTRAN_005fENV.html"
 license: by-nc
 extra_filetypes: sh #
 max_frontpage_items: 4
