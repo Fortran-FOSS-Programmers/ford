@@ -637,6 +637,39 @@ def test_module_procedure_case(parse_fortran_file):
     assert module.interfaces[3].procedure.module
 
 
+def test_submodule_ancestors(parse_fortran_file):
+    """Check that submodule ancestors and parents are correctly identified"""
+
+    data = """\
+    module mod_a
+    end module mod_a
+
+    submodule (mod_a) mod_b
+    end submodule mod_b
+
+    submodule (mod_a) mod_c
+    end submodule mod_c
+
+    submodule (mod_a:mod_c) mod_d
+    end submodule mod_d
+    """
+
+    fortran_file = parse_fortran_file(data)
+
+    mod_b = fortran_file.submodules[0]
+    mod_c = fortran_file.submodules[1]
+    mod_d = fortran_file.submodules[2]
+
+    assert mod_b.ancestor is None
+    assert mod_b.ancestor_mod == "mod_a"
+
+    assert mod_c.ancestor is None
+    assert mod_c.ancestor_mod == "mod_a"
+
+    assert mod_d.ancestor == "mod_c"
+    assert mod_d.ancestor_mod == "mod_a"
+
+
 @dataclass
 class ParsedType:
     vartype: str
