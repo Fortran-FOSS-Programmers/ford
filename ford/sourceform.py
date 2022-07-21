@@ -575,8 +575,8 @@ class FortranBase(object):
 
     @property
     def routines(self):
-        """Iterator returning *both* functions and subroutines, in that order"""
-        for item in self.iterator("functions", "subroutines"):
+        """Iterator returning all procedures"""
+        for item in self.iterator("functions", "subroutines", "modprocedures"):
             yield item
 
     def iterator(self, *argv):
@@ -612,8 +612,12 @@ class FortranContainer(FortranBase):
     )
     MODULE_RE = re.compile(r"^module(?:\s+(\w+))?$", re.IGNORECASE)
     SUBMODULE_RE = re.compile(
-        r"^submodule\s*\(\s*(\w+)\s*(?::\s*(\w+))?\s*\)\s*(?:::|\s)\s*(\w+)$",
-        re.IGNORECASE,
+        r"""^submodule\s*
+        \(\s*(?P<ancestor_module>\w+)\s*         # Non-optional ancestor module
+        (?::\s*(?P<parent_submod>\w+))?\s*\)  # Optional parent submodule
+        \s*(?P<name>\w+)                      # This submodule's name
+        $""",
+        re.IGNORECASE | re.VERBOSE,
     )
     PROGRAM_RE = re.compile(r"^program(?:\s+(\w+))?$", re.IGNORECASE)
     SUBROUTINE_RE = re.compile(
@@ -987,7 +991,7 @@ class FortranContainer(FortranBase):
                     self.print_error(line, "Unexpected variable")
             elif self.USE_RE.match(line):
                 if hasattr(self, "uses"):
-                    self.uses.append(self.USE_RE.match(line).groups())
+                    self.uses.append(list(self.USE_RE.match(line).groups()))
                 else:
                     self.print_error(line, "Unexpected USE statement")
             else:
@@ -1060,14 +1064,14 @@ class FortranCodeUnit(FortranContainer):
 
         if type(getattr(self, "ancestor", "")) not in [str, type(None)]:
             self.ancestor.descendants.append(self)
-            self.all_procs.update(self.ancestor.all_procs)
-            self.all_absinterfaces.update(self.ancestor.all_absinterfaces)
-            self.all_types.update(self.ancestor.all_types)
-        elif type(getattr(self, "ancestor_mod", "")) not in [str, type(None)]:
-            self.ancestor_mod.descendants.append(self)
-            self.all_procs.update(self.ancestor_mod.all_procs)
-            self.all_absinterfaces.update(self.ancestor_mod.all_absinterfaces)
-            self.all_types.update(self.ancestor_mod.all_types)
+            self.all_procs.update(self.parent_submodule.all_procs)
+            self.all_absinterfaces.update(self.parent_submodule.all_absinterfaces)
+            self.all_types.update(self.parent_submodule.all_types)
+        elif type(getattr(self, "ancestor_module", "")) not in [str, type(None)]:
+            self.ancestor_module.descendants.append(self)
+            self.all_procs.update(self.ancestor_module.all_procs)
+            self.all_absinterfaces.update(self.ancestor_module.all_absinterfaces)
+            self.all_types.update(self.ancestor_module.all_types)
 
         if isinstance(self, FortranSubmodule):
             for proc in self.routines:
@@ -1174,10 +1178,10 @@ class FortranCodeUnit(FortranContainer):
         if self.obj == "submodule":
             self.ancestry = []
             item = self
-            while item.ancestor:
-                item = item.ancestor
+            while item.parent_submodule:
+                item = item.parent_submodule
                 self.ancestry.insert(0, item)
-            self.ancestry.insert(0, item.ancestor_mod)
+            self.ancestry.insert(0, item.ancestor_module)
 
         # Recurse
         for dtype in typeorder:
@@ -1498,9 +1502,9 @@ class FortranModule(FortranCodeUnit):
 class FortranSubmodule(FortranModule):
     def _initialize(self, line):
         FortranModule._initialize(self, line)
-        self.name = line.group(3)
-        self.ancestor = line.group(2)
-        self.ancestor_mod = line.group(1)
+        self.name = line["name"]
+        self.parent_submodule = line["parent_submod"]
+        self.ancestor_module = line["ancestor_module"]
         self.modprocedures = []
         del self.public_list
         del self.private_list

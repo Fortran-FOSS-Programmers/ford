@@ -23,10 +23,18 @@
 #
 
 import os
-import pathlib
 import toposort
+from itertools import chain
+from typing import List
+
 import ford.utils
 import ford.sourceform
+from ford.sourceform import (
+    FortranCodeUnit,
+    FortranModule,
+    FortranSubmodule,
+    ExternalModule,
+)
 
 
 INTRINSIC_MODS = {
@@ -140,6 +148,10 @@ class Project(object):
                         print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
                         continue
 
+    def warn(self, message):
+        if self.settings["warn"]:
+            print(f"Warning: {message}")
+
     @property
     def allfiles(self):
         """Instead of duplicating files, it is much more efficient to create the itterator on the fly"""
@@ -160,11 +172,15 @@ class Project(object):
 
         non_local_mods = INTRINSIC_MODS.copy()
         for item in self.settings["extra_mods"]:
+            if not item:
+                continue
             try:
                 name, url = item.split(":", 1)
             except ValueError:
-                print('Warning: could not parse extra modules "{}"'.format(item))
-                continue
+                raise ValueError(
+                    f"Could not parse 'extra_mods' item in project settings: '{item}'\n"
+                    "Expected something of the form 'module_name: http://link.to/module'"
+                )
             name = name.strip()
             url = url.strip().strip(r"\"'").strip()
             non_local_mods[name.lower()] = f'<a href="{url}">{name}</a>'
@@ -172,84 +188,59 @@ class Project(object):
         # load external FORD FortranModules
         ford.utils.external(self)
 
-        # Match USE statements up with the right modules
-        for s in self.modules:
-            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
-        for s in self.procedures:
-            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
-        for s in self.programs:
-            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
-        for s in self.submodules:
-            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
-        for s in self.blockdata:
-            id_mods(s, self.modules, non_local_mods, self.submodules, self.extModules)
-        # Get the order to process other correlations with
-        deplist = {}
+        # Match USE statements up with the module objects or links
+        for entity in chain(
+            self.modules,
+            self.procedures,
+            self.programs,
+            self.submodules,
+            self.blockdata,
+        ):
+            find_used_modules(
+                entity, self.modules, non_local_mods, self.submodules, self.extModules
+            )
 
         def get_deps(item):
             uselist = [m[0] for m in item.uses]
-            for proc in getattr(item, "subroutines", []):
-                uselist.extend(get_deps(proc))
-            for proc in getattr(item, "functions", []):
-                uselist.extend(get_deps(proc))
-            for proc in getattr(item, "modprocedures", []):
-                uselist.extend(get_deps(proc))
+            for procedure in item.routines:
+                uselist.extend(get_deps(procedure))
             return uselist
 
+        def filter_modules(entity) -> List[FortranModule]:
+            """Return a list of `FortranModule` from the dependencies of `entity`"""
+            return [dep for dep in get_deps(entity) if type(dep) is FortranModule]
+
+        # Get the order to process other correlations with
         for mod in self.modules:
-            uselist = get_deps(mod)
-            uselist = [m for m in uselist if type(m) == ford.sourceform.FortranModule]
-            deplist[mod] = set(uselist)
-            mod.deplist = uselist
+            mod.deplist = filter_modules(mod)
+
         for mod in self.submodules:
-            if type(mod.ancestor_mod) is ford.sourceform.FortranModule:
-                uselist = get_deps(mod)
-                uselist = [
-                    m for m in uselist if type(m) == ford.sourceform.FortranModule
-                ]
-                if mod.ancestor:
-                    if type(mod.ancestor) is ford.sourceform.FortranSubmodule:
-                        uselist.insert(0, mod.ancestor)
-                    elif self.settings["warn"]:
-                        print(
-                            "Warning: could not identify parent SUBMODULE of SUBMODULE "
-                            + mod.name
-                        )
-                else:
-                    uselist.insert(0, mod.ancestor_mod)
-                mod.deplist = uselist
-                deplist[mod] = set(uselist)
-            elif self.settings["warn"]:
-                print(
-                    "Warning: could not identify parent MODULE of SUBMODULE " + mod.name
+            if type(mod.ancestor_module) is not FortranModule:
+                self.warn(
+                    f"Could not identify ancestor MODULE of SUBMODULE '{mod.name}'. "
                 )
+                continue
+
+            if not isinstance(mod.parent_submodule, (FortranSubmodule, type(None))):
+                self.warn(
+                    f"Could not identify parent SUBMODULE of SUBMODULE '{mod.name}'"
+                )
+
+            mod.deplist = [
+                mod.parent_submodule or mod.ancestor_module
+            ] + filter_modules(mod)
+
+        deplist = {
+            module: set(module.deplist)
+            for module in chain(self.modules, self.submodules)
+        }
+
         # Get dependencies for programs and top-level procedures as well,
         # if dependency graphs are to be produced
         if self.settings["graph"]:
-            for proc in self.procedures:
-                proc.deplist = set(
-                    [
-                        m
-                        for m in get_deps(proc)
-                        if type(m) == ford.sourceform.FortranModule
-                    ]
-                )
-            for prog in self.programs:
-                prog.deplist = set(
-                    [
-                        m
-                        for m in get_deps(prog)
-                        if type(m) == ford.sourceform.FortranModule
-                    ]
-                )
-            for block in self.blockdata:
-                block.deplist = set(
-                    [
-                        m
-                        for m in get_deps(block)
-                        if type(m) == ford.sourceform.FortranModule
-                    ]
-                )
+            for entity in chain(self.procedures, self.programs, self.blockdata):
+                entity.deplist = set(filter_modules(entity))
+
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:
             if proc.parobj == "sourcefile":
@@ -270,52 +261,28 @@ class Project(object):
         else:
             url = self.settings["project_url"]
 
+        # Mapping of various entity containers in code units to the
+        # corresponding container in the project
+        CONTAINERS = {
+            "functions": "procedures",
+            "subroutines": "procedures",
+            "interfaces": "procedures",
+            "absinterfaces": "absinterfaces",
+            "types": "types",
+            "modfunctions": "submodprocedures",
+            "modsubroutines": "submodprocedures",
+            "modprocedures": "submodprocedures",
+        }
+
+        # Gather all the entity containers from each code unit in each
+        # file into the corresponding project container
         for sfile in self.files:
-            for module in sfile.modules:
-                for function in module.functions:
-                    self.procedures.append(function)
-                for subroutine in module.subroutines:
-                    self.procedures.append(subroutine)
-                for interface in module.interfaces:
-                    self.procedures.append(interface)
-                for absint in module.absinterfaces:
-                    self.absinterfaces.append(absint)
-                for dtype in module.types:
-                    self.types.append(dtype)
-
-            for module in sfile.submodules:
-                for function in module.functions:
-                    self.procedures.append(function)
-                for subroutine in module.subroutines:
-                    self.procedures.append(subroutine)
-                for function in module.modfunctions:
-                    self.submodprocedures.append(function)
-                for subroutine in module.modsubroutines:
-                    self.submodprocedures.append(subroutine)
-                for modproc in module.modprocedures:
-                    self.submodprocedures.append(modproc)
-                for interface in module.interfaces:
-                    self.procedures.append(interface)
-                for absint in module.absinterfaces:
-                    self.absinterfaces.append(absint)
-                for dtype in module.types:
-                    self.types.append(dtype)
-
-            for program in sfile.programs:
-                for function in program.functions:
-                    self.procedures.append(function)
-                for subroutine in program.subroutines:
-                    self.procedures.append(subroutine)
-                for interface in program.interfaces:
-                    self.procedures.append(interface)
-                for absint in program.absinterfaces:
-                    self.absinterfaces.append(absint)
-                for dtype in program.types:
-                    self.types.append(dtype)
-
-            for block in sfile.blockdata:
-                for dtype in block.types:
-                    self.types.append(dtype)
+            for code_unit in chain(
+                sfile.modules, sfile.submodules, sfile.programs, sfile.blockdata
+            ):
+                for entity_kind, container in CONTAINERS.items():
+                    entities = getattr(code_unit, entity_kind, [])
+                    getattr(self, container).extend(entities)
 
         def sum_lines(*argv, **kwargs):
             """Wrapper for minimizing memory consumption"""
@@ -379,32 +346,62 @@ class Project(object):
         return dir_list
 
 
-def id_mods(obj, modlist, intrinsic_mods={}, submodlist=[], extMods=[]):
+def find_used_modules(
+    entity: FortranCodeUnit,
+    modules: List[FortranModule],
+    intrinsic_modules: List[str],
+    submodules: List[FortranSubmodule],
+    external_modules: List[ExternalModule],
+) -> None:
+    """Find the module objects (or links to intrinsic/external
+    module) for all of the ``USED``d names in `entity`
+
+    Parameters
+    ----------
+    entity
+        A program, module, submodule or procedure
+    modules
+        Known Fortran modules
+    intrinsic_modules
+        Known intrinsic Fortran modules
+    submodules
+        Known Fortran submodules
+    external_modules
+        Known external Fortran modules
+
     """
-    Match USE statements up with the right modules
-    """
-    for i in range(len(obj.uses)):
-        for candidate in modlist + extMods:
-            if obj.uses[i][0].lower() == candidate.name.lower():
-                obj.uses[i] = [candidate, obj.uses[i][1]]
+    # Find the modules that this entity uses
+    for dependency in entity.uses:
+        dependency_name = dependency[0].lower()
+
+        # FIXME: We should capture whether or not the `use`d is
+        # `intrinsic`, and modify the lookup appropriately
+        for candidate in chain(modules, external_modules):
+            if dependency_name == candidate.name.lower():
+                dependency[0] = candidate
                 break
         else:
-            if obj.uses[i][0].lower() in intrinsic_mods:
-                obj.uses[i] = [intrinsic_mods[obj.uses[i][0].lower()], obj.uses[i][1]]
+            if dependency_name in intrinsic_modules:
+                dependency[0] = intrinsic_modules[dependency_name]
                 continue
-    if getattr(obj, "ancestor", None):
-        for submod in submodlist:
-            if obj.ancestor.lower() == submod.name.lower():
-                obj.ancestor = submod
+
+    # Find the ancestor of this submodule (if entity is one)
+    if getattr(entity, "parent_submodule", None):
+        parent_submodule_name = entity.parent_submodule.lower()
+        for submod in submodules:
+            if parent_submodule_name == submod.name.lower():
+                entity.parent_submodule = submod
                 break
-    if hasattr(obj, "ancestor_mod"):
-        for mod in modlist:
-            if obj.ancestor_mod.lower() == mod.name.lower():
-                obj.ancestor_mod = mod
+
+    if hasattr(entity, "ancestor_module"):
+        ancestor_module_name = entity.ancestor_module.lower()
+        for mod in modules:
+            if ancestor_module_name == mod.name.lower():
+                entity.ancestor_module = mod
                 break
-    for modproc in getattr(obj, "modprocedures", []):
-        id_mods(modproc, modlist, intrinsic_mods, extMods)
-    for func in getattr(obj, "functions", []):
-        id_mods(func, modlist, intrinsic_mods, extMods)
-    for subroutine in getattr(obj, "subroutines", []):
-        id_mods(subroutine, modlist, intrinsic_mods, extMods)
+
+    # Find the modules that this entity's procedures use
+    for procedure in entity.routines:
+        find_used_modules(
+            procedure, modules, intrinsic_modules, submodules, external_modules
+        )

@@ -882,3 +882,46 @@ def test_uses(copy_fortran_file):
         link = soup.a
         expected_link = extra_mods[soup.text].strip(r"\"'")
         assert link["href"] == expected_link, link
+
+
+def test_submodule_uses(copy_fortran_file):
+    """Check that module `USE`s are matched up correctly"""
+
+    data = """\
+    module mod_a
+    end module mod_a
+
+    submodule (mod_a) mod_b
+    end submodule mod_b
+
+    submodule (mod_a) mod_c
+    end submodule mod_c
+
+    submodule (mod_a:mod_c) mod_d
+    end submodule mod_d
+    """
+
+    extra_mods = {
+        "unquoted_external_module": "http://unquoted.example.com",
+        "quoted_external_module": '"http://quoted.example.org"',
+    }
+
+    settings = copy_fortran_file(data)
+    settings["extra_mods"] = [f"{key}: {value}" for key, value in extra_mods.items()]
+
+    project = create_project(settings)
+    mod_a = project.modules[0]
+    mod_b = project.submodules[0]
+    mod_c = project.submodules[1]
+    mod_d = project.submodules[2]
+
+    assert mod_a.uses == set()
+
+    assert mod_b.parent_submodule is None
+    assert mod_b.ancestor_module == mod_a
+
+    assert mod_c.parent_submodule is None
+    assert mod_c.ancestor_module == mod_a
+
+    assert mod_d.parent_submodule == mod_c
+    assert mod_d.ancestor_module == mod_a

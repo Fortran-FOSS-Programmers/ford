@@ -277,7 +277,12 @@ class BasePage:
     @property
     def html(self):
         """Wrapper for only doing the rendering on request (drastically reduces memory)"""
-        return self.render(self.data, self.proj, self.obj)
+        try:
+            return self.render(self.data, self.proj, self.obj)
+        except Exception as e:
+            raise RuntimeError(
+                f"Error rendering '{self.outfile.name}' for '{self.obj.name}' : {e}"
+            )
 
     def writeout(self):
         with open(self.outfile, "wb") as out:
