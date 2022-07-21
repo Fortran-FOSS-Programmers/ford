@@ -23,9 +23,8 @@
 #
 
 import os
-import pathlib
 import toposort
-import itertools
+from itertools import chain
 from typing import List
 
 import ford.utils
@@ -190,7 +189,7 @@ class Project(object):
         ford.utils.external(self)
 
         # Match USE statements up with the module objects or links
-        for entity in itertools.chain(
+        for entity in chain(
             self.modules,
             self.procedures,
             self.programs,
@@ -233,15 +232,13 @@ class Project(object):
 
         deplist = {
             module: set(module.deplist)
-            for module in itertools.chain(self.modules, self.submodules)
+            for module in chain(self.modules, self.submodules)
         }
 
         # Get dependencies for programs and top-level procedures as well,
         # if dependency graphs are to be produced
         if self.settings["graph"]:
-            for entity in itertools.chain(
-                self.procedures, self.programs, self.blockdata
-            ):
+            for entity in chain(self.procedures, self.programs, self.blockdata):
                 entity.deplist = set(filter_modules(entity))
 
         ranklist = toposort.toposort_flatten(deplist)
@@ -403,7 +400,7 @@ def find_used_modules(
 
         # FIXME: We should capture whether or not the `use`d is
         # `intrinsic`, and modify the lookup appropriately
-        for candidate in itertools.chain(modules, external_modules):
+        for candidate in chain(modules, external_modules):
             if dependency_name == candidate.name.lower():
                 dependency[0] = candidate
                 break
