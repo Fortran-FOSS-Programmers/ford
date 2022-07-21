@@ -612,8 +612,12 @@ class FortranContainer(FortranBase):
     )
     MODULE_RE = re.compile(r"^module(?:\s+(\w+))?$", re.IGNORECASE)
     SUBMODULE_RE = re.compile(
-        r"^submodule\s*\(\s*(\w+)\s*(?::\s*(\w+))?\s*\)\s*(?:::|\s)\s*(\w+)$",
-        re.IGNORECASE,
+        r"""^submodule\s*
+        \(\s*(?P<ancestor_mod>\w+)\s*         # Non-optional ancestor module
+        (?::\s*(?P<parent_submod>\w+))?\s*\)  # Optional parent submodule
+        \s*(?P<name>\w+)                      # This submodule's name
+        $""",
+        re.IGNORECASE | re.VERBOSE,
     )
     PROGRAM_RE = re.compile(r"^program(?:\s+(\w+))?$", re.IGNORECASE)
     SUBROUTINE_RE = re.compile(
