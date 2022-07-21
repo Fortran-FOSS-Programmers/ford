@@ -660,14 +660,14 @@ def test_submodule_ancestors(parse_fortran_file):
     mod_c = fortran_file.submodules[1]
     mod_d = fortran_file.submodules[2]
 
-    assert mod_b.ancestor is None
-    assert mod_b.ancestor_mod == "mod_a"
+    assert mod_b.parent_submodule is None
+    assert mod_b.ancestor_module == "mod_a"
 
-    assert mod_c.ancestor is None
-    assert mod_c.ancestor_mod == "mod_a"
+    assert mod_c.parent_submodule is None
+    assert mod_c.ancestor_module == "mod_a"
 
-    assert mod_d.ancestor == "mod_c"
-    assert mod_d.ancestor_mod == "mod_a"
+    assert mod_d.parent_submodule == "mod_c"
+    assert mod_d.ancestor_module == "mod_a"
 
 
 @dataclass

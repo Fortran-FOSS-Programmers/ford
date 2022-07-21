@@ -291,13 +291,13 @@ class SubmodNode(ModNode):
         super().__init__(obj, gd)
         del self.used_by
         if not self.fromstr:
-            if obj.ancestor:
-                self.ancestor = gd.get_node(obj.ancestor, FortranSubmodule)
+            if obj.parent_submodule:
+                self.parent_submodule = gd.get_node(obj.parent_submodule, FortranSubmodule)
             else:
-                self.ancestor = gd.get_node(obj.ancestor_mod, FortranModule)
-            self.ancestor.children.add(self)
+                self.parent_submodule = gd.get_node(obj.parent_submodule_mod, FortranModule)
+            self.parent_submodule.children.add(self)
             self.efferent += 1
-            self.ancestor.afferent += 1
+            self.parent_submodule.afferent += 1
 
 
 class TypeNode(BaseNode):
@@ -305,7 +305,7 @@ class TypeNode(BaseNode):
 
     def __init__(self, obj, gd, hist=None):
         super().__init__(obj)
-        self.ancestor = None
+        self.parent_submodule = None
         self.children = set()
         self.comp_types = dict()
         self.comp_of = dict()
@@ -317,13 +317,13 @@ class TypeNode(BaseNode):
 
             if obj.extends:
                 if obj.extends in hist:
-                    self.ancestor = hist[obj.extends]
+                    self.parent_submodule = hist[obj.extends]
                 else:
-                    self.ancestor = gd.get_node(
+                    self.parent_submodule = gd.get_node(
                         obj.extends, FortranType, newdict(hist, obj, self)
                     )
-                self.ancestor.children.add(self)
-                self.ancestor.visible = getattr(obj.extends, "visible", True)
+                self.parent_submodule.children.add(self)
+                self.parent_submodule.visible = getattr(obj.extends, "visible", True)
 
             for var in obj.local_variables:
                 if (var.vartype == "type" or var.vartype == "class") and var.proto[
@@ -777,9 +777,9 @@ class ModuleGraph(FortranGraph):
                     hopNodes.add(nu)
                 hopEdges.append((n, nu, "dashed", colour))
             if hasattr(n, "ancestor"):
-                if n.ancestor not in self.added:
-                    hopNodes.add(n.ancestor)
-                hopEdges.append((n, n.ancestor, "solid", colour))
+                if n.parent_submodule not in self.added:
+                    hopNodes.add(n.parent_submodule)
+                hopEdges.append((n, n.parent_submodule, "solid", colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
         if self.add_to_graph(hopNodes, hopEdges, nesting):
@@ -807,9 +807,9 @@ class UsesGraph(FortranGraph):
                     hopNodes.add(nu)
                 hopEdges.append((n, nu, "dashed", colour))
             if hasattr(n, "ancestor"):
-                if n.ancestor not in self.added:
-                    hopNodes.add(n.ancestor)
-                hopEdges.append((n, n.ancestor, "solid", colour))
+                if n.parent_submodule not in self.added:
+                    hopNodes.add(n.parent_submodule)
+                hopEdges.append((n, n.parent_submodule, "solid", colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):
@@ -966,10 +966,10 @@ class TypeGraph(FortranGraph):
                 if c not in self.added:
                     hopNodes.add(c)
                 hopEdges.append((n, c, "dashed", colour, n.comp_types[c]))
-            if n.ancestor:
-                if n.ancestor not in self.added:
-                    hopNodes.add(n.ancestor)
-                hopEdges.append((n, n.ancestor, "solid", colour))
+            if n.parent_submodule:
+                if n.parent_submodule not in self.added:
+                    hopNodes.add(n.parent_submodule)
+                hopEdges.append((n, n.parent_submodule, "solid", colour))
         # add nodes, edges and attributes to the graph if maximum number of
         # nodes is not exceeded
         if self.add_to_graph(hopNodes, hopEdges, nesting):
@@ -996,10 +996,10 @@ class InheritsGraph(FortranGraph):
                 if c not in self.added:
                     hopNodes.add(c)
                 hopEdges.append((n, c, "dashed", colour, n.comp_types[c]))
-            if n.ancestor:
-                if n.ancestor not in self.added:
-                    hopNodes.add(n.ancestor)
-                hopEdges.append((n, n.ancestor, "solid", colour))
+            if n.parent_submodule:
+                if n.parent_submodule not in self.added:
+                    hopNodes.add(n.parent_submodule)
+                hopEdges.append((n, n.parent_submodule, "solid", colour))
         # add nodes and edges for this hop to the graph if maximum number of
         # nodes is not exceeded
         if not self.add_to_graph(hopNodes, hopEdges, nesting):

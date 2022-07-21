@@ -215,18 +215,18 @@ class Project(object):
             deplist[mod] = set(mod.deplist)
 
         for mod in self.submodules:
-            if type(mod.ancestor_mod) is ford.sourceform.FortranModule:
+            if type(mod.ancestor_module) is ford.sourceform.FortranModule:
                 uselist = filter_modules(mod)
-                if mod.ancestor:
-                    if type(mod.ancestor) is ford.sourceform.FortranSubmodule:
-                        uselist.insert(0, mod.ancestor)
+                if mod.parent_submodule:
+                    if type(mod.parent_submodule) is ford.sourceform.FortranSubmodule:
+                        uselist.insert(0, mod.parent_submodule)
                     elif self.settings["warn"]:
                         print(
                             "Warning: could not identify parent SUBMODULE of SUBMODULE "
                             + mod.name
                         )
                 else:
-                    uselist.insert(0, mod.ancestor_mod)
+                    uselist.insert(0, mod.ancestor_module)
                 mod.deplist = uselist
                 deplist[mod] = set(uselist)
             elif self.settings["warn"]:
@@ -410,18 +410,18 @@ def find_used_modules(
                 continue
 
     # Find the ancestor of this submodule (if entity is one)
-    if getattr(entity, "ancestor", None):
-        ancestor_name = entity.ancestor.lower()
+    if getattr(entity, "parent_submodule", None):
+        parent_submodule_name = entity.parent_submodule.lower()
         for submod in submodules:
-            if ancestor_name == submod.name.lower():
-                entity.ancestor = submod
+            if parent_submodule_name == submod.name.lower():
+                entity.parent_submodule = submod
                 break
 
-    if hasattr(entity, "ancestor_mod"):
-        ancestor_mod_name = entity.ancestor_mod.lower()
+    if hasattr(entity, "ancestor_module"):
+        ancestor_module_name = entity.ancestor_module.lower()
         for mod in modules:
-            if ancestor_mod_name == mod.name.lower():
-                entity.ancestor_mod = mod
+            if ancestor_module_name == mod.name.lower():
+                entity.ancestor_module = mod
                 break
 
     # Find the modules that this entity's procedures use
