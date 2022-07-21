@@ -149,6 +149,10 @@ class Project(object):
                         print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
                         continue
 
+    def warn(self, message):
+        if self.settings["warn"]:
+            print(f"Warning: {message}")
+
     @property
     def allfiles(self):
         """Instead of duplicating files, it is much more efficient to create the itterator on the fly"""
@@ -185,7 +189,7 @@ class Project(object):
         # load external FORD FortranModules
         ford.utils.external(self)
 
-        # Match USE statements up with the right modules
+        # Match USE statements up with the module objects or links
         for entity in itertools.chain(
             self.modules,
             self.procedures,
@@ -196,9 +200,6 @@ class Project(object):
             find_used_modules(
                 entity, self.modules, non_local_mods, self.submodules, self.extModules
             )
-
-        # Get the order to process other correlations with
-        deplist = {}
 
         def get_deps(item):
             uselist = [m[0] for m in item.uses]
@@ -214,29 +215,31 @@ class Project(object):
             """Return a list of `FortranModule` from the dependencies of `entity`"""
             return [dep for dep in get_deps(entity) if type(dep) is FortranModule]
 
+        # Get the order to process other correlations with
         for mod in self.modules:
             mod.deplist = filter_modules(mod)
-            deplist[mod] = set(mod.deplist)
 
         for mod in self.submodules:
-            if type(mod.ancestor_module) is ford.sourceform.FortranModule:
-                uselist = filter_modules(mod)
-                if mod.parent_submodule:
-                    if type(mod.parent_submodule) is ford.sourceform.FortranSubmodule:
-                        uselist.insert(0, mod.parent_submodule)
-                    elif self.settings["warn"]:
-                        print(
-                            "Warning: could not identify parent SUBMODULE of SUBMODULE "
-                            + mod.name
-                        )
-                else:
-                    uselist.insert(0, mod.ancestor_module)
-                mod.deplist = uselist
-                deplist[mod] = set(uselist)
-            elif self.settings["warn"]:
-                print(
-                    "Warning: could not identify parent MODULE of SUBMODULE " + mod.name
+            if type(mod.ancestor_module) is not FortranModule:
+                self.warn(
+                    f"Could not identify ancestor MODULE of SUBMODULE '{mod.name}'. "
                 )
+                continue
+
+            if not isinstance(mod.parent_submodule, (FortranSubmodule, type(None))):
+                self.warn(
+                    f"Could not identify parent SUBMODULE of SUBMODULE '{mod.name}'"
+                )
+
+            mod.deplist = [
+                mod.parent_submodule or mod.ancestor_module
+            ] + filter_modules(mod)
+
+        deplist = {
+            module: set(module.deplist)
+            for module in itertools.chain(self.modules, self.submodules)
+        }
+
         # Get dependencies for programs and top-level procedures as well,
         # if dependency graphs are to be produced
         if self.settings["graph"]:
