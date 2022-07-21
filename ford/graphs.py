@@ -292,9 +292,13 @@ class SubmodNode(ModNode):
         del self.used_by
         if not self.fromstr:
             if obj.parent_submodule:
-                self.parent_submodule = gd.get_node(obj.parent_submodule, FortranSubmodule)
+                self.parent_submodule = gd.get_node(
+                    obj.parent_submodule, FortranSubmodule
+                )
             else:
-                self.parent_submodule = gd.get_node(obj.parent_submodule_mod, FortranModule)
+                self.parent_submodule = gd.get_node(
+                    obj.parent_submodule_mod, FortranModule
+                )
             self.parent_submodule.children.add(self)
             self.efferent += 1
             self.parent_submodule.afferent += 1

@@ -280,7 +280,9 @@ class BasePage:
         try:
             return self.render(self.data, self.proj, self.obj)
         except Exception as e:
-            raise RuntimeError(f"Error rendering '{self.outfile.name}' for '{self.obj.name}' : {e}")
+            raise RuntimeError(
+                f"Error rendering '{self.outfile.name}' for '{self.obj.name}' : {e}"
+            )
 
     def writeout(self):
         with open(self.outfile, "wb") as out:
