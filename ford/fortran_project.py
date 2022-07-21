@@ -261,52 +261,28 @@ class Project(object):
         else:
             url = self.settings["project_url"]
 
+        # Mapping of various entity containers in code units to the
+        # corresponding container in the project
+        CONTAINERS = {
+            "functions": "procedures",
+            "subroutines": "procedures",
+            "interfaces": "procedures",
+            "absinterfaces": "absinterfaces",
+            "types": "types",
+            "modfunctions": "submodprocedures",
+            "modsubroutines": "submodprocedures",
+            "modprocedures": "submodprocedures",
+        }
+
+        # Gather all the entity containers from each code unit in each
+        # file into the corresponding project container
         for sfile in self.files:
-            for module in sfile.modules:
-                for function in module.functions:
-                    self.procedures.append(function)
-                for subroutine in module.subroutines:
-                    self.procedures.append(subroutine)
-                for interface in module.interfaces:
-                    self.procedures.append(interface)
-                for absint in module.absinterfaces:
-                    self.absinterfaces.append(absint)
-                for dtype in module.types:
-                    self.types.append(dtype)
-
-            for module in sfile.submodules:
-                for function in module.functions:
-                    self.procedures.append(function)
-                for subroutine in module.subroutines:
-                    self.procedures.append(subroutine)
-                for function in module.modfunctions:
-                    self.submodprocedures.append(function)
-                for subroutine in module.modsubroutines:
-                    self.submodprocedures.append(subroutine)
-                for modproc in module.modprocedures:
-                    self.submodprocedures.append(modproc)
-                for interface in module.interfaces:
-                    self.procedures.append(interface)
-                for absint in module.absinterfaces:
-                    self.absinterfaces.append(absint)
-                for dtype in module.types:
-                    self.types.append(dtype)
-
-            for program in sfile.programs:
-                for function in program.functions:
-                    self.procedures.append(function)
-                for subroutine in program.subroutines:
-                    self.procedures.append(subroutine)
-                for interface in program.interfaces:
-                    self.procedures.append(interface)
-                for absint in program.absinterfaces:
-                    self.absinterfaces.append(absint)
-                for dtype in program.types:
-                    self.types.append(dtype)
-
-            for block in sfile.blockdata:
-                for dtype in block.types:
-                    self.types.append(dtype)
+            for code_unit in chain(
+                sfile.modules, sfile.submodules, sfile.programs, sfile.blockdata
+            ):
+                for entity_kind, container in CONTAINERS.items():
+                    entities = getattr(code_unit, entity_kind, [])
+                    getattr(self, container).extend(entities)
 
         def sum_lines(*argv, **kwargs):
             """Wrapper for minimizing memory consumption"""
