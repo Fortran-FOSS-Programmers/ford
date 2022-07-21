@@ -203,11 +203,7 @@ class Project(object):
 
         def get_deps(item):
             uselist = [m[0] for m in item.uses]
-            for procedure in itertools.chain(
-                getattr(item, "subroutines", []),
-                getattr(item, "functions", []),
-                getattr(item, "modprocedures", []),
-            ):
+            for procedure in item.routines:
                 uselist.extend(get_deps(procedure))
             return uselist
 
@@ -432,11 +428,7 @@ def find_used_modules(
                 break
 
     # Find the modules that this entity's procedures use
-    for procedure in itertools.chain(
-        getattr(entity, "modprocedures", []),
-        getattr(entity, "functions", []),
-        getattr(entity, "subroutines", []),
-    ):
+    for procedure in entity.routines:
         find_used_modules(
             procedure, modules, intrinsic_modules, submodules, external_modules
         )

@@ -575,8 +575,8 @@ class FortranBase(object):
 
     @property
     def routines(self):
-        """Iterator returning *both* functions and subroutines, in that order"""
-        for item in self.iterator("functions", "subroutines"):
+        """Iterator returning all procedures"""
+        for item in self.iterator("functions", "subroutines", "modprocedures"):
             yield item
 
     def iterator(self, *argv):

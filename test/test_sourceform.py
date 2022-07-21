@@ -1102,3 +1102,72 @@ def test_bad_parses(snippet, expected_error, expected_name, parse_fortran_file):
 
     assert expected_error in e.value.args[0]
     assert expected_name in e.value.args[0]
+
+
+def test_routine_iterator(parse_fortran_file):
+    data = """\
+    module foo
+      interface
+        module subroutine modsub1()
+        end subroutine modsub1
+        module subroutine modsub2()
+        end subroutine modsub2
+        module integer function modfunc1()
+        end function modfunc1
+        module integer function modfunc2()
+        end function modfunc2
+      end interface
+    contains
+      subroutine sub1()
+      end subroutine sub1
+      subroutine sub2()
+      end subroutine sub2
+      integer function func1()
+      end function func1
+      integer function func2()
+      end function func2
+    end module foo
+
+    submodule (foo) bar
+    contains
+      module subroutine modsub1
+      end subroutine modsub1
+      module subroutine modsub2
+      end subroutine modsub2
+      module procedure modfunc1
+      end procedure modfunc1
+      module procedure modfunc2
+      end procedure modfunc2
+
+      subroutine sub3()
+      end subroutine sub3
+      subroutine sub4()
+      end subroutine sub4
+      integer function func3()
+      end function func3
+      integer function func4()
+      end function func4
+    end submodule bar
+    """
+
+    fortran_file = parse_fortran_file(data)
+
+    module = fortran_file.modules[0]
+    assert sorted([proc.name for proc in module.routines]) == [
+        "func1",
+        "func2",
+        "sub1",
+        "sub2",
+    ]
+
+    submodule = fortran_file.submodules[0]
+    assert sorted([proc.name for proc in submodule.routines]) == [
+        "func3",
+        "func4",
+        "modfunc1",
+        "modfunc2",
+        "modsub1",
+        "modsub2",
+        "sub3",
+        "sub4",
+    ]
