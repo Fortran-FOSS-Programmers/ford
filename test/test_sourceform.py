@@ -1022,3 +1022,50 @@ def test_markdown_source_settings(parse_fortran_file):
 
     assert subroutine.meta["source"]
     assert "with_source" in subroutine.src
+
+
+@pytest.mark.parametrize(
+    ["snippet", "expected_error", "expected_name"],
+    (
+        (
+            "program foo\n contains\n contains",
+            "Multiple CONTAINS",
+            "foo",
+        ),
+        (
+            "program foo\n interface bar\n contains",
+            "Unexpected CONTAINS",
+            "bar",
+        ),
+        ("end", "END statement", "test.f90"),
+        ("program foo\n module procedure bar", "Unexpected MODULE PROCEDURE", "foo"),
+        ("program foo\n module bar", "Unexpected MODULE", "foo"),
+        (
+            "program foo\n submodule (foo) bar \n end program foo",
+            "Unexpected SUBMODULE",
+            "program 'foo'",
+        ),
+        ("program foo\n program bar", "Unexpected PROGRAM", "foo"),
+        (
+            "program foo\n end program foo\n program bar \n end program bar",
+            "Multiple PROGRAM",
+            "test.f90",
+        ),
+        (
+            "program foo\n subroutine bar \n end subroutine \n end program",
+            "Unexpected SUBROUTINE",
+            "program 'foo'",
+        ),
+        (
+            "program foo\n integer function bar() \n end function bar\n end program foo",
+            "Unexpected FUNCTION",
+            "program 'foo'",
+        ),
+    ),
+)
+def test_bad_parses(snippet, expected_error, expected_name, parse_fortran_file):
+    with pytest.raises(ValueError) as e:
+        parse_fortran_file(snippet, dbg=False)
+
+    assert expected_error in e.value.args[0]
+    assert expected_name in e.value.args[0]
