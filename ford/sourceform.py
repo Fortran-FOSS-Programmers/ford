@@ -131,6 +131,13 @@ class FortranBase(object):
             cur = cur.parent
         self.hierarchy.reverse()
 
+    @property
+    def filename(self):
+        """Name of the file containing this entity"""
+        # If `hierarchy` is empty, it's probably because it's a source
+        # file, so we can use its name directly
+        return self.hierarchy[0].name if self.hierarchy else self.name
+
     def get_dir(self):
         if (
             type(self)
@@ -700,16 +707,9 @@ class FortranContainer(FortranBase):
                     if isinstance(self, FortranType):
                         self.permission = "public"
                 elif incontains:
-                    self.print_error(
-                        line, "Multiple CONTAINS statements present in scope"
-                    )
+                    self.print_error(line, "Multiple CONTAINS statements present")
                 else:
-                    self.print_error(
-                        line,
-                        "CONTAINS statement in {}".format(
-                            type(self).__name__[7:].upper()
-                        ),
-                    )
+                    self.print_error(line, "Unexpected CONTAINS statement")
             elif line_lower in ["public", "private", "protected"]:
                 if not isinstance(self, FortranType):
                     self.permission = line_lower
@@ -768,15 +768,14 @@ class FortranContainer(FortranBase):
                     # should actually implement support for them.
                     continue
                 else:
-                    self.print_error(
-                        line,
-                        "Found {} statement in {}".format(
-                            attr.upper(), type(self).__name__[7:].upper()
-                        ),
-                    )
+                    self.print_error(line, f"Unexpected {attr.upper()} statement")
             elif self.END_RE.match(line):
                 if isinstance(self, FortranSourceFile):
-                    self.print_error(line, "END statement outside of any nesting")
+                    self.print_error(
+                        line,
+                        "END statement outside of any nesting",
+                        describe_object=False,
+                    )
                 endtype = self.END_RE.match(line).group(1)
                 if endtype and endtype.lower() == "block":
                     blocklevel -= 1
@@ -802,12 +801,7 @@ class FortranContainer(FortranBase):
                     )
                     self.num_lines += self.modprocedures[-1].num_lines - 1
                 else:
-                    self.print_error(
-                        line,
-                        "Found module procedure in {}".format(
-                            type(self).__name__[7:].upper()
-                        ),
-                    )
+                    self.print_error(line, "Unexpected MODULE PROCEDURE")
             elif self.BLOCK_DATA_RE.match(line):
                 if hasattr(self, "blockdata"):
                     self.blockdata.append(
@@ -815,12 +809,7 @@ class FortranContainer(FortranBase):
                     )
                     self.num_lines += self.blockdata[-1].num_lines - 1
                 else:
-                    self.print_error(
-                        line,
-                        "Found BLOCK DATA in {}".format(
-                            type(self).__name__[7:].upper()
-                        ),
-                    )
+                    self.print_error(line, "Unexpected BLOCK DATA")
             elif self.BLOCK_RE.match(line):
                 blocklevel += 1
             elif self.ASSOCIATE_RE.match(line):
@@ -832,10 +821,7 @@ class FortranContainer(FortranBase):
                     )
                     self.num_lines += self.modules[-1].num_lines - 1
                 else:
-                    self.print_error(
-                        line,
-                        "Found MODULE in {}".format(type(self).__name__[7:].upper()),
-                    )
+                    self.print_error(line, "Unexpected MODULE")
             elif self.SUBMODULE_RE.match(line):
                 if hasattr(self, "submodules"):
                     self.submodules.append(
@@ -843,10 +829,7 @@ class FortranContainer(FortranBase):
                     )
                     self.num_lines += self.submodules[-1].num_lines - 1
                 else:
-                    self.print_error(
-                        line,
-                        "Found SUBMODULE in {}".format(type(self).__name__[7:].upper()),
-                    )
+                    self.print_error(line, "Unexpected SUBMODULE")
             elif self.PROGRAM_RE.match(line):
                 if hasattr(self, "programs"):
                     self.programs.append(
@@ -854,16 +837,17 @@ class FortranContainer(FortranBase):
                     )
                     self.num_lines += self.programs[-1].num_lines - 1
                 else:
+                    self.print_error(line, "Unexpected PROGRAM")
+                if len(self.programs) > 1:
                     self.print_error(
                         line,
-                        "Found PROGRAM in {}".format(type(self).__name__[7:].upper()),
+                        "Multiple PROGRAM units in same source file",
+                        describe_object=False,
                     )
-                if len(self.programs) > 1:
-                    raise Exception("Multiple PROGRAM units in same source file.")
             elif self.SUBROUTINE_RE.match(line):
                 if isinstance(self, FortranCodeUnit) and not incontains:
-                    continue
-                if hasattr(self, "subroutines"):
+                    self.print_error(line, "Unexpected SUBROUTINE")
+                elif hasattr(self, "subroutines"):
                     self.subroutines.append(
                         FortranSubroutine(
                             source,
@@ -874,16 +858,11 @@ class FortranContainer(FortranBase):
                     )
                     self.num_lines += self.subroutines[-1].num_lines - 1
                 else:
-                    self.print_error(
-                        line,
-                        "Found SUBROUTINE in {}".format(
-                            type(self).__name__[7:].upper()
-                        ),
-                    )
+                    self.print_error(line, "Unexpected SUBROUTINE")
             elif self.FUNCTION_RE.match(line):
                 if isinstance(self, FortranCodeUnit) and not incontains:
-                    continue
-                if hasattr(self, "functions"):
+                    self.print_error(line, "Unexpected FUNCTION")
+                elif hasattr(self, "functions"):
                     self.functions.append(
                         FortranFunction(
                             source, self.FUNCTION_RE.match(line), self, self.permission
@@ -891,10 +870,7 @@ class FortranContainer(FortranBase):
                     )
                     self.num_lines += self.functions[-1].num_lines - 1
                 else:
-                    self.print_error(
-                        line,
-                        "Found FUNCTION in {}".format(type(self).__name__[7:].upper()),
-                    )
+                    self.print_error(line, "Unexpected FUNCTION")
             elif self.TYPE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "types"):
                     self.types.append(
@@ -904,12 +880,7 @@ class FortranContainer(FortranBase):
                     )
                     self.num_lines += self.types[-1].num_lines - 1
                 else:
-                    self.print_error(
-                        line,
-                        "Found derived TYPE in {}".format(
-                            type(self).__name__[7:].upper()
-                        ),
-                    )
+                    self.print_error(line, "Unexpected derived TYPE")
             elif self.INTERFACE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "interfaces"):
                     intr = FortranInterface(
@@ -923,10 +894,7 @@ class FortranContainer(FortranBase):
                     else:
                         self.interfaces.extend(intr.contents)
                 else:
-                    self.print_error(
-                        line,
-                        "Found INTERFACE in {}".format(type(self).__name__[7:].upper()),
-                    )
+                    self.print_error(line, "Unexpected INTERFACE")
             elif self.ENUM_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "enums"):
                     self.enums.append(
@@ -936,9 +904,7 @@ class FortranContainer(FortranBase):
                     )
                     self.num_lines += self.enums[-1].num_lines - 1
                 else:
-                    self.print_error(
-                        line, "Found ENUM in {}".format(type(self).__name__[7:].upper())
-                    )
+                    self.print_error(line, "Unexpected ENUM")
             elif self.BOUNDPROC_RE.match(line) and incontains:
                 if hasattr(self, "boundprocs"):
                     match = self.BOUNDPROC_RE.match(line)
@@ -965,12 +931,7 @@ class FortranContainer(FortranBase):
                                 )
                             )
                 else:
-                    self.print_error(
-                        line,
-                        "Found type-bound procedure in {}".format(
-                            type(self).__name__[7:].upper()
-                        ),
-                    )
+                    self.print_error(line, "Unexpected type-bound procedure")
             elif self.COMMON_RE.match(line):
                 if hasattr(self, "common"):
                     split = self.COMMON_SPLIT_RE.split(line)
@@ -1004,12 +965,7 @@ class FortranContainer(FortranBase):
                             )
                         )
                 else:
-                    self.print_error(
-                        line,
-                        "Found common statement in {}".format(
-                            type(self).__name__[7:].upper()
-                        ),
-                    )
+                    self.print_error(line, "Unexpected COMMON statement")
             elif self.FINAL_RE.match(line) and incontains:
                 if hasattr(self, "finalprocs"):
                     procedures = self.SPLIT_RE.split(
@@ -1021,32 +977,19 @@ class FortranContainer(FortranBase):
                     finprocs.append(FortranFinalProc(procedures[-1], self, source))
                     self.finalprocs.extend(finprocs)
                 else:
-                    self.print_error(
-                        line,
-                        "Found finalization procedure in {}".format(
-                            type(self).__name__[7:].upper()
-                        ),
-                    )
+                    self.print_error(line, "Unexpected finalization procedure")
             elif self.VARIABLE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "variables"):
                     self.variables.extend(
                         line_to_variables(source, line, self.permission, self)
                     )
                 else:
-                    self.print_error(
-                        line,
-                        "Found variable in {}".format(type(self).__name__[7:].upper()),
-                    )
+                    self.print_error(line, "Unexpected variable")
             elif self.USE_RE.match(line):
                 if hasattr(self, "uses"):
                     self.uses.append(self.USE_RE.match(line).groups())
                 else:
-                    self.print_error(
-                        line,
-                        "Found USE statemnt in {}".format(
-                            type(self).__name__[7:].upper()
-                        ),
-                    )
+                    self.print_error(line, "Unexpected USE statement")
             else:
                 if self.CALL_RE.search(line):
                     if hasattr(self, "calls"):
@@ -1067,7 +1010,6 @@ class FortranContainer(FortranBase):
                         pass
                         # Not raising an error here as too much possibility that something
                         # has been misidentified as a function call
-                        # ~ raise Exception("Found procedure call in {}".format(type(self).__name__[7:].upper()))
                 if self.SUBCALL_RE.match(line):
                     # Need this to catch any subroutines called without argument lists
                     if hasattr(self, "calls"):
@@ -1078,12 +1020,7 @@ class FortranContainer(FortranBase):
                         ):
                             self.calls.append(callval.lower())
                     else:
-                        self.print_error(
-                            line,
-                            "Found procedure call in {}".format(
-                                type(self).__name__[7:].upper()
-                            ),
-                        )
+                        self.print_error(line, "Unexpected procedure call")
 
         if not isinstance(self, FortranSourceFile):
             raise Exception("File ended while still nested.")
@@ -1091,17 +1028,15 @@ class FortranContainer(FortranBase):
     def _cleanup(self):
         raise NotImplementedError()
 
-    def print_error(self, line, msg, dbg=None, force=None):
-        if dbg is None:
-            dbg = self.settings["dbg"]
-        if force is None:
-            force = self.settings["force"]
-        if dbg:
-            print(f"{line}: {msg}")
-        else:
-            if force:
-                return
-            raise ValueError(msg)
+    def print_error(self, line, error, describe_object=True) -> None:
+        description = f" in {self.obj} '{self.name}'" if describe_object else ""
+        message = f"ERROR in file '{self.filename}': {error}{description}:\n\t{line}"
+        if self.settings["dbg"]:
+            return print(message)
+
+        if self.settings["force"]:
+            return
+        raise ValueError(message)
 
 
 class FortranCodeUnit(FortranContainer):
