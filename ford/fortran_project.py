@@ -169,11 +169,15 @@ class Project(object):
 
         non_local_mods = INTRINSIC_MODS.copy()
         for item in self.settings["extra_mods"]:
+            if not item:
+                continue
             try:
                 name, url = item.split(":", 1)
             except ValueError:
-                print('Warning: could not parse extra modules "{}"'.format(item))
-                continue
+                raise ValueError(
+                    f"Could not parse 'extra_mods' item in project settings: '{item}'\n"
+                    "Expected something of the form 'module_name: http://link.to/module'"
+                )
             name = name.strip()
             url = url.strip().strip(r"\"'").strip()
             non_local_mods[name.lower()] = f'<a href="{url}">{name}</a>'
