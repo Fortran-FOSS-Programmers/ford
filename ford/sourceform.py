@@ -846,8 +846,8 @@ class FortranContainer(FortranBase):
                     )
             elif self.SUBROUTINE_RE.match(line):
                 if isinstance(self, FortranCodeUnit) and not incontains:
-                    continue
-                if hasattr(self, "subroutines"):
+                    self.print_error(line, "Unexpected SUBROUTINE")
+                elif hasattr(self, "subroutines"):
                     self.subroutines.append(
                         FortranSubroutine(
                             source,
@@ -861,8 +861,8 @@ class FortranContainer(FortranBase):
                     self.print_error(line, "Unexpected SUBROUTINE")
             elif self.FUNCTION_RE.match(line):
                 if isinstance(self, FortranCodeUnit) and not incontains:
-                    continue
-                if hasattr(self, "functions"):
+                    self.print_error(line, "Unexpected FUNCTION")
+                elif hasattr(self, "functions"):
                     self.functions.append(
                         FortranFunction(
                             source, self.FUNCTION_RE.match(line), self, self.permission
