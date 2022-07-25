@@ -1,5 +1,11 @@
 module test_module
   implicit none
+
+  interface
+    module subroutine check()
+    end subroutine check
+  end interface
+
 contains
   subroutine increment(x)
     !! Increase argument by one
@@ -18,3 +24,10 @@ contains
   end subroutine decrement
 #endif
 end module test_module
+
+submodule (test_module) test_submodule
+contains
+  module subroutine check()
+    print*, "checking"
+  end subroutine check
+end submodule test_submodule
