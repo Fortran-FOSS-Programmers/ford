@@ -134,9 +134,13 @@ def test_procedures_links(example_index):
     proceduress_box = index.find(ANY_TEXT, string="Procedures").parent
     proceduress_list = sorted([f.text for f in proceduress_box("li")])
 
-    assert proceduress_list == sorted(
-        ["decrement", "do_foo_stuff", "do_stuff", "increment"]
+    all_procedures = sorted(
+        ["decrement", "do_foo_stuff", "do_stuff", "increment", "check"]
     )
+    max_frontpage_items = int(settings["max_frontpage_items"])
+    front_page_list = all_procedures[:max_frontpage_items]
+
+    assert proceduress_list == front_page_list
 
 
 def test_types_links(example_index):
@@ -146,3 +150,14 @@ def test_types_links(example_index):
     types_list = [f.text for f in types_box("li")]
 
     assert types_list == ["bar", "foo"]
+
+
+def test_graph_submodule(example_project):
+    path, _ = example_project
+    index = read_html(path / "module/test_submodule.html")
+
+    graph_nodes = index.svg.find_all("g", class_="node")
+
+    assert len(graph_nodes) == 2
+    titles = sorted([node.find("text").text for node in graph_nodes])
+    assert titles == sorted(["test_module", "test_submodule"])
