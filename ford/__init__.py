@@ -246,7 +246,7 @@ def get_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "project_file",
         help="file containing the description and settings for the project",
-        type=argparse.FileType("r", encoding='UTF-8'),
+        type=argparse.FileType("r", encoding="UTF-8"),
     )
     parser.add_argument(
         "-d",
