@@ -173,3 +173,13 @@ def test_graph_submodule(example_project):
     assert len(graph_nodes) == 2
     titles = sorted([node.find("text").text for node in graph_nodes])
     assert titles == sorted(["test_module", "test_submodule"])
+
+
+def test_procedure_return_value(example_project):
+    path, _ = example_project
+    index = read_html(path / "proc/multidimension_string.html")
+
+    retvar = index.find(string=re.compile("Return Value")).parent
+    assert (
+        "character(kind=kind('a'), len=4), dimension(:, :), allocatable" in retvar.text
+    )

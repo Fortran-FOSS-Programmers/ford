@@ -51,4 +51,13 @@ contains
 
     !! do some stuff, ensure proper bounds etc.
   end subroutine linalg
+
+  function multidimension_string(n)
+    !! Function with a complicated return value
+    integer, intent(in) :: n
+    !! How big to make the string
+    character(kind=kind('a'), len=4), dimension(:, :), allocatable :: multidimension_string
+    !! A really complex return type
+  end function multidimension_string
+
 end program ford_test_program
