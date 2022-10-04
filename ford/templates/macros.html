@@ -11,7 +11,7 @@
      {% endif %}
      {% if meta['license'] %}
     <li><i class="fa fa-legal"></i> {{ meta['license'] }}</li>
-     {% elif projectData['license']|length > 0 %}
+     {% elif projectData['license'] %}
     <li><i class="fa fa-legal"></i> {{ projectData['license'] }}</li>
      {% endif %}
      {% if meta['since'] %}
@@ -358,11 +358,11 @@
   -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{
   var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{
   var.proto[1] }}{%- endif %}){%- endif %}{% if (intent and
-    var.intent) or var.optional or permission or var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>
-  {% if intent -%}<td>{% if var.intent -%}intent({{ var.intent }}){% if var.optional or permission or var.parameter or var.attribs|length > 0 -%},{% endif %}{%- endif%}</td>
-  <td>{% if var.optional -%}optional{% if permission or var.parameter or var.attributes|length > 0 -%},{%- endif %}{%- endif %}</td>{%- endif %}
-  {% if permission %}<td>{{ var.permission }}{% if var.parameter or var.attribs|length > 0 -%},{%- endif %}</td>{% endif %}
-  <td>{% if var.parameter %}parameter{% if var.attribs|length > 0 %}, {% endif %}{% endif %}{% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}</td><td>::</td>
+    var.intent) or var.optional or permission or var.parameter or var.attribs -%},{%- endif %}</td>
+  {% if intent -%}<td>{% if var.intent -%}intent({{ var.intent }}){% if var.optional or permission or var.parameter or var.attribs -%},{% endif %}{%- endif%}</td>
+  <td>{% if var.optional -%}optional{% if permission or var.parameter or var.attributes -%},{%- endif %}{%- endif %}</td>{%- endif %}
+  {% if permission %}<td>{{ var.permission }}{% if var.parameter or var.attribs -%},{%- endif %}</td>{% endif %}
+  <td>{% if var.parameter %}parameter{% if var.attribs %}, {% endif %}{% endif %}{% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}</td><td>::</td>
   <td><strong>{{ var.name }}</strong>{{ var.dimension }}</td>{% if not intent %}<td>{% if var.initial -%}{% if var.points -%} => {% else %} = {%- endif %}{% endif %}</td><td>{% if var.initial %}{{ var.initial }}{%- endif %}</td>{% endif %}<td>{% if summary -%}{{ var.meta['summary'] }}{% else %}{{ var.doc }}{% endif %}</td>
   {% elif var.obj == 'proc' %}
   <td colspan="{{ colnum }}">
@@ -489,7 +489,7 @@
           {% endif %}
           </h3>
 
-          {% if bind.doc or (meta_list(bind.meta)|trim|length > 0 and not bind.visible) %}
+          {% if bind.doc or (meta_list(bind.meta)|trim and not bind.visible) %}
             {% if not bind.visible %}
               {{ meta_list(bind.meta) }}
             {% endif %}
@@ -514,7 +514,7 @@
       <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
   </h3></div>
-  {% if intr.doc or (meta_list(intr.meta)|trim|length > 0 and not intr.visible) %}
+  {% if intr.doc or (meta_list(intr.meta)|trim and not intr.visible) %}
   <div class="panel-body">
     {% if not intr.visible %}
     {{ meta_list(intr.meta) }}
@@ -550,7 +550,7 @@
    <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
   </h3></div>
-  {% if intr.doc or meta_list(intr.meta)|trim|length > 0 %}
+  {% if intr.doc or meta_list(intr.meta)|trim %}
   <div class="panel-body">
     {{ meta_list(intr.meta) }}
     {{ intr.meta['summary'] }}
@@ -605,13 +605,13 @@
     {% endif %}
   </h3></div>
   <div class="panel-body">
-    {% if dtype.doc or (meta_list(dtype.meta)|trim|length > 0 and not dtype.visible) %}
+    {% if dtype.doc or (meta_list(dtype.meta)|trim and not dtype.visible) %}
     {% if not dtype.visible %}
     {{ meta_list(dtype.meta) }}
     {% endif %}
     {{ dtype.meta['summary'] }}
     {% endif %}
-     {% if dtype.variables|length > 0 %}
+     {% if dtype.variables %}
      <h4>Components</h4>
     {{ var_list(dtype.variables,permission=True,summary=True) }}
      {% endif %}
@@ -636,7 +636,7 @@
        </tbody>
        </table>
      {% endif %}
-     {% if dtype.finalprocs|length > 0 %}
+     {% if dtype.finalprocs %}
      <h4>Finalizations Procedures</h4>
       <table class="table table-striped varlist">
       <tbody>
@@ -646,7 +646,7 @@
        </tbody>
        </table>
      {% endif %}
-     {% if dtype.boundprocs|length > 0 %}
+     {% if dtype.boundprocs %}
      <h4>Type-Bound Procedures</h4>
       <table class="table table-striped varlist">
       <tbody>
@@ -672,11 +672,11 @@
       {% endif %}
   </h3></div>
   <div class="panel-body">
-    {% if meta_list(com.meta)|trim|length > 0 %}
+    {% if meta_list(com.meta)|trim %}
     {{ meta_list(com.meta) }}
     {% endif %}
     {{ com.doc }}
-    {% if com.variables|length > 0 %}
+    {% if com.variables %}
     {{ var_list(com.variables) }}
     {% endif %}
 </div>
@@ -699,7 +699,7 @@
         {% endfor %}
         </tbody>
         </table>
-     {% if enum.doc or meta_list(enum.meta)|trim|length > 0 %}
+     {% if enum.doc or meta_list(enum.meta)|trim %}
      <h4>Description</h4>
        {{ meta_list(enum.meta) }}
        {{ enum.doc }}
@@ -719,14 +719,13 @@
 
 
 {% macro use_list(obj) %}
-  {% if obj.uses|length > 0 or (obj.ancestry and obj.ancestry|length >
-    0) %}
+  {% if obj.uses or obj.ancestry %}
     <div class="panel panel-default">
       <div class="panel-heading">
   <h3 class="panel-title">Uses</h3>
       </div>
       <ul class="list-group">
-      {% if obj.uses|length > 0 %}
+      {% if obj.uses %}
       <li class="list-group-item">
   <ul class="list-inline">
     {% for use in obj.uses %}
@@ -735,7 +734,7 @@
   </ul>
       </li>
       {% endif %}
-      {% if obj.ancestry and obj.ancestry|length > 0 %}
+      {% if obj.ancestry %}
       <li class="list-group-item">
   <ul class="list-inline">
     <li><h5>Ancestors:</h5></li>
@@ -758,13 +757,13 @@
 
 
 {% macro usedby_list(obj) %}
-    {% if obj.usedbygraph or (obj.descendants and obj.descendants|length > 0) %}
+    {% if obj.usedbygraph or obj.descendants %}
     <div class="panel panel-default">
       <div class="panel-heading">
   <h3 class="panel-title">Used by</h3>
       </div>
       <ul class="list-group">
-  {% if obj.descendants|length > 0 %}
+  {% if obj.descendants %}
   <li class="list-group-item">
     <ul class="list-inline">
       <li><h5>Descendants:</h5></li>
@@ -796,7 +795,7 @@
     {% endif %}
     {% if meta['license'] %}
     <dt>License</dt><dd>{{ meta['license'] }}</dd>
-    {% elif projectData['license']|length > 0 %}
+    {% elif projectData['license'] %}
     <dt>License</dt><dd>{{ projectData['license'] }}</dd>
     {% endif %}
     {% if meta['since'] %}
