@@ -2210,6 +2210,32 @@ class FortranVariable(FortranBase):
             )
             self.proto[0] = self.parent.all_procs.get(proto_name, abstract_prototype)
 
+    @property
+    def full_type(self):
+        parameter_parts = []
+        attribute_parts = []
+
+        # Wrap only kind, strlen, proto in brackets
+        if self.kind:
+            parameter_parts.append(f"kind={self.kind}")
+        if self.strlen:
+            parameter_parts.append(f"len={self.strlen}")
+        if self.proto:
+            if self.proto[0].visible or not self.proto[0].permission:
+                attribute_parts.append(self.proto[0])
+            else:
+                attribute_parts.append(self.proto[0].name)
+
+        attribute_parts.extend(self.attribs)
+        if self.dimension:
+            attribute_parts.append(self.dimension)
+
+        parameterisation = f"({', '.join(parameter_parts)})" if parameter_parts else ""
+        attributes = ", ".join(attribute_parts) if attribute_parts else ""
+        spec = ", ".join([parameterisation, attributes])
+
+        return f"{self.vartype}{spec}"
+
 
 class FortranBoundProcedure(FortranBase):
     """

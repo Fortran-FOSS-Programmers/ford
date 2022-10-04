@@ -1258,3 +1258,19 @@ def test_type_component_permissions(parse_fortran_file):
         assert (
             ftype.boundprocs[1].permission == "private"
         ), f"{ftype.name}::{ftype.boundprocs[1].name}"
+
+
+def test_variable_formatting(parse_fortran_file):
+    data = """\
+    module foo_m
+    character(kind=kind('a'), len=4), dimension(:, :), allocatable :: multidimension_string
+    end module foo_m
+    """
+
+    fortran_file = parse_fortran_file(data)
+    variable = fortran_file.modules[0].variables[0]
+
+    assert (
+        variable.full_type
+        == "character(kind=kind('a'), len=4), dimension(:, :), allocatable"
+    )
