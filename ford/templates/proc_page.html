@@ -34,14 +34,13 @@
     <br>
     {% endif %}
     {% if procedure.retvar %}
-    {% set var = procedure.retvar %}
-    {% set args = 0 %}
-    {% if var.kind %}{% set args = args + 1 %}{% endif %}
-    {% if var.strlen %}{% set args = args + 1 %}{% endif %}
-    {% if var.proto %}{% set args = args + 1 %}{% endif %}
-   <h3>Return Value <small><span class="anchor" id="{{ var.anchor }}"></span>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
-  {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {%- endif %}{%- endfor %}{{ var.dimension }}</small></h3>
-    {{ var.doc }}
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="{{ procedure.retvar.anchor }}"></span>
+          {{ procedure.retvar.full_type }}
+        </small>
+      </h3>
+      {{ procedure.retvar.doc }}
     {% endif %}
     {% if procedure.calledbygraph or procedure.callsgraph %}
     <br>

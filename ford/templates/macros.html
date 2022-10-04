@@ -393,80 +393,62 @@
 {%- endmacro -%}
 
 {% macro proc_summary(proc,title=True,small=False,proto=False) %}
-    {% if title %}
-    {% if small %}<h5>{% else %}<h3>{% endif %}{{ proc_line(proc,proto=proto) }}{% if proto %}<small>Prototype</small>{% endif %}{% if small %}</h5>{% else %}</h3>{% endif %}
-    {% endif %}
-{% if proc.doc or (meta_list(proc.meta)|trim|length > 0 and proc.visible) %}
-{# {% if small %}<h6>{% else %}<h4>{% endif %}Description{% if small %}</h6>{% else %}</h4>{% endif %} #}
-{% if proc.parent and proc.visible %}
-{{ meta_list(proc.meta) }}
-{% endif %}
-{{ proc.meta['summary'] }}
-{% endif %}    
-    {% if small %}<h6>{% else %}<h4>{% endif %}Arguments{% if small %}</h6>{% else %}</h4>{% endif %}
-    {% if proc.args|length > 0 %}
-      {% if proc.visible %}
-      {{ var_list(proc.args,intent=True,summary=True,id=False) }}
-      {% else %}
-      {{ var_list(proc.args,intent=True,id=False) }}
-      {% endif %}
-    {% else %}
-      <em>None</em>
-    {% endif %}
-    {% if proc.retvar %}
-{% set var = proc.retvar %}
-  {% set args = 0 %}
-  {% if var.kind %}{% set args = args + 1 %}{% endif %}
-  {% if var.strlen %}{% set args = args + 1 %}{% endif %}
-  {% if var.proto %}{% set args = args + 1 %}{% endif %}
-     {% if small %}<h6>{% else %}<h4>{% endif %}Return Value <small>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
-  {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {% endif %}{%- endfor %}{{ var.dimension }}</small>{% if small %}</h6>{% else %}</h4>{% endif %}
-  {{ var.meta['summary'] }}
-    {% endif %}
-{% endmacro %}
+{# Render the summary of a procedure, to be used in lists of procedures, for example #}
+  {% if title %}
+    {{ header(3, small) }}
+      {{ proc_line(proc,proto=proto) }}
+      {% if proto %}<small>Prototype</small>{% endif %}
+    {{ close_header(3, small) }}
+  {% endif %}
+  {% if proc.parent and proc.visible %}
+    {{ meta_list(proc.meta) }}
+  {% endif %}
+  {{ proc.meta['summary'] }}
 
+  {{ header(4, small) }}Arguments{{ close_header(4, small) }}
+  {% if proc.args %}
+    {{ var_list(proc.args,intent=True,summary=proc.visible,id=False) }}
+  {% else %}
+    <em>None</em>
+  {% endif %}
+  {% if proc.retvar %}
+    {{ header(4, small) }}
+    Return Value
+    <small>{{ proc.retvar.full_type }}</small>
+    {{ close_header(4, small) }}
+    {{ proc.retvar.meta['summary'] }}
+  {% endif %}
+{% endmacro %}
 
 {% macro binding_summary(proc,title=True,small=False,proto=False) %}
 {# Render the documentation for an individual binding of a type-bound procedure #}
-    {% if title %}
-      {{ header(3, small) }}
-        {{ proc_line(proc, proto=proto) }}
-        {%- if proto -%}
-          <small>Prototype</small>
-        {%- endif -%}
-      {{ close_header(3, small) }}
-    {% endif %}
-    {% if proc.parent and proc.visible %}
-      {{ meta_list(proc.meta) }}
-    {% endif %}
-    {{ proc.doc }}
+  {% if title %}
+    {{ header(3, small) }}
+    {{ proc_line(proc, proto=proto) }}
+    {%- if proto -%}
+      <small>Prototype</small>
+    {%- endif -%}
+    {{ close_header(3, small) }}
+  {% endif %}
+  {% if proc.parent and proc.visible %}
+    {{ meta_list(proc.meta) }}
+  {% endif %}
+  {{ proc.doc }}
 
+  {{ header(4, small) }}Arguments{{ close_header(4, small) }}
+  {% if proc.args|length %}
+    {{ var_list(proc.args, intent=True, summary=proc.visible, id=False) }}
+  {% else %}
+    <em>None</em>
+  {% endif %}
+  {% if proc.retvar %}
     {{ header(4, small) }}
-    Arguments
+    Return Value
+    <small>{{ proc.retvar.full_type }}</small>
     {{ close_header(4, small) }}
-    {% if proc.args|length %}
-      {{ var_list(proc.args, intent=True, summary=proc.visible, id=False) }}
-    {% else %}
-      <em>None</em>
-    {% endif %}
-    {% if proc.retvar %}
-      {% set var = proc.retvar %}
-      {% set args = 0 %}
-      {% if var.kind %}{% set args = args + 1 %}{% endif %}
-      {% if var.strlen %}{% set args = args + 1 %}{% endif %}
-      {% if var.proto %}{% set args = args + 1 %}{% endif %}
-      {{ header(4, small) }}
-        Return Value <small>{{ var.vartype }}{% if args -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length -%},{%- endif %}
-      {% for attrib in var.attribs -%}
-        {{ attrib }}{% if not loop.last or var.dimension -%}, {% endif %}
-      {%- endfor %}
-      {{ var.dimension }}
-      </small>
-      {{ close_header(4, small) }}
-      {{ var.doc }}
-    {% endif %}
+    {{ proc.retvar.doc }}
+  {% endif %}
 {% endmacro %}
-
 
 {% macro bound_info(tb) %}
 <div class="panel panel-default">
@@ -507,7 +489,7 @@
           <span class="label label-danger depwarn">Deprecated</span>
           {% endif %}
           </h3>
-  
+
           {% if bind.doc or (meta_list(bind.meta)|trim|length > 0 and not bind.visible) %}
             {% if not bind.visible %}
               {{ meta_list(bind.meta) }}
