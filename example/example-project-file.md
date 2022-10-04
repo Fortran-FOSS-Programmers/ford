@@ -17,7 +17,6 @@ docmark_alt: #
 predocmark_alt: <
 display: public
          protected
-         private
 source: false
 graph: true
 search: true
