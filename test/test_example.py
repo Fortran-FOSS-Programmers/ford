@@ -183,3 +183,18 @@ def test_procedure_return_value(example_project):
     assert (
         "character(kind=kind('a'), len=4), dimension(:, :), allocatable" in retvar.text
     )
+
+
+def test_info_bar(example_project):
+    path, _ = example_project
+    index = read_html(path / "proc/decrement.html")
+
+    info_bar = index.find(id="info-bar")
+    assert "creativecommons" in info_bar.find(id="meta-license").a["href"]
+    assert "of total for procedures" in info_bar.find(id="statements").a["title"]
+    assert "4 statements" in info_bar.find(id="statements").a.text
+
+    breadcrumb = info_bar.find(class_="breadcrumb")
+    assert len(breadcrumb("li")) == 3
+    breadcrumb_text = [crumb.text for crumb in breadcrumb("li")]
+    assert breadcrumb_text == ["ford_test_module.fpp", "test_module", "decrement"]

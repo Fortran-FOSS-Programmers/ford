@@ -1,54 +1,53 @@
-{% macro info_bar(name,meta,incl_src,base_url,hierarchy,line_info="") %}
-  <div class="row">
+{% macro info_bar(entity, incl_src, base_url, line_info) %}
+  <div class="row" id="info-bar">
     <div class="col-lg-12">
       <div class="well well-sm">
         <ul class="list-inline" style="margin-bottom:0px;display:inline">
-          {% if meta['author'] %}
-            <li><i class="fa fa-pencil"></i> {{ meta['author'] }}</li>
+          {% if entity.meta['author'] %}
+            <li id="meta-author"><i class="fa fa-pencil"></i> {{ entity.meta['author'] }}</li>
           {% endif %}
-          {% if meta['date'] %}
-            <li><i class="fa fa-calendar-o"></i> {{ meta['date'] }}</li>
+          {% if entity.meta['date'] %}
+            <li id="meta-date"><i class="fa fa-calendar-o"></i> {{ entity.meta['date'] }}</li>
           {% endif %}
-          {% if meta['license'] %}
-            <li><i class="fa fa-legal"></i> {{ meta['license'] }}</li>
+          {% if entity.meta['license'] %}
+            <li id="meta-license"><i class="fa fa-legal"></i> {{ entity.meta['license'] }}</li>
           {% elif projectData['license'] %}
-            <li><i class="fa fa-legal"></i> {{ projectData['license'] }}</li>
+            <li id="meta-license"><i class="fa fa-legal"></i> {{ projectData['license'] }}</li>
           {% endif %}
-          {% if meta['since'] %}
-            <li><i class="fa fa-history"></i> Since: {{ meta['since'] }}</li>
+          {% if entity.meta['since'] %}
+            <li id="meta-since"><i class="fa fa-history"></i> Since: {{ entity.meta['since'] }}</li>
           {% endif %}
-          {% if meta['version'] %}
-            <li><i class="fa fa-barcode"></i> {{ meta['version'] }}</li>
+          {% if entity.meta['version'] %}
+            <li id="meta-version"><i class="fa fa-barcode"></i> {{ entity.meta['version'] }}</li>
           {% endif %}
-          {% if meta['category'] %}
-            <li><i class="fa fa-folder-open"></i> {{ meta['category'] }}</li>
+          {% if entity.meta['category'] %}
+            <li id="meta-category"><i class="fa fa-folder-open"></i> {{ entity.meta['category'] }}</li>
           {% endif %}
-          {% if line_info %}
-            <li><i class="fa fa-list-ol"></i>
-              <a data-toggle="tooltip"
-                 data-placement="bottom" data-html="true"
-                 title="{{line_info}}">{{meta['num_lines']}} statements</a>
-            </li>
-          {% endif %}
+
+          <li id="statements"><i class="fa fa-list-ol"></i>
+            <a data-toggle="tooltip"
+               data-placement="bottom" data-html="true"
+               title="{{ line_info }}">{{ entity.meta['num_lines'] }} statements</a>
+          </li>
+
           {% if incl_src %}
-            {% if hierarchy[0] %}
-              <li><i class="fa fa-code"></i><a href="{{ base_url }}/src/{{ hierarchy[0].name }}"> Source File</a></li>
-            {% else %}
-              <li><i class="fa fa-code"></i><a href="{{ base_url }}/src/{{ name }}"> Source File</a></li>
-            {% endif %}
+            <li id="source-file">
+              <i class="fa fa-code"></i>
+              <a href="{{ base_url }}/src/{{ entity.filename }}"> Source File</a>
+            </li>
           {% endif %}
         </ul>
         <ol class="breadcrumb in-well text-right">
           {% if incl_src %}
-            {% for item in hierarchy %}
+            {% for item in entity.hierarchy %}
               <li>{{ item }}</li>
             {% endfor %}
           {% else %}
-            {% for item in hierarchy[1:] %}
+            {% for item in entity.hierarchy[1:] %}
               <li>{{ item }}</li>
             {% endfor %}
           {%endif%}
-          <li class="active">{{ name }}</li>
+          <li class="active">{{ entity.name }}</li>
         </ol>
       </div>
     </div>
