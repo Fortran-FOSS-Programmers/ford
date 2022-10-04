@@ -716,6 +716,10 @@ class ParsedType:
             ParsedType("character", None, "12", None, ":: string"),
         ),
         (
+            "CHARACTER(KIND= kind('0') ,  len =12) :: string",
+            ParsedType("character", 'kind("a")', "12", None, ":: string"),
+        ),
+        (
             "CHARACTER(KIND=kanji,  len =12) :: string",
             ParsedType("character", "kanji", "12", None, ":: string"),
         ),
@@ -744,8 +748,11 @@ class ParsedType:
     ],
 )
 def test_parse_type(variable_decl, expected):
+    # Tokeniser will have previously replaced strings with index into
+    # this list
+    capture_strings = ['"a"']
     vartype, kind, strlen, proto, rest = parse_type(
-        variable_decl, [], {"extra_vartypes": []}
+        variable_decl, capture_strings, {"extra_vartypes": []}
     )
     assert vartype == expected.vartype
     assert kind == expected.kind
