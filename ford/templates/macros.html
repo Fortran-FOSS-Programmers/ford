@@ -352,8 +352,8 @@
 <tr>
   {% if var.obj == 'variable' %}
   <td><span class="anchor" {% if id %}id="{{ var.anchor }}"{% endif
-  %}></span>{{ var.vartype }}{% if args > 0 -%}({% if var.kind
-  -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{%
+  %}></span>{{ var.vartype }}{% if args -%}({% if var.kind
+  -%}kind={{ var.kind }}{%- endif %}{% if args is more_than_one -%},{%- endif %}{%
   if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto
   -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{
   var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{
@@ -456,7 +456,7 @@
    <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
   </h3></div>
-  {% if tb.doc or meta_list(tb.meta)|trim|length > 1 %}
+  {% if tb.doc or meta_list(tb.meta)|trim|length is more_than_one %}
   <div class="panel-body">
     {{ meta_list(tb.meta) }}
     {{ tb.doc }}
