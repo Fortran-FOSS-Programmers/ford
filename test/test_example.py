@@ -115,7 +115,7 @@ def test_source_file_links(example_index):
     source_files_list = sorted([f.text for f in source_files_box("li")])
 
     assert source_files_list == sorted(
-        ["ford_test_module.fpp", "ford_test_program.f90"]
+        ["ford_test_module.fpp", "ford_test_program.f90", "ford_example_type.f90"]
     )
 
 
@@ -123,9 +123,9 @@ def test_module_links(example_index):
     index, settings = example_index
 
     modules_box = index.find(ANY_TEXT, string="Modules").parent
-    modules_list = [f.text for f in modules_box("li")]
+    modules_list = sorted([f.text for f in modules_box("li")])
 
-    assert modules_list == ["test_module"]
+    assert modules_list == sorted(["test_module", "ford_example_type_mod"])
 
 
 def test_procedures_links(example_index):
@@ -147,9 +147,21 @@ def test_types_links(example_index):
     index, settings = example_index
 
     types_box = index.find(ANY_TEXT, string="Derived Types").parent
-    types_list = [f.text for f in types_box("li")]
+    types_list = sorted([f.text for f in types_box("li")])
 
-    assert types_list == ["bar", "foo"]
+    assert types_list == sorted(["bar", "foo", "example_type"])
+
+
+def test_types_type_bound_procedure(example_project):
+    path, _ = example_project
+    index = read_html(path / "type/example_type.html")
+
+    bound_procedures_section = index.find("h2", string="Type-Bound Procedures").parent
+
+    assert "This will document" in bound_procedures_section.text, "Binding docstring"
+    assert (
+        "has more documentation" in bound_procedures_section.text
+    ), "Full procedure docstring"
 
 
 def test_graph_submodule(example_project):

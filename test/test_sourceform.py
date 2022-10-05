@@ -1171,3 +1171,83 @@ def test_routine_iterator(parse_fortran_file):
         "sub3",
         "sub4",
     ]
+
+
+def test_type_component_permissions(parse_fortran_file):
+    data = """\
+    module default_access
+      private
+      type :: type_default
+        complex :: component_public
+        complex, private :: component_private
+      contains
+        procedure :: sub_public
+        procedure, private :: sub_private
+      end type type_default
+
+      type, public :: type_public
+        public
+        complex :: component_public
+        complex, private :: component_private
+      contains
+        public
+        procedure :: sub_public
+        procedure, private :: sub_private
+      end type type_public
+
+      type :: type_private
+        private
+        character(len=1), public :: string_public
+        character(len=1) :: string_private
+      contains
+        private
+        procedure, public :: sub_public
+        procedure :: sub_private
+      end type type_private
+
+      type :: type_public_private
+        public
+        character(len=1) :: string_public
+        character(len=1), private :: string_private
+      contains
+        private
+        procedure, public :: sub_public
+        procedure :: sub_private
+      end type type_public_private
+
+      type :: type_private_public
+        private
+        character(len=1), public :: string_public
+        character(len=1) :: string_private
+      contains
+        public
+        procedure :: sub_public
+        procedure, private :: sub_private
+      end type type_private_public
+
+      public :: type_default, type_private_public, type_public_private
+    contains
+      subroutine sub_public
+      end subroutine sub_public
+
+      subroutine sub_private
+      end subroutine sub_private
+    end module default_access
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_file.modules[0].correlate(None)
+
+    for ftype in fortran_file.modules[0].types:
+        assert (
+            ftype.variables[0].permission == "public"
+        ), f"{ftype.name}::{ftype.variables[0].name}"
+        assert (
+            ftype.variables[1].permission == "private"
+        ), f"{ftype.name}::{ftype.variables[1].name}"
+        assert (
+            ftype.boundprocs[0].permission == "public"
+        ), f"{ftype.name}::{ftype.boundprocs[0].name}"
+        assert (
+            ftype.boundprocs[1].permission == "private"
+        ), f"{ftype.name}::{ftype.boundprocs[1].name}"

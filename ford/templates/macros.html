@@ -376,6 +376,21 @@
 </table>
 {% endmacro %}
 
+{%- macro header(size, small=False) -%}
+  {%- if small -%}
+    <h{{ size + 2 }}>
+  {%- else -%}
+    <h{{ size }}>
+  {%- endif -%}
+{% endmacro %}
+
+{%- macro close_header(size, small=False) -%}
+  {%- if small -%}
+    </h{{ size + 2 }}>
+  {%- else -%}
+    </h{{ size }}>
+  {%- endif -%}
+{%- endmacro -%}
 
 {% macro proc_summary(proc,title=True,small=False,proto=False) %}
     {% if title %}
@@ -411,6 +426,48 @@
 {% endmacro %}
 
 
+{% macro binding_summary(proc,title=True,small=False,proto=False) %}
+{# Render the documentation for an individual binding of a type-bound procedure #}
+    {% if title %}
+      {{ header(3, small) }}
+        {{ proc_line(proc, proto=proto) }}
+        {%- if proto -%}
+          <small>Prototype</small>
+        {%- endif -%}
+      {{ close_header(3, small) }}
+    {% endif %}
+    {% if proc.parent and proc.visible %}
+      {{ meta_list(proc.meta) }}
+    {% endif %}
+    {{ proc.doc }}
+
+    {{ header(4, small) }}
+    Arguments
+    {{ close_header(4, small) }}
+    {% if proc.args|length %}
+      {{ var_list(proc.args, intent=True, summary=proc.visible, id=False) }}
+    {% else %}
+      <em>None</em>
+    {% endif %}
+    {% if proc.retvar %}
+      {% set var = proc.retvar %}
+      {% set args = 0 %}
+      {% if var.kind %}{% set args = args + 1 %}{% endif %}
+      {% if var.strlen %}{% set args = args + 1 %}{% endif %}
+      {% if var.proto %}{% set args = args + 1 %}{% endif %}
+      {{ header(4, small) }}
+        Return Value <small>{{ var.vartype }}{% if args -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length -%},{%- endif %}
+      {% for attrib in var.attribs -%}
+        {{ attrib }}{% if not loop.last or var.dimension -%}, {% endif %}
+      {%- endfor %}
+      {{ var.dimension }}
+      </small>
+      {{ close_header(4, small) }}
+      {{ var.doc }}
+    {% endif %}
+{% endmacro %}
+
+
 {% macro bound_info(tb) %}
 <div class="panel panel-default">
   <div class="panel-heading codesum"><span class="anchor" id="{{ tb.anchor }}"></span><h3>{% if tb.generic -%}generic,{% else %}procedure{% if tb.proto -%}({% if not tb.protomatch or tb.proto.visible -%}{{ tb.proto }}{% else %}{{ tb.proto.name }}{%- endif %}){%- endif %},{%- endif %} {{ tb.permission }}{% if tb.deferred -%}, deferred{%- endif %}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {% for bind in tb.bindings -%}{% if not bind.parent or bind.visible %}{{ bind }}{% else %}{{ bind.name }}{% endif %}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
@@ -429,19 +486,19 @@
       <li class="list-group-item">
       {% if tb.deferred and tb.protomatch %}
          {% if tb.proto.obj == 'interface' %}
-            {{ proc_summary(tb.proto.procedure,proto=True) }}
+            {{ binding_summary(tb.proto.procedure,proto=True) }}
          {% elif tb.proto.obj == 'procedure' %}
-            {{ proc_summary(tb.proto,proto=True) }}
+            {{ binding_summary(tb.proto,proto=True) }}
          {% endif %}
       {% elif bind.obj == 'boundprocedure' %}
          {% if bind.deferred and bind.protomatch %}
             {% if bind.proto.obj == 'interface' %}
-                {{ proc_summary(bind.proto.procedure,proto=True) }}
+                {{ binding_summary(bind.proto.procedure,proto=True) }}
             {% elif bind.proto.obj == 'procedure' %}
-                {{ proc_summary(bind.proto,proto=True) }}
+                {{ binding_summary(bind.proto,proto=True) }}
             {% endif %}
          {% else %}
-            {{ proc_summary(bind.bindings[0]) }}
+            {{ binding_summary(bind.bindings[0]) }}
          {% endif %}
       {% else %}
         {% if bind.obj == 'interface' %}
@@ -457,9 +514,9 @@
             {% endif %}
             {{ bind.meta['summary'] }}
           {% endif %}
-          {{ proc_summary(bind.procedure) }}
+          {{ binding_summary(bind.procedure) }}
         {% else %}
-          {{ proc_summary(bind) }}
+          {{ binding_summary(bind) }}
         {% endif %}
       {% endif %}
       </li>
