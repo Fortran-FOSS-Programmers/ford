@@ -738,6 +738,12 @@ class ParsedType:
             ParsedType("type", None, None, ["something", ""], ":: thing"),
         ),
         (
+            "type(character(kind=kanji, len=10)) :: thing",
+            ParsedType(
+                "type", None, None, ["character", "kind=kanji,len=10"], ":: thing"
+            ),
+        ),
+        (
             "class(foo) :: thing",
             ParsedType("class", None, None, ["foo", ""], ":: thing"),
         ),
@@ -1263,14 +1269,26 @@ def test_type_component_permissions(parse_fortran_file):
 def test_variable_formatting(parse_fortran_file):
     data = """\
     module foo_m
-    character(kind=kind('a'), len=4), dimension(:, :), allocatable :: multidimension_string
+      character(kind=kind('a'), len=4), dimension(:, :), allocatable :: multidimension_string
+      type :: bar
+      end type bar
+      type(bar), parameter :: something = bar()
+    contains
+      type(bar) function quux()
+      end function quux
     end module foo_m
     """
 
     fortran_file = parse_fortran_file(data)
-    variable = fortran_file.modules[0].variables[0]
+    fortran_file.modules[0].correlate(None)
+    variable0 = fortran_file.modules[0].variables[0]
+    variable1 = fortran_file.modules[0].variables[1]
 
     assert (
-        variable.full_type
+        variable0.full_type
         == "character(kind=kind('a'), len=4), dimension(:, :), allocatable"
     )
+    assert variable1.full_type == "type(bar), parameter"
+
+    function = fortran_file.modules[0].functions[0]
+    assert function.retvar.full_type == "type(bar)"

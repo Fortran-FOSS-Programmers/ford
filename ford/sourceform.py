@@ -2166,28 +2166,33 @@ class FortranVariable(FortranBase):
     @property
     def full_type(self):
         parameter_parts = []
-        attribute_parts = []
+        vartype = self.vartype
 
         # Wrap only kind, strlen, proto in brackets
         if self.kind:
             parameter_parts.append(f"kind={self.kind}")
         if self.strlen:
             parameter_parts.append(f"len={self.strlen}")
-        if self.proto:
-            if self.proto[0].visible or not self.proto[0].permission:
-                attribute_parts.append(self.proto[0])
-            else:
-                attribute_parts.append(self.proto[0].name)
 
-        attribute_parts.extend(self.attribs)
+        # If we've got a "proto", then we probably don't have kind and strlen?
+        if parameter_parts:
+            vartype += f"({', '.join(parameter_parts)})"
+        elif self.proto:
+            proto = str(self.proto[0])
+            if self.proto[1]:
+                proto += f"({self.proto[1]})"
+            vartype += f"({proto})"
+
+        # Add all the other attributes to a single list
+        attribute_parts = copy.copy(self.attribs)
         if self.dimension:
             attribute_parts.append(self.dimension)
+        if self.parameter:
+            attribute_parts.append("parameter")
 
-        parameterisation = f"({', '.join(parameter_parts)})" if parameter_parts else ""
-        attributes = ", ".join(attribute_parts) if attribute_parts else ""
-        spec = ", ".join([parameterisation, attributes])
-
-        return f"{self.vartype}{spec}"
+        # Note: not str.join because we want the leading comman too
+        attributes = [f", {part}" for part in attribute_parts]
+        return f"{vartype}{''.join(attributes)}"
 
 
 class FortranBoundProcedure(FortranBase):
