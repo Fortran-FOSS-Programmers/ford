@@ -1292,3 +1292,81 @@ def test_variable_formatting(parse_fortran_file):
 
     function = fortran_file.modules[0].functions[0]
     assert function.retvar.full_type == "type(bar)"
+
+
+def test_url(parse_fortran_file):
+    data = """\
+    program prog_foo
+      integer :: int_foo
+    contains
+      subroutine sub_foo
+      end subroutine sub_foo
+      function func_foo()
+      end function func_foo
+    end program prog_foo
+
+    module mod_foo
+      real :: real_foo
+      interface inter_foo
+        module procedure foo1, foo2
+      end interface inter_foo
+      type :: foo_t
+        integer :: int_bar
+      end type
+      enum, bind(C)
+        enumerator :: red = 4, blue = 9
+        enumerator :: yellow
+      end enum
+    contains
+      subroutine foo1()
+      end subroutine foo1
+      subroutine foo2(x)
+        integer :: x
+      end subroutine foo2
+    end module mod_foo
+
+    submodule (mod_foo) submod_foo
+    end submodule submod_foo
+    """
+
+    fortran_file = parse_fortran_file(data)
+
+    assert fortran_file.programs[0].get_dir() == "program"
+    assert fortran_file.modules[0].get_dir() == "module"
+    assert fortran_file.submodules[0].get_dir() == "module"
+    assert fortran_file.programs[0].subroutines[0].get_dir() == "proc"
+    assert fortran_file.programs[0].functions[0].get_dir() == "proc"
+    assert fortran_file.modules[0].subroutines[0].get_dir() == "proc"
+    assert fortran_file.modules[0].interfaces[0].get_dir() == "interface"
+    assert fortran_file.programs[0].variables[0].get_dir() is None
+    assert fortran_file.modules[0].variables[0].get_dir() is None
+    assert fortran_file.modules[0].enums[0].get_dir() is None
+
+    assert fortran_file.programs[0].get_url().endswith("/program/prog_foo.html")
+    assert fortran_file.modules[0].get_url().endswith("/module/mod_foo.html")
+    assert fortran_file.submodules[0].get_url().endswith("/module/submod_foo.html")
+    assert (
+        fortran_file.programs[0].subroutines[0].get_url().endswith("/proc/sub_foo.html")
+    )
+    assert (
+        fortran_file.programs[0].functions[0].get_url().endswith("/proc/func_foo.html")
+    )
+    assert fortran_file.modules[0].subroutines[0].get_url().endswith("/proc/foo1.html")
+    assert (
+        fortran_file.modules[0]
+        .interfaces[0]
+        .get_url()
+        .endswith("/interface/inter_foo.html")
+    )
+    assert (
+        fortran_file.programs[0]
+        .variables[0]
+        .get_url()
+        .endswith("/program/prog_foo.html#variable-int_foo")
+    )
+    assert (
+        fortran_file.modules[0]
+        .variables[0]
+        .get_url()
+        .endswith("/module/mod_foo.html#variable-real_foo")
+    )

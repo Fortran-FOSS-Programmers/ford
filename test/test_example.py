@@ -198,3 +198,49 @@ def test_info_bar(example_project):
     assert len(breadcrumb("li")) == 3
     breadcrumb_text = [crumb.text for crumb in breadcrumb("li")]
     assert breadcrumb_text == ["ford_test_module.fpp", "test_module", "decrement"]
+
+
+def test_side_panel(example_project):
+    path, _ = example_project
+    index = read_html(path / "program/ford_test_program.html")
+
+    side_panel = index.find(id="sidebar")
+    assert "None" not in side_panel.text
+
+    side_panels = index.find_all(class_="panel-primary")
+    # Twice as many due to the "hidden" panel that appears at the
+    # bottom on mobile
+    assert len(side_panels) == 2 * 4
+
+    variables_panel = side_panels[0]
+    assert len(variables_panel("a")) == 2
+    assert variables_panel.a.text == "Variables"
+    variables_anchor_link = variables_panel("a")[1]
+    assert variables_anchor_link.text == "global_pi"
+    assert (
+        variables_anchor_link["href"]
+        == "../program/ford_test_program.html#variable-global_pi"
+    )
+
+    subroutines_panel = side_panels[3]
+    assert len(subroutines_panel("a")) == 4
+    assert subroutines_panel.a.text == "Subroutines"
+    subroutines_anchor_link = subroutines_panel("a")[1]
+    assert subroutines_anchor_link.text == "do_foo_stuff"
+    assert (
+        subroutines_anchor_link["href"]
+        == "../program/ford_test_program.html#proc-do_foo_stuff"
+    )
+
+    type_index = read_html(path / "type/example_type.html")
+    constructor_panel = type_index.find(id="cons-1")
+    assert constructor_panel.a.text == "example_type"
+    assert (
+        constructor_panel.a["href"]
+        == "../type/example_type.html#interface-example_type"
+    )
+
+    check_index = read_html(path / "interface/check.html")
+    check_sidebar = check_index.find(id="sidebar")
+    assert "None" in check_sidebar.text
+    assert check_sidebar.find_all(class_="panel-primary") == []

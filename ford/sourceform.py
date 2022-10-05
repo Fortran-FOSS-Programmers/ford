@@ -194,18 +194,14 @@ class FortranBase(object):
         loc = self.get_dir()
         if loc:
             return outstr.format(self.base_url, loc, quote(self.ident))
-        elif (
-            isinstance(self, (FortranBoundProcedure, FortranCommon))
-            or isinstance(self, FortranVariable)
-            and isinstance(self.parent, FortranType)
+        if isinstance(
+            self, (FortranBoundProcedure, FortranCommon, FortranVariable, FortranEnum)
         ):
             parent_url = self.parent.get_url()
             if parent_url:
-                return parent_url + "#" + self.anchor
-            else:
-                return None
-        else:
+                return f"{parent_url}#{self.anchor}"
             return None
+        return None
 
     def lines_description(self, total, total_all=0, obj=None):
         if not obj:
@@ -226,19 +222,20 @@ class FortranBase(object):
         return description
 
     @property
-    def ident(self):
+    def ident(self) -> str:
+        """Return a unique identifier for this object"""
         if (
-            type(self) in [FortranSubroutine, FortranFunction]
-            and type(self.parent) == FortranInterface
+            isinstance(self, (FortranSubroutine, FortranFunction))
+            and isinstance(self.parent, FortranInterface)
             and not self.parent.generic
         ):
             return namelist.get_name(self.parent)
-        else:
-            return namelist.get_name(self)
+        return namelist.get_name(self)
 
     @property
-    def anchor(self):
-        return self.obj + "-" + quote(self.ident)
+    def anchor(self) -> str:
+        """Return a string suitable for an HTML anchor link"""
+        return f"{self.obj}-{quote(self.ident)}"
 
     def __str__(self):
         outstr = "<a href='{0}'>{1}</a>"

@@ -1,4 +1,7 @@
 module ford_example_type_mod
+  !! Summary of this module
+  !!
+  !! A longer description of the purpose of this module
   implicit none
 
   private
@@ -21,6 +24,11 @@ module ford_example_type_mod
     !! rendered on the `example_type` page.
   end type example_type
 
+  interface example_type
+    !! This is a constructor for our type
+    module procedure make_new_type
+  end interface example_type
+
 contains
 
   subroutine example_type_say(self)
@@ -33,5 +41,9 @@ contains
     write(*, '(a, " has said hello ", i0, " times.")') self%name, self%counter
     self%counter = self%counter + 1
   end subroutine example_type_say
+
+  type(example_type) function make_new_type() result(self)
+    make_new_type%name = "some-default-name"
+  end function make_new_type
 
 end module ford_example_type_mod
