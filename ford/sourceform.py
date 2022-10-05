@@ -2163,10 +2163,9 @@ class FortranVariable(FortranBase):
 
     @property
     def full_type(self):
-        """Return the full type declaration, including attributes, dimensions,
-        kind, and so on"""
+        """Return the full type, including class, kind, len, and so on"""
         parameter_parts = []
-        vartype = self.vartype
+        result = self.vartype
 
         # Wrap only kind, strlen, proto in brackets
         if self.kind:
@@ -2176,12 +2175,19 @@ class FortranVariable(FortranBase):
 
         # If we've got a "proto", then we probably don't have kind and strlen?
         if parameter_parts:
-            vartype += f"({', '.join(parameter_parts)})"
+            result += f"({', '.join(parameter_parts)})"
         elif self.proto:
             proto = str(self.proto[0])
             if self.proto[1]:
                 proto += f"({self.proto[1]})"
-            vartype += f"({proto})"
+            result += f"({proto})"
+
+        return result
+
+    @property
+    def full_declaration(self):
+        """Return the full type declaration, including attributes, dimensions,
+        kind, and so on"""
 
         # Add all the other attributes to a single list
         attribute_parts = copy.copy(self.attribs)
@@ -2192,7 +2198,7 @@ class FortranVariable(FortranBase):
 
         # Note: not str.join because we want the leading comman too
         attributes = [f", {part}" for part in attribute_parts]
-        return f"{vartype}{''.join(attributes)}"
+        return f"{self.full_type}{''.join(attributes)}"
 
 
 class FortranBoundProcedure(FortranBase):

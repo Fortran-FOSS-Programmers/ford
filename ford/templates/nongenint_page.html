@@ -65,7 +65,7 @@
 
     <h3>Arguments</h3>
     {% if procedure.args|length > 0 %}
-      {{ macros.var_list(procedure.args,intent=True) }}
+      {{ macros.variable_list(procedure.args, intent=True) }}
     {% else %}
       <em>None</em>
     {% endif %}

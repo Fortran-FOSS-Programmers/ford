@@ -44,12 +44,12 @@ contains
     !! Solve Ax = b with linear algebra magic
     real, intent(in) :: A(:,:)
     !! The a matrix to invert etc.
-    real, intent(in) :: b(:)
+    real, intent(inout) :: b(:)
     !! The right hand side
-    real, intent(out) :: x(:)
+    real, intent(out), optional, dimension(:), allocatable :: x
     !! The solution to Ax = b
 
-    !! do some stuff, ensure proper bounds etc.
+    ! do some stuff, ensure proper bounds etc.
   end subroutine linalg
 
   function multidimension_string(n)

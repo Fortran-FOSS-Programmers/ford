@@ -135,7 +135,7 @@ def test_procedures_links(example_index):
     proceduress_list = sorted([f.text for f in proceduress_box("li")])
 
     all_procedures = sorted(
-        ["decrement", "do_foo_stuff", "do_stuff", "increment", "check"]
+        ["decrement", "do_foo_stuff", "do_stuff", "increment", "check", "apply_check"]
     )
     max_frontpage_items = int(settings["max_frontpage_items"])
     front_page_list = all_procedures[:max_frontpage_items]
@@ -244,3 +244,22 @@ def test_side_panel(example_project):
     check_sidebar = check_index.find(id="sidebar")
     assert "None" in check_sidebar.text
     assert check_sidebar.find_all(class_="panel-primary") == []
+
+
+def test_variable_lists(example_project):
+    path, _ = example_project
+    index = read_html(path / "program/ford_test_program.html")
+
+    varlist = index.find(class_="varlist")
+    assert "Type" in varlist.thead.text
+    assert "Attributes" in varlist.thead.text
+    assert "Name" in varlist.thead.text
+    assert "Initial" in varlist.thead.text
+    assert "Optional" not in varlist.thead.text
+    assert "Intent" not in varlist.thead.text
+
+    assert len(varlist("tr")) == 2
+    assert varlist.tbody.tr.find(class_="anchor")["id"] == "variable-global_pi"
+    expected_declaration = "real(kind=real64) :: global_pi = acos(-1) a global variable, initialized to the value of pi"
+    declaration_no_whitespace = varlist.tbody.text.replace("\n", "").replace(" ", "")
+    assert declaration_no_whitespace == expected_declaration.replace(" ", "")

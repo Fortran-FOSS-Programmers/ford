@@ -146,41 +146,71 @@
   </div>
 {% endmacro %}
 
+{% macro add_comma(condition) %}
+  {# Insert a literal comma if condition is true #}
+  {%- if condition -%},{% endif %}
+{% endmacro %}
 
-{% macro var_list(variables,intent=False,permission=False,summary=False,id=True) %}
+{% macro variable_list(variables, intent=False, permission=False, summary=False, id=True) %}
   <table class="table table-striped varlist">
-    <thead><tr><th>Type</th>{% if permission %}<th>Visibility</th>{% endif %}
+    <thead>
+      <tr>
+        <th>Type</th>
+        {% if permission %}<th>Visibility</th>{% endif %}
         {% if intent %}<th>Intent</th><th>Optional</th>{% endif %}
-        <th>Attributes</th><th></th><th>Name</th>{% if not intent %}<th></th><th>Initial</th>{% endif %}<th></th></thead>
-    {% set colnum = 5 %}
-    {% if permission %}{% set colnum = colnum + 1%}{% endif %}
-    {% if intent %}{% set colnum = colnum + 2%}{% else %}{% set colnum = colnum + 1 %}{% endif %}
+        <th>Attributes</th>
+        <th></th>
+        <th>Name</th>
+        {% if not intent %}<th></th><th>Initial</th>{% endif %}
+        <th></th>
+    </thead>
+    {% set colnum = 6 + permission|int + intent|int %}
     <tbody>
       {% for var in variables %}
-        {% set args = 0 %}
-        {% if var.kind %}{% set args = args + 1 %}{% endif %}
-        {% if var.strlen %}{% set args = args + 1 %}{% endif %}
-        {% if var.proto %}{% set args = args + 1 %}{% endif %}
         <tr>
           {% if var.obj == 'variable' %}
-            <td><span class="anchor" {% if id %}id="{{ var.anchor }}"{% endif
-                      %}></span>{{ var.vartype }}{% if args -%}({% if var.kind
-                      -%}kind={{ var.kind }}{%- endif %}{% if args is more_than_one -%},{%- endif %}{%
-                      if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto
-                      -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{
-                      var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{
-                      var.proto[1] }}{%- endif %}){%- endif %}{% if (intent and
-                      var.intent) or var.optional or permission or var.parameter or var.attribs -%},{%- endif %}</td>
-                      {% if intent -%}<td>{% if var.intent -%}intent({{ var.intent }}){% if var.optional or permission or var.parameter or var.attribs -%},{% endif %}{%- endif%}</td>
-                      <td>{% if var.optional -%}optional{% if permission or var.parameter or var.attributes -%},{%- endif %}{%- endif %}</td>{%- endif %}
-                      {% if permission %}<td>{{ var.permission }}{% if var.parameter or var.attribs -%},{%- endif %}</td>{% endif %}
-                      <td>{% if var.parameter %}parameter{% if var.attribs %}, {% endif %}{% endif %}{% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}</td><td>::</td>
-          <td><strong>{{ var.name }}</strong>{{ var.dimension }}</td>{% if not intent %}<td>{% if var.initial -%}{% if var.points -%} => {% else %} = {%- endif %}{% endif %}</td><td>{% if var.initial %}{{ var.initial }}{%- endif %}</td>{% endif %}<td>{% if summary -%}{{ var.meta['summary'] }}{% else %}{{ var.doc }}{% endif %}</td>
-        {% elif var.obj == 'proc' %}
-          <td colspan="{{ colnum }}">
-            <small>{{ proc_summary(var,title=True,small=True) }}</small>
-          </td>
-        {% endif %}
+            <td>
+              <span class="anchor" {% if id %}id="{{ var.anchor }}"{% endif %}></span>
+              {{ var.full_type }}{{ add_comma((intent and var.intent) or var.optional or permission or var.parameter or var.attribs) }}
+            </td>
+            {% if intent -%}
+              <td>
+                {%- if var.intent -%}
+                  intent({{ var.intent }}){{ add_comma(var.optional or permission or var.parameter or var.attribs) }}
+                {%- endif -%}
+              </td>
+              <td>{%- if var.optional -%}optional{{ add_comma(permission or var.parameter or var.attribs) }}{%- endif -%}</td>
+            {%- endif %}
+            {% if permission %}
+              <td>{{ var.permission }}{{ add_comma(var.parameter or var.attribs) }}</td>
+            {% endif %}
+            <td>
+              {% if var.parameter %}parameter{{ add_comma(var.attribs) }} {% endif %}
+              {{ var.attribs | join(", ") }}
+            </td>
+            <td>::</td>
+            <td><strong>{{ var.name }}</strong>{{ var.dimension }}</td>
+            {% if not intent %}
+              {% if var.initial -%}
+                <td>{% if var.points -%} =&gt; {% else %} = {%- endif %}</td>
+                <td>{{ var.initial }}</td>
+              {% else %}
+                <td></td>
+                <td></td>
+              {% endif %}
+            {% endif %}
+            <td>
+              {% if summary -%}
+                {{ var.meta['summary'] }}
+              {% else %}
+                {{ var.doc }}
+              {% endif %}
+            </td>
+          {% elif var.obj == 'proc' %}
+            <td colspan="{{ colnum }}">
+              <small>{{ proc_summary(var,title=True,small=True) }}</small>
+            </td>
+          {% endif %}
         </tr>
       {% endfor %}
     </tbody>
@@ -218,14 +248,14 @@
 
   {{ header(4, small) }}Arguments{{ close_header(4, small) }}
   {% if proc.args %}
-    {{ var_list(proc.args,intent=True,summary=proc.visible,id=False) }}
+    {{ variable_list(proc.args, intent=True, summary=proc.visible, id=False) }}
   {% else %}
     <em>None</em>
   {% endif %}
   {% if proc.retvar %}
     {{ header(4, small) }}
     Return Value
-    <small>{{ proc.retvar.full_type }}</small>
+    <small>{{ proc.retvar.full_declaration }}</small>
     {{ close_header(4, small) }}
     {{ proc.retvar.meta['summary'] }}
   {% endif %}
@@ -248,14 +278,14 @@
 
   {{ header(4, small) }}Arguments{{ close_header(4, small) }}
   {% if proc.args|length %}
-    {{ var_list(proc.args, intent=True, summary=proc.visible, id=False) }}
+    {{ variable_list(proc.args, intent=True, summary=proc.visible, id=False) }}
   {% else %}
     <em>None</em>
   {% endif %}
   {% if proc.retvar %}
     {{ header(4, small) }}
     Return Value
-    <small>{{ proc.retvar.full_type }}</small>
+    <small>{{ proc.retvar.full_declaration }}</small>
     {{ close_header(4, small) }}
     {{ proc.retvar.doc }}
   {% endif %}
@@ -425,7 +455,7 @@
       {% endif %}
       {% if dtype.variables %}
         <h4>Components</h4>
-        {{ var_list(dtype.variables,permission=True,summary=True) }}
+        {{ variable_list(dtype.variables, permission=True, summary=True) }}
       {% endif %}
       {% if dtype.constructor %}
         <h4>Constructor</h4>
@@ -489,7 +519,7 @@
       {% endif %}
       {{ com.doc }}
       {% if com.variables %}
-        {{ var_list(com.variables) }}
+        {{ variable_list(com.variables) }}
       {% endif %}
     </div>
   </div>

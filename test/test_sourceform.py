@@ -1284,14 +1284,16 @@ def test_variable_formatting(parse_fortran_file):
     variable0 = fortran_file.modules[0].variables[0]
     variable1 = fortran_file.modules[0].variables[1]
 
+    assert variable0.full_type == "character(kind=kind('a'), len=4)"
     assert (
-        variable0.full_type
+        variable0.full_declaration
         == "character(kind=kind('a'), len=4), dimension(:, :), allocatable"
     )
-    assert variable1.full_type == "type(bar), parameter"
+    assert variable1.full_type == "type(bar)"
+    assert variable1.full_declaration == "type(bar), parameter"
 
     function = fortran_file.modules[0].functions[0]
-    assert function.retvar.full_type == "type(bar)"
+    assert function.retvar.full_declaration == "type(bar)"
 
 
 def test_url(parse_fortran_file):
