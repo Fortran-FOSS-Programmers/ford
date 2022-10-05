@@ -679,6 +679,18 @@ class FortranContainer(FortranBase):
             self.VARIABLE_STRING.format(typestr), re.IGNORECASE
         )
 
+        # This is a little bit confusing, because `permission` here is sort of
+        # overloaded for "permission for this entity", and "permission for child
+        # entities". For example, the former doesn't apply to modules or programs,
+        # while for procedures _only_ the first applies. For things like types, we
+        # need to keep track of these meanings separately. Also note that
+        # `child_permission` for types can be different for components and bound
+        # procedures, but luckily they cannot be mixed in the source, so we don't
+        # need to actually track `child_permission` separately for them both
+        child_permission = (
+            "public" if isinstance(self, FortranType) else self.permission
+        )
+
         blocklevel = 0
         associatelevel = 0
         for line in source:
@@ -709,12 +721,13 @@ class FortranContainer(FortranBase):
                 if not incontains and type(self) in _can_have_contains:
                     incontains = True
                     if isinstance(self, FortranType):
-                        self.permission = "public"
+                        child_permission = "public"
                 elif incontains:
                     self.print_error(line, "Multiple CONTAINS statements present")
                 else:
                     self.print_error(line, "Unexpected CONTAINS statement")
             elif line_lower in ["public", "private", "protected"]:
+                child_permission = line_lower
                 if not isinstance(self, FortranType):
                     self.permission = line_lower
             elif line_lower == "sequence":
@@ -920,7 +933,7 @@ class FortranContainer(FortranBase):
                                 source,
                                 self.BOUNDPROC_RE.match(line),
                                 self,
-                                self.permission,
+                                child_permission,
                             )
                         )
                     else:
@@ -931,7 +944,7 @@ class FortranContainer(FortranBase):
                                     source,
                                     self.BOUNDPROC_RE.match(pseudo_line),
                                     self,
-                                    self.permission,
+                                    child_permission,
                                 )
                             )
                 else:
@@ -985,7 +998,7 @@ class FortranContainer(FortranBase):
             elif self.VARIABLE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "variables"):
                     self.variables.extend(
-                        line_to_variables(source, line, self.permission, self)
+                        line_to_variables(source, line, child_permission, self)
                     )
                 else:
                     self.print_error(line, "Unexpected variable")
