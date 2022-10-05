@@ -2165,6 +2165,8 @@ class FortranVariable(FortranBase):
 
     @property
     def full_type(self):
+        """Return the full type declaration, including attributes, dimensions,
+        kind, and so on"""
         parameter_parts = []
         vartype = self.vartype
 
