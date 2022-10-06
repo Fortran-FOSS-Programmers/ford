@@ -79,16 +79,17 @@ class FortranReader(object):
     """
     An iterator which will convert a free-form Fortran source file into
     a format more conducive for analyzing. It does the following:
-        - combine line continuations into one
-        - remove any normal comments and any comments following an ampersand
-          (line continuation)
-        - if there are documentation comments preceding a piece of code, buffer
-          them and return them after the code, but before any documentation
-          following it
-        - keep any documentation comments and, if they are at the end of a line
-          of actual code, place them on a new line
-        - removes blank lines and trailing white-space
-        - split lines along semicolons
+
+    - combine line continuations into one
+    - remove any normal comments and any comments following an ampersand
+      (line continuation)
+    - if there are documentation comments preceding a piece of code, buffer
+      them and return them after the code, but before any documentation
+      following it
+    - keep any documentation comments and, if they are at the end of a line
+      of actual code, place them on a new line
+    - removes blank lines and trailing white-space
+    - split lines along semicolons
     """
 
     # Regexes

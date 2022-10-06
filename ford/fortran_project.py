@@ -325,9 +325,10 @@ class Project(object):
 
     def make_srcdir_list(self, exclude_dirs):
         """
-        Like os.walk, except that:
+        Like `os.walk`, except that:
+
         a) directories listed in exclude_dir are excluded with all
-          their subdirectories
+           their subdirectories
         b) absolute paths are returned
         """
         srcdir_list = []
@@ -354,7 +355,7 @@ def find_used_modules(
     external_modules: List[ExternalModule],
 ) -> None:
     """Find the module objects (or links to intrinsic/external
-    module) for all of the ``USED``d names in `entity`
+    module) for all of the ``USED``d names in ``entity``
 
     Parameters
     ----------
