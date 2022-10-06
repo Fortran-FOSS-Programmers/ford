@@ -5,10 +5,6 @@
 [![GitHub license](https://img.shields.io/badge/license-GPL_v3-blue.svg)](./LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1422473.svg)](https://doi.org/10.5281/zenodo.1422473)
 
-<!-- [![GitHub tag](https://img.shields.io/github/release/cmacmackin/ford.svg)](https://github.com/cmacmackin/ford/releases/latest)
-     This last badge has not been rendering due to issues over at shields.io so I'm commenting it out for now
-     -->
-
 This is an automatic documentation generator for modern Fortran programs.
 FORD stands for FORtran Documenter. As you may know, "to ford" refers to
 crossing a river (or other body of water). It does not, in this context, refer

@@ -166,21 +166,21 @@ environment in a new paragraph of its own.
 “Include” Capabilities
 ----------------------
 
-FORD uses my
-`Markdown-Include <https://github.com/cmacmackin/markdown-include>`__
-extension. The syntax ``{!file-name.md!}`` in any of your documentation
-will be replaced by the contents of file-name.md. This will be the first
-thing done when processing Markdown, and thus all Markdown syntax within
+FORD uses Chris MacMackin's `Markdown-Include
+<https://github.com/cmacmackin/markdown-include>`__ extension. The
+syntax ``{!file-name.md!}`` in any of your documentation will be
+replaced by the contents of file-name.md. This will be the first thing
+done when processing Markdown, and thus all Markdown syntax within
 file-name.md will be processed correctly. You can nest these include
 statments as many times as you like. All file paths are evaluated
-relative to the directory containing the project file, unless set to do
-otherwise.
+relative to the directory containing the project file, unless set to
+do otherwise.
 
 Environment Variables
 ---------------------
 
-FORD uses my `MD-Environ <https://github.com/cmacmackin/md-environ>`__
-extension. The syntax ``${ENVIRONMENT_VAR}`` will be replaced by the
+FORD uses Chris MacMackin's `ford.md_environ` extension (bundled with
+FORD). The syntax ``${ENVIRONMENT_VAR}`` will be replaced by the
 contents of environment variable ``ENVIRONMENT_VAR`` if it is defined,
 or an empty string otherwise.
 

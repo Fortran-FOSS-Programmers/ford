@@ -9,7 +9,7 @@ time to run FORD. The most basic syntax for running ford is just
 
    ford project-file.md
 
-More advanced [[command line options|Command Line Options]] are
+More advanced `command line options <sec-command-line-options>` are
 available. Assuming that there are no errors, your documentation will
 now be available in the path you indicated for output. Please be aware
 that FORD will delete anything already present in the specified
