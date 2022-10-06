@@ -47,6 +47,13 @@ env = jinja2.Environment(
 )
 env.globals["path"] = os.path  # this lets us call path.* in templates
 
+
+def is_more_than_one(collection):
+    return collection > 1
+
+
+env.tests["more_than_one"] = is_more_than_one
+
 USER_WRITABLE_ONLY = 0o755
 
 

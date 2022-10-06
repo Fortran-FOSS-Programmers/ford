@@ -47,7 +47,7 @@ from ford.intrinsics import INTRINSICS
 
 VAR_TYPE_STRING = r"^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
 VARKIND_RE = re.compile(r"\((.*)\)|\*\s*(\d+|\(.*\))")
-KIND_RE = re.compile(r"kind\s*=\s*(\w+)", re.IGNORECASE)
+KIND_RE = re.compile(r"kind\s*=\s*([^,\s]+)", re.IGNORECASE)
 KIND_SUFFIX_RE = re.compile(r"(?P<initial>.*)_(?P<kind>[a-z]\w*)", re.IGNORECASE)
 CHAR_KIND_SUFFIX_RE = re.compile(r"(?P<kind>[a-z]\w*)_(?P<initial>.*)", re.IGNORECASE)
 LEN_RE = re.compile(r"(?:len\s*=\s*(\w+|\*|:|\d+)|(\d+))", re.IGNORECASE)
@@ -194,18 +194,14 @@ class FortranBase(object):
         loc = self.get_dir()
         if loc:
             return outstr.format(self.base_url, loc, quote(self.ident))
-        elif (
-            isinstance(self, (FortranBoundProcedure, FortranCommon))
-            or isinstance(self, FortranVariable)
-            and isinstance(self.parent, FortranType)
+        if isinstance(
+            self, (FortranBoundProcedure, FortranCommon, FortranVariable, FortranEnum)
         ):
             parent_url = self.parent.get_url()
             if parent_url:
-                return parent_url + "#" + self.anchor
-            else:
-                return None
-        else:
+                return f"{parent_url}#{self.anchor}"
             return None
+        return None
 
     def lines_description(self, total, total_all=0, obj=None):
         if not obj:
@@ -226,19 +222,20 @@ class FortranBase(object):
         return description
 
     @property
-    def ident(self):
+    def ident(self) -> str:
+        """Return a unique identifier for this object"""
         if (
-            type(self) in [FortranSubroutine, FortranFunction]
-            and type(self.parent) == FortranInterface
+            isinstance(self, (FortranSubroutine, FortranFunction))
+            and isinstance(self.parent, FortranInterface)
             and not self.parent.generic
         ):
             return namelist.get_name(self.parent)
-        else:
-            return namelist.get_name(self)
+        return namelist.get_name(self)
 
     @property
-    def anchor(self):
-        return self.obj + "-" + quote(self.ident)
+    def anchor(self) -> str:
+        """Return a string suitable for an HTML anchor link"""
+        return f"{self.obj}-{quote(self.ident)}"
 
     def __str__(self):
         outstr = "<a href='{0}'>{1}</a>"
@@ -253,53 +250,6 @@ class FortranBase(object):
             return self.name
         else:
             return ""
-
-    @property
-    def contents_size(self):
-        """
-        Returns the number of different categories to be shown in the
-        contents side-bar in the HTML documentation.
-        """
-        count = 0
-        if hasattr(self, "variables"):
-            count += 1
-        if hasattr(self, "types"):
-            count += 1
-        if hasattr(self, "modules"):
-            count += 1
-        if hasattr(self, "submodules"):
-            count += 1
-        if hasattr(self, "subroutines"):
-            count += 1
-        if hasattr(self, "modprocedures"):
-            count += 1
-        if hasattr(self, "functions"):
-            count += 1
-        if hasattr(self, "interfaces"):
-            count += 1
-        if hasattr(self, "absinterfaces"):
-            count += 1
-        if hasattr(self, "programs"):
-            count += 1
-        if hasattr(self, "boundprocs"):
-            count += 1
-        if hasattr(self, "finalprocs"):
-            count += 1
-        if hasattr(self, "enums"):
-            count += 1
-        if hasattr(self, "procedure"):
-            count += 1
-        if hasattr(self, "constructor"):
-            count += 1
-        if hasattr(self, "modfunctions"):
-            count += 1
-        if hasattr(self, "modsubroutines"):
-            count += 1
-        if hasattr(self, "modprocs"):
-            count += 1
-        if getattr(self, "src", None):
-            count += 1
-        return count
 
     def __lt__(self, other):
         """
@@ -1998,6 +1948,7 @@ class FortranEnum(FortranContainer):
 
     def _initialize(self, line):
         self.variables = []
+        self.name = ""
 
     def _cleanup(self):
         prev_val = -1
@@ -2209,6 +2160,45 @@ class FortranVariable(FortranBase):
                 proto_name, self.proto[0]
             )
             self.proto[0] = self.parent.all_procs.get(proto_name, abstract_prototype)
+
+    @property
+    def full_type(self):
+        """Return the full type, including class, kind, len, and so on"""
+        parameter_parts = []
+        result = self.vartype
+
+        # Wrap only kind, strlen, proto in brackets
+        if self.kind:
+            parameter_parts.append(f"kind={self.kind}")
+        if self.strlen:
+            parameter_parts.append(f"len={self.strlen}")
+
+        # If we've got a "proto", then we probably don't have kind and strlen?
+        if parameter_parts:
+            result += f"({', '.join(parameter_parts)})"
+        elif self.proto:
+            proto = str(self.proto[0])
+            if self.proto[1]:
+                proto += f"({self.proto[1]})"
+            result += f"({proto})"
+
+        return result
+
+    @property
+    def full_declaration(self):
+        """Return the full type declaration, including attributes, dimensions,
+        kind, and so on"""
+
+        # Add all the other attributes to a single list
+        attribute_parts = copy.copy(self.attribs)
+        if self.dimension:
+            attribute_parts.append(self.dimension)
+        if self.parameter:
+            attribute_parts.append("parameter")
+
+        # Note: not str.join because we want the leading comman too
+        attributes = [f", {part}" for part in attribute_parts]
+        return f"{self.full_type}{''.join(attributes)}"
 
 
 class FortranBoundProcedure(FortranBase):

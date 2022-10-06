@@ -716,6 +716,10 @@ class ParsedType:
             ParsedType("character", None, "12", None, ":: string"),
         ),
         (
+            "CHARACTER(KIND= kind('0') ,  len =12) :: string",
+            ParsedType("character", 'kind("a")', "12", None, ":: string"),
+        ),
+        (
             "CHARACTER(KIND=kanji,  len =12) :: string",
             ParsedType("character", "kanji", "12", None, ":: string"),
         ),
@@ -734,6 +738,12 @@ class ParsedType:
             ParsedType("type", None, None, ["something", ""], ":: thing"),
         ),
         (
+            "type(character(kind=kanji, len=10)) :: thing",
+            ParsedType(
+                "type", None, None, ["character", "kind=kanji,len=10"], ":: thing"
+            ),
+        ),
+        (
             "class(foo) :: thing",
             ParsedType("class", None, None, ["foo", ""], ":: thing"),
         ),
@@ -744,8 +754,11 @@ class ParsedType:
     ],
 )
 def test_parse_type(variable_decl, expected):
+    # Tokeniser will have previously replaced strings with index into
+    # this list
+    capture_strings = ['"a"']
     vartype, kind, strlen, proto, rest = parse_type(
-        variable_decl, [], {"extra_vartypes": []}
+        variable_decl, capture_strings, {"extra_vartypes": []}
     )
     assert vartype == expected.vartype
     assert kind == expected.kind
@@ -1251,3 +1264,111 @@ def test_type_component_permissions(parse_fortran_file):
         assert (
             ftype.boundprocs[1].permission == "private"
         ), f"{ftype.name}::{ftype.boundprocs[1].name}"
+
+
+def test_variable_formatting(parse_fortran_file):
+    data = """\
+    module foo_m
+      character(kind=kind('a'), len=4), dimension(:, :), allocatable :: multidimension_string
+      type :: bar
+      end type bar
+      type(bar), parameter :: something = bar()
+    contains
+      type(bar) function quux()
+      end function quux
+    end module foo_m
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_file.modules[0].correlate(None)
+    variable0 = fortran_file.modules[0].variables[0]
+    variable1 = fortran_file.modules[0].variables[1]
+
+    assert variable0.full_type == "character(kind=kind('a'), len=4)"
+    assert (
+        variable0.full_declaration
+        == "character(kind=kind('a'), len=4), dimension(:, :), allocatable"
+    )
+    assert variable1.full_type == "type(bar)"
+    assert variable1.full_declaration == "type(bar), parameter"
+
+    function = fortran_file.modules[0].functions[0]
+    assert function.retvar.full_declaration == "type(bar)"
+
+
+def test_url(parse_fortran_file):
+    data = """\
+    program prog_foo
+      integer :: int_foo
+    contains
+      subroutine sub_foo
+      end subroutine sub_foo
+      function func_foo()
+      end function func_foo
+    end program prog_foo
+
+    module mod_foo
+      real :: real_foo
+      interface inter_foo
+        module procedure foo1, foo2
+      end interface inter_foo
+      type :: foo_t
+        integer :: int_bar
+      end type
+      enum, bind(C)
+        enumerator :: red = 4, blue = 9
+        enumerator :: yellow
+      end enum
+    contains
+      subroutine foo1()
+      end subroutine foo1
+      subroutine foo2(x)
+        integer :: x
+      end subroutine foo2
+    end module mod_foo
+
+    submodule (mod_foo) submod_foo
+    end submodule submod_foo
+    """
+
+    fortran_file = parse_fortran_file(data)
+
+    assert fortran_file.programs[0].get_dir() == "program"
+    assert fortran_file.modules[0].get_dir() == "module"
+    assert fortran_file.submodules[0].get_dir() == "module"
+    assert fortran_file.programs[0].subroutines[0].get_dir() == "proc"
+    assert fortran_file.programs[0].functions[0].get_dir() == "proc"
+    assert fortran_file.modules[0].subroutines[0].get_dir() == "proc"
+    assert fortran_file.modules[0].interfaces[0].get_dir() == "interface"
+    assert fortran_file.programs[0].variables[0].get_dir() is None
+    assert fortran_file.modules[0].variables[0].get_dir() is None
+    assert fortran_file.modules[0].enums[0].get_dir() is None
+
+    assert fortran_file.programs[0].get_url().endswith("/program/prog_foo.html")
+    assert fortran_file.modules[0].get_url().endswith("/module/mod_foo.html")
+    assert fortran_file.submodules[0].get_url().endswith("/module/submod_foo.html")
+    assert (
+        fortran_file.programs[0].subroutines[0].get_url().endswith("/proc/sub_foo.html")
+    )
+    assert (
+        fortran_file.programs[0].functions[0].get_url().endswith("/proc/func_foo.html")
+    )
+    assert fortran_file.modules[0].subroutines[0].get_url().endswith("/proc/foo1.html")
+    assert (
+        fortran_file.modules[0]
+        .interfaces[0]
+        .get_url()
+        .endswith("/interface/inter_foo.html")
+    )
+    assert (
+        fortran_file.programs[0]
+        .variables[0]
+        .get_url()
+        .endswith("/program/prog_foo.html#variable-int_foo")
+    )
+    assert (
+        fortran_file.modules[0]
+        .variables[0]
+        .get_url()
+        .endswith("/module/mod_foo.html#variable-real_foo")
+    )

@@ -9,7 +9,7 @@
    <span class="label label-danger depwarn">Deprecated</span>
     {% endif %}
     </h1>
-    {{ macros.info_bar(dtype.name,dtype.meta,incl_src,project_url,dtype.hierarchy,dtype.lines_description(project.type_lines,project.type_lines_all)) }}
+    {{ macros.info_bar(dtype, incl_src, project_url, dtype.lines_description(project.type_lines,project.type_lines_all)) }}
   </div>
   
   <div class="row">
@@ -51,7 +51,7 @@
     {% if dtype.variables|length > 0 %}
     <section>
     <h2>Components</h2>
-    {{ macros.var_list(dtype.variables,permission=True) }}
+    {{ macros.variable_list(dtype.variables, permission=True) }}
     </section>
     <br>
     {% endif %}

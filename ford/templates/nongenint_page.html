@@ -12,11 +12,11 @@
     </h1>
     {% if interface.abstract %}
     {{
-    macros.info_bar(interface.name,interface.meta,incl_src,project_url,interface.hierarchy,interface.lines_description(project.absint_lines))
+    macros.info_bar(interface, incl_src, project_url, interface.lines_description(project.absint_lines))
     }}
     {% else %}
     {{
-    macros.info_bar(interface.name,interface.meta,incl_src,project_url,interface.hierarchy,interface.lines_description(project.proc_lines,obj='proc'))
+    macros.info_bar(interface, incl_src, project_url, interface.lines_description(project.proc_lines,obj='proc'))
     }}
     {% endif %}
   </div>
@@ -65,7 +65,7 @@
 
     <h3>Arguments</h3>
     {% if procedure.args|length > 0 %}
-      {{ macros.var_list(procedure.args,intent=True) }}
+      {{ macros.variable_list(procedure.args, intent=True) }}
     {% else %}
       <em>None</em>
     {% endif %}

@@ -23,6 +23,13 @@ contains
     x = x - 1
   end subroutine decrement
 #endif
+
+  subroutine apply_check(f)
+    !! Takes a function and immediately calls it
+    procedure(check) :: f
+    !! Some function to call
+    call f()
+  end subroutine apply_check
 end module test_module
 
 submodule (test_module) test_submodule
