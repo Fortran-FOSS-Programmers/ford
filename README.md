@@ -81,7 +81,7 @@ FORD is also available through the [spack](https://spack.readthedocs.io/en/lates
     spack install py-ford
 
 ## Documentation
-More complete documentation can be found in the [project wiki](https://github.com/Fortran-FOSS-Programmers/ford/wiki).
+More complete documentation can be found in the [docs](https://forddocs.readthedocs.io/en/).
 
 ## License
 This program is free software: you can redistribute it and/or modify
