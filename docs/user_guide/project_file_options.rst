@@ -20,7 +20,7 @@ beginning of a markdown document like this:
    Authors: Waylan Limberg
             John Doe
    Date:    October 2, 2007
-   blank-value: 
+   blank-value:
    base_url: http://example.com
 
    This is the first paragraph of the document.
@@ -32,17 +32,21 @@ blank.
 
 If a line is indented by 4 or more spaces, that line is assumed to be
 an additional line of the value for the previous keyword. A keyword
-may have as many lines as desired. [Note that these **must** be
-spaces and not tabs.]
+may have as many lines as desired (note that these **must** be
+spaces and not tabs).
 
 The first blank line ends all meta-data for the document. Therefore,
 the first line of a document must not be blank. All meta-data is
 stripped from the document prior to any further processing by
 Markdown.
 
-Project file options will be overriden by [[Command Line Options]].See
-`./example/example-project-file.md <https://github.com/Fortran-FOSS-Programmers/ford/blob/master/example/example-project-file.md>`__
+Project file options will be overriden by `command line options
+<sec-command-line-options>` .See `./example/example-project-file.md
+<https://github.com/Fortran-FOSS-Programmers/ford/blob/master/example/example-project-file.md>`__
 for a sample project file.
+
+Except where noted, all paths in options are interpreted relative to the path of
+the project file.
 
 *N.B.!*: Markdown comments must not appear within the meta data section!
 Typical markdown commenting strategies may be used within the markdown
@@ -71,38 +75,13 @@ Project Information
 
 Information about your project.
 
-.. _option-gitter_sidecar:
+.. _option-doc_license:
 
-gitter_sidecar
-^^^^^^^^^^^^^^
+doc_license
+^^^^^^^^^^^
 
-The name of the project’s chatroom on `Gitter <https://gitter.im>`__,
-which can then be displayed using the Gitter
-`sidecar <https://sidecar.gitter.im/>`__.
-
-.. _option-license:
-
-license
-^^^^^^^
-
-The licenses under which the documentation is released. Options are: -
-**by**: `Creative Commons
-attribution <http://creativecommons.org/licenses/by/4.0/>`__ -
-**by-nd**: `Creative Commons attribution, no
-derivatives <http://creativecommons.org/licenses/by-nd/4.0/>`__ -
-**by-sa**: `Creative Commons attribution,
-share-alike <http://creativecommons.org/licenses/by-sa/4.0/>`__ -
-**by-nc**: `Creative Commons attribution,
-non-commercial <http://creativecommons.org/licenses/by-nc/4.0/>`__ -
-**by-nc-nd**: `Creative Commons attribution, non-commercial, non
-derivatives <http://creativecommons.org/licenses/by-nc-nd/4.0/>`__ -
-**by-nc-sa**: `Creative Commons attribution, non-commercial,
-share-alike <http://creativecommons.org/licenses/by-nc-sa/4.0/>`__ -
-**gfdl**: `GNU Free Documentation
-License <http://www.gnu.org/licenses/old-licenses/fdl-1.2.en.html>`__ -
-**opl**: Open Publication License - **pdl**: Public Documentation
-License - **bsd**: FreeBSD Documentation License - **isc**: ‘ISC
-(Internet Systems Consortium) License’, - **mit**: ‘MIT’,
+The license under which the *documentation* is released. See `option-license`
+for possible values.
 
 .. _option-favicon:
 
@@ -111,7 +90,42 @@ favicon
 
 The path to a custom favicon which will be used by the HTML
 documentation. If left blank, it will default to an icon for FORD.
-Evaluated relative to the location of the project file.
+
+.. _option-gitter_sidecar:
+
+gitter_sidecar
+^^^^^^^^^^^^^^
+
+The name of the project’s chatroom on `Gitter <https://gitter.im>`_,
+which can then be displayed using the Gitter
+`sidecar <https://sidecar.gitter.im/>`_.
+
+.. _option-license:
+
+license
+^^^^^^^
+
+The licenses under which the software is released. Options are:
+
+- **bsd**: `FreeBSD Documentation License <http://www.freebsd.org/copyright/freebsd-doc-license.html>`_
+- **by**: `Creative Commons attribution <http://creativecommons.org/licenses/by/4.0/>`_
+- **by-nc**: `Creative Commons attribution, non-commercial <http://creativecommons.org/licenses/by-nc/4.0/>`_
+- **by-nc-nd**: `Creative Commons attribution, non-commercial, non derivatives <http://creativecommons.org/licenses/by-nc-nd/4.0/>`_
+- **by-nc-sa**: `Creative Commons attribution, non-commercial, share-alike <http://creativecommons.org/licenses/by-nc-sa/4.0/>`_
+- **by-nd**: `Creative Commons attribution, no derivatives <http://creativecommons.org/licenses/by-nd/4.0/>`_
+- **by-sa**: `Creative Commons attribution, share-alike <http://creativecommons.org/licenses/by-sa/4.0/>`_
+- **gfdl**: `GNU Free Documentation License <http://www.gnu.org/licenses/old-licenses/fdl-1.2.en.html>`_
+- **isc**: `ISC (Internet Systems Consortium) License <https://opensource.org/licenses/ISC>`_
+- **mit**: `MIT <https://opensource.org/licenses/MIT>`_
+- **opl**: `Open Publication License <http://opencontent.org/openpub/>`_
+- **pdl**: `Public Documentation License <http://www.openoffice.org/licenses/PDL.html>`_
+
+.. _option-privacy_policy_url:
+
+privacy_policy_url
+^^^^^^^^^^^^^^^^^^
+
+URL of the privacy policy of the project.
 
 .. _option-project:
 
@@ -161,8 +175,8 @@ project_url
 ^^^^^^^^^^^
 
 The URL at which the documentation will be available. If left blank then
-relative URLs will be used for links. This can be used within any
-documentation with the macro ``|url|``. (*default:* blank, i.e. relative
+relative URLs will be used for links. This can be used within any documentation
+with the `macro <option-macro>` ``|url|``. (*default:* blank, i.e. relative
 links)
 
 .. _option-project_website:
@@ -180,6 +194,13 @@ summary
 A summary of the description of your project. If present it will be
 printed in a “Jumbotron” element at the top of the documentation index
 page. This will be processed by Markdown before being used.
+
+.. _option-terms_of_service_url:
+
+terms_of_service_url
+^^^^^^^^^^^^^^^^^^^^
+
+URL of the terms of service of the project
 
 Author Information
 ------------------
@@ -237,6 +258,13 @@ github
 
 The author’s Github page.
 
+.. _option-gitlab:
+
+gitlab
+^^^^^^
+
+The author’s Gitlab page.
+
 .. _option-google_plus:
 
 google_plus
@@ -270,6 +298,15 @@ Directories
 
 Settings specifying where to look (and not to look) for documentation.
 
+.. _option-copy_subdir:
+
+copy_subdir
+^^^^^^^^^^^
+
+A list of subdirectories to copy verbatim into the generated documentation. See
+`sec-copy_subdir` for a more detailed explanation of this option. (*optional*)
+
+
 .. _option-exclude_dir:
 
 exclude_dir
@@ -287,19 +324,18 @@ include
 Directories in which the C preprocessor searches for any
 ``#include``\ ed files, such as headers. These directories will also be
 searched for files loaded using Fortran’s intrinsic ``include``
-statement. Each directory must appear on its own line. Evaluated
-relative to the location of the project file.
+statement. Each directory must appear on its own line.
 
 .. _option-media_dir:
 
 media_dir
 ^^^^^^^^^
 
-A directory containing any images or other content which you will use or
-link to in your documentation. This will be placed at the root of your
-documentation file-tree, with the name “media”. The URL of this
-directory can be accessed within your documentation using the macro
-``|media|``. Evaluated relative to the location of the project file.
+A directory containing any images or other content which you will use or link to
+in your documentation. This will be placed at the root of your documentation
+file-tree, with the name “media”. The URL of this directory can be accessed
+within your documentation using the `macro <option-macro>`
+``|media|``.
 
 .. _option-md_base_dir:
 
@@ -307,8 +343,7 @@ md_base_dir
 ^^^^^^^^^^^
 
 The directory relative to which any “included” Markdown files’ paths are
-specified. (*default:* directory containing the project file.) Evaluated
-relative to the location of the project file.
+specified. (*default:* directory containing the project file.)
 
 .. _option-page_dir:
 
@@ -316,8 +351,7 @@ page_dir
 ^^^^^^^^
 
 A directory containing markdown files to be processed into individuals
-pages within the documentation. See [[Writing Pages]] for details.
-Evaluated relative to the location of the project file.
+pages within the documentation. See `sec-writing-pages` for details.
 
 .. _option-src_dir:
 
@@ -326,11 +360,19 @@ src_dir
 
 The directories where the source-files are to be found for this project.
 These must not be a subdirectory of the output_dir (see below). Multiple
-directories can be listed, each on their own line. Evaluated relative to
-the location of the project file. (*default:* ./src)
+directories can be listed, each on their own line. (*default:* ./src)
 
 Source File Settings
 --------------------
+
+Settings related to individual source files.
+
+.. _option-encoding:
+
+encoding
+^^^^^^^^
+
+The text encoding to use when opening source files (*default*: ``utf-8``)
 
 .. _option-exclude:
 
@@ -431,11 +473,11 @@ will be passed through the specified preprocessor, CPP by default.
 preprocessor
 ^^^^^^^^^^^^
 
-The preproccessor command to use on files with extensions in
-`fpp_extensions <option-fpp_extensions>`.
-Can include flags as needed. Macros and include paths specified in the
-project file will automatically be appended using the CPP interface,
-which is fairly standard. (*default*: cpp -traditional-cpp -E)
+The preproccessor command to use on files with extensions in `fpp_extensions
+<option-fpp_extensions>`. Can include flags as needed. Preprocessor macros and
+include paths specified in the project file will automatically be appended using
+the CPP interface, which is fairly standard. (*default*:
+``cpp -traditional-cpp -E -D__GFORTRAN__``)
 
 Documentation Markers
 ---------------------
@@ -465,9 +507,9 @@ documentation is provided.
 
 .. code:: fortran
 
-   !* This is an example. 
+   !* This is an example.
    !  Here is another line of comments.
-   !  
+   !
    !  History
    ! ----------
    !  * 1/1/2000 Created
@@ -559,8 +601,7 @@ css
 ^^^
 
 The path to a custom style-sheet which can be used to modify the
-appearance of the output. Evaluated relative to the location of the
-project file.
+appearance of the output.
 
 .. _option-display:
 
@@ -576,6 +617,21 @@ displayed). These choice can be overridden for a specific item using
 the `documentation meta data <metadata-display>`, and those settings
 will be inherited by any items they contain. (*default:* ‘public’ and
 ‘protected’)
+
+.. _option-external:
+
+external
+^^^^^^^^
+
+Paths or URLs of external projects to link to. If an entity is not found in the
+sources, FORD will try to look it up in those external projects. If those have
+documentation generated by FORD with the externalize option, a link will be
+placed into the documentation wherever this entity is referred to. FORD will
+look in the provided paths for a ``modules.json`` file.
+
+The difference between ``external`` between ``extra_mods`` is that FORD can link
+directly to entities (functions, types, and so on) with ``external``, while only
+modules will be linked to using ``extra_mods``.
 
 .. _option-extra_mods:
 
@@ -598,6 +654,13 @@ extra_vartypes
 Any extra types of variables which FORD should look for. This can be
 useful when using, for example, the PETSc library. Each variable type
 must be on its own line.
+
+.. _option-hide_undoc:
+
+hide_undoc
+^^^^^^^^^^
+
+If ``true``, then don't display any undocumented entities (*default*: ``false``)
 
 .. _option-incl_src:
 
@@ -629,6 +692,14 @@ The path to a JavaScript file containing `settings for MathJax
 <https://docs.mathjax.org/en/latest/configuration.html#using-plain-javascript>`__.
 This might be used to, e.g., `define TeX macros
 <https://docs.mathjax.org/en/latest/tex.html#defining-tex-macros>`__.
+
+.. _option-max_frontpage_items:
+
+max_frontpage_items
+^^^^^^^^^^^^^^^^^^^
+
+The maximum number of items to list under each category of entity on the front
+page. (*default*: 10)
 
 .. _option-md_extensions:
 
@@ -683,7 +754,7 @@ sort
 ^^^^
 
 The order in which to display entities (variables, procedures, etc.) in
-the documentation. Options are (*default:* ``src``) 
+the documentation. Options are (*default:* ``src``)
 
 * ``src``: Order which they occur in source code
 * ``alpha``: Alphabetical order
@@ -806,14 +877,14 @@ Output
 
 Where documentation should be written to.
 
-.. _option-output_dir:
+.. _option-externalize:
 
-output_dir
-^^^^^^^^^^
+externalize
+^^^^^^^^^^^
 
-The directory where the project output will be placed. **Any content
-already present there will be deleted.** Evaluated relative to the
-location of the project file. (*default:* ./doc)
+Create a ``modules.json`` file under `option-output_dir` containing information
+about entities and the URL of their documentation. This allows this project to
+be used as an `option-external` link in another project.
 
 .. _option-graph_dir:
 
@@ -822,8 +893,15 @@ graph_dir
 
 A directory where, if it is specified and ``graphs`` is set to ``true``,
 SVG and graphviz copies of all graphs for your project will be placed.
-Note that name mangling is applied to the filenames. Evaluated relative
-to the location of the project file.
+Note that name mangling is applied to the filenames.
+
+.. _option-output_dir:
+
+output_dir
+^^^^^^^^^^
+
+The directory where the project output will be placed. **Any content already
+present there will be deleted.** (*default:* ./doc)
 
 Run-Time Behaviour
 ------------------
@@ -837,6 +915,14 @@ dbg
 
 Allows FORD to crash and display a Python backtrace if an error is
 encountered when parsing a file.
+
+.. _option-force:
+
+force
+^^^^^
+
+Try to continue as much as possible, even if there are fatal errors when reading
+files.
 
 .. _option-parallel:
 

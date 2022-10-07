@@ -108,13 +108,15 @@ If some file is not added as **ordered_subpage** it will be added to the
 documentation at the end of the corresponding level. If no file is in
 the list, the standard ordering is used.
 
+.. _sec-copy_subdir:
+
 Copying directories: **copy_subdir**
 ------------------------------------
 
 This option allows the user to specify subdirectories that are to be
 copied verbatim into the generated documentation directory.
 
-This setting can also be set in the individual index.md within the
+This setting can also be set in the individual ``index.md`` within the
 page_dir hierarchy. The option allows a convenient collection of
 supportive files within the page_dir hierarchy, for example to provide
 images.
