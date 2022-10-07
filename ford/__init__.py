@@ -261,7 +261,10 @@ def get_command_line_arguments() -> argparse.Namespace:
         help="directory containing static pages",
     )
     parser.add_argument(
-        "-o", "--output_dir", default="./doc", help="directory in which to place output files"
+        "-o",
+        "--output_dir",
+        default="./doc",
+        help="directory in which to place output files",
     )
     parser.add_argument("-s", "--css", help="custom style-sheet for the output")
     parser.add_argument(
