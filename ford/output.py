@@ -190,8 +190,8 @@ class Documentation(object):
             print("")
 
     def writeout(self):
-        print("Writing resulting documentation.")
         out_dir: pathlib.Path = self.data["output_dir"]
+        print(f"Writing documentation to '{out_dir}'...")
         # Remove any existing file/directory. This avoids errors coming from
         # `shutils.copytree` for Python < 3.8, where we can't explicitly ignore them
         if out_dir.is_file():
@@ -259,6 +259,8 @@ class Documentation(object):
 
         for p in chain(self.docs, self.lists, self.pagetree, [self.index, self.search]):
             p.writeout()
+
+        print(f"\nBrowse the generated documenation: file://{out_dir}/index.html")
 
 
 class BasePage:

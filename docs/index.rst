@@ -45,6 +45,8 @@ Current features include:
 - display an entry for non-Fortran source files with file-level documentation
   and syntax highlighted code.
 
+.. _sec-installation:
+
 Installation
 ------------
 

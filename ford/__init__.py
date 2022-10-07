@@ -634,7 +634,6 @@ def main(proj_data, proj_docs, md):
         # for external modules
         ford.utils.external(project, make=True, path=proj_data["output_dir"])
 
-    print("")
     return 0
 
 

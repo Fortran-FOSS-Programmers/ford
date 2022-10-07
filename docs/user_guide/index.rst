@@ -6,6 +6,7 @@
    :maxdepth: 2
    :caption: Contents:
 
+   getting_started
    writing_documentation
    running_ford
    limitation
