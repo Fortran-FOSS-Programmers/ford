@@ -530,7 +530,7 @@ class FortranBase(object):
             yield item
 
     def iterator(self, *argv):
-        """Iterator returning any list of elements via attribute lookup in `self`
+        """Iterator returning any list of elements via attribute lookup in ``self``
 
         This iterator retains the order of the arguments"""
         for arg in argv:
