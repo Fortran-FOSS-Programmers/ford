@@ -134,7 +134,7 @@ if they occur on the closing line of the subroutine. For example::
 However, in the case of procedure’s, the argument list may be on a
 different line from the item’s name.
 
-If warnings are turned on at the `command line <cli-warn>` or in the
+If warnings are turned on at the `command line <ford---warn>` or in the
 `project file <option-warn>`, then a message will be produced if an
 item’s source code is not successfully extracted.
 
