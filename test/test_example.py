@@ -271,3 +271,20 @@ def test_deprecated(example_project):
 
     apply_check_box = index.find(id="proc-apply_check").parent
     assert apply_check_box.h3.span.text == "Deprecated"
+
+
+def test_private_procedure_links(example_project):
+    path, _ = example_project
+    index = read_html(path / "type/example_type.html")
+
+    subroutine_box = index.find("h3", string=re.compile("example_type_say"))
+    assert subroutine_box.a is None
+
+
+def test_public_procedure_links(example_project):
+    path, _ = example_project
+    index = read_html(path / "module/test_module.html")
+
+    subroutine_box = index.find(id="proc-increment").parent
+    assert subroutine_box.a is not None
+    assert subroutine_box.a["href"] == "../proc/increment.html"
