@@ -238,18 +238,11 @@ class FortranBase(object):
         return f"{self.obj}-{quote(self.ident)}"
 
     def __str__(self):
-        outstr = "<a href='{0}'>{1}</a>"
         url = self.get_url()
         if url and getattr(self, "visible", True):
-            if self.name:
-                name = self.name
-            else:
-                name = "<em>unnamed</em>"
-            return outstr.format(url, name)
-        elif self.name:
-            return self.name
-        else:
-            return ""
+            name = self.name or "<em>unnamed</em>"
+            return f"<a href='{url}'>{name}</a>"
+        return self.name or ""
 
     def __lt__(self, other):
         """
