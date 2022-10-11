@@ -260,7 +260,7 @@ class Documentation(object):
         for p in chain(self.docs, self.lists, self.pagetree, [self.index, self.search]):
             p.writeout()
 
-        print(f"\nBrowse the generated documenation: file://{out_dir}/index.html")
+        print(f"\nBrowse the generated documentation: file://{out_dir}/index.html")
 
 
 class BasePage:

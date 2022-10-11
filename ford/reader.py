@@ -241,7 +241,7 @@ class FortranReader(object):
             if len(line.strip()) > 0 and line.strip()[0] == "#":
                 continue
 
-            # Capture any preceding documenation comments
+            # Capture any preceding documentation comments
             match = _match_docmark(self.predoc_re, line, in_quote)
             if match:
                 # Switch to predoc: following comment lines are predoc until the end of the block

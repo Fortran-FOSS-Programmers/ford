@@ -81,7 +81,7 @@ And now we can view the documentation in our browser at
 looks like:
 
 .. image:: say_hello_example.png
-   :alt: Example of FORD generated documenation for the "hello" program
+   :alt: Example of FORD generated documentation for the "hello" program
 
 .. rubric:: Footnotes
 
