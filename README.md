@@ -76,7 +76,7 @@ following command:
     spack install py-ford
 
 ## Documentation
-More complete documentation can be found in the [docs](https://forddocs.readthedocs.io/en/).
+More complete documentation can be found in the [docs](https://forddocs.readthedocs.io).
 
 ## License
 This program is free software: you can redistribute it and/or modify
