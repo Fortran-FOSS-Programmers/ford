@@ -263,3 +263,11 @@ def test_variable_lists(example_project):
     expected_declaration = "real(kind=real64) :: global_pi = acos(-1) a global variable, initialized to the value of pi"
     declaration_no_whitespace = varlist.tbody.text.replace("\n", "").replace(" ", "")
     assert declaration_no_whitespace == expected_declaration.replace(" ", "")
+
+
+def test_deprecated(example_project):
+    path, _ = example_project
+    index = read_html(path / "module/test_module.html")
+
+    apply_check_box = index.find(id="proc-apply_check").parent
+    assert apply_check_box.h3.span.text == "Deprecated"

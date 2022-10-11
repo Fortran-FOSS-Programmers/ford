@@ -4,10 +4,8 @@
   {% import 'macros.html' as macros %}
   <div class="row">
     <h1>{% if program.name -%}{{ program.name }}{% else %}<em>unnamed</em>{% endif %}
-    <small>Program</small>
-    {% if program.meta['deprecated'] and program.meta['deprecated'].lower() == 'true' %}
-   <span class="label label-danger depwarn">Deprecated</span>
-    {% endif %}
+      <small>Program</small>
+      {{ macros.deprecated(program) }}
     </h1>
     {{ macros.info_bar(program, incl_src, project_url, program.lines_description(project.prog_lines)) }}
   </div>

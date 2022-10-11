@@ -257,9 +257,13 @@ class FortranBase(object):
         """
         return self.ident < other.ident
 
-    def _ensure_meta_key_set(self, key: str, transform=None):
-        """Ensure that 'key' is set in self.meta, after applying an optional transform"""
-        value = self.meta.get(key, self.settings[key])
+    def _ensure_meta_key_set(self, key: str, transform=None, default=None):
+        """Ensure that ``key`` is set in ``self.meta``, after applying
+        an optional ``transform``.
+
+        Use ``default`` if ``key`` is not in ``self.settings``.
+        """
+        value = self.meta.get(key, self.settings.get(key, default))
         if transform:
             self.meta[key] = transform(value)
         else:
@@ -364,6 +368,7 @@ class FortranBase(object):
         self._ensure_meta_key_set("graph", ford.utils.str_to_bool)
         self._ensure_meta_key_set("graph_maxdepth")
         self._ensure_meta_key_set("graph_maxnodes")
+        self._ensure_meta_key_set("deprecated", ford.utils.str_to_bool, False)
 
         if self.obj in ["proc", "type", "program"]:
             self._ensure_meta_key_set("source", ford.utils.str_to_bool)

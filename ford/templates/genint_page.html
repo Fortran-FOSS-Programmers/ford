@@ -4,10 +4,8 @@
   {% import 'macros.html' as macros %}
   <div class="row">
     <h1>{{ interface.name }}
-   <small>Interface</small>
-    {% if interface.meta['deprecated'] and interface.meta['deprecated'].lower() == 'true' %}
-    <span class="label label-danger depwarn">Deprecated</span>
-    {% endif %}
+      <small>Interface</small>
+      {{ macros.deprecated(interface) }}
     </h1>
     {{ macros.info_bar(interface, incl_src, project_url, interface.lines_description(project.proc_lines,project.proc_lines,'proc')) }}
   </div>

@@ -5,9 +5,7 @@
   <div class="row">
     <h1>{{ module.name }} 
     <small>{% if module.obj == 'submodule' %}Submodule{% else %}Module{% endif %}</small>
-    {% if module.meta['deprecated'] and module.meta['deprecated'].lower() == 'true' %}
-   <span class="label label-danger depwarn">Deprecated</span>
-    {% endif %}
+    {{ macros.deprecated(module) }}
     </h1>
     {{ macros.info_bar(module, incl_src, project_url, module.lines_description(project.mod_lines)) }}
   </div>
