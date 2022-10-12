@@ -1,9 +1,9 @@
-from ford.sourceform import FortranSourceFile
 from ford.fortran_project import Project
 from ford import DEFAULT_SETTINGS
 from ford.utils import normalise_path
 
 from copy import deepcopy
+from itertools import chain
 
 import markdown
 import pytest
@@ -925,3 +925,63 @@ def test_submodule_uses(copy_fortran_file):
 
     assert mod_d.parent_submodule == mod_c
     assert mod_d.ancestor_module == mod_a
+
+
+def test_make_links(copy_fortran_file):
+    links = "[[a]] [[b]] [[b:c]] [[d]] [[b:e]] [[f]] [[a:g]] [[h]]"
+
+    data = f"""\
+    module a !! {links}
+      type b !! {links}
+        integer :: c !! {links}
+      contains
+        final :: d !! {links}
+        procedure :: e !! {links}
+      end type b
+
+      interface b !! {links}
+        module procedure f
+      end interface b
+
+      type(b) :: g !! {links}
+    contains
+      subroutine d(self) !! {links}
+        type(b) :: self !! {links}
+      end subroutine d
+      subroutine e(self) !! {links}
+        class(b) :: self !! {links}
+      end subroutine e
+      function f() !! {links}
+        type(b) :: f !! {links}
+      end function f
+    end module a
+
+    program h !! {links}
+    end program h
+    """
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+
+    project.make_links()
+
+    expected_links = {
+        "a": "../module/a.html",
+        "b": "../type/b.html",
+        "c": "../type/b.html#variable-c",
+        "d": "../proc/d.html",
+        "e": "../type/b.html#boundprocedure-e",
+        "f": "../proc/f.html",
+        "g": "../module/a.html#variable-g",
+        "h": "../program/h.html",
+    }
+
+    for item in chain(
+        project.files[0].children,
+        project.types[0].children,
+        project.procedures[0].children,
+        project.procedures[2].children,
+    ):
+        docstring = BeautifulSoup(item.doc, features="html.parser")
+        link_locations = {a.string: a.get("href", None) for a in docstring("a")}
+
+        assert link_locations == expected_links, (item, item.name)

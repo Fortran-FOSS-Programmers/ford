@@ -29,6 +29,7 @@ import os.path
 import copy
 import textwrap
 from typing import List, Tuple
+from itertools import chain
 
 # Python 2 or 3:
 if sys.version_info[0] > 2:
@@ -195,7 +196,14 @@ class FortranBase(object):
         if loc:
             return outstr.format(self.base_url, loc, quote(self.ident))
         if isinstance(
-            self, (FortranBoundProcedure, FortranCommon, FortranVariable, FortranEnum)
+            self,
+            (
+                FortranBoundProcedure,
+                FortranCommon,
+                FortranVariable,
+                FortranEnum,
+                FortranFinalProc,
+            ),
         ):
             parent_url = self.parent.get_url()
             if parent_url:
@@ -390,34 +398,9 @@ class FortranBase(object):
             self._ensure_meta_key_set("proc_internals", ford.utils.str_to_bool)
 
         # Create Markdown
-        for item in self.iterator(
-            "variables",
-            "modules",
-            "submodules",
-            "common",
-            "subroutines",
-            "modprocedures",
-            "functions",
-            "interfaces",
-            "absinterfaces",
-            "types",
-            "programs",
-            "blockdata",
-            "boundprocs",
-            "finalprocs",
-            "args",
-            "enums",
-        ):
+        for item in self.children:
             if isinstance(item, FortranBase):
                 item.markdown(md, project)
-        if hasattr(self, "retvar"):
-            if self.retvar:
-                if isinstance(self.retvar, FortranBase):
-                    self.retvar.markdown(md, project)
-        if hasattr(self, "procedure"):
-            if isinstance(self.procedure, FortranBase):
-                self.procedure.markdown(md, project)
-        return
 
     def sort_components(self):
         """Sorts components using the method specified in the object
@@ -493,39 +476,14 @@ class FortranBase(object):
             self.meta["summary"] = ford.utils.sub_links(self.meta["summary"], project)
 
         # Create links in the project
-        for item in self.iterator(
-            "variables",
-            "types",
-            "enums",
-            "modules",
-            "submodules",
-            "subroutines",
-            "functions",
-            "interfaces",
-            "absinterfaces",
-            "programs",
-            "boundprocs",
-            "args",
-            "bindings",
-        ):
+        for item in self.children:
             if isinstance(item, FortranBase) and hasattr(item, "doc"):
                 item.make_links(project)
-        if hasattr(self, "retvar"):
-            if self.retvar:
-                if isinstance(self.retvar, FortranBase):
-                    self.retvar.make_links(project)
-        if hasattr(self, "procedure"):
-            if isinstance(self.procedure, FortranBase):
-                self.procedure.make_links(project)
-
-        # if hasattr(self,'finalprocs'): recurse_list.extend(self.finalprocs)
-        # if hasattr(self,'constructor') and self.constructor: recurse_list.append(self.constructor)
 
     @property
     def routines(self):
         """Iterator returning all procedures"""
-        for item in self.iterator("functions", "subroutines", "modprocedures"):
-            yield item
+        return self.iterator("functions", "subroutines", "modprocedures")
 
     def iterator(self, *argv):
         """Iterator returning any list of elements via attribute lookup in ``self``
@@ -535,6 +493,35 @@ class FortranBase(object):
             if hasattr(self, arg):
                 for item in getattr(self, arg):
                     yield item
+
+    @property
+    def children(self):
+        """Iterator over all child entities"""
+
+        non_list_children = ["constructor", "procedure", "retvar"]
+
+        return chain(
+            self.iterator(
+                "absinterfaces",
+                "args",
+                "blockdata",
+                "bindings",
+                "boundprocs",
+                "common",
+                "enums",
+                "finalprocs",
+                "functions",
+                "interfaces",
+                "modprocedures",
+                "modules",
+                "programs",
+                "submodules",
+                "subroutines",
+                "types",
+                "variables",
+            ),
+            filter(None, (getattr(self, item, None) for item in non_list_children)),
+        )
 
 
 class FortranContainer(FortranBase):
