@@ -3,6 +3,7 @@ import sys
 import os
 import pathlib
 import re
+from urllib.parse import urlparse
 
 import ford
 
@@ -158,10 +159,52 @@ def test_types_type_bound_procedure(example_project):
 
     bound_procedures_section = index.find("h2", string="Type-Bound Procedures").parent
 
-    assert "This will document" in bound_procedures_section.text, "Binding docstring"
+    assert "This will document" in bound_procedures_section.text, "Binding summary"
     assert (
-        "has more documentation" in bound_procedures_section.text
-    ), "Full procedure docstring"
+        "This binding has more documentation" in bound_procedures_section.text
+    ), "Binding full docstring"
+    assert (
+        "Prints how many times" in bound_procedures_section.ul.text
+    ), "Full procedure summary"
+    assert (
+        "This subroutine has more documentation" in bound_procedures_section.ul.text
+    ), "Full procedure full docstring"
+
+
+def test_types_constructor_summary(example_project):
+    path, _ = example_project
+    index = read_html(path / "type/example_type.html")
+
+    constructor_section = index.find("h2", string="Constructor").parent
+
+    assert "This is a constructor for our type" in constructor_section.text
+    assert "This constructor has more documentation" in constructor_section.text
+    assert "specific constructor" in constructor_section.ul.text
+    assert "More documentation" in constructor_section.ul.text
+
+
+def test_types_constructor_page(example_project):
+    path, _ = example_project
+    index = read_html(path / "interface/example_type.html")
+
+    constructor_section = index.find("h2", string=re.compile("example_type")).parent
+
+    assert "This is a constructor for our type" in constructor_section.text
+    assert "This constructor has more documentation" in constructor_section.text
+    assert "specific constructor" in constructor_section.text
+    assert "More documentation" in constructor_section.text
+
+
+def test_types_finaliser(example_project):
+    path, _ = example_project
+    index = read_html(path / "type/example_type.html")
+
+    finaliser_section = index.find("h2", string="Finalization Procedures").parent
+
+    assert "This is the finaliser" in finaliser_section.text
+    assert "This finaliser has more documentation" in finaliser_section.text
+    assert "Cleans up" in finaliser_section.ul.text
+    assert "More documentation" in finaliser_section.ul.text
 
 
 def test_graph_submodule(example_project):
@@ -238,6 +281,12 @@ def test_side_panel(example_project):
     assert (
         constructor_panel.a["href"]
         == "../type/example_type.html#interface-example_type"
+    )
+    finaliser_panel = type_index.find(id="fins-1")
+    assert finaliser_panel.a.text == "example_type_finalise"
+    assert (
+        finaliser_panel.a["href"]
+        == "../type/example_type.html#finalproc-example_type_finalise"
     )
 
     check_index = read_html(path / "interface/check.html")
