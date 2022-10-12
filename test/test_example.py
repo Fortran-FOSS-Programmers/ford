@@ -337,3 +337,35 @@ def test_public_procedure_links(example_project):
     subroutine_box = index.find(id="proc-increment").parent
     assert subroutine_box.a is not None
     assert subroutine_box.a["href"] == "../proc/increment.html"
+
+
+def test_all_internal_links_resolve(example_project):
+    """Opens every HTML file, finds all relative links and checks that
+    they resolve to files that actually exist. Furthermore, if the
+    link has a fragment ("#something"), check that that fragment
+    exists in the specified file.
+
+    """
+
+    path, _ = example_project
+    html_files = {}
+
+    for html in path.glob("**/*.html"):
+        with open(html, "r") as f:
+            html_files[html] = BeautifulSoup(f.read(), features="html.parser")
+
+    for html, index in html_files.items():
+        for a_tag in index("a"):
+            link = urlparse(a_tag.get("href", ""))
+            if not link.path.startswith("."):
+                continue
+
+            link_path = (html.parent / link.path).resolve()
+            assert link_path.exists(), html
+
+            if not link.fragment:
+                continue
+
+            # Check that fragments resolve too
+            index2 = html_files[link_path]
+            assert index2.find("a", href=re.compile(link.fragment)), html
