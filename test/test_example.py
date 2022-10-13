@@ -3,6 +3,7 @@ import sys
 import os
 import pathlib
 import re
+from urllib.parse import urlparse
 
 import ford
 
@@ -158,10 +159,52 @@ def test_types_type_bound_procedure(example_project):
 
     bound_procedures_section = index.find("h2", string="Type-Bound Procedures").parent
 
-    assert "This will document" in bound_procedures_section.text, "Binding docstring"
+    assert "This will document" in bound_procedures_section.text, "Binding summary"
     assert (
-        "has more documentation" in bound_procedures_section.text
-    ), "Full procedure docstring"
+        "This binding has more documentation" in bound_procedures_section.text
+    ), "Binding full docstring"
+    assert (
+        "Prints how many times" in bound_procedures_section.ul.text
+    ), "Full procedure summary"
+    assert (
+        "This subroutine has more documentation" in bound_procedures_section.ul.text
+    ), "Full procedure full docstring"
+
+
+def test_types_constructor_summary(example_project):
+    path, _ = example_project
+    index = read_html(path / "type/example_type.html")
+
+    constructor_section = index.find("h2", string="Constructor").parent
+
+    assert "This is a constructor for our type" in constructor_section.text
+    assert "This constructor has more documentation" in constructor_section.text
+    assert "specific constructor" in constructor_section.ul.text
+    assert "More documentation" in constructor_section.ul.text
+
+
+def test_types_constructor_page(example_project):
+    path, _ = example_project
+    index = read_html(path / "interface/example_type.html")
+
+    constructor_section = index.find("h2", string=re.compile("example_type")).parent
+
+    assert "This is a constructor for our type" in constructor_section.text
+    assert "This constructor has more documentation" in constructor_section.text
+    assert "specific constructor" in constructor_section.text
+    assert "More documentation" in constructor_section.text
+
+
+def test_types_finaliser(example_project):
+    path, _ = example_project
+    index = read_html(path / "type/example_type.html")
+
+    finaliser_section = index.find("h2", string="Finalization Procedures").parent
+
+    assert "This is the finaliser" in finaliser_section.text
+    assert "This finaliser has more documentation" in finaliser_section.text
+    assert "Cleans up" in finaliser_section.ul.text
+    assert "More documentation" in finaliser_section.ul.text
 
 
 def test_graph_submodule(example_project):
@@ -239,6 +282,12 @@ def test_side_panel(example_project):
         constructor_panel.a["href"]
         == "../type/example_type.html#interface-example_type"
     )
+    finaliser_panel = type_index.find(id="fins-1")
+    assert finaliser_panel.a.text == "example_type_finalise"
+    assert (
+        finaliser_panel.a["href"]
+        == "../type/example_type.html#finalproc-example_type_finalise"
+    )
 
     check_index = read_html(path / "interface/check.html")
     check_sidebar = check_index.find(id="sidebar")
@@ -263,3 +312,60 @@ def test_variable_lists(example_project):
     expected_declaration = "real(kind=real64) :: global_pi = acos(-1) a global variable, initialized to the value of pi"
     declaration_no_whitespace = varlist.tbody.text.replace("\n", "").replace(" ", "")
     assert declaration_no_whitespace == expected_declaration.replace(" ", "")
+
+
+def test_deprecated(example_project):
+    path, _ = example_project
+    index = read_html(path / "module/test_module.html")
+
+    apply_check_box = index.find(id="proc-apply_check").parent
+    assert apply_check_box.h3.span.text == "Deprecated"
+
+
+def test_private_procedure_links(example_project):
+    path, _ = example_project
+    index = read_html(path / "type/example_type.html")
+
+    subroutine_box = index.find("h3", string=re.compile("example_type_say"))
+    assert subroutine_box.a is None
+
+
+def test_public_procedure_links(example_project):
+    path, _ = example_project
+    index = read_html(path / "module/test_module.html")
+
+    subroutine_box = index.find(id="proc-increment").parent
+    assert subroutine_box.a is not None
+    assert subroutine_box.a["href"] == "../proc/increment.html"
+
+
+def test_all_internal_links_resolve(example_project):
+    """Opens every HTML file, finds all relative links and checks that
+    they resolve to files that actually exist. Furthermore, if the
+    link has a fragment ("#something"), check that that fragment
+    exists in the specified file.
+
+    """
+
+    path, _ = example_project
+    html_files = {}
+
+    for html in path.glob("**/*.html"):
+        with open(html, "r") as f:
+            html_files[html] = BeautifulSoup(f.read(), features="html.parser")
+
+    for html, index in html_files.items():
+        for a_tag in index("a"):
+            link = urlparse(a_tag.get("href", ""))
+            if not link.path.startswith("."):
+                continue
+
+            link_path = (html.parent / link.path).resolve()
+            assert link_path.exists(), html
+
+            if not link.fragment:
+                continue
+
+            # Check that fragments resolve too
+            index2 = html_files[link_path]
+            assert index2.find("a", href=re.compile(link.fragment)), html

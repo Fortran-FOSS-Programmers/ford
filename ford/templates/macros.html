@@ -151,6 +151,13 @@
   {%- if condition -%},{% endif %}
 {% endmacro %}
 
+{% macro deprecated(entity) %}
+  {# Add 'Deprecated' warning #}
+  {%- if entity.meta['deprecated'] -%}
+    <span class="label label-danger depwarn">Deprecated</span>
+  {%- endif -%}
+{% endmacro %}
+
 {% macro variable_list(variables, intent=False, permission=False, summary=False, id=True) %}
   <table class="table table-striped varlist">
     <thead>
@@ -233,7 +240,16 @@
   {%- endif -%}
 {%- endmacro -%}
 
-{% macro proc_summary(proc,title=True,small=False,proto=False) %}
+{%- macro docstring(entity, full_docstring=True) -%}
+  {# Display either the full docstring or just the summary #}
+  {%- if full_docstring or not entity.visible -%}
+    {{ entity.doc }}
+  {%- else -%}
+    {{ entity.meta["summary"] }}
+  {%- endif -%}
+{%- endmacro -%}
+
+{% macro proc_summary(proc, title=True, small=False, proto=False, full_docstring=False) %}
   {# Render the summary of a procedure, to be used in lists of procedures, for example #}
   {% if title %}
     {{ header(3, small) }}
@@ -244,7 +260,7 @@
   {% if proc.parent and proc.visible %}
     {{ meta_list(proc.meta) }}
   {% endif %}
-  {{ proc.meta['summary'] }}
+  {{ docstring(proc, full_docstring) }}
 
   {{ header(4, small) }}Arguments{{ close_header(4, small) }}
   {% if proc.args %}
@@ -257,7 +273,7 @@
     Return Value
     <small>{{ proc.retvar.full_declaration }}</small>
     {{ close_header(4, small) }}
-    {{ proc.retvar.meta['summary'] }}
+    {{ docstring(proc.retvar, full_docstring) }}
   {% endif %}
 {% endmacro %}
 
@@ -294,9 +310,7 @@
 {% macro bound_info(tb) %}
   <div class="panel panel-default">
     <div class="panel-heading codesum"><span class="anchor" id="{{ tb.anchor }}"></span><h3>{% if tb.generic -%}generic,{% else %}procedure{% if tb.proto -%}({% if not tb.protomatch or tb.proto.visible -%}{{ tb.proto }}{% else %}{{ tb.proto.name }}{%- endif %}){%- endif %},{%- endif %} {{ tb.permission }}{% if tb.deferred -%}, deferred{%- endif %}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {% for bind in tb.bindings -%}{% if not bind.parent or bind.visible %}{{ bind }}{% else %}{{ bind.name }}{% endif %}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
-        {% if tb.meta['deprecated'] and tb.meta['deprecated'].lower() == 'true' %}
-          <span class="label label-danger depwarn">Deprecated</span>
-        {% endif %}
+        {{ deprecated(tb) }}
     </h3></div>
     {% if tb.doc or meta_list(tb.meta)|trim|length is more_than_one %}
       <div class="panel-body">
@@ -325,12 +339,7 @@
             {% endif %}
           {% else %}
             {% if bind.obj == 'interface' %}
-              <h3>interface
-                {% if bind.meta['deprecated'] and bind.meta['deprecated'].lower() == 'true' %}
-                  <span class="label label-danger depwarn">Deprecated</span>
-                {% endif %}
-              </h3>
-
+              <h3>interface {{ deprecated(bind) }}</h3>
               {% if bind.doc or (meta_list(bind.meta)|trim and not bind.visible) %}
                 {% if not bind.visible %}
                   {{ meta_list(bind.meta) }}
@@ -349,36 +358,39 @@
 {% endmacro %}
 
 
-{% macro interface(intr) %}
+{% macro interface(intr, full_docstring=True) %}
   <div class="panel panel-default">
-    <div class="panel-heading codesum"><span class="anchor" id="{{ intr.anchor }}"></span><h3>{% if intr.parobj == 'module' and intr.generic %}{{ intr.permission }} {% endif %}interface {% if intr.generic %}{% if intr.visible %}{{ intr }}{% else %}{{ intr.name }}{% endif %}{% endif %}
-        {% if intr.meta['deprecated'] and intr.meta['deprecated'].lower() == 'true' %}
-          <span class="label label-danger depwarn">Deprecated</span>
-        {% endif %}
-    </h3></div>
+    <div class="panel-heading codesum">
+      <span class="anchor" id="{{ intr.anchor }}"></span>
+      <h3>{% if intr.parobj == 'module' and intr.generic %}{{ intr.permission }}{% endif %}
+        interface
+        {%- if intr.generic %} {{ intr }} {% endif -%}
+        {{ deprecated(intr) }}
+      </h3>
+    </div>
     {% if intr.doc or (meta_list(intr.meta)|trim and not intr.visible) %}
       <div class="panel-body">
         {% if not intr.visible %}
           {{ meta_list(intr.meta) }}
         {% endif %}
-        {{ intr.meta['summary'] }}
+        {{ docstring(intr, full_docstring) }}
       </div>
     {% endif %}
     <ul class="list-group">
       {% if intr.generic %}
-        {% for proc in intr.functions + intr.subroutines %}
+        {% for proc in intr.routines %}
           <li class="list-group-item">
-            {{ proc_summary(proc) }}
+            {{ proc_summary(proc, full_docstring=full_docstring) }}
           </li>
         {% endfor %}
         {% for proc in intr.modprocs %}
           <li class="list-group-item">
-            {{ proc_summary(proc.procedure) }}
+            {{ proc_summary(proc.procedure, full_docstring=full_docstring) }}
           </li>
         {% endfor %}
       {% else %}
         <li class="list-group-item">
-          {{ proc_summary(intr.procedure) }}
+          {{ proc_summary(intr.procedure, full_docstring=full_docstring) }}
         </li>
       {% endif %}
     </ul>
@@ -388,9 +400,7 @@
 {% macro absinterface(intr) %}
   <div class="panel panel-default">
     <div class="panel-heading codesum"><span class="anchor" id="{{ intr.anchor }}"></span><h3>abstract interface
-        {% if intr.meta['deprecated'] and intr.meta['deprecated'].lower() == 'true' %}
-          <span class="label label-danger depwarn">Deprecated</span>
-        {% endif %}
+        {{ deprecated(intr) }}
     </h3></div>
     {% if intr.doc or meta_list(intr.meta)|trim %}
       <div class="panel-body">
@@ -408,9 +418,7 @@
 
 {% macro proc_line(proc,link=True,proto=False) %}
   {% if proc.mp %}module procedure {% if not proc.parent or (proc.visible and link) %}{{ proc }}{% else %}{{ proc.name }}{% endif %} <small>{% endif %}{% if (proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module')) and not proto %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{#{% if not loop.last or proc.module %}#} {#{% endif %}#}{%- endfor %}{% if proc.module and proc.module != True and (proc.parobj == 'interface' or proc.parobj == 'submodule') %}module {% endif %}{{ proc.proctype|lower }} {% if not proc.parent or (proc.visible and link and not proc.mp) %}{{ proc }}{% else %}{{ proc.name }}{% endif %}({% for arg in proc.args -%}{{ arg.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.proctype|lower == 'function' and proc.name != proc.retvar.name %} result({{ proc.retvar.name }}){% endif %}{% if proc.bindC %} bind({{ proc.bindC }}){% endif %}{% if proc.mp %}</small>{% endif %}
-  {% if proc.meta['deprecated'] and proc.meta['deprecated'].lower() == 'true' %}
-    <span class="label label-danger depwarn">Deprecated</span>
-  {% endif %}
+  {{ deprecated(proc) }}
   {% if proc.module and proc.module != True and proc.parobj == 'submodule' and proc.module.visible %}
     <a href='{{ proc.module.get_url() }}'><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
   {% endif %}
@@ -422,85 +430,130 @@
 
 {% macro final(proc) %}
   <div class="panel panel-default">
-    <div class="panel-heading codesum"><span class="anchor" id="{{ proc.anchor }}"></span><h3>final :: <strong>{{ proc.name }}</strong>
-        {% if proc.meta['deprecated'] and proc.meta['deprecated'].lower() == 'true' %}
-          <span class="label label-danger depwarn">Deprecated</span>
-        {% endif %}</h3></div>
-        <div class="panel-body">
-          {{ meta_list(proc.meta) }}
-          {{ proc.doc }}
-        </div>
-        <ul class="list-group">
-          <li class="list-group-item">
-            {{ proc_summary(proc.procedure,title=True) }}
-          </li>
-        </ul>
+    <div class="panel-heading codesum">
+      <span class="anchor" id="{{ proc.anchor }}"></span>
+      <h3>final :: <strong>{{ proc.name }}</strong> {{ deprecated(proc) }}</h3>
+    </div>
+    <div class="panel-body">
+      {{ meta_list(proc.meta) }}
+      {{ proc.doc }}
+    </div>
+    <ul class="list-group">
+      <li class="list-group-item">
+        {{ proc_summary(proc.procedure, title=True, full_docstring=True) }}
+      </li>
+    </ul>
   </div>
 {% endmacro %}
 
+{% macro display_permission(item) %}
+  {% if item.parobj == "module" or (item.parobj == "interface" and item.parent.parobj == "module") %}
+    {{ item.permission }}
+  {% endif %}
+{% endmacro %}
 
 {% macro type_summary(dtype) %}
   <div class="panel panel-default">
-    <div class="panel-heading codesum"><span class="anchor" id="{{ dtype.anchor }}"></span><h3>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% if dtype.sequence %}, sequence {% endif %}{% for attrib in dtype.attributes -%}, {{ attrib }}{%- endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {% if dtype.visible %}{{ dtype }}{% else %}{{ dtype.name }}{% endif %}
-        {% if dtype.meta['deprecated'] and dtype.meta['deprecated'].lower() == 'true' %}
-          <span class="label label-danger depwarn">Deprecated</span>
-        {% endif %}
-    </h3></div>
+    <div class="panel-heading codesum">
+      <span class="anchor" id="{{ dtype.anchor }}"></span>
+      <h3>
+        type
+        {%- if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif -%}
+        {%- if dtype.sequence %}, sequence {% endif -%}
+        {{ dtype.attribs | join(", ") }}
+        {%- if dtype.extends %}, extends({{ dtype.extends }}){% endif -%}&nbsp;::&nbsp;
+        {{ dtype }}
+        {{ deprecated(dtype) }}
+      </h3>
+    </div>
     <div class="panel-body">
-      {% if dtype.doc or (meta_list(dtype.meta)|trim and not dtype.visible) %}
-        {% if not dtype.visible %}
-          {{ meta_list(dtype.meta) }}
-        {% endif %}
-        {{ dtype.meta['summary'] }}
+      {% if not dtype.visible %}
+        {{ meta_list(dtype.meta) }}
       {% endif %}
+      {{ dtype.meta['summary'] }}
+
       {% if dtype.variables %}
         <h4>Components</h4>
         {{ variable_list(dtype.variables, permission=True, summary=True) }}
       {% endif %}
+
       {% if dtype.constructor %}
         <h4>Constructor</h4>
         {% if dtype.constructor.obj == 'interface' %}
-          {{ dtype.constructor.meta['summary'] }}
+          {{ docstring(dtype.constructor, full_docstring=False) }}
         {% endif %}
         <table class="table table-striped varlist">
           <tbody>
             {% if dtype.constructor.obj == 'proc' %}
-              <tr><td>{{ proc_line(dtype.constructor) }}</td><td>{{ dtype.constructor.meta['summary'] }}</td></tr>
+              <tr>
+                <td>{{ proc_line(dtype.constructor) }}</td>
+                <td>{{ docstring(dtype.constructor, full_docstring=False) }}</td>
+              </tr>
             {% elif dtype.constructor.obj == 'interface' %}
-              {% for proc in dtype.constructor.functions + dtype.constructor.subroutines %}
-                <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.visible %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind({{ proc.bindC }}){% endif %}</td><td>{{ proc.meta['summary'] }}</td></tr>
-              {% endfor %}
-              {% for mproc in dtype.constructor.modprocs %}
-                {% set proc = mproc.procedure %}
-                <tr><td>{% if proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module') %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{% if not loop.last -%}, {%- endif %}{%- endfor %} {{ proc.proctype|lower }} <strong>{% if proc.visible %}{{ proc }}{% else %}{{ proc.name }}{% endif %}</strong>({% for arg in proc.args -%}{{ arg }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.bindC -%}, bind({{ proc.bindC }}){% endif %}</td><td>{{ proc.meta['summary'] }}</td></tr>
+              {% for proc in dtype.constructor.routines|list + dtype.constructor.modprocs|map(attribute="procedure")|list %}
+                <tr>
+                  <td>
+                    {{ display_permission(proc) }}
+                    {{ proc.attribs | join(", ") }}
+                    {{ proc.proctype|lower }}
+                    <strong>{{ proc }}</strong>
+                    ({{ proc.args | join(", ") }})
+                    {% if proc.bindC -%}, bind({{ proc.bindC }}){% endif %}
+                  </td>
+                  <td>{{ docstring(proc, full_docstring=False) }}</td>
+                </tr>
               {% endfor %}
             {% endif %}
           </tbody>
         </table>
       {% endif %}
+
       {% if dtype.finalprocs %}
         <h4>Finalizations Procedures</h4>
         <table class="table table-striped varlist">
           <tbody>
             {% for fin in dtype.finalprocs %}
-              <tr><td>final :: <strong>{{ fin.name }}</strong></h3></td><td>{{ fin.meta['summary'] }}</td></tr>
+              <tr>
+                <td>final :: <strong>{{ fin.name }}</strong></td>
+                <td>{{ fin.meta['summary'] }}</td>
+              </tr>
             {% endfor %}
-</tbody>
-</table>
-{% endif %}
-{% if dtype.boundprocs %}
-  <h4>Type-Bound Procedures</h4>
-  <table class="table table-striped varlist">
-    <tbody>
-      {% for tb in dtype.boundprocs %}
-        <tr><td>{% if tb.generic -%}generic,{% else %}procedure{% if tb.proto -%}({% if not tb.protomatch -%}{{ tb.proto }}{% else %}{{ tb.proto.name }}{%- endif %}){%- endif %},{%- endif %} {{ tb.permission }}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb }}</strong> {% if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {% for bind in tb.bindings -%}{{ bind.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}</td>
-          <td>{{ tb.meta['summary'] }}</td></tr>
-        {% endfor %}
-    </tbody>
-  </table>
-{% endif %}
-</div>
-</div>
+          </tbody>
+        </table>
+      {% endif %}
+
+      {% if dtype.boundprocs %}
+        <h4>Type-Bound Procedures</h4>
+        <table class="table table-striped varlist">
+          <tbody>
+            {% for tb in dtype.boundprocs %}
+              <tr>
+                <td>
+                  {% if tb.generic -%}
+                    generic,
+                  {% else %}
+                    procedure
+                    {% if tb.proto -%}
+                      ({% if not tb.protomatch -%}{{ tb.proto }}{% else %}{{ tb.proto.name }}{%- endif %})
+                    {%- endif %}
+                    ,
+                  {%- endif %}
+                  {{ tb.permission }}
+                  {% if tb.attribs -%}, {{ tb.attribs|join(", ") }}{%- endif %}
+                  :: <strong>{{ tb }}</strong>
+                  {% if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} =>
+                    {{ tb.bindings|join(", ") }}
+                  {% endif %}
+                  {% if tb.bindings|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
+                </td>
+                <td>{{ tb.meta['summary'] }}</td>
+              </tr>
+              {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  </div>
 {% endmacro %}
 
 {% macro common_block(com) %}
@@ -509,9 +562,7 @@
         <a data-toggle="popover" data-html="true" tabindex="0"
            data-trigger="focus"
            data-content="<h4>Used Elsewhere:</h4>{% for item in com.other_uses %}{% if item != com %}<a href='{{ item.get_url() }}'>{% if item.parent.name -%}{{ item.parent.name }}{%- else -%}<em>unnamed</em>{%- endif %}</a> ({% if item.parobj == 'proc' -%}{{ item.parent.proctype|lower }}{%- else -%}{{ item.parobj }}{%- endif %})<br>{% endif %}{% endfor %}">common{% if com.name %} /{{ com.name }}/{% endif %}</a>
-           {% if com.meta['deprecated'] and com.meta['deprecated'].lower() == 'true' %}
-             <span class="label label-danger depwarn">Deprecated</span>
-           {% endif %}
+           {{ deprecated(com) }}
     </h3></div>
     <div class="panel-body">
       {% if meta_list(com.meta)|trim %}
@@ -528,7 +579,7 @@
 
 {% macro enum_entry(enum) %}
   <div class="panel panel-default">
-    <div class="panel-heading codesum"><span class="anchor" id="{{ enum.anchor }}"></span><h3>enum, bind(c){% if enum.meta['deprecated'] and enum.meta['deprecated'].lower() == 'true' %}<span class="label label-danger depwarn">Deprecated</span>{% endif %}</h3></div>
+    <div class="panel-heading codesum"><span class="anchor" id="{{ enum.anchor }}"></span><h3>enum, bind(c){{ deprecated(enum) }}</h3></div>
     <div class="panel-body">
       <h4>Enumerators</h4>
       <table class="table table-striped varlist">

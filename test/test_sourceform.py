@@ -1372,3 +1372,16 @@ def test_url(parse_fortran_file):
         .get_url()
         .endswith("/module/mod_foo.html#variable-real_foo")
     )
+
+
+def test_single_character_interface(parse_fortran_file):
+    data = """\
+    module a
+      interface b !! some comment
+        module procedure c
+      end interface b
+    end module a
+    """
+    fortran_file = parse_fortran_file(data)
+    assert fortran_file.modules[0].interfaces[0].name == "b"
+    assert fortran_file.modules[0].interfaces[0].doc == [" some comment"]

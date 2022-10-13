@@ -25,6 +25,8 @@ contains
 #endif
 
   subroutine apply_check(f)
+    !! deprecated: true
+    !!
     !! Takes a function and immediately calls it
     procedure(check) :: f
     !! Some function to call
