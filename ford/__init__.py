@@ -251,7 +251,7 @@ def get_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "-d",
         "--src_dir",
-        action="append",
+        nargs="+",
         default=["./src"],
         help="directories containing all source files for the project",
     )

@@ -1,5 +1,6 @@
 import ford
 from textwrap import dedent
+import sys
 import pytest
 
 from conftest import gfortran_is_not_installed
@@ -133,3 +134,27 @@ def test_gfortran_preprocessor():
     data, _, _ = ford.parse_arguments({}, "preprocessor: gfortran -E")
 
     assert data["preprocess"] is True
+
+
+def test_absolute_src_dir(monkeypatch, tmp_path):
+    project_file = tmp_path / "example.md"
+    project_file.touch()
+    src_dir = str(tmp_path / "not_here")
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, "argv", ["ford", str(project_file)])
+        args = ford.get_command_line_arguments()
+
+    assert args.src_dir == ["./src"]
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, "argv", ["ford", str(project_file), "--src_dir", src_dir])
+        args = ford.get_command_line_arguments()
+
+    assert args.src_dir == [src_dir]
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, "argv", ["ford", "--src_dir", src_dir, "--", str(project_file)])
+        args = ford.get_command_line_arguments()
+
+    assert args.src_dir == [src_dir]
