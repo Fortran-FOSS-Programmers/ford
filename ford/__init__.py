@@ -241,7 +241,9 @@ def get_command_line_arguments() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(
         "ford",
-        description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.",
+        description="Document a program or library written in modern Fortran. "
+        "Any command-line options over-ride those specified in the project file.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "project_file",
