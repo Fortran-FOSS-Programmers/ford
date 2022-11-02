@@ -241,7 +241,9 @@ def get_command_line_arguments() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(
         "ford",
-        description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.",
+        description="Document a program or library written in modern Fortran. "
+        "Any command-line options over-ride those specified in the project file.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "project_file",
@@ -251,7 +253,7 @@ def get_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "-d",
         "--src_dir",
-        action="append",
+        nargs="+",
         default=["./src"],
         help="directories containing all source files for the project",
     )
@@ -286,8 +288,9 @@ def get_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "-e",
         "--extensions",
-        action="append",
-        help="extensions which should be scanned for documentation (default: f90, f95, f03, f08)",
+        nargs="+",
+        default=["f90", "f95", "f03", "f08"],
+        help="extensions which should be scanned for documentation",
     )
     parser.add_argument(
         "-m",
@@ -351,13 +354,14 @@ def get_command_line_arguments() -> argparse.Namespace:
         "-I",
         "--include",
         action="append",
-        help="list of directories to be searched for `include` files",
+        help="list of directories to be searched for ``include`` files",
     )
     parser.add_argument(
         "--externalize",
         action="store_const",
         const="true",
-        help="provide information about Fortran objects in a json database for other FORD projects to refer to.",
+        help="provide information about Fortran objects in a json database for "
+        "other FORD projects to refer to.",
     )
     parser.add_argument(
         "-L",
