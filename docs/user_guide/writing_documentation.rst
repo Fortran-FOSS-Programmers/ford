@@ -129,14 +129,14 @@ information to and/or customize the behaviour of FORD (see
 [[Documentation Meta-Data]]). Information on providing meta-data and
 what types of data FORD will look for can be found in the next section.
 
-LateX Support
+LaTeX Support
 -------------
 
 You can insert LaTeX into your documentation, which will be rendered
 by `MathJax <http://docs.mathjax.org>`__. Inline math is designated by
-``\\(...\\)``, math displayed on its own line is indicated by
-``$$...$$`` or ``\\[...\\]``, and a numbered equation is designated by
-``\\begin{equation}...\\end{equation}``. Inline math will not be
+``\(...\)``, math displayed on its own line is indicated by
+``$$...$$`` or ``\[...\]``, and a numbered equation is designated by
+``\begin{equation}...\end{equation}``. Inline math will not be
 displayed with the traditional ``$...$``, as there is too much risk
 that dollar signs used elsewhere will be misinterpreted. You can refer
 back to number equations as you would in a LaTeX document. For more
