@@ -985,3 +985,32 @@ def test_make_links(copy_fortran_file):
         link_locations = {a.string: a.get("href", None) for a in docstring("a")}
 
         assert link_locations == expected_links, (item, item.name)
+
+
+def test_submodule_procedure_issue_446(copy_fortran_file):
+    data = """\
+    module foo_mod
+      interface
+        module subroutine quaxx
+        end subroutine quaxx
+      end interface
+    end module foo_mod
+
+    submodule (foo_mod) bar_submod
+    contains
+      module procedure quaxx
+        print*, "implementation"
+      end procedure
+    end submodule bar_submod
+    """
+
+    settings = copy_fortran_file(data)
+    settings["display"] = ["public", "private", "protected"]
+    project = create_project(settings)
+    module = project.modules[0]
+
+    interface = module.interfaces[0]
+    assert interface.name == "quaxx"
+    submodproc = module.descendants[0].modprocedures[0]
+
+    assert interface.procedure.module == submodproc

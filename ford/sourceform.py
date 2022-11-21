@@ -1021,7 +1021,7 @@ class FortranCodeUnit(FortranContainer):
             self.all_absinterfaces.update(self.ancestor_module.all_absinterfaces)
             self.all_types.update(self.ancestor_module.all_types)
 
-        if isinstance(self, FortranSubmodule):
+        if isinstance(self, FortranModule):
             for proc in self.routines:
                 if proc.module and proc.name.lower() in self.all_procs:
                     intr = self.all_procs[proc.name.lower()]
@@ -1371,6 +1371,7 @@ class FortranModule(FortranCodeUnit):
         self.protected_list = []
         self.subroutines = []
         self.functions = []
+        self.modprocedures = []
         self.interfaces = []
         self.absinterfaces = []
         self.types = []
@@ -1716,6 +1717,8 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
     An object representing a the implementation of a Module Function or
     Module Subroutine in a sumbmodule.
     """
+
+    module = True
 
     def _initialize(self, line):
         self.proctype = "Module Procedure"
