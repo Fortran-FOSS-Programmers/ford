@@ -1021,37 +1021,27 @@ class FortranCodeUnit(FortranContainer):
             self.all_absinterfaces.update(self.ancestor_module.all_absinterfaces)
             self.all_types.update(self.ancestor_module.all_types)
 
+        # Module procedures will be missing (some/all?) metadata, so
+        # now we copy it from the interface
         if isinstance(self, FortranModule):
-            for proc in self.routines:
-                if proc.module and proc.name.lower() in self.all_procs:
-                    intr = self.all_procs[proc.name.lower()]
-                    if (
-                        intr.proctype.lower() == "interface"
-                        and not intr.generic
-                        and not intr.abstract
-                        and intr.procedure.module is True
-                    ):
-                        proc.module = intr
-                        intr.procedure.module = proc
+            for proc in filter(lambda p: p.module, self.routines):
+                intr = self.all_procs.get(proc.name.lower(), None)
+                if (
+                    intr
+                    and intr.proctype.lower() == "interface"
+                    and not intr.generic
+                    and not intr.abstract
+                    and intr.procedure.module is True
+                ):
+                    proc.module = intr
+                    intr.procedure.module = proc
 
-        if hasattr(self, "modprocedures"):
-            for proc in self.modprocedures:
-                if proc.name.lower() in self.all_procs:
-                    intr = self.all_procs[proc.name.lower()]
-                    # Don't think I need these checks...
-                    if (
-                        intr.proctype.lower() == "interface"
-                        and not intr.generic
-                        and not intr.abstract
-                        and intr.procedure.module is True
-                    ):
+                    if isinstance(proc, FortranSubmoduleProcedure):
                         proc.attribs = intr.procedure.attribs
                         proc.args = intr.procedure.args
                         if hasattr(intr.procedure, "retvar"):
                             proc.retvar = intr.procedure.retvar
                         proc.proctype = intr.procedure.proctype
-                        proc.module = intr
-                        intr.procedure.module = proc
 
         def should_be_public(name: str) -> bool:
             """Is name public?"""
