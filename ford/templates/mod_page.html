@@ -108,41 +108,37 @@
     {% for proc in module.subroutines %}
     {{ macros.proc_entry(proc) }}
     {% endfor %}
-    </section>    
+    </section>
     <br>
     {% endif %}
-    
-    {% if  module.obj == 'submodule' %}
-    
-        {% if module.modfunctions|length > 0 %} 
-        <section>
+
+    {% if module.modfunctions %}
+      <section>
         <h2>Module Functions</h2>
         {% for proc in module.modfunctions %}
-        {{ macros.proc_entry(proc) }}
+          {{ macros.proc_entry(proc) }}
         {% endfor %}
-        </section>
-        <br>
-        {% endif %}
+      </section>
+      <br>
+    {% endif %}
 
-        {% if module.modsubroutines|length > 0 %}
-        <section>
+    {% if module.modsubroutines %}
+      <section>
         <h2>Module Subroutines</h2>
         {% for proc in module.modsubroutines %}
-        {{ macros.proc_entry(proc) }}
+          {{ macros.proc_entry(proc) }}
         {% endfor %}
-        </section>
-        <br>
-        {% endif %}
+      </section>
+      <br>
+    {% endif %}
 
-        {% if module.modprocedures|length > 0 %}
-        <section>
+    {% if module.modprocedures %}
+      <section>
         <h2>Module Procedures</h2>
         {% for proc in module.modprocedures %}
-        {{ macros.proc_entry(proc) }}
+          {{ macros.proc_entry(proc) }}
         {% endfor %}
-        </section>    
-        {% endif %}
-    
+      </section>
     {% endif %}
     </div>
   </div>
