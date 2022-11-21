@@ -1464,9 +1464,7 @@ class FortranSubmodule(FortranModule):
         # will be added later, during correlation.
         self.process_attribs()
         self.variables = [v for v in self.variables if "external" not in v.attribs]
-        self.all_procs = {}
-        for p in self.routines:
-            self.all_procs[p.name.lower()] = p
+        self.all_procs = {p.name.lower(): p for p in self.routines}
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
@@ -1740,9 +1738,7 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
 
     def _cleanup(self):
         self.process_attribs()
-        self.all_procs = {}
-        for p in self.routines:
-            self.all_procs[p.name.lower()] = p
+        self.all_procs = {p.name.lower(): p for p in self.routines}
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
