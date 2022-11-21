@@ -1713,7 +1713,7 @@ class FortranFunction(FortranCodeUnit):
 class FortranSubmoduleProcedure(FortranCodeUnit):
     """
     An object representing a the implementation of a Module Function or
-    Module Subroutine in a sumbmodule.
+    Module Subroutine in a submodule.
     """
 
     module = True
