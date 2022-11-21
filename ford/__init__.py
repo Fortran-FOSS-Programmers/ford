@@ -243,7 +243,6 @@ def get_command_line_arguments() -> argparse.Namespace:
         "ford",
         description="Document a program or library written in modern Fortran. "
         "Any command-line options over-ride those specified in the project file.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "project_file",
@@ -253,20 +252,18 @@ def get_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "-d",
         "--src_dir",
-        nargs="+",
-        default=["./src"],
-        help="directories containing all source files for the project",
+        action="append",
+        help="directories containing all source files for the project (default: ``./src``)",
     )
     parser.add_argument(
         "-p",
         "--page_dir",
-        help="directory containing static pages",
+        help="directory containing static pages (default: None)",
     )
     parser.add_argument(
         "-o",
         "--output_dir",
-        default="./doc",
-        help="directory in which to place output files",
+        help="directory in which to place output files (default: ``./doc``)",
     )
     parser.add_argument("-s", "--css", help="custom style-sheet for the output")
     parser.add_argument(
@@ -288,9 +285,8 @@ def get_command_line_arguments() -> argparse.Namespace:
     parser.add_argument(
         "-e",
         "--extensions",
-        nargs="+",
-        default=["f90", "f95", "f03", "f08"],
-        help="extensions which should be scanned for documentation",
+        action="append",
+        help="extensions which should be scanned for documentation (default: ``f90, f95, f03, f08``)",
     )
     parser.add_argument(
         "-m",
