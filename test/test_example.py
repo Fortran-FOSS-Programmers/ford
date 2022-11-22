@@ -369,3 +369,30 @@ def test_all_internal_links_resolve(example_project):
             # Check that fragments resolve too
             index2 = html_files[link_path]
             assert index2.find("a", href=re.compile(link.fragment)), html
+
+
+def test_submodule_procedure_implementation_links(example_project):
+    path, _ = example_project
+    module_index = read_html(path / "module/test_module.html")
+
+    interfaces_section = module_index.find("h2", string="Interfaces").parent
+    check_heading = interfaces_section.ul.li
+    assert "subroutine check" in check_heading.text
+    implementation_link = check_heading.a
+    assert implementation_link["href"].endswith("proc/check.html")
+
+    proc_index = read_html(path / "proc/check.html")
+    check_impl_heading = proc_index.find(string=re.compile("subroutine +check")).parent
+    assert check_impl_heading.text.startswith("module subroutine check")
+    check_interface_link = check_impl_heading.a
+    assert "Interface" in check_interface_link.text
+    assert check_interface_link["href"].endswith("interface/check.html")
+
+    interface_index = read_html(path / "interface/check.html")
+    check_interface_heading = interface_index.find(
+        string=re.compile("subroutine +check")
+    ).parent
+    assert check_interface_heading.text.startswith("public module subroutine check")
+    check_impl_link = check_interface_heading.a
+    assert "Implementation" in check_impl_link.text
+    assert check_impl_link["href"].endswith("proc/check.html")

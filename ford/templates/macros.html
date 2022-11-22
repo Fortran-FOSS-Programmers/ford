@@ -416,14 +416,19 @@
   </div>
 {% endmacro %}
 
-{% macro proc_line(proc,link=True,proto=False) %}
-  {% if proc.mp %}module procedure {% if not proc.parent or (proc.visible and link) %}{{ proc }}{% else %}{{ proc.name }}{% endif %} <small>{% endif %}{% if (proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module')) and not proto %}{{ proc.permission }} {% endif %}{% for attrib in proc.attribs -%}{{ attrib }}{#{% if not loop.last or proc.module %}#} {#{% endif %}#}{%- endfor %}{% if proc.module and proc.module != True and (proc.parobj == 'interface' or proc.parobj == 'submodule') %}module {% endif %}{{ proc.proctype|lower }} {% if not proc.parent or (proc.visible and link and not proc.mp) %}{{ proc }}{% else %}{{ proc.name }}{% endif %}({% for arg in proc.args -%}{{ arg.name }}{% if not loop.last -%}, {% endif %}{%- endfor %}){% if proc.proctype|lower == 'function' and proc.name != proc.retvar.name %} result({{ proc.retvar.name }}){% endif %}{% if proc.bindC %} bind({{ proc.bindC }}){% endif %}{% if proc.mp %}</small>{% endif %}
+{% macro proc_line(proc, link=True, proto=False) %}
+  {% if proc.mp %}module procedure {% if not proc.parent or (proc.visible and link) %}{{ proc }}{% else %}{{ proc.name }}{% endif %} <small>{% endif -%}
+  {% if (proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module')) and not proto %}{{ proc.permission }} {% endif -%}
+  {{ proc.attribs | join(" ") }} {{ proc.proctype |lower }}
+  {%- if not proc.parent or (proc.visible and link and not proc.mp) %} {{ proc }}{% else %} {{ proc.name }}{% endif -%}
+  ({{ proc.args | join(", ") }})
+  {%- if proc.proctype|lower == 'function' and proc.name != proc.retvar.name %} result({{ proc.retvar.name }}){% endif -%}
+  {% if proc.bindC %} bind({{ proc.bindC }}){% endif %}
+  {% if proc.mp %}</small>{% endif %}
   {{ deprecated(proc) }}
-  {% if proc.module and proc.module != True and proc.parobj == 'submodule' and proc.module.visible %}
-    <a href='{{ proc.module.get_url() }}'><button type="button" class="btn btn-info depwarn">Interface &rarr;</button></a>
-  {% endif %}
-  {% if proc.module and proc.module != True and proc.parobj == 'interface' and proc.module.visible %}
-    <a href='{{ proc.module.get_url() }}'><button type="button" class="btn btn-info depwarn">Implementation &rarr;</button></a>
+  {% if proc.module and proc.module != True and proc.module.visible %}
+    {% set label = "Implementation" if proc.parobj == 'interface' else "Interface" %}
+    <a href='{{ proc.module.get_url() }}'><button type="button" class="btn btn-info depwarn">{{ label }} &rarr;</button></a>
   {% endif %}
 {% endmacro %}
 

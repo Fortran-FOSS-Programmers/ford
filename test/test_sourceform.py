@@ -1385,3 +1385,55 @@ def test_single_character_interface(parse_fortran_file):
     fortran_file = parse_fortran_file(data)
     assert fortran_file.modules[0].interfaces[0].name == "b"
     assert fortran_file.modules[0].interfaces[0].doc == [" some comment"]
+
+
+def test_module_procedure_in_module(parse_fortran_file):
+    data = """\
+    module foo_mod
+      interface
+        module subroutine quaxx
+        end subroutine quaxx
+      end interface
+    contains
+      module procedure quaxx
+        print*, "implementation"
+      end procedure
+    end module foo_mod
+    """
+
+    fortran_file = parse_fortran_file(data)
+    module = fortran_file.modules[0]
+    module.correlate(None)
+
+    interface = module.interfaces[0]
+    assert interface.name == "quaxx"
+    modproc = module.modprocedures[0]
+
+    assert interface.procedure.module == modproc
+    assert modproc.module == interface
+
+
+def test_module_interface_same_name_as_interface(parse_fortran_file):
+    data = """\
+    module foo_m
+      interface foo
+        module function foo() result(bar)
+          logical bar
+        end function
+      end interface
+    contains
+      module procedure foo
+        bar = .true.
+      end procedure
+    end module
+    """
+
+    fortran_file = parse_fortran_file(data)
+    module = fortran_file.modules[0]
+    module.correlate(None)
+
+    interface = module.interfaces[0]
+    assert interface.name == "foo"
+
+    modproc = module.modprocedures[0]
+    assert modproc.name == "foo"

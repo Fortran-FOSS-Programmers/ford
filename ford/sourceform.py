@@ -1021,37 +1021,27 @@ class FortranCodeUnit(FortranContainer):
             self.all_absinterfaces.update(self.ancestor_module.all_absinterfaces)
             self.all_types.update(self.ancestor_module.all_types)
 
-        if isinstance(self, FortranSubmodule):
-            for proc in self.routines:
-                if proc.module and proc.name.lower() in self.all_procs:
-                    intr = self.all_procs[proc.name.lower()]
-                    if (
-                        intr.proctype.lower() == "interface"
-                        and not intr.generic
-                        and not intr.abstract
-                        and intr.procedure.module is True
-                    ):
-                        proc.module = intr
-                        intr.procedure.module = proc
+        # Module procedures will be missing (some/all?) metadata, so
+        # now we copy it from the interface
+        if isinstance(self, FortranModule):
+            for proc in filter(lambda p: p.module, self.routines):
+                intr = self.all_procs.get(proc.name.lower(), None)
+                if (
+                    intr
+                    and intr.proctype.lower() == "interface"
+                    and not intr.generic
+                    and not intr.abstract
+                    and intr.procedure.module is True
+                ):
+                    proc.module = intr
+                    intr.procedure.module = proc
 
-        if hasattr(self, "modprocedures"):
-            for proc in self.modprocedures:
-                if proc.name.lower() in self.all_procs:
-                    intr = self.all_procs[proc.name.lower()]
-                    # Don't think I need these checks...
-                    if (
-                        intr.proctype.lower() == "interface"
-                        and not intr.generic
-                        and not intr.abstract
-                        and intr.procedure.module is True
-                    ):
+                    if isinstance(proc, FortranSubmoduleProcedure):
                         proc.attribs = intr.procedure.attribs
                         proc.args = intr.procedure.args
                         if hasattr(intr.procedure, "retvar"):
                             proc.retvar = intr.procedure.retvar
                         proc.proctype = intr.procedure.proctype
-                        proc.module = intr
-                        intr.procedure.module = proc
 
         def should_be_public(name: str) -> bool:
             """Is name public?"""
@@ -1371,6 +1361,7 @@ class FortranModule(FortranCodeUnit):
         self.protected_list = []
         self.subroutines = []
         self.functions = []
+        self.modprocedures = []
         self.interfaces = []
         self.absinterfaces = []
         self.types = []
@@ -1463,9 +1454,7 @@ class FortranSubmodule(FortranModule):
         # will be added later, during correlation.
         self.process_attribs()
         self.variables = [v for v in self.variables if "external" not in v.attribs]
-        self.all_procs = {}
-        for p in self.routines:
-            self.all_procs[p.name.lower()] = p
+        self.all_procs = {p.name.lower(): p for p in self.routines}
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
@@ -1714,8 +1703,10 @@ class FortranFunction(FortranCodeUnit):
 class FortranSubmoduleProcedure(FortranCodeUnit):
     """
     An object representing a the implementation of a Module Function or
-    Module Subroutine in a sumbmodule.
+    Module Subroutine in a submodule.
     """
+
+    module = True
 
     def _initialize(self, line):
         self.proctype = "Module Procedure"
@@ -1737,9 +1728,7 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
 
     def _cleanup(self):
         self.process_attribs()
-        self.all_procs = {}
-        for p in self.routines:
-            self.all_procs[p.name.lower()] = p
+        self.all_procs = {p.name.lower(): p for p in self.routines}
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface

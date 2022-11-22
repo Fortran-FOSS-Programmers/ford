@@ -3,6 +3,7 @@ module test_module
 
   interface
     module subroutine check()
+      !! Docstring on the interface
     end subroutine check
   end interface
 
@@ -35,8 +36,12 @@ contains
 end module test_module
 
 submodule (test_module) test_submodule
+  !! display: private
+  !!
+  !! Submodule specific docs
 contains
   module subroutine check()
+    !! Docstring on the implementation
     print*, "checking"
   end subroutine check
 end submodule test_submodule
