@@ -74,8 +74,6 @@ html_theme_options = dict(
     use_repository_button=True,
     use_issues_button=True,
     home_page_in_toc=False,
-    extra_navbar="",
-    navbar_footer_text="",
 )
 
 # -- Options for intersphinx extension ---------------------------------------
