@@ -786,12 +786,17 @@ class FakeParent:
     parent = None
 
 
+def _make_list_str() -> List[str]:
+    """This is just to stop mypy complaining for ``attribs`` below"""
+    return []
+
+
 @dataclass
 class FakeVariable:
     name: str
     vartype: str
-    parent: Optional[FakeParent] = FakeParent()
-    attribs: Optional[List[str]] = field(default_factory=list)
+    parent: Optional[FakeParent] = field(default_factory=FakeParent)
+    attribs: Optional[List[str]] = field(default_factory=_make_list_str)
     intent: str = ""
     optional: bool = False
     permission: str = "public"
