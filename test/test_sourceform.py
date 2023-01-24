@@ -790,7 +790,7 @@ class FakeParent:
 class FakeVariable:
     name: str
     vartype: str
-    parent: Optional[FakeParent] = FakeParent()
+    parent: Optional[FakeParent] = field(default_factory=FakeParent)
     attribs: Optional[List[str]] = field(default_factory=list)
     intent: str = ""
     optional: bool = False
