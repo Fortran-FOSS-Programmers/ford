@@ -17,9 +17,7 @@
     
     <div class="col-md-9" id='text'>
     {{ module.doc }}
-      {% if module.uses|length > 0 or (module.ancestry and
-      module.ancestry|length > 0) or module.usedbygraph or (module.descendants
-      and module.descendants|length > 0) %}<br>{% endif %}
+      {% if module.uses or module.ancestry or module.usedbygraph or module.descendants %}<br>{% endif %}
     {{ macros.use_list(module) }}
     {{ macros.usedby_list(module) }}
     <br>
@@ -29,7 +27,7 @@
     </section>
     <br class="visible-xs visible-sm hidden-md">
 
-    {% if module.common|length > 0 %}
+    {% if module.common %}
     <section>
       <h2>Common Blocks</h2>
       {% for com in module.common %}
@@ -44,7 +42,7 @@
     </script>
     {% endif %}
 
-    {% if module.variables|length > 0 %}
+    {% if module.variables %}
     <section>
     <h2>Variables</h2>
     {{ macros.variable_list(module.variables, permission=True) }}
@@ -52,7 +50,7 @@
     <br>
     {% endif %}
     
-    {% if module.enums|length > 0 %}
+    {% if module.enums %}
     <section>
     <h2>Enumerations</h2>
     {% for enum in module.enums %}
@@ -62,7 +60,7 @@
     <br>
     {% endif %}
     
-    {% if module.interfaces|length > 0 %}
+    {% if module.interfaces %}
     <section>
    <h2>Interfaces</h2>
    {% for intr in module.interfaces %}
@@ -72,7 +70,7 @@
   <br>
     {% endif %}
 
-    {% if module.absinterfaces|length > 0 %}
+    {% if module.absinterfaces %}
     <section>
      <h2>Abstract Interfaces</h2>
    {% for intr in module.absinterfaces %}
@@ -82,7 +80,7 @@
   <br>
     {% endif %}
     
-    {% if module.types|length > 0 %}
+    {% if module.types %}
     <section>
      <h2>Derived Types</h2>
    {% for type in module.types %}
@@ -92,7 +90,7 @@
   <br>
     {% endif %}
     
-    {% if module.functions|length > 0 %} 
+    {% if module.functions %} 
     <section>
     <h2>Functions</h2>
     {% for proc in module.functions %}
@@ -102,7 +100,7 @@
     <br>
     {% endif %}
 
-    {% if module.subroutines|length > 0 %}
+    {% if module.subroutines %}
     <section>
     <h2>Subroutines</h2>
     {% for proc in module.subroutines %}
