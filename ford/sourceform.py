@@ -1913,6 +1913,9 @@ class FortranType(FortranContainer):
         for obj in self.boundprocs + self.variables:
             obj.visible = True
 
+    def __repr__(self):
+        return f"FortranType('{self.name}', variables={self.variables}, boundprocs={self.boundprocs})"
+
 
 class FortranEnum(FortranContainer):
     """
@@ -2174,6 +2177,9 @@ class FortranVariable(FortranBase):
         attributes = [f", {part}" for part in attribute_parts]
         return f"{self.full_type}{''.join(attributes)}"
 
+    def __repr__(self):
+        return f"FortranVariable('{self.name}', type='{self.full_type}', permission='{self.permission}')"
+
 
 class FortranBoundProcedure(FortranBase):
     """
@@ -2253,6 +2259,9 @@ class FortranBoundProcedure(FortranBase):
             #    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
 
         self.sort_components()
+
+    def __repr__(self):
+        return f"FortranBoundProcedure('{self.name}', permission='{self.permission}')"
 
 
 class FortranModuleProcedure(FortranBase):
