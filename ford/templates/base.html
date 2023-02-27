@@ -62,7 +62,7 @@
      aria-expanded="false">Contents <span class="caret"></span></a>
         <ul class="dropdown-menu">
           {% if incl_src %}
-              {% if project.files|length + project.extra_files|length > 1 %}
+              {% if (project.files|length + project.extra_files|length) is more_than_one %}
             <li><a href="{{ project_url }}/lists/files.html">Source Files</a></li>
         {% else %}
             <li><a href="{{project.files[0].get_url()}}">Source File</a></li>
@@ -71,7 +71,7 @@
         {% if project.modules %}
             <li><a href="{{ project_url }}/lists/modules.html">Modules</a></li>
         {% endif %}
-            {% if project.blockdata|length > 1 %}
+            {% if project.blockdata|length is more_than_one %}
     <li><a href="{{ project_url }}/lists/blockdata.html">Block Data Units</a></li>
     {% elif project.blockdata|length == 1 %}
     <li><a href="{{ project.blockdata[0].get_url() }}">Block Data</a></li>
@@ -84,7 +84,7 @@
         {% endif %}       {% if project.types %}
             <li><a href="{{ project_url }}/lists/types.html">Derived Types</a></li>
         {% endif %}
-        {% if project.programs|length > 1 %}
+        {% if project.programs|length is more_than_one %}
             <li><a href="{{ project_url }}/lists/programs.html">Programs</a></li>
         {% elif project.programs|length == 1 %}
             <li><a href="{{ project.programs[0].get_url() }}">Program</a></li>
@@ -99,7 +99,7 @@
         
             </li>
 {% if incl_src %}
-{% if project.files|length + project.extra_files|length > 1 %}
+{% if project.files|length + project.extra_files|length is more_than_one %}
 <li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/files.html">Source Files</a></li>
 {% else %}
 <li class="visible-xs hidden-sm visible-lg"><a href="{{project.files[0].get_url()}}">Source File</a></li>
@@ -108,7 +108,7 @@
 {% if project.modules %}
 <li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/modules.html">Modules</a></li>
 {% endif %}
-{% if project.blockdata|length > 1 %}
+{% if project.blockdata|length is more_than_one %}
 <li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/blockdata.html">Block Data Units</a></li>
 {% elif project.blockdata|length == 1 %}
 <li class="visible-xs hidden-sm visible-lg"><a href="{{ project.blockdata[0].get_url() }}">Block Data</a></li>
@@ -121,7 +121,7 @@
 {% endif %}                             {% if project.types %}
 <li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/types.html">Derived Types</a></li>
 {% endif %}
-{% if project.programs|length > 1 %}
+{% if project.programs|length is more_than_one %}
 <li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/programs.html">Programs</a></li>
 {% elif project.programs|length == 1 %}
 <li class="visible-xs hidden-sm visible-lg"><a href="{{ project.programs[0].get_url() }}">Program</a></li>
