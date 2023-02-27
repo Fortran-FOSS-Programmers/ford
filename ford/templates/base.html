@@ -74,7 +74,7 @@
                   <li><a href="{{ project_url }}/lists/modules.html">Modules</a></li>
                 {% endif %}
                 {% if project.blockdata|length is more_than_one %}
-                  <li><a href="{{ project_url }}/lists/blockdata.html">Block Data Units</a></li>
+                  <li><a href="{{ project_url }}/lists/blockdata.html">Block Data</a></li>
                 {% elif project.blockdata|length == 1 %}
                   <li><a href="{{ project.blockdata[0].get_url() }}">Block Data</a></li>
                 {% endif %}
@@ -118,7 +118,7 @@
             {% endif %}
             {% if project.blockdata|length is more_than_one %}
               <li class="visible-xs hidden-sm visible-lg">
-                <a href="{{ project_url }}/lists/blockdata.html">Block Data Units</a>
+                <a href="{{ project_url }}/lists/blockdata.html">Block Data</a>
               </li>
             {% elif project.blockdata|length == 1 %}
               <li class="visible-xs hidden-sm visible-lg">
