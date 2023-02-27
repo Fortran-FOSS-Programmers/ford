@@ -66,6 +66,10 @@
         {% endfor %}
       {% endif %}
 
+      {%- if interface.variables -%}
+        <h2>Dummy Procedures and Procedure Pointers</h2>
+        {{ macros.variable_list(interface.variables, permission=False) }}
+      {%- endif -%}
     </div>
   </div>
 {% endblock body %}

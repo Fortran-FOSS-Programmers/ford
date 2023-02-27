@@ -1442,3 +1442,30 @@ def test_module_interface_same_name_as_interface(parse_fortran_file):
 
     modproc = module.modprocedures[0]
     assert modproc.name == "foo"
+
+
+def test_procedure_pointer(parse_fortran_file):
+    data = """\
+    module foo
+      abstract interface
+        integer pure function unary_f_t(n)
+          implicit none
+          integer, intent(in) :: n
+        end function
+      end interface
+
+      private
+
+      procedure(unary_f_t), pointer, public :: unary_f => null()
+
+      interface generic_unary_f
+        procedure unary_f
+      end interface
+    end module
+    """
+
+    fortran_file = parse_fortran_file(data)
+    module = fortran_file.modules[0]
+    module.correlate(None)
+    assert len(module.interfaces[0].modprocs) == 0
+    assert module.interfaces[0].variables[0].name == "unary_f"

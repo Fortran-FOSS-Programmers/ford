@@ -116,7 +116,12 @@ def test_source_file_links(example_index):
     source_files_list = sorted([f.text for f in source_files_box("li")])
 
     assert source_files_list == sorted(
-        ["ford_test_module.fpp", "ford_test_program.f90", "ford_example_type.f90"]
+        [
+            "ford_test_module.fpp",
+            "ford_test_program.f90",
+            "ford_example_type.f90",
+            "ford_interfaces.f90",
+        ]
     )
 
 
@@ -126,7 +131,9 @@ def test_module_links(example_index):
     modules_box = index.find(ANY_TEXT, string="Modules").parent
     modules_list = sorted([f.text for f in modules_box("li")])
 
-    assert modules_list == sorted(["test_module", "ford_example_type_mod"])
+    assert modules_list == sorted(
+        ["test_module", "ford_example_type_mod", "interfaces"]
+    )
 
 
 def test_procedures_links(example_index):
@@ -136,7 +143,15 @@ def test_procedures_links(example_index):
     proceduress_list = sorted([f.text for f in proceduress_box("li")])
 
     all_procedures = sorted(
-        ["decrement", "do_foo_stuff", "do_stuff", "increment", "check", "apply_check"]
+        [
+            "decrement",
+            "do_foo_stuff",
+            "do_stuff",
+            "increment",
+            "check",
+            "apply_check",
+            "higher_order_unary_f",
+        ]
     )
     max_frontpage_items = int(settings["max_frontpage_items"])
     front_page_list = all_procedures[:max_frontpage_items]
@@ -396,3 +411,26 @@ def test_submodule_procedure_implementation_links(example_project):
     check_impl_link = check_interface_heading.a
     assert "Implementation" in check_impl_link.text
     assert check_impl_link["href"].endswith("proc/check.html")
+
+
+def test_interfaces(example_project):
+    path, _ = example_project
+    interface_mod_page = read_html(path / "module/interfaces.html")
+
+    # Span inside the div we actually want, but this has an id
+    box_span = interface_mod_page.find(id="interface-generic_unary_f")
+    assert box_span
+
+    box = box_span.parent.parent
+
+    list_items = box("li")
+    list_item_titles = sorted([li.h3.text.strip() for li in list_items])
+    assert list_item_titles == sorted(
+        [
+            "public pure function real_unary_f(x)",
+            "public pure function higher_order_unary_f(f, n)",
+            "Dummy Procedures and Procedure Pointers",
+        ]
+    )
+
+    assert len(list_items[-1]("tr")) == 2

@@ -1377,6 +1377,12 @@ class FortranModule(FortranCodeUnit):
         self.all_procs = {}
         for p in self.routines:
             self.all_procs[p.name.lower()] = p
+
+        for var in self.variables:
+            # Count procedure pointers and dummy procedures
+            if var.vartype == "procedure":
+                self.all_procs[var.name.lower()] = var
+
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
@@ -1948,8 +1954,22 @@ class FortranEnum(FortranContainer):
 
 
 class FortranInterface(FortranContainer):
-    """
-    An object representing a Fortran interface.
+    """An `interface` block, including generic and abstract interfaces
+
+    Attributes
+    ----------
+    subroutines: list
+        External subroutines
+    functions: list
+        External functions
+    modprocs: list
+        Procedures defined in this scope
+    variables: list
+        Procedure pointers and dummy procedures
+    generic: bool
+        True if this is a generic interface
+    abstract: bool
+        True if this is an abstract interface
     """
 
     def _initialize(self, line):
@@ -1958,6 +1978,7 @@ class FortranInterface(FortranContainer):
         self.subroutines = []
         self.functions = []
         self.modprocs = []
+        self.variables = []
         self.generic = bool(self.name)
         self.abstract = bool(line.group(1))
         if self.generic and self.abstract:
@@ -1971,18 +1992,31 @@ class FortranInterface(FortranContainer):
         self.all_procs = self.parent.all_procs
         self.num_lines_all = self.num_lines
         if self.generic:
+            # Some "modprocs" are actually procedure pointers or dummy
+            # args, so we need to move them to a separate lsit
+            modprocs_to_pop = []
             for modproc in self.modprocs:
-                if modproc.name.lower() not in self.all_procs:
+                try:
+                    procedure = self.all_procs[modproc.name.lower()]
+                except KeyError:
                     raise RuntimeError(
                         f"Could not find interface procedure '{modproc.name}' in '{self.parent.name}'. "
                         f"Known procedures are: {list(self.all_procs.keys())}"
                     )
-                modproc.procedure = self.all_procs[modproc.name.lower()]
+
+                if isinstance(procedure, FortranVariable):
+                    self.variables.append(procedure)
+                    modprocs_to_pop.append(modproc)
+                    continue
+
+                modproc.procedure = procedure
                 self.num_lines_all += modproc.procedure.num_lines
-            for subrtn in self.subroutines:
-                subrtn.correlate(project)
-            for func in self.functions:
-                func.correlate(project)
+
+            for proc in modprocs_to_pop:
+                self.modprocs.remove(proc)
+
+            for proc in self.routines:
+                proc.correlate(project)
         else:
             self.procedure.correlate(project)
 
