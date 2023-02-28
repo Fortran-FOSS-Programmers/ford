@@ -388,6 +388,12 @@
             {{ proc_summary(proc.procedure, full_docstring=full_docstring) }}
           </li>
         {% endfor %}
+        {%- if intr.variables -%}
+          <li class="list-group-item">
+            <h3>Dummy Procedures and Procedure Pointers</h3>
+            {{ variable_list(intr.variables, permission=False) }}
+          </li>
+        {%- endif -%}
       {% else %}
         <li class="list-group-item">
           {{ proc_summary(intr.procedure, full_docstring=full_docstring) }}
