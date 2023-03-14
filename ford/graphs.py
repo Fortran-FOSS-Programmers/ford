@@ -172,7 +172,7 @@ class GraphData(object):
         not already present.
         """
         hist = hist or {}
-        # ~ ident = getattr(obj,'ident',obj)
+
         if is_submodule(obj, cls):
             if obj not in self.submodules:
                 self.submodules[obj] = SubmodNode(obj, self)
@@ -550,7 +550,7 @@ class FortranGraph(object):
             self.added.add(n)
         # add nodes and edges depending on the root nodes to the graph
         self.add_nodes(self.root)
-        # ~ self.linkmap = self.dot.pipe('cmapx').decode('utf-8')
+
         if graphviz_installed:
             self.svg_src = self.dot.pipe().decode("utf-8")
             self.svg_src = self.svg_src.replace(
