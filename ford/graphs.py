@@ -504,7 +504,7 @@ class FortranGraph(object):
         self.warn = False  # should warnings be written?
         self.truncated = -1  # nesting where the graph was truncated
         try:
-            for r in root:
+            for r in sorted(root):
                 self.root.append(self.data.get_node(r))
                 self.max_nesting = max(self.max_nesting, int(r.meta["graph_maxdepth"]))
                 self.max_nodes = max(self.max_nodes, int(r.meta["graph_maxnodes"]))
