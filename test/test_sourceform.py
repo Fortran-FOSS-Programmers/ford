@@ -1469,3 +1469,28 @@ def test_procedure_pointer(parse_fortran_file):
     module.correlate(None)
     assert len(module.interfaces[0].modprocs) == 0
     assert module.interfaces[0].variables[0].name == "unary_f"
+
+
+def test_block_data(parse_fortran_file):
+    data = """\
+    block data name
+      !! Block data docstring
+      common /name/ foo
+      !! Common block docstring
+
+      character*31 foo(1024)
+      !! Variable docstring
+
+      data foo /'a', 'b', 'c', 'd', 'e', 1019*'0'/
+    end
+    """
+
+    fortran_file = parse_fortran_file(data)
+    blockdata = fortran_file.blockdata[0]
+
+    assert blockdata.name == "name"
+    assert blockdata.doc[0].strip() == "Block data docstring"
+    assert len(blockdata.common) == 1
+    assert blockdata.common[0].doc[0].strip() == "Common block docstring"
+    assert len(blockdata.variables) == 1
+    assert blockdata.variables[0].doc[0].strip() == "Variable docstring"

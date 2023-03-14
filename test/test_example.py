@@ -15,6 +15,11 @@ HEADINGS = re.compile(r"h[1-4]")
 ANY_TEXT = re.compile(r"h[1-4]|p")
 
 
+def front_page_list(settings, items):
+    max_frontpage_items = int(settings["max_frontpage_items"])
+    return sorted(items)[:max_frontpage_items]
+
+
 @pytest.fixture(scope="module")
 def example_project(tmp_path_factory):
     this_dir = pathlib.Path(__file__).parent
@@ -53,15 +58,18 @@ def test_nav_bar(example_index):
     navbar_links = index.nav("a")
     link_names = {link.text.strip() for link in navbar_links}
 
-    for expected_page in (
+    expected_pages = {
         settings["project"],
         "Source Files",
+        "Block Data",
         "Modules",
         "Procedures",
         "Derived Types",
-        "Program",
-    ):
-        assert expected_page in link_names
+        "Programs",
+        "Abstract Interfaces",
+        "Contents",
+    }
+    assert expected_pages == link_names
 
 
 def test_jumbotron(example_index):
@@ -115,13 +123,15 @@ def test_source_file_links(example_index):
     source_files_box = index.find(ANY_TEXT, string="Source Files").parent
     source_files_list = sorted([f.text for f in source_files_box("li")])
 
-    assert source_files_list == sorted(
+    assert source_files_list == front_page_list(
+        settings,
         [
             "ford_test_module.fpp",
             "ford_test_program.f90",
             "ford_example_type.f90",
             "ford_interfaces.f90",
-        ]
+            "ford_f77_example.f",
+        ],
     )
 
 
@@ -131,8 +141,8 @@ def test_module_links(example_index):
     modules_box = index.find(ANY_TEXT, string="Modules").parent
     modules_list = sorted([f.text for f in modules_box("li")])
 
-    assert modules_list == sorted(
-        ["test_module", "ford_example_type_mod", "interfaces"]
+    assert modules_list == front_page_list(
+        settings, ["test_module", "ford_example_type_mod", "interfaces"]
     )
 
 
@@ -142,7 +152,8 @@ def test_procedures_links(example_index):
     proceduress_box = index.find(ANY_TEXT, string="Procedures").parent
     proceduress_list = sorted([f.text for f in proceduress_box("li")])
 
-    all_procedures = sorted(
+    procedures = front_page_list(
+        settings,
         [
             "decrement",
             "do_foo_stuff",
@@ -151,12 +162,9 @@ def test_procedures_links(example_index):
             "check",
             "apply_check",
             "higher_order_unary_f",
-        ]
+        ],
     )
-    max_frontpage_items = int(settings["max_frontpage_items"])
-    front_page_list = all_procedures[:max_frontpage_items]
-
-    assert proceduress_list == front_page_list
+    assert proceduress_list == procedures
 
 
 def test_types_links(example_index):

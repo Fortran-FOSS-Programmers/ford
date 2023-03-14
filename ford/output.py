@@ -384,7 +384,7 @@ class AbsIntList(ListPage):
     list_page = "absint_list.html"
 
 
-class BlockList(BasePage):
+class BlockList(ListPage):
     out_page = "blockdata.html"
     list_page = "block_list.html"
 
