@@ -516,11 +516,9 @@ class FortranGraph(object):
             self.warn = root.settings["warn"]
         self.webdir = webdir
         if ident:
-            self.ident = ident + "~~" + self.__class__.__name__
+            self.ident = f"{ident}~~{self.__class__.__name__}"
         else:
-            self.ident = (
-                root.get_dir() + "~~" + root.ident + "~~" + self.__class__.__name__
-            )
+            self.ident = f"{root.get_dir()}~~{root.ident}~~{self.__class__.__name__}"
         self.imgfile = self.ident
         self.dot = Digraph(
             self.ident,
