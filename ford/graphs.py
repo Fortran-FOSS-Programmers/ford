@@ -755,7 +755,7 @@ class FortranGraph:
 
         total_len = len(nodes)
 
-        for i, node in enumerate(nodes):
+        for i, node in enumerate(sorted(nodes)):
             colour = rainbowcolour(i, total_len)
 
             self._add_node(hop_nodes, hop_edges, node, colour)
@@ -799,7 +799,7 @@ class ModuleGraph(FortranGraph):
         return MOD_GRAPH_KEY.format(colour_notice)
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
-        for nu in node.uses:
+        for nu in sorted(node.uses):
             if nu not in self.added:
                 hop_nodes.add(nu)
             hop_edges.append((node, nu, "dashed", colour))
@@ -823,7 +823,7 @@ class UsesGraph(FortranGraph):
         return MOD_GRAPH_KEY.format(colour_notice)
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
-        for nu in node.uses:
+        for nu in sorted(node.uses):
             if nu not in self.added:
                 hop_nodes.add(nu)
             hop_edges.append((node, nu, "dashed", colour))
@@ -843,11 +843,11 @@ class UsedByGraph(FortranGraph):
         return MOD_GRAPH_KEY.format(colour_notice)
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
-        for nu in getattr(node, "used_by", []):
+        for nu in sorted(getattr(node, "used_by", [])):
             if nu not in self.added:
                 hop_nodes.add(nu)
             hop_edges.append((nu, node, "dashed", colour))
-        for c in getattr(node, "children", []):
+        for c in sorted(getattr(node, "children", [])):
             if c not in self.added:
                 hop_nodes.add(c)
             hop_edges.append((c, node, "solid", colour))
@@ -861,7 +861,7 @@ class FileGraph(FortranGraph):
         return FILE_GRAPH_KEY.format(colour_notice)
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
-        for ne in node.efferent:
+        for ne in sorted(node.efferent):
             if ne not in self.added:
                 hop_nodes.add(ne)
             hop_edges.append((ne, node, "solid", colour))
@@ -877,7 +877,7 @@ class EfferentGraph(FortranGraph):
         return FILE_GRAPH_KEY.format(colour_notice)
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
-        for ne in node.efferent:
+        for ne in sorted(node.efferent):
             if ne not in self.added:
                 hop_nodes.add(ne)
             hop_edges.append((node, ne, "dashed", colour))
@@ -893,7 +893,7 @@ class AfferentGraph(FortranGraph):
         return FILE_GRAPH_KEY.format(colour_notice)
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
-        for na in node.afferent:
+        for na in sorted(node.afferent):
             if na not in self.added:
                 hop_nodes.add(na)
             hop_edges.append((na, node, "dashed", colour))
@@ -976,11 +976,11 @@ class CallGraph(FortranGraph):
         return CALL_GRAPH_KEY.format(colour_notice)
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
-        for p in node.calls:
+        for p in sorted(node.calls):
             if p not in hop_nodes:
                 hop_nodes.add(p)
             hop_edges.append((node, p, "solid", colour))
-        for p in getattr(node, "interfaces", []):
+        for p in sorted(getattr(node, "interfaces", [])):
             if p not in hop_nodes:
                 hop_nodes.add(p)
             hop_edges.append((node, p, "dashed", colour))
@@ -1001,11 +1001,11 @@ class CallsGraph(FortranGraph):
         return CALL_GRAPH_KEY.format(colour_notice)
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
-        for p in node.calls:
+        for p in sorted(node.calls):
             if p not in self.added:
                 hop_nodes.add(p)
             hop_edges.append((node, p, "solid", colour))
-        for p in getattr(node, "interfaces", []):
+        for p in sorted(getattr(node, "interfaces", [])):
             if p not in self.added:
                 hop_nodes.add(p)
             hop_edges.append((node, p, "dashed", colour))
@@ -1027,11 +1027,11 @@ class CalledByGraph(FortranGraph):
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         if isinstance(node, ProgNode):
             return
-        for p in node.called_by:
+        for p in sorted(node.called_by):
             if p not in self.added:
                 hop_nodes.add(p)
             hop_edges.append((p, node, "solid", colour))
-        for p in getattr(node, "interfaced_by", []):
+        for p in sorted(getattr(node, "interfaced_by", [])):
             if p not in self.added:
                 hop_nodes.add(p)
             hop_edges.append((p, node, "dashed", colour))

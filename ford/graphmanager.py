@@ -99,7 +99,7 @@ class GraphManager(object):
             self.graph_objs.append(obj)
 
     def graph_all(self):
-        for obj in tqdm(self.graph_objs, unit="", desc="Generating graphs"):
+        for obj in tqdm(sorted(self.graph_objs), unit="", desc="Generating graphs"):
             if isinstance(obj, FortranModule):
                 obj.usesgraph = ford.graphs.UsesGraph(obj, self.webdir)
                 obj.usedbygraph = ford.graphs.UsedByGraph(obj, self.webdir)
@@ -132,14 +132,14 @@ class GraphManager(object):
             elif isinstance(obj, FortranBlockData):
                 obj.usesgraph = ford.graphs.UsesGraph(obj, self.webdir)
                 self.blockdata.add(obj)
-        usenodes = list(self.modules)
-        callnodes = list(self.procedures)
-        for p in self.programs:
+        usenodes = sorted(list(self.modules))
+        callnodes = sorted(list(self.procedures))
+        for p in sorted(self.programs):
             if len(p.usesgraph.added) > 1:
                 usenodes.append(p)
             if len(p.callsgraph.added) > 1:
                 callnodes.append(p)
-        for p in self.procedures:
+        for p in sorted(self.procedures):
             if len(p.usesgraph.added) > 1:
                 usenodes.append(p)
         for b in self.blockdata:
