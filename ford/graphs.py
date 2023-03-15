@@ -74,12 +74,10 @@ def set_graphs_parentdir(val):
 
 
 def rainbowcolour(depth, maxd):
-    if _coloured_edges:
-        (r, g, b) = colorsys.hsv_to_rgb(float(depth) / maxd, 1.0, 1.0)
-        R, G, B = int(255 * r), int(255 * g), int(255 * b)
-        return R, G, B
-    else:
-        return 0, 0, 0
+    if not _coloured_edges:
+        return "#000000"
+    (r, g, b) = colorsys.hsv_to_rgb(float(depth) / maxd, 1.0, 1.0)
+    return f"#{int(255 * r)}{int(255 * g)}{int(255 * b)}"
 
 
 HYPERLINK_RE = re.compile(
@@ -261,6 +259,9 @@ class BaseNode:
 
     def __eq__(self, other):
         return self.ident == other.ident
+
+    def __lt__(self, other):
+        return self.ident < other.ident
 
     def __hash__(self):
         """Hash required to insert into dict"""
@@ -477,13 +478,14 @@ class FileNode(BaseNode):
                 self.efferent.add(n)
 
 
-class FortranGraph(object):
+class FortranGraph:
     """
     Object used to construct the graph for some particular entity in the code.
     """
 
     data = GraphData()
     RANKDIR = "RL"
+    _should_add_nested_nodes = False
 
     def __init__(self, root, webdir="", ident=None):
         """
@@ -496,8 +498,8 @@ class FortranGraph(object):
         nodes.
         """
         self.root = []  # root nodes
-        self.hopNodes = []  # nodes of the hop which exceeded the maximum
-        self.hopEdges = []  # edges of the hop which exceeded the maximum
+        self.hop_nodes = []  # nodes of the hop which exceeded the maximum
+        self.hop_edges = []  # edges of the hop which exceeded the maximum
         self.added = set()  # nodes added to the graph
         self.max_nesting = 0  # maximum numbers of hops allowed
         self.max_nodes = 1  # maximum numbers of nodes allowed
@@ -569,29 +571,29 @@ class FortranGraph(object):
         of nodes is not exceeded.
         All edges are expected to have a reference to an entry in nodes.
         If the list of nodes is not added in the first hop due to graph
-        size limitations, they are stored in hopNodes.
+        size limitations, they are stored in hop_nodes.
         If the graph was extended the function returns True, otherwise the
         result will be False.
         """
         if (len(nodes) + len(self.added)) > self.max_nodes:
             if nesting < 2:
-                self.hopNodes = nodes
-                self.hopEdges = edges
+                self.hop_nodes = nodes
+                self.hop_edges = edges
             self.truncated = nesting
             return False
-        else:
-            for n in nodes:
-                strattribs = {key: str(a) for key, a in n.attribs.items()}
-                self.dot.node(n.ident, **strattribs)
-            for e in edges:
-                if len(e) == 5:
-                    self.dot.edge(
-                        e[0].ident, e[1].ident, style=e[2], color=e[3], label=e[4]
-                    )
-                else:
-                    self.dot.edge(e[0].ident, e[1].ident, style=e[2], color=e[3])
-            self.added.update(nodes)
-            return True
+
+        for n in nodes:
+            strattribs = {key: str(a) for key, a in n.attribs.items()}
+            self.dot.node(n.ident, **strattribs)
+        for e in edges:
+            if len(e) == 5:
+                self.dot.edge(
+                    e[0].ident, e[1].ident, style=e[2], color=e[3], label=e[4]
+                )
+            else:
+                self.dot.edge(e[0].ident, e[1].ident, style=e[2], color=e[3])
+        self.added.update(nodes)
+        return True
 
     def __str__(self):
         """
@@ -602,7 +604,7 @@ class FortranGraph(object):
         the rendering in browsers.
         """
 
-        graph_as_table = len(self.hopNodes) > 0 and len(self.root) == 1
+        graph_as_table = len(self.hop_nodes) > 0 and len(self.root) == 1
 
         # Do not render empty graphs
         if len(self.added) <= 1 and not graph_as_table:
@@ -647,9 +649,9 @@ class FortranGraph(object):
             # generate a table graph if maximum number of nodes gets exceeded in
             # the first hop and there is only one root node.
             root = '<td class="root" rowspan="{0}">{1}</td>'.format(
-                len(self.hopNodes) * 2 + 1, self.root[0].attribs["label"]
+                len(self.hop_nodes) * 2 + 1, self.root[0].attribs["label"]
             )
-            if self.hopEdges[0][0].ident == self.root[0].ident:
+            if self.hop_edges[0][0].ident == self.root[0].ident:
                 key = 1
                 root_on_left = self.RANKDIR == "LR"
                 if root_on_left:
@@ -676,10 +678,10 @@ class FortranGraph(object):
                         + 'class="triangle-right"></td>'
                     )
             # sort nodes in alphabetical order
-            self.hopEdges.sort(key=lambda x: x[key].attribs["label"].lower())
+            self.hop_edges.sort(key=lambda x: x[key].attribs["label"].lower())
             rows = ""
-            for i in range(len(self.hopEdges)):
-                e = self.hopEdges[i]
+            for i in range(len(self.hop_edges)):
+                e = self.hop_edges[i]
                 n = e[key]
                 if len(e) == 5:
                     arrow = arrowtemp.format(e[2], "Text", e[4])
@@ -753,406 +755,301 @@ class FortranGraph(object):
                 ),
             )
 
+    def add_nodes(self, nodes, nesting=1):
+        """Add nodes and edges to this graph, based on the collection ``nodes``
+
+        Subclasses should implement `_add_node`, and optionally
+        `_extra_attributes`
+
+        """
+        hop_nodes = set()  # nodes in this hop
+        hop_edges = []  # edges in this hop
+
+        total_len = len(nodes)
+
+        for i, node in enumerate(nodes):
+            colour = rainbowcolour(i, total_len)
+
+            self._add_node(hop_nodes, hop_edges, node, colour)
+
+        if not self.add_to_graph(hop_nodes, hop_edges, nesting):
+            return
+
+        self._extra_attributes()
+
+        if self._should_add_nested_nodes:
+            self._add_nested_nodes(hop_nodes, nesting)
+
+    def _add_nested_nodes(self, hop_nodes, nesting):
+        """Handles nested nodes"""
+        if len(hop_nodes) == 0:
+            return
+
+        if nesting < self.max_nesting:
+            self.add_nodes(hop_nodes, nesting=nesting + 1)
+        else:
+            self.truncated = nesting
+
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        """Add a single node and its edges to this graph, typically by
+        iterating over parents/children
+
+        """
+
+        raise NotImplementedError
+
+    def _extra_attributes(self):
+        """Add any extra attributes to the graph"""
+        pass
+
 
 class ModuleGraph(FortranGraph):
+    """Shows the relationship between modules and submodules"""
+
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return MOD_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds nodes and edges for generating the graph showing the relationship
-        between modules and submodules listed in nodes.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            for nu in n.uses:
-                if nu not in self.added:
-                    hopNodes.add(nu)
-                hopEdges.append((n, nu, "dashed", colour))
-            if hasattr(n, "ancestor"):
-                if n.ancestor not in self.added:
-                    hopNodes.add(n.ancestor)
-                hopEdges.append((n, n.ancestor, "solid", colour))
-        # add nodes, edges and attributes to the graph if maximum number of
-        # nodes is not exceeded
-        if self.add_to_graph(hopNodes, hopEdges, nesting):
-            self.dot.attr("graph", size="11.875,1000.0")
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        for nu in node.uses:
+            if nu not in self.added:
+                hop_nodes.add(nu)
+            hop_edges.append((node, nu, "dashed", colour))
+
+        if hasattr(node, "ancestor"):
+            if node.ancestor not in self.added:
+                hop_nodes.add(node.ancestor)
+            hop_edges.append((node, node.ancestor, "solid", colour))
+
+    def _extra_attributes(self):
+        self.dot.attr("graph", size="11.875,1000.0")
 
 
 class UsesGraph(FortranGraph):
+    """Graphs how modules use other modules, including ancestor (sub)modules"""
+
+    _should_add_nested_nodes = True
+
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return MOD_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds nodes for the modules used by those listed in nodes. Adds
-        edges between them. Also does this for ancestor (sub)modules.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            for nu in n.uses:
-                if nu not in self.added:
-                    hopNodes.add(nu)
-                hopEdges.append((n, nu, "dashed", colour))
-            if hasattr(n, "ancestor"):
-                if n.ancestor not in self.added:
-                    hopNodes.add(n.ancestor)
-                hopEdges.append((n, n.ancestor, "solid", colour))
-        # add nodes and edges for this hop to the graph if maximum number of
-        # nodes is not exceeded
-        if not self.add_to_graph(hopNodes, hopEdges, nesting):
-            return
-        elif len(hopNodes) > 0:
-            if nesting < self.max_nesting:
-                self.add_nodes(hopNodes, nesting=nesting + 1)
-            else:
-                self.truncated = nesting
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        for nu in node.uses:
+            if nu not in self.added:
+                hop_nodes.add(nu)
+            hop_edges.append((node, nu, "dashed", colour))
+        if hasattr(node, "ancestor"):
+            if node.ancestor not in self.added:
+                hop_nodes.add(node.ancestor)
+            hop_edges.append((node, node.ancestor, "solid", colour))
 
 
 class UsedByGraph(FortranGraph):
+    """Graphs how modules are used by other modules"""
+
+    _should_add_nested_nodes = True
+
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return MOD_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds nodes for modules using or descended from those listed in
-        nodes. Adds appropriate edges between them.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            for nu in getattr(n, "used_by", []):
-                if nu not in self.added:
-                    hopNodes.add(nu)
-                hopEdges.append((nu, n, "dashed", colour))
-            for c in getattr(n, "children", []):
-                if c not in self.added:
-                    hopNodes.add(c)
-                hopEdges.append((c, n, "solid", colour))
-        # add nodes and edges for this hop to the graph if maximum number of
-        # nodes is not exceeded
-        if not self.add_to_graph(hopNodes, hopEdges, nesting):
-            return
-        elif len(hopNodes) > 0:
-            if nesting < self.max_nesting:
-                self.add_nodes(hopNodes, nesting=nesting + 1)
-            else:
-                self.truncated = nesting
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        for nu in getattr(node, "used_by", []):
+            if nu not in self.added:
+                hop_nodes.add(nu)
+            hop_edges.append((nu, node, "dashed", colour))
+        for c in getattr(node, "children", []):
+            if c not in self.added:
+                hop_nodes.add(c)
+            hop_edges.append((c, node, "solid", colour))
 
 
 class FileGraph(FortranGraph):
+    """Graphs relationships between source files"""
+
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return FILE_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds edges showing dependencies between source files listed in
-        the nodes.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            for ne in n.efferent:
-                if ne not in self.added:
-                    hopNodes.add(ne)
-                hopEdges.append((ne, n, "solid", colour))
-        # add nodes and edges to the graph if maximum number of nodes is not
-        # exceeded
-        self.add_to_graph(hopNodes, hopEdges, nesting)
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        for ne in node.efferent:
+            if ne not in self.added:
+                hop_nodes.add(ne)
+            hop_edges.append((ne, node, "solid", colour))
 
 
 class EfferentGraph(FortranGraph):
+    """Shows the relationship between the files which this one depends on"""
+
+    _should_add_nested_nodes = True
+
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return FILE_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds nodes for the files which this one depends on. Adds
-        edges between them.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            for ne in n.efferent:
-                if ne not in self.added:
-                    hopNodes.add(ne)
-                hopEdges.append((n, ne, "dashed", colour))
-        # add nodes and edges for this hop to the graph if maximum number of
-        # nodes is not exceeded
-        if not self.add_to_graph(hopNodes, hopEdges, nesting):
-            return
-        elif len(hopNodes) > 0:
-            if nesting < self.max_nesting:
-                self.add_nodes(hopNodes, nesting=nesting + 1)
-            else:
-                self.truncated = nesting
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        for ne in node.efferent:
+            if ne not in self.added:
+                hop_nodes.add(ne)
+            hop_edges.append((node, ne, "dashed", colour))
 
 
 class AfferentGraph(FortranGraph):
+    """Shows the relationship between files which depend upon this one"""
+
+    _should_add_nested_nodes = True
+
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return FILE_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds nodes for files which depend upon this one. Adds appropriate
-        edges between them.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            for na in n.afferent:
-                if na not in self.added:
-                    hopNodes.add(na)
-                hopEdges.append((na, n, "dashed", colour))
-        # add nodes and edges for this hop to the graph if maximum number of
-        # nodes is not exceeded
-        if not self.add_to_graph(hopNodes, hopEdges, nesting):
-            return
-        elif len(hopNodes) > 0:
-            if nesting < self.max_nesting:
-                self.add_nodes(hopNodes, nesting=nesting + 1)
-            else:
-                self.truncated = nesting
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        for na in node.afferent:
+            if na not in self.added:
+                hop_nodes.add(na)
+            hop_edges.append((na, node, "dashed", colour))
 
 
 class TypeGraph(FortranGraph):
+    """Graphs inheritance and composition relationships between derived types"""
+
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return TYPE_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds edges showing inheritance and composition relationships
-        between derived types listed in the nodes.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            for keys in n.comp_types.keys():
-                if keys not in self.added:
-                    hopNodes.add(keys)
-            for c in n.comp_types:
-                if c not in self.added:
-                    hopNodes.add(c)
-                hopEdges.append((n, c, "dashed", colour, n.comp_types[c]))
-            if n.ancestor:
-                if n.ancestor not in self.added:
-                    hopNodes.add(n.ancestor)
-                hopEdges.append((n, n.ancestor, "solid", colour))
-        # add nodes, edges and attributes to the graph if maximum number of
-        # nodes is not exceeded
-        if self.add_to_graph(hopNodes, hopEdges, nesting):
-            self.dot.attr("graph", size="11.875,1000.0")
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        for keys in node.comp_types.keys():
+            if keys not in self.added:
+                hop_nodes.add(keys)
+        for c in node.comp_types:
+            if c not in self.added:
+                hop_nodes.add(c)
+            hop_edges.append((node, c, "dashed", colour, node.comp_types[c]))
+        if node.ancestor:
+            if node.ancestor not in self.added:
+                hop_nodes.add(node.ancestor)
+            hop_edges.append((node, node.ancestor, "solid", colour))
+
+    def _extra_attributes(self):
+        self.dot.attr("graph", size="11.875,1000.0")
 
 
 class InheritsGraph(FortranGraph):
+    """Graphs types that this type inherits from"""
+
+    _should_add_nested_nodes = True
+
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return TYPE_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds nodes for modules using or descended from those listed in
-        nodes. Adds appropriate edges between them.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            for c in n.comp_types:
-                if c not in self.added:
-                    hopNodes.add(c)
-                hopEdges.append((n, c, "dashed", colour, n.comp_types[c]))
-            if n.ancestor:
-                if n.ancestor not in self.added:
-                    hopNodes.add(n.ancestor)
-                hopEdges.append((n, n.ancestor, "solid", colour))
-        # add nodes and edges for this hop to the graph if maximum number of
-        # nodes is not exceeded
-        if not self.add_to_graph(hopNodes, hopEdges, nesting):
-            return
-        elif len(hopNodes) > 0:
-            if nesting < self.max_nesting:
-                self.add_nodes(hopNodes, nesting=nesting + 1)
-            else:
-                self.truncated = nesting
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        for c in node.comp_types:
+            if c not in self.added:
+                hop_nodes.add(c)
+            hop_edges.append((node, c, "dashed", colour, node.comp_types[c]))
+        if node.ancestor:
+            if node.ancestor not in self.added:
+                hop_nodes.add(node.ancestor)
+            hop_edges.append((node, node.ancestor, "solid", colour))
 
 
 class InheritedByGraph(FortranGraph):
+    """Graphs types that inherit this type"""
+
+    _should_add_nested_nodes = True
+
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return TYPE_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds nodes for modules using or descended from those listed in
-        nodes. Adds appropriate edges between them.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            for c in n.comp_of:
-                if c not in self.added:
-                    hopNodes.add(c)
-                hopEdges.append((c, n, "dashed", colour, n.comp_of[c]))
-            for c in n.children:
-                if c not in self.added:
-                    hopNodes.add(c)
-                hopEdges.append((c, n, "solid", colour))
-        # add nodes and edges for this hop to the graph if maximum number of
-        # nodes is not exceeded
-        if not self.add_to_graph(hopNodes, hopEdges, nesting):
-            return
-        elif len(hopNodes) > 0:
-            if nesting < self.max_nesting:
-                self.add_nodes(hopNodes, nesting=nesting + 1)
-            else:
-                self.truncated = nesting
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        for c in node.comp_of:
+            if c not in self.added:
+                hop_nodes.add(c)
+            hop_edges.append((c, node, "dashed", colour, node.comp_of[c]))
+        for c in node.children:
+            if c not in self.added:
+                hop_nodes.add(c)
+            hop_edges.append((c, node, "solid", colour))
 
 
 class CallGraph(FortranGraph):
+    """
+    Adds edges indicating the call-tree for the procedures listed in
+    the nodes.
+    """
+
     RANKDIR = "LR"
 
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return CALL_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds edges indicating the call-tree for the procedures listed in
-        the nodes.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            for p in n.calls:
-                if p not in hopNodes:
-                    hopNodes.add(p)
-                hopEdges.append((n, p, "solid", colour))
-            for p in getattr(n, "interfaces", []):
-                if p not in hopNodes:
-                    hopNodes.add(p)
-                hopEdges.append((n, p, "dashed", colour))
-        # add nodes, edges and attributes to the graph if maximum number of
-        # nodes is not exceeded
-        if self.add_to_graph(hopNodes, hopEdges, nesting):
-            self.dot.attr("graph", size="11.875,1000.0")
-            self.dot.attr("graph", concentrate="false")
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        for p in node.calls:
+            if p not in hop_nodes:
+                hop_nodes.add(p)
+            hop_edges.append((node, p, "solid", colour))
+        for p in getattr(node, "interfaces", []):
+            if p not in hop_nodes:
+                hop_nodes.add(p)
+            hop_edges.append((node, p, "dashed", colour))
+
+    def _extra_attributes(self):
+        self.dot.attr("graph", size="11.875,1000.0")
+        self.dot.attr("graph", concentrate="false")
 
 
 class CallsGraph(FortranGraph):
+    """Graphs procedures that this procedure calls"""
+
     RANKDIR = "LR"
+    _should_add_nested_nodes = True
 
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return CALL_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds nodes for modules using or descended from those listed in
-        nodes. Adds appropriate edges between them.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            for p in n.calls:
-                if p not in self.added:
-                    hopNodes.add(p)
-                hopEdges.append((n, p, "solid", colour))
-            for p in getattr(n, "interfaces", []):
-                if p not in self.added:
-                    hopNodes.add(p)
-                hopEdges.append((n, p, "dashed", colour))
-        # add nodes, edges and atrributes for this hop to the graph if
-        # maximum number of nodes is not exceeded
-        if not self.add_to_graph(hopNodes, hopEdges, nesting):
-            return
-        elif len(hopNodes) > 0:
-            if nesting < self.max_nesting:
-                self.dot.attr("graph", concentrate="false")
-                self.add_nodes(hopNodes, nesting=nesting + 1)
-            else:
-                self.truncated = nesting
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        for p in node.calls:
+            if p not in self.added:
+                hop_nodes.add(p)
+            hop_edges.append((node, p, "solid", colour))
+        for p in getattr(node, "interfaces", []):
+            if p not in self.added:
+                hop_nodes.add(p)
+            hop_edges.append((node, p, "dashed", colour))
+
+    def _extra_attributes(self):
+        self.dot.attr("graph", concentrate="false")
 
 
 class CalledByGraph(FortranGraph):
+    """Graphs procedures called by this procedure"""
+
     RANKDIR = "LR"
+    _should_add_nested_nodes = True
 
     def get_key(self):
         colour_notice = COLOURED_NOTICE if _coloured_edges else ""
         return CALL_GRAPH_KEY.format(colour_notice)
 
-    def add_nodes(self, nodes, nesting=1):
-        """
-        Adds nodes for modules using or descended from those listed in
-        nodes. Adds appropriate edges between them.
-        """
-        hopNodes = set()  # nodes in this hop
-        hopEdges = []  # edges in this hop
-        # get nodes and edges for this hop
-        for i, n in zip(range(len(nodes)), nodes):
-            r, g, b = rainbowcolour(i, len(nodes))
-            colour = "#%02X%02X%02X" % (r, g, b)
-            if isinstance(n, ProgNode):
-                continue
-            for p in n.called_by:
-                if p not in self.added:
-                    hopNodes.add(p)
-                hopEdges.append((p, n, "solid", colour))
-            for p in getattr(n, "interfaced_by", []):
-                if p not in self.added:
-                    hopNodes.add(p)
-                hopEdges.append((p, n, "dashed", colour))
-        # add nodes, edges and atrributes for this hop to the graph if
-        # maximum number of nodes is not exceeded
-        if not self.add_to_graph(hopNodes, hopEdges, nesting):
+    def _add_node(self, hop_nodes, hop_edges, node, colour):
+        if isinstance(node, ProgNode):
             return
-        elif len(hopNodes) > 0:
-            if nesting < self.max_nesting:
-                self.dot.attr("graph", concentrate="false")
-                self.add_nodes(hopNodes, nesting=nesting + 1)
-            else:
-                self.truncated = nesting
+        for p in node.called_by:
+            if p not in self.added:
+                hop_nodes.add(p)
+            hop_edges.append((p, node, "solid", colour))
+        for p in getattr(node, "interfaced_by", []):
+            if p not in self.added:
+                hop_nodes.add(p)
+            hop_edges.append((p, node, "dashed", colour))
+
+    def _extra_attributes(self):
+        self.dot.attr("graph", concentrate="false")
 
 
 class BadType(Exception):
