@@ -29,7 +29,7 @@ import copy
 import colorsys
 import itertools
 
-from graphviz import Digraph
+from graphviz import Digraph, version as graphviz_version, ExecutableNotFound
 
 from ford.sourceform import (
     FortranFunction,
@@ -48,6 +48,12 @@ from ford.sourceform import (
     FortranSourceFile,
     FortranBlockData,
 )
+
+try:
+    graphviz_version()
+    graphviz_installed = True
+except ExecutableNotFound:
+    graphviz_installed = False
 
 _coloured_edges = False
 
@@ -86,8 +92,6 @@ HYPERLINK_RE = re.compile(
 WIDTH_RE = re.compile('width="(.*?)pt"', re.IGNORECASE)
 HEIGHT_RE = re.compile('height="(.*?)pt"', re.IGNORECASE)
 EM_RE = re.compile("<em>(.*)</em>", re.IGNORECASE)
-
-graphviz_installed = True
 
 
 def newdict(old, key, val):
@@ -1081,7 +1085,7 @@ gd.register("Unknown Procedure Type", FortranSubroutine)
 gd.register("Program", FortranProgram)
 gd.register("Source File", FortranSourceFile)
 
-try:
+if graphviz_installed:
     # Generate key for module graph
     dot = Digraph(
         "Graph Key",
@@ -1172,11 +1176,8 @@ try:
     dot.node("This Page's Entity")
     file_svg = dot.pipe().decode("utf-8")
 
-except RuntimeError:
-    graphviz_installed = False
 
 
-if graphviz_installed:
     NODE_DIAGRAM = """
     <p>Nodes of different colours represent the following: </p>
     {}
