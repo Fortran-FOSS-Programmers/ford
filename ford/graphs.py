@@ -164,63 +164,47 @@ class GraphData(object):
         self.sourcefiles = {}
         self.blockdata = {}
 
+    def _get_collection_and_node_type(self, obj, cls):
+        if is_submodule(obj, cls):
+            return self.submodules, SubmodNode
+        if is_module(obj, cls):
+            return self.modules, ModNode
+        if is_type(obj, cls):
+            return self.types, TypeNode
+        if is_proc(obj, cls):
+            return self.procedures, ProcNode
+        if is_program(obj, cls):
+            return self.programs, ProgNode
+        if is_sourcefile(obj, cls):
+            return self.sourcefiles, FileNode
+        if is_blockdata(obj, cls):
+            return self.blockdata, BlockNode
+
+        raise BadType(
+            f"Unrecognised object type '{type(obj).__name__}' when constructing graphs"
+        )
+
     def register(self, obj, cls=type(None), hist=None):
         """
         Takes a FortranObject and adds it to the appropriate list, if
         not already present.
         """
-        hist = hist or {}
 
-        if is_submodule(obj, cls):
-            if obj not in self.submodules:
-                self.submodules[obj] = SubmodNode(obj, self)
-        elif is_module(obj, cls):
-            if obj not in self.modules:
-                self.modules[obj] = ModNode(obj, self)
-        elif is_type(obj, cls):
-            if obj not in self.types:
-                self.types[obj] = TypeNode(obj, self, hist)
-        elif is_proc(obj, cls):
-            if obj not in self.procedures:
-                self.procedures[obj] = ProcNode(obj, self, hist)
-        elif is_program(obj, cls):
-            if obj not in self.programs:
-                self.programs[obj] = ProgNode(obj, self)
-        elif is_sourcefile(obj, cls):
-            if obj not in self.sourcefiles:
-                self.sourcefiles[obj] = FileNode(obj, self)
-        elif is_blockdata(obj, cls):
-            if obj not in self.blockdata:
-                self.blockdata[obj] = BlockNode(obj, self)
-        else:
-            raise BadType(
-                "Object type {} not recognized by GraphData".format(type(obj).__name__)
-            )
+        collection, NodeType = self._get_collection_and_node_type(obj, cls)
+        if obj not in collection:
+            collection[obj] = NodeType(obj, self, hist)
 
     def get_node(self, obj, cls=type(None), hist=None):
         """
         Returns the node corresponding to obj. If does not already exist
         then it will create it.
         """
-        hist = hist or {}
 
-        if obj in self.modules and is_module(obj, cls):
-            return self.modules[obj]
-        elif obj in self.submodules and is_submodule(obj, cls):
-            return self.submodules[obj]
-        elif obj in self.types and is_type(obj, cls):
-            return self.types[obj]
-        elif obj in self.procedures and is_proc(obj, cls):
-            return self.procedures[obj]
-        elif obj in self.programs and is_program(obj, cls):
-            return self.programs[obj]
-        elif obj in self.sourcefiles and is_sourcefile(obj, cls):
-            return self.sourcefiles[obj]
-        elif obj in self.blockdata and is_blockdata(obj, cls):
-            return self.blockdata[obj]
-        else:
+        collection, _ = self._get_collection_and_node_type(obj, cls)
+        if obj not in collection:
             self.register(obj, cls, hist)
-            return self.get_node(obj, cls, hist)
+
+        return collection[obj]
 
 
 class BaseNode:
@@ -271,7 +255,7 @@ class BaseNode:
 class ModNode(BaseNode):
     colour = "#337AB7"
 
-    def __init__(self, obj, gd):
+    def __init__(self, obj, gd, hist=None):
         super().__init__(obj)
         self.uses = set()
         self.used_by = set()
@@ -289,7 +273,7 @@ class ModNode(BaseNode):
 class SubmodNode(ModNode):
     colour = "#5bc0de"
 
-    def __init__(self, obj, gd):
+    def __init__(self, obj, gd, hist=None):
         super().__init__(obj, gd)
         del self.used_by
         if self.fromstr:
@@ -417,7 +401,7 @@ class ProcNode(BaseNode):
 class ProgNode(BaseNode):
     colour = "#f0ad4e"
 
-    def __init__(self, obj, gd):
+    def __init__(self, obj, gd, hist=None):
         super().__init__(obj)
         self.uses = set()
         self.calls = set()
@@ -437,7 +421,7 @@ class ProgNode(BaseNode):
 class BlockNode(BaseNode):
     colour = "#5cb85c"
 
-    def __init__(self, obj, gd):
+    def __init__(self, obj, gd, hist=None):
         super().__init__(obj)
         self.uses = set()
         if self.fromstr:
