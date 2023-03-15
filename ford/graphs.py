@@ -276,13 +276,14 @@ class ModNode(BaseNode):
         self.uses = set()
         self.used_by = set()
         self.children = set()
-        if not self.fromstr:
-            for u in obj.uses:
-                n = gd.get_node(u, FortranModule)
-                n.used_by.add(self)
-                n.afferent += 1
-                self.uses.add(n)
-                self.efferent += n.efferent
+        if self.fromstr:
+            return
+        for u in obj.uses:
+            n = gd.get_node(u, FortranModule)
+            n.used_by.add(self)
+            n.afferent += 1
+            self.uses.add(n)
+            self.efferent += n.efferent
 
 
 class SubmodNode(ModNode):
@@ -291,14 +292,15 @@ class SubmodNode(ModNode):
     def __init__(self, obj, gd):
         super().__init__(obj, gd)
         del self.used_by
-        if not self.fromstr:
-            if obj.parent_submodule:
-                self.ancestor = gd.get_node(obj.parent_submodule, FortranSubmodule)
-            else:
-                self.ancestor = gd.get_node(obj.ancestor_module, FortranModule)
-            self.ancestor.children.add(self)
-            self.efferent += 1
-            self.ancestor.afferent += 1
+        if self.fromstr:
+            return
+        if obj.parent_submodule:
+            self.ancestor = gd.get_node(obj.parent_submodule, FortranSubmodule)
+        else:
+            self.ancestor = gd.get_node(obj.ancestor_module, FortranModule)
+        self.ancestor.children.add(self)
+        self.efferent += 1
+        self.ancestor.afferent += 1
 
 
 class TypeNode(BaseNode):
@@ -311,42 +313,41 @@ class TypeNode(BaseNode):
         self.comp_types = dict()
         self.comp_of = dict()
         hist = hist or {}
-        if not self.fromstr:
-            if hasattr(obj, "external_url"):
-                # Stop following chain, as this object is in an external project
-                return
+        if self.fromstr:
+            return
+        if hasattr(obj, "external_url"):
+            # Stop following chain, as this object is in an external project
+            return
 
-            if obj.extends:
-                if obj.extends in hist:
-                    self.ancestor = hist[obj.extends]
+        if obj.extends:
+            if obj.extends in hist:
+                self.ancestor = hist[obj.extends]
+            else:
+                self.ancestor = gd.get_node(
+                    obj.extends, FortranType, newdict(hist, obj, self)
+                )
+            self.ancestor.children.add(self)
+            self.ancestor.visible = getattr(obj.extends, "visible", True)
+
+        for var in obj.local_variables:
+            if (var.vartype == "type" or var.vartype == "class") and var.proto[
+                0
+            ] != "*":
+                if var.proto[0] == obj:
+                    n = self
+                elif var.proto[0] in hist:
+                    n = hist[var.proto[0]]
                 else:
-                    self.ancestor = gd.get_node(
-                        obj.extends, FortranType, newdict(hist, obj, self)
-                    )
-                self.ancestor.children.add(self)
-                self.ancestor.visible = getattr(obj.extends, "visible", True)
-
-            for var in obj.local_variables:
-                if (var.vartype == "type" or var.vartype == "class") and var.proto[
-                    0
-                ] != "*":
-                    if var.proto[0] == obj:
-                        n = self
-                    elif var.proto[0] in hist:
-                        n = hist[var.proto[0]]
-                    else:
-                        n = gd.get_node(
-                            var.proto[0], FortranType, newdict(hist, obj, self)
-                        )
-                    n.visible = getattr(var.proto[0], "visible", True)
-                    if self in n.comp_of:
-                        n.comp_of[self] += ", " + var.name
-                    else:
-                        n.comp_of[self] = var.name
-                    if n in self.comp_types:
-                        self.comp_types[n] += ", " + var.name
-                    else:
-                        self.comp_types[n] = var.name
+                    n = gd.get_node(var.proto[0], FortranType, newdict(hist, obj, self))
+                n.visible = getattr(var.proto[0], "visible", True)
+                if self in n.comp_of:
+                    n.comp_of[self] += ", " + var.name
+                else:
+                    n.comp_of[self] = var.name
+                if n in self.comp_types:
+                    self.comp_types[n] += ", " + var.name
+                else:
+                    self.comp_types[n] = var.name
 
 
 class ProcNode(BaseNode):
@@ -368,48 +369,49 @@ class ProcNode(BaseNode):
 
         hist = hist or {}
 
-        if not self.fromstr:
-            for u in getattr(obj, "uses", []):
-                n = gd.get_node(u, FortranModule)
-                n.used_by.add(self)
-                self.uses.add(n)
-            for c in getattr(obj, "calls", []):
-                if getattr(c, "visible", True):
-                    if c == obj:
-                        n = self
-                    elif c in hist:
-                        n = hist[c]
-                    else:
-                        n = gd.get_node(c, FortranSubroutine, newdict(hist, obj, self))
-                    n.called_by.add(self)
-                    self.calls.add(n)
-            if obj.proctype.lower() == "interface":
-                for m in getattr(obj, "modprocs", []):
-                    if m.procedure and getattr(m.procedure, "visible", True):
-                        if m.procedure in hist:
-                            n = hist[m.procedure]
-                        else:
-                            n = gd.get_node(
-                                m.procedure, FortranSubroutine, newdict(hist, obj, self)
-                            )
-                        n.interfaced_by.add(self)
-                        self.interfaces.add(n)
-                if (
-                    hasattr(obj, "procedure")
-                    and obj.procedure.module
-                    and obj.procedure.module is not True
-                    and getattr(obj.procedure.module, "visible", True)
-                ):
-                    if obj.procedure.module in hist:
-                        n = hist[obj.procedure.module]
+        if self.fromstr:
+            return
+        for u in getattr(obj, "uses", []):
+            n = gd.get_node(u, FortranModule)
+            n.used_by.add(self)
+            self.uses.add(n)
+        for c in getattr(obj, "calls", []):
+            if getattr(c, "visible", True):
+                if c == obj:
+                    n = self
+                elif c in hist:
+                    n = hist[c]
+                else:
+                    n = gd.get_node(c, FortranSubroutine, newdict(hist, obj, self))
+                n.called_by.add(self)
+                self.calls.add(n)
+        if obj.proctype.lower() == "interface":
+            for m in getattr(obj, "modprocs", []):
+                if m.procedure and getattr(m.procedure, "visible", True):
+                    if m.procedure in hist:
+                        n = hist[m.procedure]
                     else:
                         n = gd.get_node(
-                            obj.procedure.module,
-                            FortranSubroutine,
-                            newdict(hist, obj, self),
+                            m.procedure, FortranSubroutine, newdict(hist, obj, self)
                         )
                     n.interfaced_by.add(self)
                     self.interfaces.add(n)
+            if (
+                hasattr(obj, "procedure")
+                and obj.procedure.module
+                and obj.procedure.module is not True
+                and getattr(obj.procedure.module, "visible", True)
+            ):
+                if obj.procedure.module in hist:
+                    n = hist[obj.procedure.module]
+                else:
+                    n = gd.get_node(
+                        obj.procedure.module,
+                        FortranSubroutine,
+                        newdict(hist, obj, self),
+                    )
+                n.interfaced_by.add(self)
+                self.interfaces.add(n)
 
 
 class ProgNode(BaseNode):
@@ -419,16 +421,17 @@ class ProgNode(BaseNode):
         super().__init__(obj)
         self.uses = set()
         self.calls = set()
-        if not self.fromstr:
-            for u in obj.uses:
-                n = gd.get_node(u, FortranModule)
-                n.used_by.add(self)
-                self.uses.add(n)
-            for c in obj.calls:
-                if getattr(c, "visible", True):
-                    n = gd.get_node(c, FortranSubroutine)
-                    n.called_by.add(self)
-                    self.calls.add(n)
+        if self.fromstr:
+            return
+        for u in obj.uses:
+            n = gd.get_node(u, FortranModule)
+            n.used_by.add(self)
+            self.uses.add(n)
+        for c in obj.calls:
+            if getattr(c, "visible", True):
+                n = gd.get_node(c, FortranSubroutine)
+                n.called_by.add(self)
+                self.calls.add(n)
 
 
 class BlockNode(BaseNode):
@@ -437,11 +440,12 @@ class BlockNode(BaseNode):
     def __init__(self, obj, gd):
         super().__init__(obj)
         self.uses = set()
-        if not self.fromstr:
-            for u in obj.uses:
-                n = gd.get_node(u, FortranModule)
-                n.used_by.add(self)
-                self.uses.add(n)
+        if self.fromstr:
+            return
+        for u in obj.uses:
+            n = gd.get_node(u, FortranModule)
+            n.used_by.add(self)
+            self.uses.add(n)
 
 
 class FileNode(BaseNode):
