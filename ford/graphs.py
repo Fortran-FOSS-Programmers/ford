@@ -39,13 +39,16 @@ from ford.sourceform import (
     FortranInterface,
     ExternalInterface,
     FortranProgram,
+    ExternalProgram,
     FortranType,
     ExternalType,
     FortranModule,
     ExternalModule,
     FortranSubmodule,
+    ExternalSubmodule,
     FortranSubmoduleProcedure,
     FortranSourceFile,
+    ExternalSourceFile,
     FortranBlockData,
 )
 
@@ -100,58 +103,40 @@ def newdict(old, key, val):
     return new
 
 
-def is_module(obj, cls):
-    return isinstance(obj, (FortranModule, ExternalModule)) or issubclass(
-        cls, (FortranModule, ExternalModule)
-    )
+def is_module(obj):
+    return isinstance(obj, FortranModule)
 
 
-def is_submodule(obj, cls):
-    return isinstance(obj, FortranSubmodule) or issubclass(cls, FortranSubmodule)
+def is_submodule(obj):
+    return isinstance(obj, FortranSubmodule)
 
 
-def is_type(obj, cls):
-    return isinstance(obj, (FortranType, ExternalType)) or issubclass(
-        cls, (FortranType, ExternalType)
-    )
+def is_type(obj):
+    return isinstance(obj, FortranType)
 
 
-def is_proc(obj, cls):
+def is_proc(obj):
     return isinstance(
         obj,
         (
             FortranFunction,
-            ExternalFunction,
             FortranSubroutine,
-            ExternalSubroutine,
             FortranInterface,
-            ExternalInterface,
-            FortranSubmoduleProcedure,
-        ),
-    ) or issubclass(
-        cls,
-        (
-            FortranFunction,
-            ExternalFunction,
-            FortranSubroutine,
-            ExternalSubroutine,
-            FortranInterface,
-            ExternalInterface,
             FortranSubmoduleProcedure,
         ),
     )
 
 
-def is_program(obj, cls):
-    return isinstance(obj, FortranProgram) or issubclass(cls, FortranProgram)
+def is_program(obj):
+    return isinstance(obj, FortranProgram)
 
 
-def is_sourcefile(obj, cls):
-    return isinstance(obj, FortranSourceFile) or issubclass(cls, FortranSourceFile)
+def is_sourcefile(obj):
+    return isinstance(obj, FortranSourceFile)
 
 
-def is_blockdata(obj, cls):
-    return isinstance(obj, FortranBlockData) or issubclass(cls, FortranBlockData)
+def is_blockdata(obj):
+    return isinstance(obj, FortranBlockData)
 
 
 class GraphData(object):
@@ -168,45 +153,45 @@ class GraphData(object):
         self.sourcefiles = {}
         self.blockdata = {}
 
-    def _get_collection_and_node_type(self, obj, cls):
-        if is_submodule(obj, cls):
+    def _get_collection_and_node_type(self, obj):
+        if is_submodule(obj):
             return self.submodules, SubmodNode
-        if is_module(obj, cls):
+        if is_module(obj):
             return self.modules, ModNode
-        if is_type(obj, cls):
+        if is_type(obj):
             return self.types, TypeNode
-        if is_proc(obj, cls):
+        if is_proc(obj):
             return self.procedures, ProcNode
-        if is_program(obj, cls):
+        if is_program(obj):
             return self.programs, ProgNode
-        if is_sourcefile(obj, cls):
+        if is_sourcefile(obj):
             return self.sourcefiles, FileNode
-        if is_blockdata(obj, cls):
+        if is_blockdata(obj):
             return self.blockdata, BlockNode
 
         raise BadType(
             f"Unrecognised object type '{type(obj).__name__}' when constructing graphs"
         )
 
-    def register(self, obj, cls=type(None), hist=None):
+    def register(self, obj, hist=None):
         """
         Takes a FortranObject and adds it to the appropriate list, if
         not already present.
         """
 
-        collection, NodeType = self._get_collection_and_node_type(obj, cls)
+        collection, NodeType = self._get_collection_and_node_type(obj)
         if obj not in collection:
             collection[obj] = NodeType(obj, self, hist)
 
-    def get_node(self, obj, cls=type(None), hist=None):
+    def get_node(self, obj, hist=None):
         """
         Returns the node corresponding to obj. If does not already exist
         then it will create it.
         """
 
-        collection, _ = self._get_collection_and_node_type(obj, cls)
+        collection, _ = self._get_collection_and_node_type(obj)
         if obj not in collection:
-            self.register(obj, cls, hist)
+            self.register(obj, hist)
 
         return collection[obj]
 
@@ -217,6 +202,23 @@ class BaseNode:
     def __init__(self, obj):
         self.attribs = {"color": self.colour, "fontcolor": "white", "style": "filled"}
         self.fromstr = type(obj) is str
+        if isinstance(
+            obj,
+            (
+                ExternalModule,
+                ExternalSubmodule,
+                ExternalType,
+                ExternalSubroutine,
+                ExternalFunction,
+                ExternalInterface,
+                ExternalSubroutine,
+                ExternalProgram,
+                ExternalSourceFile,
+            ),
+        ):
+            self.fromstr = True
+            obj = obj.name
+
         self.url = None
         if self.fromstr:
             m = HYPERLINK_RE.match(obj)
@@ -266,7 +268,7 @@ class ModNode(BaseNode):
         if self.fromstr:
             return
         for u in obj.uses:
-            n = gd.get_node(u, FortranModule)
+            n = gd.get_node(u)
             n.used_by.add(self)
             n.afferent += 1
             self.uses.add(n)
@@ -282,9 +284,9 @@ class SubmodNode(ModNode):
         if self.fromstr:
             return
         if obj.parent_submodule:
-            self.ancestor = gd.get_node(obj.parent_submodule, FortranSubmodule)
+            self.ancestor = gd.get_node(obj.parent_submodule)
         else:
-            self.ancestor = gd.get_node(obj.ancestor_module, FortranModule)
+            self.ancestor = gd.get_node(obj.ancestor_module)
         self.ancestor.children.add(self)
         self.efferent += 1
         self.ancestor.afferent += 1
@@ -310,9 +312,7 @@ class TypeNode(BaseNode):
             if obj.extends in hist:
                 self.ancestor = hist[obj.extends]
             else:
-                self.ancestor = gd.get_node(
-                    obj.extends, FortranType, newdict(hist, obj, self)
-                )
+                self.ancestor = gd.get_node(obj.extends, newdict(hist, obj, self))
             self.ancestor.children.add(self)
             self.ancestor.visible = getattr(obj.extends, "visible", True)
 
@@ -325,7 +325,7 @@ class TypeNode(BaseNode):
                 elif var.proto[0] in hist:
                     n = hist[var.proto[0]]
                 else:
-                    n = gd.get_node(var.proto[0], FortranType, newdict(hist, obj, self))
+                    n = gd.get_node(var.proto[0], newdict(hist, obj, self))
                 n.visible = getattr(var.proto[0], "visible", True)
                 if self in n.comp_of:
                     n.comp_of[self] += ", " + var.name
@@ -359,7 +359,7 @@ class ProcNode(BaseNode):
         if self.fromstr:
             return
         for u in getattr(obj, "uses", []):
-            n = gd.get_node(u, FortranModule)
+            n = gd.get_node(u)
             n.used_by.add(self)
             self.uses.add(n)
         for c in getattr(obj, "calls", []):
@@ -369,7 +369,7 @@ class ProcNode(BaseNode):
                 elif c in hist:
                     n = hist[c]
                 else:
-                    n = gd.get_node(c, FortranSubroutine, newdict(hist, obj, self))
+                    n = gd.get_node(c, newdict(hist, obj, self))
                 n.called_by.add(self)
                 self.calls.add(n)
         if obj.proctype.lower() == "interface":
@@ -378,9 +378,7 @@ class ProcNode(BaseNode):
                     if m.procedure in hist:
                         n = hist[m.procedure]
                     else:
-                        n = gd.get_node(
-                            m.procedure, FortranSubroutine, newdict(hist, obj, self)
-                        )
+                        n = gd.get_node(m.procedure, newdict(hist, obj, self))
                     n.interfaced_by.add(self)
                     self.interfaces.add(n)
             if (
@@ -394,7 +392,6 @@ class ProcNode(BaseNode):
                 else:
                     n = gd.get_node(
                         obj.procedure.module,
-                        FortranSubroutine,
                         newdict(hist, obj, self),
                     )
                 n.interfaced_by.add(self)
@@ -411,14 +408,21 @@ class ProgNode(BaseNode):
         if self.fromstr:
             return
         for u in obj.uses:
-            n = gd.get_node(u, FortranModule)
+            usee = u
+            if isinstance(u, str):
+                usee = ExternalModule(u)
+            n = gd.get_node(usee)
             n.used_by.add(self)
             self.uses.add(n)
         for c in obj.calls:
-            if getattr(c, "visible", True):
-                n = gd.get_node(c, FortranSubroutine)
-                n.called_by.add(self)
-                self.calls.add(n)
+            if not getattr(c, "visible", False):
+                continue
+            callee = c
+            if isinstance(c, str):
+                callee = ExternalSubmodule(c)
+            n = gd.get_node(callee)
+            n.called_by.add(self)
+            self.calls.add(n)
 
 
 class BlockNode(BaseNode):
@@ -430,7 +434,7 @@ class BlockNode(BaseNode):
         if self.fromstr:
             return
         for u in obj.uses:
-            n = gd.get_node(u, FortranModule)
+            n = gd.get_node(u)
             n.used_by.add(self)
             self.uses.add(n)
 
@@ -462,7 +466,6 @@ class FileNode(BaseNode):
                 else:
                     n = gd.get_node(
                         dep.hierarchy[0],
-                        FortranSourceFile,
                         newdict(hist, obj, self),
                     )
                 n.afferent.add(self)
@@ -487,6 +490,105 @@ def _dashed_edge(tail, head, colour, label=None):
     return _edge(tail, head, "dashed", colour, label)
 
 
+if graphviz_installed:
+    # Create the legends for the graphs. These are their own separate graphs,
+    # without edges
+    gd = GraphData()
+
+    # Graph nodes for a bunch of fake entities that we'll use in the legend
+    _module = gd.get_node(ExternalModule("Module"))
+    _submodule = gd.get_node(ExternalSubmodule("Submodule"))
+    _type = gd.get_node(ExternalType("Type"))
+    _subroutine = gd.get_node(ExternalSubroutine("Subroutine"))
+    _function = gd.get_node(ExternalFunction("Function"))
+    _interface = gd.get_node(ExternalInterface("Interface"))
+    _unknown_proc = ExternalSubroutine("Unknown Procedure Type")
+    _unknown_proc.proctype = "Unknown"
+    _unknown = gd.get_node(_unknown_proc)
+    _program = gd.get_node(ExternalProgram("Program"))
+    _sourcefile = gd.get_node(ExternalSourceFile("Source File"))
+
+    def _make_legend(entities):
+        """Make a legend containing a collection of entities"""
+        dot = Digraph(
+            "Graph Key",
+            graph_attr={"size": "8.90625,1000.0", "concentrate": "false"},
+            node_attr={
+                "shape": "box",
+                "height": "0.0",
+                "margin": "0.08",
+                "fontname": "Helvetica",
+                "fontsize": "10.5",
+            },
+            edge_attr={"fontname": "Helvetica", "fontsize": "9.5"},
+            format="svg",
+            engine="dot",
+        )
+        for entity in entities:
+            dot.node(entity.name, **entity.attribs)
+        dot.node("This Page's Entity")
+        return dot.pipe().decode("utf-8")
+
+    mod_svg = _make_legend([_module, _submodule, _subroutine, _function, _program])
+    type_svg = _make_legend([_type])
+    call_svg = _make_legend([_subroutine, _function, _interface, _unknown, _program])
+    file_svg = _make_legend([_sourcefile])
+else:
+    mod_svg = ""
+    type_svg = ""
+    call_svg = ""
+    file_svg = ""
+
+NODE_DIAGRAM = "<p>Nodes of different colours represent the following: </p>"
+
+MOD_GRAPH_KEY = f"""
+{NODE_DIAGRAM}
+{mod_svg}
+<p>Solid arrows point from a submodule to the (sub)module which it is
+descended from. Dashed arrows point from a module or program unit to 
+modules which it uses.
+</p>
+"""  # noqa W291
+
+TYPE_GRAPH_KEY = f"""
+{NODE_DIAGRAM}
+{type_svg}
+<p>Solid arrows point from a derived type to the parent type which it
+extends. Dashed arrows point from a derived type to the other
+types it contains as a components, with a label listing the name(s) of
+said component(s).
+</p>
+"""
+
+CALL_GRAPH_KEY = f"""
+{NODE_DIAGRAM}
+{call_svg}
+<p>Solid arrows point from a procedure to one which it calls. Dashed 
+arrows point from an interface to procedures which implement that interface.
+This could include the module procedures in a generic interface or the
+implementation in a submodule of an interface in a parent module.
+</p>
+"""  # noqa W291
+
+FILE_GRAPH_KEY = f"""
+{NODE_DIAGRAM}
+{file_svg}
+<p>Solid arrows point from a file to a file which it depends on. A file
+is dependent upon another if the latter must be compiled before the former
+can be.
+</p>
+"""
+
+COLOURED_NOTICE = """Where possible, edges connecting nodes are
+given different colours to make them easier to distinguish in
+large graphs."""
+
+del call_svg
+del file_svg
+del type_svg
+del mod_svg
+
+
 class FortranGraph:
     """
     Object used to construct the graph for some particular entity in the code.
@@ -495,6 +597,7 @@ class FortranGraph:
     data = GraphData()
     RANKDIR = "RL"
     _should_add_nested_nodes = False
+    legend = ""
 
     def __init__(self, root, webdir="", ident=None):
         """
@@ -714,7 +817,7 @@ class FortranGraph:
                   </button>
                   <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
                 </div>
-              <div class="modal-body">{self.get_key()}{COLOURED_NOTICE if _coloured_edges else ""}</div>
+              <div class="modal-body">{self.legend} {COLOURED_NOTICE if _coloured_edges else ""}</div>
             </div>
           </div>
         </div>"""
@@ -795,9 +898,7 @@ class FortranGraph:
 class ModuleGraph(FortranGraph):
     """Shows the relationship between modules and submodules"""
 
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return MOD_GRAPH_KEY.format(colour_notice)
+    legend = MOD_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for nu in sorted(node.uses):
@@ -818,10 +919,7 @@ class UsesGraph(FortranGraph):
     """Graphs how modules use other modules, including ancestor (sub)modules"""
 
     _should_add_nested_nodes = True
-
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return MOD_GRAPH_KEY.format(colour_notice)
+    legend = MOD_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for nu in sorted(node.uses):
@@ -839,10 +937,7 @@ class UsedByGraph(FortranGraph):
     """Graphs how modules are used by other modules"""
 
     _should_add_nested_nodes = True
-
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return MOD_GRAPH_KEY.format(colour_notice)
+    legend = MOD_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for nu in sorted(getattr(node, "used_by", [])):
@@ -858,9 +953,7 @@ class UsedByGraph(FortranGraph):
 class FileGraph(FortranGraph):
     """Graphs relationships between source files"""
 
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return FILE_GRAPH_KEY.format(colour_notice)
+    legend = FILE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for ne in sorted(node.efferent):
@@ -873,10 +966,7 @@ class EfferentGraph(FortranGraph):
     """Shows the relationship between the files which this one depends on"""
 
     _should_add_nested_nodes = True
-
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return FILE_GRAPH_KEY.format(colour_notice)
+    legend = FILE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for ne in sorted(node.efferent):
@@ -889,10 +979,7 @@ class AfferentGraph(FortranGraph):
     """Shows the relationship between files which depend upon this one"""
 
     _should_add_nested_nodes = True
-
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return FILE_GRAPH_KEY.format(colour_notice)
+    legend = FILE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for na in sorted(node.afferent):
@@ -904,9 +991,7 @@ class AfferentGraph(FortranGraph):
 class TypeGraph(FortranGraph):
     """Graphs inheritance and composition relationships between derived types"""
 
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return TYPE_GRAPH_KEY.format(colour_notice)
+    legend = TYPE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for keys in node.comp_types.keys():
@@ -929,10 +1014,7 @@ class InheritsGraph(FortranGraph):
     """Graphs types that this type inherits from"""
 
     _should_add_nested_nodes = True
-
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return TYPE_GRAPH_KEY.format(colour_notice)
+    legend = TYPE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for c in node.comp_types:
@@ -949,10 +1031,7 @@ class InheritedByGraph(FortranGraph):
     """Graphs types that inherit this type"""
 
     _should_add_nested_nodes = True
-
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return TYPE_GRAPH_KEY.format(colour_notice)
+    legend = TYPE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for c in node.comp_of:
@@ -972,10 +1051,7 @@ class CallGraph(FortranGraph):
     """
 
     RANKDIR = "LR"
-
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return CALL_GRAPH_KEY.format(colour_notice)
+    legend = CALL_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for p in sorted(node.calls):
@@ -997,10 +1073,7 @@ class CallsGraph(FortranGraph):
 
     RANKDIR = "LR"
     _should_add_nested_nodes = True
-
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return CALL_GRAPH_KEY.format(colour_notice)
+    legend = CALL_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for p in sorted(node.calls):
@@ -1021,10 +1094,7 @@ class CalledByGraph(FortranGraph):
 
     RANKDIR = "LR"
     _should_add_nested_nodes = True
-
-    def get_key(self):
-        colour_notice = COLOURED_NOTICE if _coloured_edges else ""
-        return CALL_GRAPH_KEY.format(colour_notice)
+    legend = CALL_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         if isinstance(node, ProgNode):
@@ -1053,189 +1123,3 @@ class BadType(Exception):
 
     def __str__(self):
         return repr(self.value)
-
-
-# Generate graph keys
-gd = GraphData()
-
-
-class Proc(object):
-    def __init__(self, name, proctype):
-        self.name = name
-        self.proctype = proctype
-        self.ident = ""
-
-    def get_url(self):
-        return ""
-
-    def get_dir(self):
-        return ""
-
-
-sub = Proc("Subroutine", "Subroutine")
-func = Proc("Function", "Function")
-intr = Proc("Interface", "Interface")
-gd.register("Module", FortranModule)
-gd.register("Submodule", FortranSubmodule)
-gd.register("Type", FortranType)
-gd.register(sub, FortranSubroutine)
-gd.register(func, FortranFunction)
-gd.register(intr, FortranInterface)
-gd.register("Unknown Procedure Type", FortranSubroutine)
-gd.register("Program", FortranProgram)
-gd.register("Source File", FortranSourceFile)
-
-if graphviz_installed:
-    # Generate key for module graph
-    dot = Digraph(
-        "Graph Key",
-        graph_attr={"size": "8.90625,1000.0", "concentrate": "false"},
-        node_attr={
-            "shape": "box",
-            "height": "0.0",
-            "margin": "0.08",
-            "fontname": "Helvetica",
-            "fontsize": "10.5",
-        },
-        edge_attr={"fontname": "Helvetica", "fontsize": "9.5"},
-        format="svg",
-        engine="dot",
-    )
-    for n in [
-        ("Module", FortranModule),
-        ("Submodule", FortranSubmodule),
-        (sub, FortranSubroutine),
-        (func, FortranFunction),
-        ("Program", FortranProgram),
-    ]:
-        dot.node(getattr(n[0], "name", n[0]), **gd.get_node(n[0], cls=n[1]).attribs)
-    dot.node("This Page's Entity")
-    mod_svg = dot.pipe().decode("utf-8")
-
-    # Generate key for type graph
-    dot = Digraph(
-        "Graph Key",
-        graph_attr={"size": "8.90625,1000.0", "concentrate": "false"},
-        node_attr={
-            "shape": "box",
-            "height": "0.0",
-            "margin": "0.08",
-            "fontname": "Helvetica",
-            "fontsize": "10.5",
-        },
-        edge_attr={"fontname": "Helvetica", "fontsize": "9.5"},
-        format="svg",
-        engine="dot",
-    )
-    dot.node("Type", **gd.get_node("Type", cls=FortranType).attribs)
-    dot.node("This Page's Entity")
-    type_svg = dot.pipe().decode("utf-8")
-
-    # Generate key for call graph
-    dot = Digraph(
-        "Graph Key",
-        graph_attr={"size": "8.90625,1000.0", "concentrate": "false"},
-        node_attr={
-            "shape": "box",
-            "height": "0.0",
-            "margin": "0.08",
-            "fontname": "Helvetica",
-            "fontsize": "10.5",
-        },
-        edge_attr={"fontname": "Helvetica", "fontsize": "9.5"},
-        format="svg",
-        engine="dot",
-    )
-    for n in [
-        (sub, FortranSubroutine),
-        (func, FortranFunction),
-        (intr, FortranInterface),
-        ("Unknown Procedure Type", FortranFunction),
-        ("Program", FortranProgram),
-    ]:
-        dot.node(getattr(n[0], "name", n[0]), **gd.get_node(n[0], cls=n[1]).attribs)
-    dot.node("This Page's Entity")
-    call_svg = dot.pipe().decode("utf-8")
-
-    # Generate key for file graph
-    dot = Digraph(
-        "Graph Key",
-        graph_attr={"size": "8.90625,1000.0", "concentrate": "false"},
-        node_attr={
-            "shape": "box",
-            "height": "0.0",
-            "margin": "0.08",
-            "fontname": "Helvetica",
-            "fontsize": "10.5",
-        },
-        edge_attr={"fontname": "Helvetica", "fontsize": "9.5"},
-        format="svg",
-        engine="dot",
-    )
-    dot.node("Source File", **gd.get_node("Source File", cls=FortranSourceFile).attribs)
-    dot.node("This Page's Entity")
-    file_svg = dot.pipe().decode("utf-8")
-
-
-
-    NODE_DIAGRAM = """
-    <p>Nodes of different colours represent the following: </p>
-    {}
-    """
-
-    MOD_GRAPH_KEY = (
-        NODE_DIAGRAM
-        + """
-    <p>Solid arrows point from a submodule to the (sub)module which it is
-    descended from. Dashed arrows point from a module or program unit to 
-    modules which it uses.{{}}
-    </p>
-    """  # noqa W291
-    ).format(mod_svg)
-
-    TYPE_GRAPH_KEY = (
-        NODE_DIAGRAM
-        + """
-    <p>Solid arrows point from a derived type to the parent type which it
-    extends. Dashed arrows point from a derived type to the other
-    types it contains as a components, with a label listing the name(s) of
-    said component(s).{{}}
-    </p>
-    """
-    ).format(type_svg)
-
-    CALL_GRAPH_KEY = (
-        NODE_DIAGRAM
-        + """
-    <p>Solid arrows point from a procedure to one which it calls. Dashed 
-    arrows point from an interface to procedures which implement that interface.
-    This could include the module procedures in a generic interface or the
-    implementation in a submodule of an interface in a parent module.{{}}
-    </p>
-    """  # noqa W291
-    ).format(call_svg)
-
-    FILE_GRAPH_KEY = (
-        NODE_DIAGRAM
-        + """
-    <p>Solid arrows point from a file to a file which it depends on. A file
-    is dependent upon another if the latter must be compiled before the former
-    can be.{{}}
-    </p>
-    """
-    ).format(file_svg)
-
-    COLOURED_NOTICE = (
-        " Where possible, edges connecting nodes are given "
-        "different colours to make them easier to distinguish "
-        "in large graphs."
-    )
-
-    del call_svg
-    del file_svg
-    del type_svg
-    del mod_svg
-    del dot
-    del sub
-    del func
-    del intr

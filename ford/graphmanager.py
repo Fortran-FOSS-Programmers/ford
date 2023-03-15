@@ -95,7 +95,7 @@ class GraphManager(object):
 
     def register(self, obj):
         if obj.meta["graph"]:
-            ford.graphs.FortranGraph.data.register(obj, type(obj))
+            ford.graphs.FortranGraph.data.register(obj)
             self.graph_objs.append(obj)
 
     def graph_all(self):
