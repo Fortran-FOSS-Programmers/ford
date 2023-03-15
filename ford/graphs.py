@@ -642,94 +642,79 @@ class FortranGraph:
             # Only warn once about this
             self.warn = False
 
-        zoomName = ""
-        svgGraph = ""
         rettext = ""
         if graph_as_table:
             # generate a table graph if maximum number of nodes gets exceeded in
             # the first hop and there is only one root node.
-            root = '<td class="root" rowspan="{0}">{1}</td>'.format(
-                len(self.hop_nodes) * 2 + 1, self.root[0].attribs["label"]
-            )
+            root = f'<td class="root" rowspan="{len(self.hop_nodes) * 2 + 1}">{self.root[0].attribs["label"]}</td>'
             if self.hop_edges[0][0].ident == self.root[0].ident:
                 key = 1
                 root_on_left = self.RANKDIR == "LR"
                 if root_on_left:
-                    arrowtemp = (
-                        '<td class="{0}{1}">{2}</td><td rowspan="2"'
-                        + 'class="triangle-right"></td>'
-                    )
+                    arrowtemp = '<td class="{0}{1}">{2}</td><td rowspan="2" class="triangle-right"></td>'
                 else:
-                    arrowtemp = (
-                        '<td rowspan="2" class="triangle-left">'
-                        + '</td><td class="{0}{1}">{2}</td>'
-                    )
+                    arrowtemp = '<td rowspan="2" class="triangle-left"></td><td class="{0}{1}">{2}</td>'
             else:
                 key = 0
                 root_on_left = self.RANKDIR == "RL"
                 if root_on_left:
-                    arrowtemp = (
-                        '<td rowspan="2" class="triangle-left">'
-                        + '</td><td class="{0}{1}">{2}</td>'
-                    )
+                    arrowtemp = '<td rowspan="2" class="triangle-left"></td><td class="{0}{1}">{2}</td>'
                 else:
-                    arrowtemp = (
-                        '<td class="{0}{1}">{2}</td><td rowspan="2"'
-                        + 'class="triangle-right"></td>'
-                    )
+                    arrowtemp = '<td class="{0}{1}">{2}</td><td rowspan="2" class="triangle-right"></td>'
             # sort nodes in alphabetical order
             self.hop_edges.sort(key=lambda x: x[key].attribs["label"].lower())
             rows = ""
-            for i in range(len(self.hop_edges)):
-                e = self.hop_edges[i]
+            for e in self.hop_edges:
                 n = e[key]
                 if len(e) == 5:
                     arrow = arrowtemp.format(e[2], "Text", e[4])
                 else:
                     arrow = arrowtemp.format(e[2], "Bottom", "w")
-                node = '<td rowspan="2" class="node" bgcolor="{0}">'.format(
-                    n.attribs["color"]
-                )
+                node = f'<td rowspan="2" class="node" bgcolor="{n.attribs["color"]}">'
                 try:
-                    node += '<a href="{0}">{1}</a></td>'.format(
-                        n.attribs["URL"], n.attribs["label"]
+                    node += (
+                        f'<a href="{n.attribs["URL"]}">{n.attribs["label"]}</a></td>'
                     )
                 except KeyError:
                     node += n.attribs["label"] + "</td>"
-                if root_on_left:
-                    rows += "<tr>" + root + arrow + node + "</tr>\n"
-                else:
-                    rows += "<tr>" + node + arrow + root + "</tr>\n"
-                rows += '<tr><td class="{0}Top">w</td></tr>\n'.format(e[2])
+
+                root_arrow = (
+                    f"{root}{arrow}{node}" if root_on_left else f"{node}{arrow}{root}"
+                )
+                rows += f"<tr>{root_arrow}</tr>\n"
+                rows += f'<tr><td class="{e[2]}Top">w</td></tr>\n'
                 root = ""
-            rettext += '<table class="graph">\n' + rows + "</table>\n"
+            rettext += f'<table class="graph">\n{rows}</table>\n'
 
         # generate svg graph
         else:
-            rettext += '<div class="depgraph">{0}</div>'
-            svgGraph = self.svg_src
+            rettext += f'<div class="depgraph">{self.svg_src}</div>'
             # add zoom ability for big graphs
             if self.scaled:
                 zoomName = re.sub(r"[^\w]", "", self.ident)
-                rettext += (
-                    "<script>var pan{1} = svgPanZoom('#{1}', "
-                    "{{zoomEnabled: true,controlIconsEnabled: true, "
-                    "fit: true, center: true,}}); </script>"
-                )
-        rettext += (
-            '<div><a type="button" class="graph-help" '
-            'data-toggle="modal" href="#graph-help-text">Help</a>'
-            '</div><div class="modal fade" id="graph-help-text" '
-            'tabindex="-1" role="dialog"><div class="modal-dialog '
-            'modal-lg" role="document"><div class="modal-content">'
-            '<div class="modal-header"><button type="button" '
-            'class="close" data-dismiss="modal" aria-label="Close">'
-            '<span aria-hidden="true">&times;</span></button><h4 class'
-            '="modal-title" id="-graph-help-label">Graph Key</h4>'
-            '</div><div class="modal-body">{2}</div></div></div>'
-            "</div>"
-        )
-        return rettext.format(svgGraph, zoomName, self.get_key())
+                rettext += f"""\
+                <script>
+                  var pan{zoomName} = svgPanZoom('#{zoomName}',
+                    {{zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,}}
+                  );
+                </script>"""
+
+        legend_graph = f"""\
+        <div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div>
+          <div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                  <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                </div>
+              <div class="modal-body">{self.get_key()}{COLOURED_NOTICE if _coloured_edges else ""}</div>
+            </div>
+          </div>
+        </div>"""
+        return rettext + legend_graph
 
     def __nonzero__(self):
         return self.__bool__()
