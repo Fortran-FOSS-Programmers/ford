@@ -465,6 +465,24 @@ class FileNode(BaseNode):
                 self.efferent.add(n)
 
 
+def _edge(tail, head, style, colour, label=None):
+    return {
+        "tail_name": tail.ident,
+        "head_name": head.ident,
+        "style": style,
+        "color": colour,
+        "label": label,
+    }
+
+
+def _solid_edge(tail, head, colour, label=None):
+    return _edge(tail, head, "solid", colour, label)
+
+
+def _dashed_edge(tail, head, colour, label=None):
+    return _edge(tail, head, "dashed", colour, label)
+
+
 class FortranGraph:
     """
     Object used to construct the graph for some particular entity in the code.
@@ -569,16 +587,11 @@ class FortranGraph:
             self.truncated = nesting
             return False
 
-        for n in nodes:
+        for n in sorted(nodes):
             strattribs = {key: str(a) for key, a in n.attribs.items()}
             self.dot.node(n.ident, **strattribs)
-        for e in edges:
-            if len(e) == 5:
-                self.dot.edge(
-                    e[0].ident, e[1].ident, style=e[2], color=e[3], label=e[4]
-                )
-            else:
-                self.dot.edge(e[0].ident, e[1].ident, style=e[2], color=e[3])
+        for edge in edges:
+            self.dot.edge(**edge)
         self.added.update(nodes)
         return True
 
@@ -801,12 +814,12 @@ class ModuleGraph(FortranGraph):
         for nu in sorted(node.uses):
             if nu not in self.added:
                 hop_nodes.add(nu)
-            hop_edges.append((node, nu, "dashed", colour))
+            hop_edges.append(_dashed_edge(node, nu, colour))
 
         if hasattr(node, "ancestor"):
             if node.ancestor not in self.added:
                 hop_nodes.add(node.ancestor)
-            hop_edges.append((node, node.ancestor, "solid", colour))
+            hop_edges.append(_solid_edge(node, node.ancestor, colour))
 
     def _extra_attributes(self):
         self.dot.attr("graph", size="11.875,1000.0")
@@ -825,11 +838,12 @@ class UsesGraph(FortranGraph):
         for nu in sorted(node.uses):
             if nu not in self.added:
                 hop_nodes.add(nu)
-            hop_edges.append((node, nu, "dashed", colour))
+            hop_edges.append(_dashed_edge(node, nu, colour))
+
         if hasattr(node, "ancestor"):
             if node.ancestor not in self.added:
                 hop_nodes.add(node.ancestor)
-            hop_edges.append((node, node.ancestor, "solid", colour))
+            hop_edges.append(_solid_edge(node, node.ancestor, colour))
 
 
 class UsedByGraph(FortranGraph):
@@ -845,11 +859,11 @@ class UsedByGraph(FortranGraph):
         for nu in sorted(getattr(node, "used_by", [])):
             if nu not in self.added:
                 hop_nodes.add(nu)
-            hop_edges.append((nu, node, "dashed", colour))
+            hop_edges.append(_dashed_edge(nu, node, colour))
         for c in sorted(getattr(node, "children", [])):
             if c not in self.added:
                 hop_nodes.add(c)
-            hop_edges.append((c, node, "solid", colour))
+            hop_edges.append(_solid_edge(c, node, colour))
 
 
 class FileGraph(FortranGraph):
@@ -863,7 +877,7 @@ class FileGraph(FortranGraph):
         for ne in sorted(node.efferent):
             if ne not in self.added:
                 hop_nodes.add(ne)
-            hop_edges.append((ne, node, "solid", colour))
+            hop_edges.append(_solid_edge(ne, node, colour))
 
 
 class EfferentGraph(FortranGraph):
@@ -879,7 +893,7 @@ class EfferentGraph(FortranGraph):
         for ne in sorted(node.efferent):
             if ne not in self.added:
                 hop_nodes.add(ne)
-            hop_edges.append((node, ne, "dashed", colour))
+            hop_edges.append(_dashed_edge(node, ne, colour))
 
 
 class AfferentGraph(FortranGraph):
@@ -895,7 +909,7 @@ class AfferentGraph(FortranGraph):
         for na in sorted(node.afferent):
             if na not in self.added:
                 hop_nodes.add(na)
-            hop_edges.append((na, node, "dashed", colour))
+            hop_edges.append(_dashed_edge(na, node, colour))
 
 
 class TypeGraph(FortranGraph):
@@ -912,11 +926,11 @@ class TypeGraph(FortranGraph):
         for c in node.comp_types:
             if c not in self.added:
                 hop_nodes.add(c)
-            hop_edges.append((node, c, "dashed", colour, node.comp_types[c]))
+            hop_edges.append(_dashed_edge(node, c, colour, node.comp_types[c]))
         if node.ancestor:
             if node.ancestor not in self.added:
                 hop_nodes.add(node.ancestor)
-            hop_edges.append((node, node.ancestor, "solid", colour))
+            hop_edges.append(_solid_edge(node, node.ancestor, colour))
 
     def _extra_attributes(self):
         self.dot.attr("graph", size="11.875,1000.0")
@@ -935,11 +949,11 @@ class InheritsGraph(FortranGraph):
         for c in node.comp_types:
             if c not in self.added:
                 hop_nodes.add(c)
-            hop_edges.append((node, c, "dashed", colour, node.comp_types[c]))
+            hop_edges.append(_dashed_edge(node, c, colour, node.comp_types[c]))
         if node.ancestor:
             if node.ancestor not in self.added:
                 hop_nodes.add(node.ancestor)
-            hop_edges.append((node, node.ancestor, "solid", colour))
+            hop_edges.append(_solid_edge(node, node.ancestor, colour))
 
 
 class InheritedByGraph(FortranGraph):
@@ -955,11 +969,11 @@ class InheritedByGraph(FortranGraph):
         for c in node.comp_of:
             if c not in self.added:
                 hop_nodes.add(c)
-            hop_edges.append((c, node, "dashed", colour, node.comp_of[c]))
+            hop_edges.append(_dashed_edge(c, node, colour, node.comp_of[c]))
         for c in node.children:
             if c not in self.added:
                 hop_nodes.add(c)
-            hop_edges.append((c, node, "solid", colour))
+            hop_edges.append(_solid_edge(c, node, colour))
 
 
 class CallGraph(FortranGraph):
@@ -978,11 +992,11 @@ class CallGraph(FortranGraph):
         for p in sorted(node.calls):
             if p not in hop_nodes:
                 hop_nodes.add(p)
-            hop_edges.append((node, p, "solid", colour))
+            hop_edges.append(_solid_edge(node, p, colour))
         for p in sorted(getattr(node, "interfaces", [])):
             if p not in hop_nodes:
                 hop_nodes.add(p)
-            hop_edges.append((node, p, "dashed", colour))
+            hop_edges.append(_dashed_edge(node, p, colour))
 
     def _extra_attributes(self):
         self.dot.attr("graph", size="11.875,1000.0")
@@ -1003,11 +1017,11 @@ class CallsGraph(FortranGraph):
         for p in sorted(node.calls):
             if p not in self.added:
                 hop_nodes.add(p)
-            hop_edges.append((node, p, "solid", colour))
+            hop_edges.append(_solid_edge(node, p, colour))
         for p in sorted(getattr(node, "interfaces", [])):
             if p not in self.added:
                 hop_nodes.add(p)
-            hop_edges.append((node, p, "dashed", colour))
+            hop_edges.append(_dashed_edge(node, p, colour))
 
     def _extra_attributes(self):
         self.dot.attr("graph", concentrate="false")
@@ -1029,11 +1043,11 @@ class CalledByGraph(FortranGraph):
         for p in sorted(node.called_by):
             if p not in self.added:
                 hop_nodes.add(p)
-            hop_edges.append((p, node, "solid", colour))
+            hop_edges.append(_solid_edge(p, node, colour))
         for p in sorted(getattr(node, "interfaced_by", [])):
             if p not in self.added:
                 hop_nodes.add(p)
-            hop_edges.append((p, node, "dashed", colour))
+            hop_edges.append(_dashed_edge(p, node, colour))
 
     def _extra_attributes(self):
         self.dot.attr("graph", concentrate="false")
