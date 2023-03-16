@@ -382,8 +382,7 @@ class FortranBase(object):
                     self.SRC_CAPTURE_STR.format(obj, self.name),
                     re.IGNORECASE | re.DOTALL | re.MULTILINE,
                 )
-                match = regex.search(self.hierarchy[0].raw_src)
-                if match:
+                if match := regex.search(self.hierarchy[0].raw_src):
                     self.src = highlight(match.group(), FortranLexer(), HtmlFormatter())
                 else:
                     self.src = ""
@@ -638,8 +637,8 @@ class FortranContainer(FortranBase):
             # Temporarily replace all strings to make the parsing simpler
             self.strings = []
             search_from = 0
-            while QUOTES_RE.search(line[search_from:]):
-                self.strings.append(QUOTES_RE.search(line[search_from:]).group())
+            while quote := QUOTES_RE.search(line[search_from:]):
+                self.strings.append(quote.group())
                 line = line[0:search_from] + QUOTES_RE.sub(
                     '"{}"'.format(len(self.strings) - 1), line[search_from:], count=1
                 )
@@ -671,8 +670,7 @@ class FortranContainer(FortranBase):
             elif self.FORMAT_RE.match(line):
                 # There's nothing interesting for us in a format statement
                 continue
-            elif self.ATTRIB_RE.match(line) and blocklevel == 0:
-                match = self.ATTRIB_RE.match(line)
+            elif (match := self.ATTRIB_RE.match(line)) and blocklevel == 0:
                 attr = match.group(1).lower().replace(" ", "")
                 if len(attr) >= 4 and attr[0:4].lower() == "bind":
                     attr = attr.replace(",", ", ")
@@ -721,14 +719,15 @@ class FortranContainer(FortranBase):
                     continue
                 else:
                     self.print_error(line, f"Unexpected {attr.upper()} statement")
-            elif self.END_RE.match(line):
+
+            elif match := self.END_RE.match(line):
                 if isinstance(self, FortranSourceFile):
                     self.print_error(
                         line,
                         "END statement outside of any nesting",
                         describe_object=False,
                     )
-                endtype = self.END_RE.match(line).group(1)
+                endtype = match.group(1)
                 if endtype and endtype.lower() == "block":
                     blocklevel -= 1
                 elif endtype and endtype.lower() == "associate":
@@ -736,29 +735,25 @@ class FortranContainer(FortranBase):
                 else:
                     self._cleanup()
                     return
-            elif self.MODPROC_RE.match(line) and (
-                self.MODPROC_RE.match(line).group(1) or type(self) is FortranInterface
+
+            elif (match := self.MODPROC_RE.match(line)) and (
+                match.group(1) or isinstance(self, FortranInterface)
             ):
                 if hasattr(self, "modprocs"):
                     # Module procedure in an INTERFACE
-                    self.modprocs.extend(
-                        get_mod_procs(source, self.MODPROC_RE.match(line), self)
-                    )
+                    self.modprocs.extend(get_mod_procs(source, match, self))
                 elif hasattr(self, "modprocedures"):
                     # Module procedure implementing an interface in a SUBMODULE
                     self.modprocedures.append(
-                        FortranSubmoduleProcedure(
-                            source, self.MODPROC_RE.match(line), self, self.permission
-                        )
+                        FortranSubmoduleProcedure(source, match, self, self.permission)
                     )
                     self.num_lines += self.modprocedures[-1].num_lines - 1
                 else:
                     self.print_error(line, "Unexpected MODULE PROCEDURE")
-            elif self.BLOCK_DATA_RE.match(line):
+
+            elif match := self.BLOCK_DATA_RE.match(line):
                 if hasattr(self, "blockdata"):
-                    self.blockdata.append(
-                        FortranBlockData(source, self.BLOCK_DATA_RE.match(line), self)
-                    )
+                    self.blockdata.append(FortranBlockData(source, match, self))
                     self.num_lines += self.blockdata[-1].num_lines - 1
                 else:
                     self.print_error(line, "Unexpected BLOCK DATA")
@@ -766,27 +761,23 @@ class FortranContainer(FortranBase):
                 blocklevel += 1
             elif self.ASSOCIATE_RE.match(line):
                 associatelevel += 1
-            elif self.MODULE_RE.match(line):
+            elif match := self.MODULE_RE.match(line):
                 if hasattr(self, "modules"):
-                    self.modules.append(
-                        FortranModule(source, self.MODULE_RE.match(line), self)
-                    )
+                    self.modules.append(FortranModule(source, match, self))
                     self.num_lines += self.modules[-1].num_lines - 1
                 else:
                     self.print_error(line, "Unexpected MODULE")
-            elif self.SUBMODULE_RE.match(line):
+
+            elif match := self.SUBMODULE_RE.match(line):
                 if hasattr(self, "submodules"):
-                    self.submodules.append(
-                        FortranSubmodule(source, self.SUBMODULE_RE.match(line), self)
-                    )
+                    self.submodules.append(FortranSubmodule(source, match, self))
                     self.num_lines += self.submodules[-1].num_lines - 1
                 else:
                     self.print_error(line, "Unexpected SUBMODULE")
-            elif self.PROGRAM_RE.match(line):
+
+            elif match := self.PROGRAM_RE.match(line):
                 if hasattr(self, "programs"):
-                    self.programs.append(
-                        FortranProgram(source, self.PROGRAM_RE.match(line), self)
-                    )
+                    self.programs.append(FortranProgram(source, match, self))
                     self.num_lines += self.programs[-1].num_lines - 1
                 else:
                     self.print_error(line, "Unexpected PROGRAM")
@@ -796,48 +787,39 @@ class FortranContainer(FortranBase):
                         "Multiple PROGRAM units in same source file",
                         describe_object=False,
                     )
-            elif self.SUBROUTINE_RE.match(line):
+
+            elif match := self.SUBROUTINE_RE.match(line):
                 if isinstance(self, FortranCodeUnit) and not incontains:
                     self.print_error(line, "Unexpected SUBROUTINE")
                 elif hasattr(self, "subroutines"):
                     self.subroutines.append(
-                        FortranSubroutine(
-                            source,
-                            self.SUBROUTINE_RE.match(line),
-                            self,
-                            self.permission,
-                        )
+                        FortranSubroutine(source, match, self, self.permission)
                     )
                     self.num_lines += self.subroutines[-1].num_lines - 1
                 else:
                     self.print_error(line, "Unexpected SUBROUTINE")
-            elif self.FUNCTION_RE.match(line):
+
+            elif match := self.FUNCTION_RE.match(line):
                 if isinstance(self, FortranCodeUnit) and not incontains:
                     self.print_error(line, "Unexpected FUNCTION")
                 elif hasattr(self, "functions"):
                     self.functions.append(
-                        FortranFunction(
-                            source, self.FUNCTION_RE.match(line), self, self.permission
-                        )
+                        FortranFunction(source, match, self, self.permission)
                     )
                     self.num_lines += self.functions[-1].num_lines - 1
                 else:
                     self.print_error(line, "Unexpected FUNCTION")
-            elif self.TYPE_RE.match(line) and blocklevel == 0:
+
+            elif (match := self.TYPE_RE.match(line)) and blocklevel == 0:
                 if hasattr(self, "types"):
-                    self.types.append(
-                        FortranType(
-                            source, self.TYPE_RE.match(line), self, self.permission
-                        )
-                    )
+                    self.types.append(FortranType(source, match, self, self.permission))
                     self.num_lines += self.types[-1].num_lines - 1
                 else:
                     self.print_error(line, "Unexpected derived TYPE")
-            elif self.INTERFACE_RE.match(line) and blocklevel == 0:
+
+            elif (match := self.INTERFACE_RE.match(line)) and blocklevel == 0:
                 if hasattr(self, "interfaces"):
-                    intr = FortranInterface(
-                        source, self.INTERFACE_RE.match(line), self, self.permission
-                    )
+                    intr = FortranInterface(source, match, self, self.permission)
                     self.num_lines += intr.num_lines - 1
                     if intr.abstract:
                         self.absinterfaces.extend(intr.contents)
@@ -847,29 +829,21 @@ class FortranContainer(FortranBase):
                         self.interfaces.extend(intr.contents)
                 else:
                     self.print_error(line, "Unexpected INTERFACE")
-            elif self.ENUM_RE.match(line) and blocklevel == 0:
+
+            elif (match := self.ENUM_RE.match(line)) and blocklevel == 0:
                 if hasattr(self, "enums"):
-                    self.enums.append(
-                        FortranEnum(
-                            source, self.ENUM_RE.match(line), self, self.permission
-                        )
-                    )
+                    self.enums.append(FortranEnum(source, match, self, self.permission))
                     self.num_lines += self.enums[-1].num_lines - 1
                 else:
                     self.print_error(line, "Unexpected ENUM")
-            elif self.BOUNDPROC_RE.match(line) and incontains:
+
+            elif (match := self.BOUNDPROC_RE.match(line)) and incontains:
                 if hasattr(self, "boundprocs"):
-                    match = self.BOUNDPROC_RE.match(line)
                     split = match.group(4).split(",")
                     split.reverse()
                     if match.group(1).lower() == "generic" or len(split) == 1:
                         self.boundprocs.append(
-                            FortranBoundProcedure(
-                                source,
-                                self.BOUNDPROC_RE.match(line),
-                                self,
-                                child_permission,
-                            )
+                            FortranBoundProcedure(source, match, self, child_permission)
                         )
                     else:
                         for bind in split:
@@ -884,7 +858,8 @@ class FortranContainer(FortranBase):
                             )
                 else:
                     self.print_error(line, "Unexpected type-bound procedure")
-            elif self.COMMON_RE.match(line):
+
+            elif match := self.COMMON_RE.match(line):
                 if hasattr(self, "common"):
                     split = self.COMMON_SPLIT_RE.split(line)
                     if len(split) > 1:
@@ -911,18 +886,13 @@ class FortranContainer(FortranBase):
                                 -len(split) // 2 + 1
                             ].doc
                     else:
-                        self.common.append(
-                            FortranCommon(
-                                source, self.COMMON_RE.match(line), self, "public"
-                            )
-                        )
+                        self.common.append(FortranCommon(source, match, self, "public"))
                 else:
                     self.print_error(line, "Unexpected COMMON statement")
-            elif self.FINAL_RE.match(line) and incontains:
+
+            elif (match := self.FINAL_RE.match(line)) and incontains:
                 if hasattr(self, "finalprocs"):
-                    procedures = self.SPLIT_RE.split(
-                        self.FINAL_RE.match(line).group(1).strip()
-                    )
+                    procedures = self.SPLIT_RE.split(match.group(1).strip())
                     finprocs = [
                         FortranFinalProc(proc, self) for proc in procedures[:-1]
                     ]
@@ -930,6 +900,7 @@ class FortranContainer(FortranBase):
                     self.finalprocs.extend(finprocs)
                 else:
                     self.print_error(line, "Unexpected finalization procedure")
+
             elif self.VARIABLE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "variables"):
                     self.variables.extend(
@@ -937,9 +908,10 @@ class FortranContainer(FortranBase):
                     )
                 else:
                     self.print_error(line, "Unexpected variable")
-            elif self.USE_RE.match(line):
+
+            elif match := self.USE_RE.match(line):
                 if hasattr(self, "uses"):
-                    self.uses.append(list(self.USE_RE.match(line).groups()))
+                    self.uses.append(list(match.groups()))
                 else:
                     self.print_error(line, "Unexpected USE statement")
             else:
@@ -962,15 +934,12 @@ class FortranContainer(FortranBase):
                         pass
                         # Not raising an error here as too much possibility that something
                         # has been misidentified as a function call
-                if self.SUBCALL_RE.match(line):
+                if match := self.SUBCALL_RE.match(line):
                     # Need this to catch any subroutines called without argument lists
                     if hasattr(self, "calls"):
-                        callval = self.SUBCALL_RE.match(line).group(1)
-                        if (
-                            callval.lower() not in self.calls
-                            and callval.lower() not in INTRINSICS
-                        ):
-                            self.calls.append(callval.lower())
+                        callval = match.group(1).lower()
+                        if callval not in self.calls and callval not in INTRINSICS:
+                            self.calls.append(callval)
                     else:
                         self.print_error(line, "Unexpected procedure call")
 
@@ -1418,8 +1387,7 @@ class FortranModule(FortranCodeUnit):
         # The used names after possible renaming
         used_names = {}
         for item in map(str.strip, use_specs.split(",")):
-            match = self.RENAME_RE.search(item)
-            if match:
+            if match := self.RENAME_RE.search(item):
                 used_names[match.group(2).lower()] = match.group(1).lower()
             else:
                 used_names[item.lower()] = item.lower()
@@ -1511,9 +1479,9 @@ class FortranSubroutine(FortranCodeUnit):
 
         self.args = []
         if line.group(3):
-            if self.SPLIT_RE.split(line.group(3)[1:-1]):
-                for arg in self.SPLIT_RE.split(line.group(3)[1:-1]):
-                    if arg.strip() != "":
+            if args := self.SPLIT_RE.split(line.group(3)[1:-1]):
+                for arg in args:
+                    if arg:
                         self.args.append(arg.strip())
         self.bindC = line.group(4)
         self.variables = []
@@ -1626,8 +1594,8 @@ class FortranFunction(FortranCodeUnit):
             self.bindC = line.group(5)
         if self.bindC:
             search_from = 0
-            while QUOTES_RE.search(self.bindC[search_from:]):
-                num = int(QUOTES_RE.search(self.bindC[search_from:]).group()[1:-1])
+            while quote := QUOTES_RE.search(self.bindC[search_from:]):
+                num = int(quote.group()[1:-1])
                 self.bindC = self.bindC[0:search_from] + QUOTES_RE.sub(
                     self.parent.strings[num], self.bindC[search_from:], count=1
                 )
@@ -2691,8 +2659,7 @@ def line_to_variables(source, line, inherit_permission, parent):
     if proto:
         proto = list(proto)
 
-    attribmatch = ATTRIBSPLIT_RE.match(rest)
-    if attribmatch:
+    if attribmatch := ATTRIBSPLIT_RE.match(rest):
         attribstr = attribmatch.group(1).strip()
         declarestr = attribmatch.group(2).strip()
         tmp_attribs = [attr.strip() for attr in ford.utils.paren_split(",", attribstr)]
@@ -2719,11 +2686,9 @@ def line_to_variables(source, line, inherit_permission, parent):
     declarations = ford.utils.paren_split(",", declarestr)
 
     doc = []
-    docline = next(source)
     docmark = f"!{parent.settings['docmark']}"
-    while docline.startswith(docmark):
+    while (docline := next(source)).startswith(docmark):
         doc.append(docline[2:])
-        docline = next(source)
     source.pass_back(docline)
 
     varlist = []
@@ -2746,8 +2711,8 @@ def line_to_variables(source, line, inherit_permission, parent):
             initial = COMMA_RE.sub(", ", initial)
             # TODO: pull out into standalone function?
             search_from = 0
-            while QUOTES_RE.search(initial[search_from:]):
-                num = int(QUOTES_RE.search(initial[search_from:]).group()[1:-1])
+            while quote := QUOTES_RE.search(initial[search_from:]):
+                num = int(quote.group()[1:-1])
                 string = NBSP_RE.sub("&nbsp;", parent.strings[num])
                 string = string.replace("\\", "\\\\")
                 initial = initial[0:search_from] + QUOTES_RE.sub(

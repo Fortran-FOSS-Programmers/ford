@@ -43,10 +43,8 @@ import ford.utils
 import ford.pagetree
 from ford.md_environ import EnvironExtension
 
-try:
-    from importlib.metadata import version, PackageNotFoundError
-except ModuleNotFoundError:
-    from importlib_metadata import version, PackageNotFoundError
+from importlib.metadata import version, PackageNotFoundError
+
 try:
     __version__ = version(__name__)
 except PackageNotFoundError:
