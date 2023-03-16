@@ -258,8 +258,7 @@ class BaseNode:
         self.url = None
         if isinstance(obj, str):
             self.fromstr = True
-            m = HYPERLINK_RE.match(obj)
-            if m:
+            if m := HYPERLINK_RE.match(obj):
                 self.url = m.group(1)[1:-1]
                 self.name = m.group(2)
             else:
@@ -270,8 +269,7 @@ class BaseNode:
             d = obj.get_dir() or "none"
             self.ident = f"{d}~{obj.ident}"
             self.name = obj.name
-            m = EM_RE.search(self.name)
-            if m:
+            if m := EM_RE.search(self.name):
                 self.name = "<<i>" + m.group(1).strip() + "</i>>"
             self.url = obj.get_url()
 
@@ -743,11 +741,14 @@ class FortranGraph:
             self.svg_src = self.svg_src.replace(
                 "<svg ", '<svg id="' + re.sub(r"[^\w]", "", self.ident) + '" '
             )
-            w = int(WIDTH_RE.search(self.svg_src).group(1))
-            if isinstance(self, (ModuleGraph, CallGraph, TypeGraph)):
-                self.scaled = w >= 855
+            if match := WIDTH_RE.search(self.svg_src):
+                width = int(match.group(1))
             else:
-                self.scaled = w >= 641
+                width = 0
+            if isinstance(self, (ModuleGraph, CallGraph, TypeGraph)):
+                self.scaled = width >= 855
+            else:
+                self.scaled = width >= 641
         else:
             self.svg_src = ""
             self.scaled = False
