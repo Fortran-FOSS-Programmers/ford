@@ -1179,38 +1179,31 @@ class GraphManager(object):
 
     def graph_all(self):
         for obj in tqdm(sorted(self.graph_objs), unit="", desc="Generating graphs"):
-            if isinstance(obj, FortranModule):
+            if is_module(obj):
                 obj.usesgraph = UsesGraph(obj, self.webdir)
                 obj.usedbygraph = UsedByGraph(obj, self.webdir)
                 self.modules.add(obj)
-            elif isinstance(obj, FortranType):
+            elif is_type(obj):
                 obj.inhergraph = InheritsGraph(obj, self.webdir)
                 obj.inherbygraph = InheritedByGraph(obj, self.webdir)
                 self.types.add(obj)
-            elif isinstance(
-                obj,
-                (
-                    FortranFunction,
-                    FortranSubroutine,
-                    FortranInterface,
-                    FortranSubmoduleProcedure,
-                ),
-            ):
+            elif is_proc(obj):
                 obj.callsgraph = CallsGraph(obj, self.webdir)
                 obj.calledbygraph = CalledByGraph(obj, self.webdir)
                 obj.usesgraph = UsesGraph(obj, self.webdir)
                 self.procedures.add(obj)
-            elif isinstance(obj, FortranProgram):
+            elif is_program(obj):
                 obj.usesgraph = UsesGraph(obj, self.webdir)
                 obj.callsgraph = CallsGraph(obj, self.webdir)
                 self.programs.add(obj)
-            elif isinstance(obj, FortranSourceFile):
+            elif is_sourcefile(obj):
                 obj.afferentgraph = AfferentGraph(obj, self.webdir)
                 obj.efferentgraph = EfferentGraph(obj, self.webdir)
                 self.sourcefiles.add(obj)
-            elif isinstance(obj, FortranBlockData):
+            elif is_blockdata(obj):
                 obj.usesgraph = UsesGraph(obj, self.webdir)
                 self.blockdata.add(obj)
+
         usenodes = sorted(list(self.modules))
         callnodes = sorted(list(self.procedures))
         for p in sorted(self.programs):
