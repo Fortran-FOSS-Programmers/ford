@@ -2,6 +2,7 @@
 [![Latest Version](https://img.shields.io/pypi/v/ford.svg)](https://pypi.python.org/pypi/FORD)
 [![Latest homebrew version](https://img.shields.io/homebrew/v/ford.svg?maxAge=2592000)](http://braumeister.org/formula/ford)
 [![Latest spack version](https://img.shields.io/spack/v/py-ford)](https://spack.readthedocs.io/en/latest/package_list.html#py-ford)
+[![PyPI Total Downloads](https://static.pepy.tech/badge/ford)](https://pepy.tech/project/ford)
 [![GitHub license](https://img.shields.io/badge/license-GPL_v3-blue.svg)](./LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1422473.svg)](https://doi.org/10.5281/zenodo.1422473)
 
