@@ -318,24 +318,29 @@ class TypeNode(BaseNode):
             self.ancestor.visible = getattr(obj.extends, "visible", True)
 
         for var in obj.local_variables:
-            if (var.vartype == "type" or var.vartype == "class") and var.proto[
-                0
-            ] != "*":
-                if var.proto[0] == obj:
-                    n = self
-                elif var.proto[0] in hist:
-                    n = hist[var.proto[0]]
-                else:
-                    n = gd.get_node(var.proto[0], newdict(hist, obj, self))
-                n.visible = getattr(var.proto[0], "visible", True)
-                if self in n.comp_of:
-                    n.comp_of[self] += ", " + var.name
-                else:
-                    n.comp_of[self] = var.name
-                if n in self.comp_types:
-                    self.comp_types[n] += ", " + var.name
-                else:
-                    self.comp_types[n] = var.name
+            if var.vartype not in ["type", "class"]:
+                continue
+
+            proto = var.proto[0]
+            if proto == "*":
+                continue
+
+            if proto == obj:
+                node = self
+            elif proto in hist:
+                node = hist[proto]
+            else:
+                node = gd.get_node(proto, newdict(hist, obj, self))
+
+            node.visible = getattr(proto, "visible", True)
+            if self in node.comp_of:
+                node.comp_of[self] += ", " + var.name
+            else:
+                node.comp_of[self] = var.name
+            if node in self.comp_types:
+                self.comp_types[node] += ", " + var.name
+            else:
+                self.comp_types[node] = var.name
 
 
 class ProcNode(BaseNode):
@@ -373,30 +378,34 @@ class ProcNode(BaseNode):
                     n = gd.get_node(c, newdict(hist, obj, self))
                 n.called_by.add(self)
                 self.calls.add(n)
-        if obj.proctype.lower() == "interface":
-            for m in getattr(obj, "modprocs", []):
-                if m.procedure and getattr(m.procedure, "visible", True):
-                    if m.procedure in hist:
-                        n = hist[m.procedure]
-                    else:
-                        n = gd.get_node(m.procedure, newdict(hist, obj, self))
-                    n.interfaced_by.add(self)
-                    self.interfaces.add(n)
-            if (
-                hasattr(obj, "procedure")
-                and obj.procedure.module
-                and obj.procedure.module is not True
-                and getattr(obj.procedure.module, "visible", True)
-            ):
-                if obj.procedure.module in hist:
-                    n = hist[obj.procedure.module]
+
+        if obj.proctype.lower() != "interface":
+            return
+
+        for m in getattr(obj, "modprocs", []):
+            if m.procedure and getattr(m.procedure, "visible", True):
+                if m.procedure in hist:
+                    n = hist[m.procedure]
                 else:
-                    n = gd.get_node(
-                        obj.procedure.module,
-                        newdict(hist, obj, self),
-                    )
+                    n = gd.get_node(m.procedure, newdict(hist, obj, self))
                 n.interfaced_by.add(self)
                 self.interfaces.add(n)
+
+        if (
+            hasattr(obj, "procedure")
+            and obj.procedure.module
+            and obj.procedure.module is not True
+            and getattr(obj.procedure.module, "visible", True)
+        ):
+            if obj.procedure.module in hist:
+                n = hist[obj.procedure.module]
+            else:
+                n = gd.get_node(
+                    obj.procedure.module,
+                    newdict(hist, obj, self),
+                )
+            n.interfaced_by.add(self)
+            self.interfaces.add(n)
 
 
 class ProgNode(BaseNode):
@@ -618,22 +627,19 @@ class FortranGraph:
         self.max_nodes = 1  # maximum numbers of nodes allowed
         self.warn = False  # should warnings be written?
         self.truncated = -1  # nesting where the graph was truncated
-        try:
-            for r in sorted(root):
-                self.root.append(self.data.get_node(r))
-                self.max_nesting = max(self.max_nesting, int(r.meta["graph_maxdepth"]))
-                self.max_nodes = max(self.max_nodes, int(r.meta["graph_maxnodes"]))
-                self.warn = self.warn or (r.settings["warn"])
-        except TypeError:
-            self.root.append(self.data.get_node(root))
-            self.max_nesting = int(root.meta["graph_maxdepth"])
-            self.max_nodes = max(self.max_nodes, int(root.meta["graph_maxnodes"]))
-            self.warn = root.settings["warn"]
+
+        if not isinstance(root, (set, list)):
+            root = [root]
+
+        for r in sorted(root):
+            self.root.append(self.data.get_node(r))
+            self.max_nesting = max(self.max_nesting, int(r.meta["graph_maxdepth"]))
+            self.max_nodes = max(self.max_nodes, int(r.meta["graph_maxnodes"]))
+            self.warn = self.warn or (r.settings["warn"])
+
         self.webdir = webdir
-        if ident:
-            self.ident = f"{ident}~~{self.__class__.__name__}"
-        else:
-            self.ident = f"{root.get_dir()}~~{root.ident}~~{self.__class__.__name__}"
+        ident = ident or f"{root[0].get_dir()}~~{root[0].ident}"
+        self.ident = f"{ident}~~{self.__class__.__name__}"
         self.imgfile = self.ident
         self.dot = Digraph(
             self.ident,
