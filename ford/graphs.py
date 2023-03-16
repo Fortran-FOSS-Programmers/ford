@@ -1288,11 +1288,6 @@ class GraphManager(object):
                 desc="Writing graphs",
             )
 
-        if self.usegraph:
-            self.usegraph.create_svg(self.graphdir)
-        if self.typegraph:
-            self.typegraph.create_svg(self.graphdir)
-        if self.callgraph:
-            self.callgraph.create_svg(self.graphdir)
-        if self.filegraph:
-            self.filegraph.create_svg(self.graphdir)
+        for graph in [self.usegraph, self.typegraph, self.callgraph, self.filegraph]:
+            if graph:
+                graph.create_svg(self.graphdir)
