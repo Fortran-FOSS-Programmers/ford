@@ -729,7 +729,7 @@ class FortranGraph:
             engine="dot",
         )
         # add root nodes to the graph
-        for n in self.root:
+        for n in sorted(self.root):
             if len(self.root) == 1:
                 self.dot.node(n.ident, label=n.name)
             else:
