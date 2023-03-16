@@ -36,8 +36,7 @@ from tqdm import tqdm
 import ford.sourceform
 import ford.tipue_search
 import ford.utils
-from ford.graphmanager import GraphManager
-from ford.graphs import graphviz_installed
+from ford.graphs import graphviz_installed, GraphManager
 
 loc = pathlib.Path(__file__).parent
 env = jinja2.Environment(

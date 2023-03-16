@@ -14,7 +14,6 @@ Submodules
 
    ford.fixed2free2
    ford.fortran_project
-   ford.graphmanager
    ford.graphs
    ford.intrinsics
    ford.md_environ

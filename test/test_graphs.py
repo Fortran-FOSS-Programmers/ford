@@ -1,7 +1,6 @@
 from ford.fortran_project import Project
 from ford import DEFAULT_SETTINGS
-from ford.graphs import graphviz_installed
-from ford.graphmanager import GraphManager
+from ford.graphs import graphviz_installed, GraphManager
 
 from copy import deepcopy
 from textwrap import dedent
