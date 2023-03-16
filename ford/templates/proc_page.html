@@ -5,12 +5,10 @@
   <div class="row">
     <h1>{{ procedure.name }}
       <small>{%if procedure.module %}Module {% endif %}{% if not procedure.mp %}{{ procedure.proctype }}{% else %}Procedure{% endif %}</small>
-    {% if procedure.meta['deprecated'] and procedure.meta['deprecated'].lower() == 'true' %}
-   <span class="label label-danger depwarn">Deprecated</span>
-    {% endif %}
+      {{ macros.deprecated(procedure) }}
     </h1>
     {{
-    macros.info_bar(procedure.name,procedure.meta,incl_src,project_url,procedure.hierarchy,procedure.lines_description(project.proc_lines)) }}
+    macros.info_bar(procedure, incl_src, project_url, procedure.lines_description(project.proc_lines)) }}
   </div>
   
   <div class="row">
@@ -28,20 +26,19 @@
 
     <h3>Arguments</h3>
     {% if procedure.args|length > 0 %}
-      {{ macros.var_list(procedure.args,intent=True) }}
+      {{ macros.variable_list(procedure.args, intent=True) }}
     {% else %}
     <em>None</em>
     <br>
     {% endif %}
     {% if procedure.retvar %}
-    {% set var = procedure.retvar %}
-    {% set args = 0 %}
-    {% if var.kind %}{% set args = args + 1 %}{% endif %}
-    {% if var.strlen %}{% set args = args + 1 %}{% endif %}
-    {% if var.proto %}{% set args = args + 1 %}{% endif %}
-   <h3>Return Value <small><span class="anchor" id="{{ var.anchor }}"></span>{{ var.vartype }}{% if args > 0 -%}({% if var.kind -%}kind={{ var.kind }}{%- endif %}{% if args > 1 -%},{%- endif %}{% if var.strlen -%}len={{ var.strlen }}{%- endif %}{% if var.proto -%}{% if not var.proto[0].permission or var.proto[0].visible -%}{{ var.proto[0] }}{% else %}{{ var.proto[0].name }}{%- endif %}{{ var.proto[1] }}{%- endif %}){%- endif %}{% if var.attribs|length > 0 -%},{%- endif %}
-  {% for attrib in var.attribs -%}{{ attrib }}{% if not loop.last or var.dimension -%}, {%- endif %}{%- endfor %}{{ var.dimension }}</small></h3>
-    {{ var.doc }}
+      <h3>Return Value
+        <small>
+          <span class="anchor" id="{{ procedure.retvar.anchor }}"></span>
+          {{ procedure.retvar.full_declaration }}
+        </small>
+      </h3>
+      {{ procedure.retvar.doc }}
     {% endif %}
     {% if procedure.calledbygraph or procedure.callsgraph %}
     <br>
@@ -91,7 +88,7 @@
     {% if procedure.variables|length > 0 %}
     <section>    
       <h2>Variables</h2>
-    {{ macros.var_list(procedure.variables,permission=True) }}
+    {{ macros.variable_list(procedure.variables, permission=True) }}
     </section>
     <br>
     {% endif %}

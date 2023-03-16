@@ -324,13 +324,14 @@ def sub_links(string, project):
 
 
 def register_macro(string):
-    """
-    Register a new macro definition of the form 'key = value'.
-    In the documentation |key| can then be used to represent value.
-    If key is already defined in the list of macros an RuntimeError
+    """Register a new macro definition of the form ``key = value``.
+    In the documentation ``|key|`` can then be used to represent value.
+    If key is already defined in the list of macros an `RuntimeError`
     will be raised.
-    The function returns a tuple of the form (value, key), where
-    key is None if no key definition is found in the string.
+
+    The function returns a tuple of the form ``(value, key)``, where
+    key is ``None`` if no key definition is found in the string.
+
     """
 
     if "=" not in string:

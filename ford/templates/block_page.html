@@ -4,12 +4,10 @@
   {% import 'macros.html' as macros %}
   <div class="row">
     <h1>{{ blockdat.name }} 
-    <small>Block Data</small>
-    {% if blockdat.meta['deprecated'] and blockdat.meta['deprecated'].lower() == 'true' %}
-    <span class="label label-danger depwarn">Deprecated</span>
-    {% endif %}
+      <small>Block Data</small>
+      {{ macros.deprecated(blockdat) }}
     </h1>
-    {{ macros.info_bar(blockdat.name,blockdat.meta,incl_src,project_url,blockdat.hierarchy,blockdat.lines_description(project.block_lines)) }}
+    {{ macros.info_bar(blockdat, incl_src, project_url, blockdat.lines_description(project.block_lines)) }}
   </div>
   
   <div class="row">
@@ -45,7 +43,7 @@
     {% if blockdat.variables|length > 0 %}
     <section>
     <h2>Variables</h2>
-    {{ macros.var_list(blockdat.variables) }}
+    {{ macros.variable_list(blockdat.variables) }}
     </section>
     <br>
     {% endif %}

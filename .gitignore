@@ -11,10 +11,9 @@ wiki/
 pages/
 media/
 todo.md
-venv/
-venv-lxml/
+venv*
 #*#
 .#*
-venv-py3/
 build/
 ford/_version.py
+docs/_build/

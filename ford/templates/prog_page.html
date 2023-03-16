@@ -4,12 +4,10 @@
   {% import 'macros.html' as macros %}
   <div class="row">
     <h1>{% if program.name -%}{{ program.name }}{% else %}<em>unnamed</em>{% endif %}
-    <small>Program</small>
-    {% if program.meta['deprecated'] and program.meta['deprecated'].lower() == 'true' %}
-   <span class="label label-danger depwarn">Deprecated</span>
-    {% endif %}
+      <small>Program</small>
+      {{ macros.deprecated(program) }}
     </h1>
-    {{ macros.info_bar(program.name,program.meta,incl_src,project_url,program.hierarchy,program.lines_description(project.prog_lines)) }}
+    {{ macros.info_bar(program, incl_src, project_url, program.lines_description(project.prog_lines)) }}
   </div>
   
   <div class="row">
@@ -56,7 +54,7 @@
     {% if program.variables|length > 0 %}
     <section>
     <h2>Variables</h2>
-    {{ macros.var_list(program.variables) }}
+    {{ macros.variable_list(program.variables) }}
     </section>
     <br>
     {% endif %}

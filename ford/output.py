@@ -36,8 +36,7 @@ from tqdm import tqdm
 import ford.sourceform
 import ford.tipue_search
 import ford.utils
-from ford.graphmanager import GraphManager
-from ford.graphs import graphviz_installed
+from ford.graphs import graphviz_installed, GraphManager
 
 loc = pathlib.Path(__file__).parent
 env = jinja2.Environment(
@@ -46,6 +45,13 @@ env = jinja2.Environment(
     lstrip_blocks=True,
 )
 env.globals["path"] = os.path  # this lets us call path.* in templates
+
+
+def is_more_than_one(collection):
+    return collection > 1
+
+
+env.tests["more_than_one"] = is_more_than_one
 
 USER_WRITABLE_ONLY = 0o755
 
@@ -128,14 +134,16 @@ class Documentation(object):
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
 
+        self.graphs = GraphManager(
+            self.data["project_url"],
+            self.data["output_dir"],
+            self.data.get("graph_dir", ""),
+            graphparent,
+            self.data["coloured_edges"],
+            save_graphs=bool(self.data.get("graph_dir", False)),
+        )
+
         if graphviz_installed and data["graph"]:
-            self.graphs = GraphManager(
-                self.data["project_url"],
-                self.data["output_dir"],
-                self.data.get("graph_dir", ""),
-                graphparent,
-                self.data["coloured_edges"],
-            )
             for entity_list in [
                 project.types,
                 project.procedures,
@@ -155,17 +163,11 @@ class Documentation(object):
             project.usegraph = self.graphs.usegraph
             project.filegraph = self.graphs.filegraph
         else:
-            self.graphs = GraphManager(
-                self.data["project_url"],
-                self.data["output_dir"],
-                self.data.get("graph_dir", ""),
-                graphparent,
-                self.data["coloured_edges"],
-            )
             project.callgraph = ""
             project.typegraph = ""
             project.usegraph = ""
             project.filegraph = ""
+
         if data["search"]:
             url = "" if data["relative"] else data["project_url"]
             self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(
@@ -183,8 +185,8 @@ class Documentation(object):
             print("")
 
     def writeout(self):
-        print("Writing resulting documentation.")
         out_dir: pathlib.Path = self.data["output_dir"]
+        print(f"Writing documentation to '{out_dir}'...")
         # Remove any existing file/directory. This avoids errors coming from
         # `shutils.copytree` for Python < 3.8, where we can't explicitly ignore them
         if out_dir.is_file():
@@ -252,6 +254,8 @@ class Documentation(object):
 
         for p in chain(self.docs, self.lists, self.pagetree, [self.index, self.search]):
             p.writeout()
+
+        print(f"\nBrowse the generated documentation: file://{out_dir}/index.html")
 
 
 class BasePage:
@@ -375,7 +379,7 @@ class AbsIntList(ListPage):
     list_page = "absint_list.html"
 
 
-class BlockList(BasePage):
+class BlockList(ListPage):
     out_page = "blockdata.html"
     list_page = "block_list.html"
 

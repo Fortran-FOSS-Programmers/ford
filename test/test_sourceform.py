@@ -716,6 +716,10 @@ class ParsedType:
             ParsedType("character", None, "12", None, ":: string"),
         ),
         (
+            "CHARACTER(KIND= kind('0') ,  len =12) :: string",
+            ParsedType("character", 'kind("a")', "12", None, ":: string"),
+        ),
+        (
             "CHARACTER(KIND=kanji,  len =12) :: string",
             ParsedType("character", "kanji", "12", None, ":: string"),
         ),
@@ -734,6 +738,12 @@ class ParsedType:
             ParsedType("type", None, None, ["something", ""], ":: thing"),
         ),
         (
+            "type(character(kind=kanji, len=10)) :: thing",
+            ParsedType(
+                "type", None, None, ["character", "kind=kanji,len=10"], ":: thing"
+            ),
+        ),
+        (
             "class(foo) :: thing",
             ParsedType("class", None, None, ["foo", ""], ":: thing"),
         ),
@@ -744,8 +754,11 @@ class ParsedType:
     ],
 )
 def test_parse_type(variable_decl, expected):
+    # Tokeniser will have previously replaced strings with index into
+    # this list
+    capture_strings = ['"a"']
     vartype, kind, strlen, proto, rest = parse_type(
-        variable_decl, [], {"extra_vartypes": []}
+        variable_decl, capture_strings, {"extra_vartypes": []}
     )
     assert vartype == expected.vartype
     assert kind == expected.kind
@@ -773,12 +786,17 @@ class FakeParent:
     parent = None
 
 
+def _make_list_str() -> List[str]:
+    """This is just to stop mypy complaining for ``attribs`` below"""
+    return []
+
+
 @dataclass
 class FakeVariable:
     name: str
     vartype: str
-    parent: Optional[FakeParent] = FakeParent()
-    attribs: Optional[List[str]] = field(default_factory=list)
+    parent: Optional[FakeParent] = field(default_factory=FakeParent)
+    attribs: Optional[List[str]] = field(default_factory=_make_list_str)
     intent: str = ""
     optional: bool = False
     permission: str = "public"
@@ -1251,3 +1269,228 @@ def test_type_component_permissions(parse_fortran_file):
         assert (
             ftype.boundprocs[1].permission == "private"
         ), f"{ftype.name}::{ftype.boundprocs[1].name}"
+
+
+def test_variable_formatting(parse_fortran_file):
+    data = """\
+    module foo_m
+      character(kind=kind('a'), len=4), dimension(:, :), allocatable :: multidimension_string
+      type :: bar
+      end type bar
+      type(bar), parameter :: something = bar()
+    contains
+      type(bar) function quux()
+      end function quux
+    end module foo_m
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_file.modules[0].correlate(None)
+    variable0 = fortran_file.modules[0].variables[0]
+    variable1 = fortran_file.modules[0].variables[1]
+
+    assert variable0.full_type == "character(kind=kind('a'), len=4)"
+    assert (
+        variable0.full_declaration
+        == "character(kind=kind('a'), len=4), dimension(:, :), allocatable"
+    )
+    assert variable1.full_type == "type(bar)"
+    assert variable1.full_declaration == "type(bar), parameter"
+
+    function = fortran_file.modules[0].functions[0]
+    assert function.retvar.full_declaration == "type(bar)"
+
+
+def test_url(parse_fortran_file):
+    data = """\
+    program prog_foo
+      integer :: int_foo
+    contains
+      subroutine sub_foo
+      end subroutine sub_foo
+      function func_foo()
+      end function func_foo
+    end program prog_foo
+
+    module mod_foo
+      real :: real_foo
+      interface inter_foo
+        module procedure foo1, foo2
+      end interface inter_foo
+      type :: foo_t
+        integer :: int_bar
+      end type
+      enum, bind(C)
+        enumerator :: red = 4, blue = 9
+        enumerator :: yellow
+      end enum
+    contains
+      subroutine foo1()
+      end subroutine foo1
+      subroutine foo2(x)
+        integer :: x
+      end subroutine foo2
+    end module mod_foo
+
+    submodule (mod_foo) submod_foo
+    end submodule submod_foo
+    """
+
+    fortran_file = parse_fortran_file(data)
+
+    assert fortran_file.programs[0].get_dir() == "program"
+    assert fortran_file.modules[0].get_dir() == "module"
+    assert fortran_file.submodules[0].get_dir() == "module"
+    assert fortran_file.programs[0].subroutines[0].get_dir() == "proc"
+    assert fortran_file.programs[0].functions[0].get_dir() == "proc"
+    assert fortran_file.modules[0].subroutines[0].get_dir() == "proc"
+    assert fortran_file.modules[0].interfaces[0].get_dir() == "interface"
+    assert fortran_file.programs[0].variables[0].get_dir() is None
+    assert fortran_file.modules[0].variables[0].get_dir() is None
+    assert fortran_file.modules[0].enums[0].get_dir() is None
+
+    assert fortran_file.programs[0].get_url().endswith("/program/prog_foo.html")
+    assert fortran_file.modules[0].get_url().endswith("/module/mod_foo.html")
+    assert fortran_file.submodules[0].get_url().endswith("/module/submod_foo.html")
+    assert (
+        fortran_file.programs[0].subroutines[0].get_url().endswith("/proc/sub_foo.html")
+    )
+    assert (
+        fortran_file.programs[0].functions[0].get_url().endswith("/proc/func_foo.html")
+    )
+    assert fortran_file.modules[0].subroutines[0].get_url().endswith("/proc/foo1.html")
+    assert (
+        fortran_file.modules[0]
+        .interfaces[0]
+        .get_url()
+        .endswith("/interface/inter_foo.html")
+    )
+    assert (
+        fortran_file.programs[0]
+        .variables[0]
+        .get_url()
+        .endswith("/program/prog_foo.html#variable-int_foo")
+    )
+    assert (
+        fortran_file.modules[0]
+        .variables[0]
+        .get_url()
+        .endswith("/module/mod_foo.html#variable-real_foo")
+    )
+
+
+def test_single_character_interface(parse_fortran_file):
+    data = """\
+    module a
+      interface b !! some comment
+        module procedure c
+      end interface b
+    end module a
+    """
+    fortran_file = parse_fortran_file(data)
+    assert fortran_file.modules[0].interfaces[0].name == "b"
+    assert fortran_file.modules[0].interfaces[0].doc == [" some comment"]
+
+
+def test_module_procedure_in_module(parse_fortran_file):
+    data = """\
+    module foo_mod
+      interface
+        module subroutine quaxx
+        end subroutine quaxx
+      end interface
+    contains
+      module procedure quaxx
+        print*, "implementation"
+      end procedure
+    end module foo_mod
+    """
+
+    fortran_file = parse_fortran_file(data)
+    module = fortran_file.modules[0]
+    module.correlate(None)
+
+    interface = module.interfaces[0]
+    assert interface.name == "quaxx"
+    modproc = module.modprocedures[0]
+
+    assert interface.procedure.module == modproc
+    assert modproc.module == interface
+
+
+def test_module_interface_same_name_as_interface(parse_fortran_file):
+    data = """\
+    module foo_m
+      interface foo
+        module function foo() result(bar)
+          logical bar
+        end function
+      end interface
+    contains
+      module procedure foo
+        bar = .true.
+      end procedure
+    end module
+    """
+
+    fortran_file = parse_fortran_file(data)
+    module = fortran_file.modules[0]
+    module.correlate(None)
+
+    interface = module.interfaces[0]
+    assert interface.name == "foo"
+
+    modproc = module.modprocedures[0]
+    assert modproc.name == "foo"
+
+
+def test_procedure_pointer(parse_fortran_file):
+    data = """\
+    module foo
+      abstract interface
+        integer pure function unary_f_t(n)
+          implicit none
+          integer, intent(in) :: n
+        end function
+      end interface
+
+      private
+
+      procedure(unary_f_t), pointer, public :: unary_f => null()
+
+      interface generic_unary_f
+        procedure unary_f
+      end interface
+    end module
+    """
+
+    fortran_file = parse_fortran_file(data)
+    module = fortran_file.modules[0]
+    module.correlate(None)
+    assert len(module.interfaces[0].modprocs) == 0
+    assert module.interfaces[0].variables[0].name == "unary_f"
+
+
+def test_block_data(parse_fortran_file):
+    data = """\
+    block data name
+      !! Block data docstring
+      common /name/ foo
+      !! Common block docstring
+
+      character*31 foo(1024)
+      !! Variable docstring
+
+      data foo /'a', 'b', 'c', 'd', 'e', 1019*'0'/
+    end
+    """
+
+    fortran_file = parse_fortran_file(data)
+    blockdata = fortran_file.blockdata[0]
+
+    assert blockdata.name == "name"
+    assert blockdata.doc[0].strip() == "Block data docstring"
+    assert len(blockdata.common) == 1
+    assert blockdata.common[0].doc[0].strip() == "Common block docstring"
+    assert len(blockdata.variables) == 1
+    assert blockdata.variables[0].doc[0].strip() == "Variable docstring"

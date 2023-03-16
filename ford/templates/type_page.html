@@ -4,12 +4,10 @@
   {% import 'macros.html' as macros %}
   <div class="row">
     <h1>{{ dtype.name }}
-    <small>Derived Type</small>
-    {% if dtype.meta['deprecated'] and dtype.meta['deprecated'].lower() == 'true' %}
-   <span class="label label-danger depwarn">Deprecated</span>
-    {% endif %}
+      <small>Derived Type</small>
+      {{ macros.deprecated(dtype) }}
     </h1>
-    {{ macros.info_bar(dtype.name,dtype.meta,incl_src,project_url,dtype.hierarchy,dtype.lines_description(project.type_lines,project.type_lines_all)) }}
+    {{ macros.info_bar(dtype, incl_src, project_url, dtype.lines_description(project.type_lines,project.type_lines_all)) }}
   </div>
   
   <div class="row">
@@ -51,48 +49,51 @@
     {% if dtype.variables|length > 0 %}
     <section>
     <h2>Components</h2>
-    {{ macros.var_list(dtype.variables,permission=True) }}
+    {{ macros.variable_list(dtype.variables, permission=True) }}
     </section>
     <br>
     {% endif %}
     
     {% if dtype.constructor %}
-   <section>
-   <h2>Constructor</h2>
-     {% if dtype.constructor.obj == "interface" %}
-     {{ macros.interface(dtype.constructor) }}
-     {% elif dtype.constructor.obj == "subroutine" or dtype.constructor.obj == "function" %}
-      {% set obj = dtype.constructor %}
-       <div class="panel panel-default">
-        <div class="panel-heading codesum"><span class="anchor" id="{{ obj.anchor }}"></span><h3>{{ macros.proc_line(obj) }}</h3></div>
-         <div class="panel-body">
-          {{ macros.proc_summary(obj,False) }}
+      <section>
+        <h2>Constructor</h2>
+        {% if dtype.constructor.obj == "interface" %}
+          {{ macros.interface(dtype.constructor) }}
+        {% elif dtype.constructor.obj in ["subroutine", "function"] %}
+          {% set obj = dtype.constructor %}
+          <div class="panel panel-default">
+            <div class="panel-heading codesum">
+              <span class="anchor" id="{{ obj.anchor }}"></span>
+              <h3>{{ macros.proc_line(obj) }}</h3>
+            </div>
+            <div class="panel-body">
+              {{ macros.proc_summary(obj, full_docstring=True) }}
+            </div>
           </div>
-        </div>
-     {% endif %}
-   </section>
-   <br>
+        {% endif %}
+      </section>
+      <br>
     {% endif %}
-    
-    {% if dtype.finalprocs|length > 0 %}
-    <section>
-    <h2>Finalization Procedures</h2>
-     {% for proc in dtype.finalprocs %}
-         {{ macros.final(proc) }}
-       {% endfor %}  
-    </section>
-    <br>
+
+    {% if dtype.finalprocs %}
+      <section>
+        <h2>Finalization Procedures</h2>
+        {% for proc in dtype.finalprocs %}
+          {{ macros.final(proc) }}
+        {% endfor %}
+      </section>
+      <br>
     {% endif %}
-    
-    {% if dtype.boundprocs|length > 0 %} 
-    <section>
-    <h2>Type-Bound Procedures</h2>
-    {% for bp in dtype.boundprocs %}
-     {{ macros.bound_info(bp) }}
-    {% endfor %}
-    </section>
+
+    {% if dtype.boundprocs %}
+      <section>
+        <h2>Type-Bound Procedures</h2>
+        {% for bp in dtype.boundprocs %}
+          {{ macros.bound_info(bp) }}
+        {% endfor %}
+      </section>
     {% endif %}
-    
+
     {% if dtype.src %}
     <section>
     <h3><span class="anchor" id="src"></span>Source Code</h3>

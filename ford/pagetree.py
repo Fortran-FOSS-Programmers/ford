@@ -104,7 +104,6 @@ class PageNode(object):
 
 
 def get_page_tree(topdir, proj_copy_subdir, md, parent=None):
-
     # In python 3.6 or newer, the normal dict is guaranteed to be ordered.
     # However, to keep compatibility with older versions I use OrderedDict.
     # I will use this later to remove duplicates from a list in a short way.

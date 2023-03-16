@@ -1,5 +1,6 @@
 import ford
 from textwrap import dedent
+import sys
 import pytest
 
 from conftest import gfortran_is_not_installed
@@ -133,3 +134,49 @@ def test_gfortran_preprocessor():
     data, _, _ = ford.parse_arguments({}, "preprocessor: gfortran -E")
 
     assert data["preprocess"] is True
+
+
+def test_absolute_src_dir(monkeypatch, tmp_path):
+    project_file = tmp_path / "example.md"
+    project_file.touch()
+    src_dir = tmp_path / "not_here"
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, "argv", ["ford", str(project_file)])
+        args, _, _ = ford.initialize()
+
+    assert args["src_dir"] == [tmp_path / "./src"]
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, "argv", ["ford", str(project_file), "--src_dir", str(src_dir)])
+        args, _, _ = ford.initialize()
+
+    assert args["src_dir"] == [src_dir]
+
+    with monkeypatch.context() as m:
+        m.setattr(
+            sys, "argv", ["ford", "--src_dir", str(src_dir), "--", str(project_file)]
+        )
+        args, _, _ = ford.initialize()
+
+    assert args["src_dir"] == [src_dir]
+
+
+def test_output_dir_cli(monkeypatch, tmp_path):
+    project_file = tmp_path / "example.md"
+    project_file.touch()
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, "argv", ["ford", str(project_file), "--output_dir", "something"])
+        settings, _, _ = ford.initialize()
+
+    assert settings["output_dir"] == tmp_path / "something"
+
+    with open(project_file, "w") as f:
+        f.write("output_dir: something_else")
+
+    with monkeypatch.context() as m:
+        m.setattr(sys, "argv", ["ford", str(project_file)])
+        settings, _, _ = ford.initialize()
+
+    assert settings["output_dir"] == tmp_path / "something_else"
