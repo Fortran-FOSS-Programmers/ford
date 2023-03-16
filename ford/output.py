@@ -36,8 +36,7 @@ from tqdm import tqdm
 import ford.sourceform
 import ford.tipue_search
 import ford.utils
-from ford.graphmanager import GraphManager
-from ford.graphs import graphviz_installed
+from ford.graphs import graphviz_installed, GraphManager
 
 loc = pathlib.Path(__file__).parent
 env = jinja2.Environment(
@@ -135,14 +134,16 @@ class Documentation(object):
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
 
+        self.graphs = GraphManager(
+            self.data["project_url"],
+            self.data["output_dir"],
+            self.data.get("graph_dir", ""),
+            graphparent,
+            self.data["coloured_edges"],
+            save_graphs=bool(self.data.get("graph_dir", False)),
+        )
+
         if graphviz_installed and data["graph"]:
-            self.graphs = GraphManager(
-                self.data["project_url"],
-                self.data["output_dir"],
-                self.data.get("graph_dir", ""),
-                graphparent,
-                self.data["coloured_edges"],
-            )
             for entity_list in [
                 project.types,
                 project.procedures,
@@ -162,17 +163,11 @@ class Documentation(object):
             project.usegraph = self.graphs.usegraph
             project.filegraph = self.graphs.filegraph
         else:
-            self.graphs = GraphManager(
-                self.data["project_url"],
-                self.data["output_dir"],
-                self.data.get("graph_dir", ""),
-                graphparent,
-                self.data["coloured_edges"],
-            )
             project.callgraph = ""
             project.typegraph = ""
             project.usegraph = ""
             project.filegraph = ""
+
         if data["search"]:
             url = "" if data["relative"] else data["project_url"]
             self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(

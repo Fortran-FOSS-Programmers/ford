@@ -3022,3 +3022,32 @@ class ExternalVariable(FortranVariable):
         self.external_url = url
         self.parent = parent
         self.obj = "variable"
+
+
+class ExternalSubmodule(FortranSubmodule):
+    def __init__(self, name: str):
+        self.name = name
+        self.url = ""
+        self.uses = []
+        self.parent_submodule = None
+        self.ancestor_module = ExternalModule("Parent module")
+
+
+class ExternalProgram(FortranProgram):
+    def __init__(self, name: str):
+        self.name = name
+        self.url = ""
+        self.uses = []
+        self.calls = []
+
+
+class ExternalSourceFile(FortranSourceFile):
+    def __init__(self, name: str):
+        self.name = name
+        self.url = ""
+        self.modules = []
+        self.submodules = []
+        self.functions = []
+        self.subroutines = []
+        self.programs = []
+        self.blockdata = []
