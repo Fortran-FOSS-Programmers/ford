@@ -22,13 +22,15 @@
 #
 #
 
+from __future__ import annotations
+
 import colorsys
 import copy
 import itertools
 import os
 import pathlib
 import re
-import shutil
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Type, Union
 import warnings
 
 from graphviz import Digraph, ExecutableNotFound
@@ -46,6 +48,7 @@ from ford.sourceform import (
     ExternalSubroutine,
     ExternalType,
     FortranBlockData,
+    FortranContainer,
     FortranFunction,
     FortranInterface,
     FortranModule,
@@ -114,23 +117,43 @@ def is_blockdata(obj):
     return isinstance(obj, FortranBlockData)
 
 
+NodeCollection = Dict[FortranContainer, "BaseNode"]
+
+
 class GraphData:
-    """
-    Contains all of the nodes which may be displayed on a graph.
+    """Stores graph nodes representing Fortran entities to be
+    displayed in a graph, as well as some customisation options for
+    graphs
+
+    Parameters
+    ----------
+    parent_dir:
+        Path to top of site
+    coloured_edges:
+        If true, arrows between nodes are coloured, otherwise they are black
+
     """
 
     def __init__(self, parent_dir: str, coloured_edges: bool):
-        self.submodules = {}
-        self.modules = {}
-        self.types = {}
-        self.procedures = {}
-        self.programs = {}
-        self.sourcefiles = {}
-        self.blockdata = {}
+        self.submodules: NodeCollection = {}
+        self.modules: NodeCollection = {}
+        self.types: NodeCollection = {}
+        self.procedures: NodeCollection = {}
+        self.programs: NodeCollection = {}
+        self.sourcefiles: NodeCollection = {}
+        self.blockdata: NodeCollection = {}
         self.parent_dir = parent_dir
         self.coloured_edges = coloured_edges
 
-    def _get_collection_and_node_type(self, obj):
+    def _get_collection_and_node_type(
+        self, obj: FortranContainer
+    ) -> Tuple[NodeCollection, Type["BaseNode"]]:
+        """Helper function for `register` and `get_node`: get the
+        appropriate container for ``obj``, and the corresponding node
+        type
+
+        """
+
         if is_submodule(obj):
             return self.submodules, SubmodNode
         if is_module(obj):
@@ -150,20 +173,40 @@ class GraphData:
             f"Unrecognised object type '{type(obj).__name__}' when constructing graphs"
         )
 
-    def register(self, obj, hist=None):
-        """
-        Takes a FortranObject and adds it to the appropriate list, if
-        not already present.
+    def register(
+        self, obj: FortranContainer, hist: Optional[NodeCollection] = None
+    ) -> None:
+        """Create and store the graph node for ``obj``, if it hasn't
+        already been registered
+
+        Parameters
+        ----------
+        obj:
+            Some Fortran entity
+        hist:
+            Collection of previously seen objects, used when
+            registering children during node creation
+
         """
 
         collection, NodeType = self._get_collection_and_node_type(obj)
         if obj not in collection:
             collection[obj] = NodeType(obj, self, hist)
 
-    def get_node(self, obj, hist=None):
-        """
-        Returns the node corresponding to obj. If does not already exist
-        then it will create it.
+    def get_node(
+        self, obj: FortranContainer, hist: Optional[NodeCollection] = None
+    ) -> BaseNode:
+        """Returns the node corresponding to ``obj``. If does not
+        already exist then it will create it.
+
+        Parameters
+        ----------
+        obj:
+            Some Fortran entity
+        hist:
+            Collection of previously seen objects, used when
+            registering children during node creation
+
         """
 
         collection, _ = self._get_collection_and_node_type(obj)
@@ -174,11 +217,27 @@ class GraphData:
 
 
 class BaseNode:
+    """Graph node representing some Fortran entity
+
+    Parameters
+    ----------
+    obj:
+        Fortran entity instance or name
+    graph_data:
+        Collection of nodes for other entities
+    hist:
+
+    """
+
     colour = "#777777"
 
-    def __init__(self, obj, graph_data: GraphData):
+    def __init__(
+        self,
+        obj: Union[FortranContainer, str],
+        graph_data: GraphData,
+        hist: Optional[NodeCollection] = None,
+    ):
         self.attribs = {"color": self.colour, "fontcolor": "white", "style": "filled"}
-        self.fromstr = type(obj) is str
         if isinstance(
             obj,
             (
@@ -197,7 +256,8 @@ class BaseNode:
             obj = obj.name
 
         self.url = None
-        if self.fromstr:
+        if isinstance(obj, str):
+            self.fromstr = True
             m = HYPERLINK_RE.match(obj)
             if m:
                 self.url = m.group(1)[1:-1]
@@ -206,15 +266,15 @@ class BaseNode:
                 self.name = obj
             self.ident = self.name
         else:
-            d = obj.get_dir()
-            if not d:
-                d = "none"
-            self.ident = d + "~" + obj.ident
+            self.fromstr = False
+            d = obj.get_dir() or "none"
+            self.ident = f"{d}~{obj.ident}"
             self.name = obj.name
             m = EM_RE.search(self.name)
             if m:
                 self.name = "<<i>" + m.group(1).strip() + "</i>>"
             self.url = obj.get_url()
+
         self.attribs["label"] = self.name
         if self.url and getattr(obj, "visible", True):
             if self.fromstr or hasattr(obj, "external_url"):
@@ -581,38 +641,67 @@ del mod_svg
 
 
 class FortranGraph:
-    """
-    Object used to construct the graph for some particular entity in the code.
+    """Graph of some relationship for a given entity
+
+    Parameters
+    ----------
+    root:
+        Top-level entity or entities in graph
+    data:
+        Collection of nodes and graph customisation options
+    ident:
+        Alternative identification for graph, and used as base name
+        for saved files. If there are multiple entities in ``root``,
+        and ``ident`` isn't given, it is set from the first entity in
+        ``root``
+
+    Attributes
+    ----------
+    hop_nodes:
+        Nodes of the hop which exceed the maximum
+    hop_edges:
+        Edges of the hop which exceed the maximum
+    added:
+        Set of nodes in graph
+    max_nesting:
+        Maximum number of hops allowed. Set from maximum value of
+        ``graph_maxdepth`` in ``root.meta``
+    max_nodes:
+        Maximum number of nodes allowed. Set from maximum value of
+        ``graph_maxnodes`` in ``root.meta``
+    warn:
+        If true, show warnings if graphs exceed ``max_nesting`` or
+        ``max_nodes``
+    truncated:
+        Nesting level where the graph was truncated
     """
 
     RANKDIR = "RL"
     _should_add_nested_nodes = False
-    legend = ""
+    _legend = ""
 
-    def __init__(self, root, data: GraphData, webdir="", ident=None):
-        """
-        Initialize the graph, root is the object or list of objects,
-        for which the graph is to be constructed.
-        The webdir is the url where the graph should be stored, and
-        ident can be provided to override the default identifacation
-        of the graph that will be used to construct the name of the
-        imagefile. It has to be provided if there are multiple root
-        nodes.
-        """
-        self.root = []  # root nodes
+    def __init__(
+        self,
+        root: Union[FortranContainer, Iterable[FortranContainer]],
+        data: GraphData,
+        webdir: str = "",
+        ident: Optional[str] = None,
+    ):
+        self.root = []
         self.data = data
-        self.hop_nodes = []  # nodes of the hop which exceeded the maximum
-        self.hop_edges = []  # edges of the hop which exceeded the maximum
-        self.added = set()  # nodes added to the graph
-        self.max_nesting = 0  # maximum numbers of hops allowed
-        self.max_nodes = 1  # maximum numbers of nodes allowed
-        self.warn = False  # should warnings be written?
-        self.truncated = -1  # nesting where the graph was truncated
+        self.hop_nodes: List[BaseNode] = []
+        self.hop_edges: List[BaseNode] = []
+        self.added: Set[BaseNode] = set()
+        self.max_nesting = 0
+        self.max_nodes = 1
+        self.warn = False
+        self.truncated = -1
 
-        if not isinstance(root, (set, list)):
+        if not isinstance(root, Iterable):
             root = [root]
+        root = sorted(list(root))
 
-        for r in sorted(root):
+        for r in root:
             self.root.append(self.data.get_node(r))
             self.max_nesting = max(self.max_nesting, int(r.meta["graph_maxdepth"]))
             self.max_nodes = max(self.max_nodes, int(r.meta["graph_maxnodes"]))
@@ -791,7 +880,7 @@ class FortranGraph:
                   </button>
                   <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
                 </div>
-              <div class="modal-body">{self.legend} {COLOURED_NOTICE if self.data.coloured_edges else ""}</div>
+              <div class="modal-body">{self._legend} {COLOURED_NOTICE if self.data.coloured_edges else ""}</div>
             </div>
           </div>
         </div>"""
@@ -872,7 +961,7 @@ class FortranGraph:
 class ModuleGraph(FortranGraph):
     """Shows the relationship between modules and submodules"""
 
-    legend = MOD_GRAPH_KEY
+    _legend = MOD_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for nu in sorted(node.uses):
@@ -893,7 +982,7 @@ class UsesGraph(FortranGraph):
     """Graphs how modules use other modules, including ancestor (sub)modules"""
 
     _should_add_nested_nodes = True
-    legend = MOD_GRAPH_KEY
+    _legend = MOD_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for nu in sorted(node.uses):
@@ -911,7 +1000,7 @@ class UsedByGraph(FortranGraph):
     """Graphs how modules are used by other modules"""
 
     _should_add_nested_nodes = True
-    legend = MOD_GRAPH_KEY
+    _legend = MOD_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for nu in sorted(getattr(node, "used_by", [])):
@@ -927,7 +1016,7 @@ class UsedByGraph(FortranGraph):
 class FileGraph(FortranGraph):
     """Graphs relationships between source files"""
 
-    legend = FILE_GRAPH_KEY
+    _legend = FILE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for ne in sorted(node.efferent):
@@ -940,7 +1029,7 @@ class EfferentGraph(FortranGraph):
     """Shows the relationship between the files which this one depends on"""
 
     _should_add_nested_nodes = True
-    legend = FILE_GRAPH_KEY
+    _legend = FILE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for ne in sorted(node.efferent):
@@ -953,7 +1042,7 @@ class AfferentGraph(FortranGraph):
     """Shows the relationship between files which depend upon this one"""
 
     _should_add_nested_nodes = True
-    legend = FILE_GRAPH_KEY
+    _legend = FILE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for na in sorted(node.afferent):
@@ -965,7 +1054,7 @@ class AfferentGraph(FortranGraph):
 class TypeGraph(FortranGraph):
     """Graphs inheritance and composition relationships between derived types"""
 
-    legend = TYPE_GRAPH_KEY
+    _legend = TYPE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for keys in node.comp_types.keys():
@@ -988,7 +1077,7 @@ class InheritsGraph(FortranGraph):
     """Graphs types that this type inherits from"""
 
     _should_add_nested_nodes = True
-    legend = TYPE_GRAPH_KEY
+    _legend = TYPE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for c in node.comp_types:
@@ -1005,7 +1094,7 @@ class InheritedByGraph(FortranGraph):
     """Graphs types that inherit this type"""
 
     _should_add_nested_nodes = True
-    legend = TYPE_GRAPH_KEY
+    _legend = TYPE_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for c in node.comp_of:
@@ -1025,7 +1114,7 @@ class CallGraph(FortranGraph):
     """
 
     RANKDIR = "LR"
-    legend = CALL_GRAPH_KEY
+    _legend = CALL_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for p in sorted(node.calls):
@@ -1047,7 +1136,7 @@ class CallsGraph(FortranGraph):
 
     RANKDIR = "LR"
     _should_add_nested_nodes = True
-    legend = CALL_GRAPH_KEY
+    _legend = CALL_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         for p in sorted(node.calls):
@@ -1068,7 +1157,7 @@ class CalledByGraph(FortranGraph):
 
     RANKDIR = "LR"
     _should_add_nested_nodes = True
-    legend = CALL_GRAPH_KEY
+    _legend = CALL_GRAPH_KEY
 
     def _add_node(self, hop_nodes, hop_edges, node, colour):
         if isinstance(node, ProgNode):
@@ -1109,20 +1198,32 @@ def outputFuncWrap(args):
     return None
 
 
-class GraphManager(object):
-    """
-    Object which contains graphs of module use relations, type relations,
-    call trees, etc. It manages these, ensures that everything that is
-    needed is added at the correct time, and produces the plots for the
-    list pages.
+class GraphManager:
+    """Collection of graphs of the various relationships between a set
+    of entities
 
-      base_url
+    Contains graphs of module use relations, type relations, call
+    trees, etc. It manages these, ensures that everything that is
+    needed is added at the correct time, and produces the plots for
+    the list pages.
+
+    Parameters
+    ----------
+    base_url:
         The URL at which the documentation will be stored. If using
         relative URLs then should be '..'.
-      outdir
+    outdir:
         The directory in which the documentation will be produced.
-      graphdir:
+    graphdir:
         The location of the graphs within the output tree.
+    parentdir:
+        Location of top-level directory
+    coloured_edges:
+        If true, arrows in graphs use different colours to help
+        distinguish them
+    save_graphs:
+        If true, save graphs as separate files, as well as embedding
+        them in the HTML
     """
 
     def __init__(
@@ -1134,13 +1235,13 @@ class GraphManager(object):
         coloured_edges: bool,
         save_graphs: bool = False,
     ):
-        self.graph_objs = []
-        self.modules = set()
-        self.programs = set()
-        self.procedures = set()
-        self.types = set()
-        self.sourcefiles = set()
-        self.blockdata = set()
+        self.graph_objs: List[FortranContainer] = []
+        self.modules: Set[FortranContainer] = set()
+        self.programs: Set[FortranContainer] = set()
+        self.procedures: Set[FortranContainer] = set()
+        self.types: Set[FortranContainer] = set()
+        self.sourcefiles: Set[FortranContainer] = set()
+        self.blockdata: Set[FortranContainer] = set()
         self.save_graphs = save_graphs
         self.graphdir = pathlib.Path(graphdir)
         self.webdir = pathlib.Path(base_url) / self.graphdir
@@ -1150,12 +1251,14 @@ class GraphManager(object):
         self.filegraph = None
         self.data = GraphData(parentdir, coloured_edges)
 
-    def register(self, obj):
+    def register(self, obj: FortranContainer):
+        """Register ``obj`` as a node to be used in graphs"""
         if obj.meta["graph"]:
             self.data.register(obj)
             self.graph_objs.append(obj)
 
     def graph_all(self):
+        """Create all graphs"""
         for obj in tqdm(sorted(self.graph_objs), unit="", desc="Generating graphs"):
             if is_module(obj):
                 obj.usesgraph = UsesGraph(obj, self.data, self.webdir)
@@ -1203,6 +1306,8 @@ class GraphManager(object):
         )
 
     def output_graphs(self, njobs=0):
+        """Save graphs to file"""
+
         if not self.save_graphs:
             return
 
