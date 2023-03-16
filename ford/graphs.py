@@ -28,6 +28,7 @@ import re
 import copy
 import colorsys
 import itertools
+import warnings
 
 from graphviz import Digraph, version as graphviz_version, ExecutableNotFound
 
@@ -718,36 +719,22 @@ class FortranGraph:
             return ""
 
         # Do not render overly large graphs.
-        if len(self.added) > self.max_nodes:
-            if self.warn:
-                print(
-                    "Warning: Not showing graph {0} as it would exceed the maximal number of {1} nodes.".format(
-                        self.ident, self.max_nodes
-                    )
-                )
-                # Only warn once about this
-                self.warn = False
+        if len(self.added) > self.max_nodes and self.warn:
+            warnings.warn(
+                f"Warning: Not showing graph {self.ident} as it would exceed the maximal number of {self.max_nodes} nodes"
+            )
             return ""
         # Do not render incomplete graphs.
-        if len(self.added) < len(self.root):
-            if self.warn:
-                print(
-                    "Warning: Not showing graph {0} as it would be incomplete.".format(
-                        self.ident
-                    )
-                )
-                # Only warn once about this
-                self.warn = False
+        if len(self.added) < len(self.root) and self.warn:
+            warnings.warn(
+                f"Warning: Not showing graph {self.ident} as it would be incomplete"
+            )
             return ""
 
-        if self.warn and self.truncated > 0:
-            print(
-                "Warning: Graph {0} is truncated after {1} hops.".format(
-                    self.ident, self.truncated
-                )
+        if self.truncated > 0 and self.warn:
+            warnings.warn(
+                f"Warning: Graph {self.ident} is truncated after {self.truncated} hops"
             )
-            # Only warn once about this
-            self.warn = False
 
         rettext = ""
         if graph_as_table:
