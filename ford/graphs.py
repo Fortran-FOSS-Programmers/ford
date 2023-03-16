@@ -259,7 +259,12 @@ class BaseNode:
         return self.ident < other.ident
 
     def __hash__(self):
-        return hash(self.ident)
+        # When making graphs in parallel, nodes might not have all
+        # their attributes at some point?
+        try:
+            return hash(self.ident)
+        except AttributeError:
+            return id(self)
 
 
 class ModNode(BaseNode):
