@@ -63,36 +63,6 @@ try:
 except ExecutableNotFound:
     graphviz_installed = False
 
-_coloured_edges = False
-
-
-def set_coloured_edges(val):
-    """
-    Public accessor to set whether to use coloured edges in graph or just
-    use black ones.
-    """
-    global _coloured_edges
-    _coloured_edges = val
-
-
-_parentdir = ""
-
-
-def set_graphs_parentdir(val):
-    """
-    Public accessor to set the parent directory of the graphs.
-    Needed for relative paths.
-    """
-    global _parentdir
-    _parentdir = val
-
-
-def rainbowcolour(depth, maxd):
-    if not _coloured_edges:
-        return "#000000"
-    (r, g, b) = colorsys.hsv_to_rgb(float(depth) / maxd, 1.0, 1.0)
-    return f"#{int(255 * r)}{int(255 * g)}{int(255 * b)}"
-
 
 HYPERLINK_RE = re.compile(
     r"^\s*<\s*a\s+.*href=(\"[^\"]+\"|'[^']+').*>(.*)</\s*a\s*>\s*$", re.IGNORECASE
@@ -144,12 +114,12 @@ def is_blockdata(obj):
     return isinstance(obj, FortranBlockData)
 
 
-class GraphData(object):
+class GraphData:
     """
     Contains all of the nodes which may be displayed on a graph.
     """
 
-    def __init__(self):
+    def __init__(self, parent_dir: str, coloured_edges: bool):
         self.submodules = {}
         self.modules = {}
         self.types = {}
@@ -157,6 +127,8 @@ class GraphData(object):
         self.programs = {}
         self.sourcefiles = {}
         self.blockdata = {}
+        self.parent_dir = parent_dir
+        self.coloured_edges = coloured_edges
 
     def _get_collection_and_node_type(self, obj):
         if is_submodule(obj):
@@ -204,7 +176,7 @@ class GraphData(object):
 class BaseNode:
     colour = "#777777"
 
-    def __init__(self, obj):
+    def __init__(self, obj, graph_data: GraphData):
         self.attribs = {"color": self.colour, "fontcolor": "white", "style": "filled"}
         self.fromstr = type(obj) is str
         if isinstance(
@@ -248,7 +220,7 @@ class BaseNode:
             if self.fromstr or hasattr(obj, "external_url"):
                 self.attribs["URL"] = self.url
             else:
-                self.attribs["URL"] = _parentdir + self.url
+                self.attribs["URL"] = graph_data.parent_dir + self.url
         self.afferent = 0
         self.efferent = 0
 
@@ -271,7 +243,7 @@ class ModNode(BaseNode):
     colour = "#337AB7"
 
     def __init__(self, obj, gd, hist=None):
-        super().__init__(obj)
+        super().__init__(obj, gd)
         self.uses = set()
         self.used_by = set()
         self.children = set()
@@ -306,7 +278,7 @@ class TypeNode(BaseNode):
     colour = "#5cb85c"
 
     def __init__(self, obj, gd, hist=None):
-        super().__init__(obj)
+        super().__init__(obj, gd)
         self.ancestor = None
         self.children = set()
         self.comp_types = dict()
@@ -362,7 +334,7 @@ class ProcNode(BaseNode):
     def __init__(self, obj, gd, hist=None):
         # ToDo: Figure out appropriate way to handle interfaces to routines in submodules.
         self.proctype = getattr(obj, "proctype", "")
-        super().__init__(obj)
+        super().__init__(obj, gd)
         self.uses = set()
         self.calls = set()
         self.called_by = set()
@@ -421,7 +393,7 @@ class ProgNode(BaseNode):
     colour = "#f0ad4e"
 
     def __init__(self, obj, gd, hist=None):
-        super().__init__(obj)
+        super().__init__(obj, gd)
         self.uses = set()
         self.calls = set()
         if self.fromstr:
@@ -448,7 +420,7 @@ class BlockNode(BaseNode):
     colour = "#5cb85c"
 
     def __init__(self, obj, gd, hist=None):
-        super().__init__(obj)
+        super().__init__(obj, gd)
         self.uses = set()
         if self.fromstr:
             return
@@ -462,7 +434,7 @@ class FileNode(BaseNode):
     colour = "#f0ad4e"
 
     def __init__(self, obj, gd, hist=None):
-        super().__init__(obj)
+        super().__init__(obj, gd)
         self.afferent = set()  # Things depending on this file
         self.efferent = set()  # Things this file depends on
         hist = hist or {}
@@ -512,7 +484,7 @@ def _dashed_edge(tail, head, colour, label=None):
 if graphviz_installed:
     # Create the legends for the graphs. These are their own separate graphs,
     # without edges
-    gd = GraphData()
+    gd = GraphData("", False)
 
     # Graph nodes for a bunch of fake entities that we'll use in the legend
     _module = gd.get_node(ExternalModule("Module"))
@@ -819,7 +791,7 @@ class FortranGraph:
                   </button>
                   <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
                 </div>
-              <div class="modal-body">{self.legend} {COLOURED_NOTICE if _coloured_edges else ""}</div>
+              <div class="modal-body">{self.legend} {COLOURED_NOTICE if self.data.coloured_edges else ""}</div>
             </div>
           </div>
         </div>"""
@@ -854,6 +826,12 @@ class FortranGraph:
         hop_edges = []  # edges in this hop
 
         total_len = len(nodes)
+
+        def rainbowcolour(depth, maxd):
+            if not self.data.coloured_edges:
+                return "#000000"
+            (r, g, b) = colorsys.hsv_to_rgb(float(depth) / maxd, 1.0, 1.0)
+            return f"#{int(255 * r)}{int(255 * g)}{int(255 * b)}"
 
         for i, node in enumerate(sorted(nodes)):
             colour = rainbowcolour(i, total_len)
@@ -1152,7 +1130,7 @@ class GraphManager(object):
         base_url: os.PathLike,
         outdir: os.PathLike,
         graphdir: os.PathLike,
-        parentdir: os.PathLike,
+        parentdir: str,
         coloured_edges: bool,
         save_graphs: bool = False,
     ):
@@ -1170,9 +1148,7 @@ class GraphManager(object):
         self.typegraph = None
         self.callgraph = None
         self.filegraph = None
-        self.data = GraphData()
-        set_coloured_edges(coloured_edges)
-        set_graphs_parentdir(parentdir)
+        self.data = GraphData(parentdir, coloured_edges)
 
     def register(self, obj):
         if obj.meta["graph"]:
