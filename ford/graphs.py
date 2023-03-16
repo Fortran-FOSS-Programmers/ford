@@ -613,12 +613,11 @@ class FortranGraph:
     Object used to construct the graph for some particular entity in the code.
     """
 
-    data = GraphData()
     RANKDIR = "RL"
     _should_add_nested_nodes = False
     legend = ""
 
-    def __init__(self, root, webdir="", ident=None):
+    def __init__(self, root, data: GraphData, webdir="", ident=None):
         """
         Initialize the graph, root is the object or list of objects,
         for which the graph is to be constructed.
@@ -629,6 +628,7 @@ class FortranGraph:
         nodes.
         """
         self.root = []  # root nodes
+        self.data = data
         self.hop_nodes = []  # nodes of the hop which exceeded the maximum
         self.hop_edges = []  # edges of the hop which exceeded the maximum
         self.added = set()  # nodes added to the graph
@@ -830,10 +830,6 @@ class FortranGraph:
 
     def __bool__(self):
         return bool(self.__str__())
-
-    @classmethod
-    def reset(cls):
-        cls.data = GraphData()
 
     def create_svg(self, out_location: pathlib.Path):
         if len(self.added) > len(self.root):
@@ -1174,39 +1170,40 @@ class GraphManager(object):
         self.typegraph = None
         self.callgraph = None
         self.filegraph = None
+        self.data = GraphData()
         set_coloured_edges(coloured_edges)
         set_graphs_parentdir(parentdir)
 
     def register(self, obj):
         if obj.meta["graph"]:
-            FortranGraph.data.register(obj)
+            self.data.register(obj)
             self.graph_objs.append(obj)
 
     def graph_all(self):
         for obj in tqdm(sorted(self.graph_objs), unit="", desc="Generating graphs"):
             if is_module(obj):
-                obj.usesgraph = UsesGraph(obj, self.webdir)
-                obj.usedbygraph = UsedByGraph(obj, self.webdir)
+                obj.usesgraph = UsesGraph(obj, self.data, self.webdir)
+                obj.usedbygraph = UsedByGraph(obj, self.data, self.webdir)
                 self.modules.add(obj)
             elif is_type(obj):
-                obj.inhergraph = InheritsGraph(obj, self.webdir)
-                obj.inherbygraph = InheritedByGraph(obj, self.webdir)
+                obj.inhergraph = InheritsGraph(obj, self.data, self.webdir)
+                obj.inherbygraph = InheritedByGraph(obj, self.data, self.webdir)
                 self.types.add(obj)
             elif is_proc(obj):
-                obj.callsgraph = CallsGraph(obj, self.webdir)
-                obj.calledbygraph = CalledByGraph(obj, self.webdir)
-                obj.usesgraph = UsesGraph(obj, self.webdir)
+                obj.callsgraph = CallsGraph(obj, self.data, self.webdir)
+                obj.calledbygraph = CalledByGraph(obj, self.data, self.webdir)
+                obj.usesgraph = UsesGraph(obj, self.data, self.webdir)
                 self.procedures.add(obj)
             elif is_program(obj):
-                obj.usesgraph = UsesGraph(obj, self.webdir)
-                obj.callsgraph = CallsGraph(obj, self.webdir)
+                obj.usesgraph = UsesGraph(obj, self.data, self.webdir)
+                obj.callsgraph = CallsGraph(obj, self.data, self.webdir)
                 self.programs.add(obj)
             elif is_sourcefile(obj):
-                obj.afferentgraph = AfferentGraph(obj, self.webdir)
-                obj.efferentgraph = EfferentGraph(obj, self.webdir)
+                obj.afferentgraph = AfferentGraph(obj, self.data, self.webdir)
+                obj.efferentgraph = EfferentGraph(obj, self.data, self.webdir)
                 self.sourcefiles.add(obj)
             elif is_blockdata(obj):
-                obj.usesgraph = UsesGraph(obj, self.webdir)
+                obj.usesgraph = UsesGraph(obj, self.data, self.webdir)
                 self.blockdata.add(obj)
 
         usenodes = sorted(list(self.modules))
@@ -1222,10 +1219,12 @@ class GraphManager(object):
         for b in self.blockdata:
             if len(b.usesgraph.added) > 1:
                 usenodes.append(b)
-        self.usegraph = ModuleGraph(usenodes, self.webdir, "module~~graph")
-        self.typegraph = TypeGraph(self.types, self.webdir, "type~~graph")
-        self.callgraph = CallGraph(callnodes, self.webdir, "call~~graph")
-        self.filegraph = FileGraph(self.sourcefiles, self.webdir, "file~~graph")
+        self.usegraph = ModuleGraph(usenodes, self.data, self.webdir, "module~~graph")
+        self.typegraph = TypeGraph(self.types, self.data, self.webdir, "type~~graph")
+        self.callgraph = CallGraph(callnodes, self.data, self.webdir, "call~~graph")
+        self.filegraph = FileGraph(
+            self.sourcefiles, self.data, self.webdir, "file~~graph"
+        )
 
     def output_graphs(self, njobs=0):
         if not self.save_graphs:
