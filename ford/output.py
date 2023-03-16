@@ -140,7 +140,7 @@ class Documentation(object):
             self.data.get("graph_dir", ""),
             graphparent,
             self.data["coloured_edges"],
-            save_graphs=bool(self.data.get("graph_dir", False))
+            save_graphs=bool(self.data.get("graph_dir", False)),
         )
 
         if graphviz_installed and data["graph"]:
