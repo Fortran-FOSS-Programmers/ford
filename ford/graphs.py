@@ -835,19 +835,17 @@ class FortranGraph:
     def reset(cls):
         cls.data = GraphData()
 
-    def create_svg(self, out_location):
+    def create_svg(self, out_location: pathlib.Path):
         if len(self.added) > len(self.root):
-            self._create_image_file(os.path.join(out_location, self.imgfile))
+            out_location = pathlib.Path(out_location)
+            self._create_image_file(out_location / self.imgfile)
 
-    def _create_image_file(self, filename):
-        if graphviz_installed:
-            self.dot.render(filename, cleanup=False)
-            shutil.move(
-                filename,
-                os.path.join(
-                    os.path.dirname(filename), os.path.basename(filename) + ".gv"
-                ),
-            )
+    def _create_image_file(self, filename: pathlib.Path):
+        if not graphviz_installed:
+            return
+
+        self.dot.render(str(filename), cleanup=False)
+        filename.rename(str(filename) + ".gv")
 
     def add_nodes(self, nodes, nesting=1):
         """Add nodes and edges to this graph, based on the collection ``nodes``
@@ -1160,6 +1158,7 @@ class GraphManager(object):
         graphdir: os.PathLike,
         parentdir: os.PathLike,
         coloured_edges: bool,
+        save_graphs: bool = False,
     ):
         self.graph_objs = []
         self.modules = set()
@@ -1168,7 +1167,8 @@ class GraphManager(object):
         self.types = set()
         self.sourcefiles = set()
         self.blockdata = set()
-        self.graphdir = graphdir or ""
+        self.save_graphs = save_graphs
+        self.graphdir = pathlib.Path(graphdir)
         self.webdir = pathlib.Path(base_url) / self.graphdir
         self.usegraph = None
         self.typegraph = None
@@ -1228,12 +1228,11 @@ class GraphManager(object):
         self.filegraph = FileGraph(self.sourcefiles, self.webdir, "file~~graph")
 
     def output_graphs(self, njobs=0):
-        if not self.graphdir:
+        if not self.save_graphs:
             return
-        try:
-            os.mkdir(self.graphdir, 0o755)
-        except OSError:
-            pass
+
+        self.graphdir.mkdir(exist_ok=True, parents=True, mode=0o755)
+
         if njobs == 0:
             for m in self.modules:
                 m.usesgraph.create_svg(self.graphdir)
