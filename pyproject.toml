@@ -71,3 +71,7 @@ ford = ["css/*", "fonts/*", "js/*", "templates/*", "tipuesearch/*", "config.json
 
 [tool.setuptools_scm]
 write_to = "ford/_version.py"
+
+[tool.pytest.ini_options]
+addopts = "-m 'not slow'"
+markers = ["slow"]
