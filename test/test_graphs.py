@@ -38,6 +38,7 @@ def make_project_graphs(tmp_path_factory):
 
     module c
       use b
+      use iso_fortran_env
     end module c
 
     program foo
@@ -91,8 +92,8 @@ def make_project_graphs(tmp_path_factory):
     [
         (
             "usegraph",
-            ["module~a", "module~b", "module~c"],
-            ["module~b->module~a", "module~c->module~b"],
+            ["module~a", "module~b", "module~c", "iso_fortran_env"],
+            ["module~b->module~a", "module~c->module~b", "module~c->iso_fortran_env"],
             ["Module", "Submodule", "Subroutine", "Function", "Program"],
         ),
         (

@@ -185,6 +185,10 @@ class Project(object):
             url = url.strip().strip(r"\"'").strip()
             non_local_mods[name.lower()] = f'<a href="{url}">{name}</a>'
 
+        self.extModules.extend(
+            [ExternalModule(name, url) for name, url in non_local_mods.items()]
+        )
+
         # load external FORD FortranModules
         ford.utils.external(self)
 
@@ -196,9 +200,7 @@ class Project(object):
             self.submodules,
             self.blockdata,
         ):
-            find_used_modules(
-                entity, self.modules, non_local_mods, self.submodules, self.extModules
-            )
+            find_used_modules(entity, self.modules, self.submodules, self.extModules)
 
         def get_deps(item):
             uselist = [m[0] for m in item.uses]
@@ -350,7 +352,6 @@ class Project(object):
 def find_used_modules(
     entity: FortranCodeUnit,
     modules: List[FortranModule],
-    intrinsic_modules: List[str],
     submodules: List[FortranSubmodule],
     external_modules: List[ExternalModule],
 ) -> None:
@@ -374,17 +375,10 @@ def find_used_modules(
     # Find the modules that this entity uses
     for dependency in entity.uses:
         dependency_name = dependency[0].lower()
-
-        # FIXME: We should capture whether or not the `use`d is
-        # `intrinsic`, and modify the lookup appropriately
         for candidate in chain(modules, external_modules):
             if dependency_name == candidate.name.lower():
                 dependency[0] = candidate
                 break
-        else:
-            if dependency_name in intrinsic_modules:
-                dependency[0] = intrinsic_modules[dependency_name]
-                continue
 
     # Find the ancestor of this submodule (if entity is one)
     if getattr(entity, "parent_submodule", None):
@@ -403,6 +397,4 @@ def find_used_modules(
 
     # Find the modules that this entity's procedures use
     for procedure in entity.routines:
-        find_used_modules(
-            procedure, modules, intrinsic_modules, submodules, external_modules
-        )
+        find_used_modules(procedure, modules, submodules, external_modules)

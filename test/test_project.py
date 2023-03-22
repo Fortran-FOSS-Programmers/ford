@@ -878,7 +878,7 @@ def test_uses(copy_fortran_file):
 
     mod_d_links = list(mod_d.uses)
     for link in mod_d_links:
-        soup = BeautifulSoup(link, features="html.parser")
+        soup = BeautifulSoup(link.get_url(), features="html.parser")
         link = soup.a
         expected_link = extra_mods[soup.text].strip(r"\"'")
         assert link["href"] == expected_link, link
