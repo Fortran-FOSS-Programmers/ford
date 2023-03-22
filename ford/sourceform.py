@@ -23,12 +23,13 @@
 #
 
 from collections import defaultdict
+from dataclasses import dataclass
 import sys
 import re
 import os.path
 import copy
 import textwrap
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Union
 from itertools import chain
 
 # Python 2 or 3:
@@ -1570,11 +1571,14 @@ class FortranFunction(FortranCodeUnit):
             typestr = typestr + "|" + vtype
         var_type_re = re.compile(VAR_TYPE_STRING + typestr, re.IGNORECASE)
         if var_type_re.search(attribstr):
-            rettype, retkind, retlen, retproto, rest = parse_type(
-                attribstr, self.strings, self.settings
-            )
+            parsed_type = parse_type(attribstr, self.strings, self.settings)
             self.retvar = FortranVariable(
-                self.retvar, rettype, self, kind=retkind, strlen=retlen, proto=retproto
+                self.retvar,
+                parsed_type.vartype,
+                self,
+                kind=parsed_type.kind,
+                strlen=parsed_type.strlen,
+                proto=parsed_type.proto,
             )
 
         arguments = self.SPLIT_RE.split(line.group(3)[1:-1].strip())
@@ -2641,18 +2645,14 @@ def line_to_variables(source, line, inherit_permission, parent):
     Returns a list of variables declared in the provided line of code. The
     line of code should be provided as a string.
     """
-    vartype, kind, strlen, proto, rest = parse_type(
-        line, parent.strings, parent.settings
-    )
+    parsed_type = parse_type(line, parent.strings, parent.settings)
     attribs = []
     intent = ""
     optional = False
     permission = inherit_permission
     parameter = False
-    if proto:
-        proto = list(proto)
 
-    if attribmatch := ATTRIBSPLIT_RE.match(rest):
+    if attribmatch := ATTRIBSPLIT_RE.match(parsed_type.rest):
         attribstr = attribmatch.group(1).strip()
         declarestr = attribmatch.group(2).strip()
         tmp_attribs = [attr.strip() for attr in ford.utils.paren_split(",", attribstr)]
@@ -2675,7 +2675,7 @@ def line_to_variables(source, line, inherit_permission, parent):
             else:
                 attribs.append(tmp_attrib)
     else:
-        declarestr = ATTRIBSPLIT2_RE.match(rest).group(2)
+        declarestr = ATTRIBSPLIT2_RE.match(parsed_type.rest).group(2)
     declarations = ford.utils.paren_split(",", declarestr)
 
     doc = []
@@ -2716,16 +2716,16 @@ def line_to_variables(source, line, inherit_permission, parent):
         varlist.append(
             FortranVariable(
                 name,
-                vartype,
+                parsed_type.vartype,
                 parent,
                 copy.copy(attribs),
                 intent,
                 optional,
                 permission,
                 parameter,
-                kind,
-                strlen,
-                proto,
+                parsed_type.kind,
+                parsed_type.strlen,
+                parsed_type.proto,
                 doc,
                 points,
                 initial,
@@ -2735,7 +2735,16 @@ def line_to_variables(source, line, inherit_permission, parent):
     return varlist
 
 
-def parse_type(string, capture_strings, settings):
+@dataclass
+class ParsedType:
+    vartype: str
+    rest: str
+    kind: Optional[str] = None
+    strlen: Optional[str] = None
+    proto: Union[None, str, List[str]] = None
+
+
+def parse_type(string: str, capture_strings: List[str], settings: dict) -> ParsedType:
     """
     Gets variable type, kind, length, and/or derived-type attributes from a
     variable declaration.
@@ -2759,14 +2768,17 @@ def parse_type(string, capture_strings, settings):
 
     if (
         len(kindstr) < 3
-        and vartype != "type"
-        and vartype != "class"
+        and vartype not in ["type", "class", "character"]
         and not kindstr.startswith("*")
     ):
-        return (vartype, None, None, None, rest)
+        return ParsedType(vartype, rest)
 
     match = VARKIND_RE.search(kindstr)
     if not match:
+        if vartype == "character":
+            # This is a bare `character` declaration with no parameters
+            return ParsedType(vartype, rest, strlen="1")
+
         raise ValueError(
             "Bad declaration of variable type {}: {}".format(vartype, string)
         )
@@ -2781,7 +2793,7 @@ def parse_type(string, capture_strings, settings):
             args = args[1:-1].strip()
 
     args = re.sub(r"\s", "", args)
-    if vartype == "type" or vartype == "class" or vartype == "procedure":
+    if vartype in ["type", "class", "procedure"]:
         PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
         try:
             proto = list(PROTO_RE.match(args).groups())
@@ -2791,10 +2803,11 @@ def parse_type(string, capture_strings, settings):
             raise Exception(
                 "Bad type, class, or procedure prototype specification: {}".format(args)
             )
-        return (vartype, None, None, proto, rest)
-    elif vartype == "character":
+        return ParsedType(vartype, rest, proto=proto)
+
+    if vartype == "character":
         if star:
-            return (vartype, None, args, None, rest)
+            return ParsedType(vartype, rest, strlen=args)
 
         args = args.split(",")
 
@@ -2833,12 +2846,11 @@ def parse_type(string, capture_strings, settings):
         if length is None:
             length = "1"
 
+        return ParsedType(vartype, rest, kind=kind, strlen=length)
 
-        return (vartype, kind, length, None, rest)
-    else:
-        kind = KIND_RE.match(args)
-        kind = kind.group(1) if kind else args
-        return (vartype, kind, None, None, rest)
+    kind = KIND_RE.match(args)
+    kind = kind.group(1) if kind else args
+    return ParsedType(vartype, rest, kind=kind)
 
 
 def set_base_url(url):
