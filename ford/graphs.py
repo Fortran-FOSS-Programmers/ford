@@ -170,7 +170,7 @@ class GraphData:
             return self.blockdata, BlockNode
 
         raise BadType(
-            f"Unrecognised object type '{type(obj).__name__}' when constructing graphs"
+            f"Unrecognised object type '{type(obj).__name__}' for object '{obj}' when constructing graphs"
         )
 
     def register(
