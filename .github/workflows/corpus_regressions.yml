@@ -17,7 +17,7 @@ jobs:
         sudo apt update && sudo apt install -y python3-graphviz
         python -m pip install --upgrade pip
         pip install .[tests]
-        pip install pytest-xdist
+        pip install pytest-xdist fypp
     - name: Test known repos
       run: |
         pytest -n auto -m slow
