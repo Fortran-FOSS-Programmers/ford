@@ -308,7 +308,11 @@ class ModNode(BaseNode):
         if self.fromstr:
             return
         for u in obj.uses:
-            n = gd.get_node(u)
+            usee = u
+            if isinstance(u, str):
+                # Most likely a third-party module with no docs
+                usee = ExternalModule(u)
+            n = gd.get_node(usee)
             n.used_by.add(self)
             n.afferent += 1
             self.uses.add(n)
@@ -369,7 +373,11 @@ class TypeNode(BaseNode):
             elif proto in hist:
                 node = hist[proto]
             else:
-                node = gd.get_node(proto, newdict(hist, obj, self))
+                type_ = proto
+                if isinstance(type_, str):
+                    # Probably a third-party type
+                    type_ = ExternalType(type_)
+                node = gd.get_node(type_, newdict(hist, obj, self))
 
             node.visible = getattr(proto, "visible", True)
             if self in node.comp_of:
@@ -414,6 +422,10 @@ class ProcNode(BaseNode):
                 elif c in hist:
                     n = hist[c]
                 else:
+                    if isinstance(c, str):
+                        # Probably a third-party procedure
+                        c = ExternalSubroutine(c)
+                        c.proctype = "unknown"
                     n = gd.get_node(c, newdict(hist, obj, self))
                 n.called_by.add(self)
                 self.calls.add(n)
