@@ -1051,19 +1051,17 @@ class FortranCodeUnit(FortranContainer):
         if hasattr(self, "calls"):
             tmplst = []
             for call in self.calls:
+                call_low = call.lower()
                 argname = False
                 for a in getattr(self, "args", []):
                     # Consider allowing procedures passed as arguments to be included in callgraphs
-                    argname = argname or call.lower() == a.name.lower()
+                    argname = argname or call_low == a.name.lower()
                 if hasattr(self, "retvar"):
-                    argname = argname or call.lower() == self.retvar.name.lower()
+                    argname = argname or call_low == self.retvar.name.lower()
                 if (
-                    call.lower() not in self.all_vars
-                    and (
-                        call.lower() not in self.all_types
-                        or call.lower() in self.all_procs
-                    )
-                    and not argname
+                    not argname
+                    and call_low not in self.all_vars
+                    and (call_low not in self.all_types or call_low in self.all_procs)
                 ):
                     tmplst.append(call)
             self.calls = tmplst
