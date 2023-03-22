@@ -1479,10 +1479,10 @@ class FortranSubroutine(FortranCodeUnit):
 
         self.args = []
         if line.group(3):
-            if args := self.SPLIT_RE.split(line.group(3)[1:-1]):
-                for arg in args:
-                    if arg:
-                        self.args.append(arg.strip())
+            arguments = self.SPLIT_RE.split(line.group(3)[1:-1].strip())
+            # Empty argument lists will contain the empty string, so we need to remove it
+            self.args = [arg for arg in arguments if arg]
+
         self.bindC = line.group(4)
         self.variables = []
         self.enums = []
@@ -1578,16 +1578,11 @@ class FortranFunction(FortranCodeUnit):
             self.retvar = FortranVariable(
                 self.retvar, rettype, self, kind=retkind, strlen=retlen, proto=retproto
             )
-        self.args = []  # Set this in the correlation step
 
-        for arg in self.SPLIT_RE.split(line.group(3)[1:-1]):
-            # FIXME: This is to avoid a problem whereby sometimes an empty
-            # argument list will appear to contain the argument ''. I didn't
-            # know why it would do this (especially since sometimes it works
-            # fine) and just put this in as a quick fix. However, at some point
-            # I should try to figure out the actual root of the problem.
-            if arg.strip() != "":
-                self.args.append(arg.strip())
+        arguments = self.SPLIT_RE.split(line.group(3)[1:-1].strip())
+        # Empty argument lists will contain the empty string, so we need to remove it
+        self.args = [arg for arg in arguments if arg]
+
         try:
             self.bindC = ford.utils.get_parens(line.group(5), -1)[0:-1]
         except (RuntimeError, TypeError):
