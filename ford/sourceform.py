@@ -2798,23 +2798,41 @@ def parse_type(string, capture_strings, settings):
 
         args = args.split(",")
 
+        if len(args) > 2:
+            raise ValueError(
+                f"Bad declaration of `character`, too many parameters: '{string}'"
+            )
+
+        # `character` has two parameters: `len` and `kind`.
+        # If the parameter names are present, they can be in any order.
+        # If they're missing, `len` must be first and `kind` second.
+        # If there are no parameters at all, this is handled above.
+
+        length = None
+        kind = None
         for arg in args:
-            kind = KIND_RE.match(arg)
-            if kind:
-                kind = kind.group(1)
-                try:
-                    match = QUOTES_RE.search(kind)
+            if length is None and (length_match := LEN_RE.match(arg)):
+                length = length_match.group(1) or length_match.group(2)
+                continue
+
+            if kind is None and (kind_match := KIND_RE.match(arg)):
+                kind = kind_match.group(1)
+                if match := QUOTES_RE.search(kind):
                     num = int(match.group()[1:-1])
                     kind = QUOTES_RE.sub(capture_strings[num], kind)
-                except AttributeError:
-                    pass
-                break
+                continue
 
-        for arg in args:
-            length = LEN_RE.match(arg)
-            if length:
-                length = length.group(1) or length.group(2)
-                break
+            if length is None:
+                length = arg
+                continue
+
+            if kind is None:
+                kind = arg
+
+        # Handle default values
+        if length is None:
+            length = "1"
+
 
         return (vartype, kind, length, None, rest)
     else:
