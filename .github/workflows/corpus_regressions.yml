@@ -1,26 +1,23 @@
-name: tests
-
-on: [push, pull_request]
+name: "Corpus regressions"
+on:
+  push:
+    branches: "master"
 
 jobs:
-  pytest:
+  regression:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
-
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.x"
     - name: Install dependencies
       run: |
         sudo apt update && sudo apt install -y python3-graphviz
         python -m pip install --upgrade pip
         pip install .[tests]
-    - name: Test with pytest
+        pip install pytest-xdist
+    - name: Test known repos
       run: |
-        pytest -v
+        pytest -n auto -m slow
