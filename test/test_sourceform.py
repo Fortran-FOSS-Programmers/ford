@@ -1494,3 +1494,51 @@ def test_block_data(parse_fortran_file):
     assert blockdata.common[0].doc[0].strip() == "Common block docstring"
     assert len(blockdata.variables) == 1
     assert blockdata.variables[0].doc[0].strip() == "Variable docstring"
+
+
+def test_subroutine_empty_args(parse_fortran_file):
+    data = """\
+    subroutine foo (    )
+    end subroutine foo
+    """
+
+    fortran_file = parse_fortran_file(data)
+    subroutine = fortran_file.subroutines[0]
+    assert subroutine.args == []
+
+
+def test_subroutine_whitespace(parse_fortran_file):
+    data = """\
+    subroutine foo (  a,b,    c,d  )
+      integer :: a, b, c, d
+    end subroutine foo
+    """
+
+    fortran_file = parse_fortran_file(data)
+    subroutine = fortran_file.subroutines[0]
+    arg_names = [arg.name for arg in subroutine.args]
+    assert arg_names == ["a", "b", "c", "d"]
+
+
+def test_function_empty_args(parse_fortran_file):
+    data = """\
+    integer function foo (    )
+    end function foo
+    """
+
+    fortran_file = parse_fortran_file(data)
+    function = fortran_file.functions[0]
+    assert function.args == []
+
+
+def test_function_whitespace(parse_fortran_file):
+    data = """\
+    integer function foo (  a,b,    c,d  )
+      integer :: a, b, c, d
+    end function foo
+    """
+
+    fortran_file = parse_fortran_file(data)
+    function = fortran_file.functions[0]
+    arg_names = [arg.name for arg in function.args]
+    assert arg_names == ["a", "b", "c", "d"]

@@ -401,7 +401,7 @@ def parse_arguments(
         EnvironExtension(),
     ]
     md = markdown.Markdown(
-        extensions=md_ext, output_format="html5", extension_configs={}
+        extensions=md_ext, output_format="html", extension_configs={}
     )
 
     md.convert(proj_docs)
@@ -415,7 +415,7 @@ def parse_arguments(
         md_ext.extend(md.Meta["md_extensions"])
     md = markdown.Markdown(
         extensions=md_ext,
-        output_format="html5",
+        output_format="html",
         extension_configs={"markdown_include.include": {"base_path": md_base}},
     )
 
