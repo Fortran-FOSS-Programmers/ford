@@ -2,6 +2,7 @@ from ford.sourceform import (
     FortranSourceFile,
     FortranModule,
     parse_type,
+    ParsedType,
     line_to_variables,
 )
 from ford import DEFAULT_SETTINGS
@@ -670,86 +671,72 @@ def test_submodule_ancestors(parse_fortran_file):
     assert mod_d.ancestor_module == "mod_a"
 
 
-@dataclass
-class ParsedType:
-    vartype: str
-    kind: Optional[str]
-    strlen: Optional[str]
-    proto: Union[None, str, List[str]]
-    rest: str
-
-
 @pytest.mark.parametrize(
     ["variable_decl", "expected"],
     [
-        ("integer i", ParsedType("integer", None, None, None, "i")),
-        ("integer :: i", ParsedType("integer", None, None, None, ":: i")),
-        ("integer ( int32 ) :: i", ParsedType("integer", "int32", None, None, ":: i")),
-        ("real r", ParsedType("real", None, None, None, "r")),
-        ("real(real64) r", ParsedType("real", "real64", None, None, "r")),
-        (
-            "REAL( KIND  =  8) :: r, x, y",
-            ParsedType("real", "8", None, None, ":: r, x, y"),
-        ),
-        (
-            "REAL( 8 ) :: r, x, y",
-            ParsedType("real", "8", None, None, ":: r, x, y"),
-        ),
-        (
-            "complex*16 znum",
-            ParsedType("complex", "16", None, None, "znum"),
-        ),
+        ("integer i", ParsedType("integer", "i")),
+        ("integer :: i", ParsedType("integer", ":: i")),
+        ("integer ( int32 ) :: i", ParsedType("integer", ":: i", "int32")),
+        ("real r", ParsedType("real", "r")),
+        ("real(real64) r", ParsedType("real", "r", "real64")),
+        ("REAL( KIND  =  8) :: r, x, y", ParsedType("real", ":: r, x, y", "8")),
+        ("REAL( 8 ) :: r, x, y", ParsedType("real", ":: r, x, y", "8")),
+        ("complex*16 znum", ParsedType("complex", "znum", "16")),
         (
             "character(len=*) :: string",
-            ParsedType("character", None, "*", None, ":: string"),
+            ParsedType("character", ":: string", strlen="*"),
         ),
         (
             "character(len=:) :: string",
-            ParsedType("character", None, ":", None, ":: string"),
+            ParsedType("character", ":: string", strlen=":"),
         ),
+        ("character(12) :: string", ParsedType("character", ":: string", strlen="12")),
         (
-            "character(12) :: string",
-            ParsedType("character", None, "12", None, ":: string"),
+            "character(var) :: string",
+            ParsedType("character", ":: string", strlen="var"),
         ),
+        ("character :: string", ParsedType("character", ":: string", strlen="1")),
         (
             "character(LEN=12) :: string",
-            ParsedType("character", None, "12", None, ":: string"),
+            ParsedType("character", ":: string", strlen="12"),
         ),
         (
             "CHARACTER(KIND= kind('0') ,  len =12) :: string",
-            ParsedType("character", 'kind("a")', "12", None, ":: string"),
+            ParsedType("character", ":: string", kind='kind("a")', strlen="12"),
         ),
         (
             "CHARACTER(KIND=kanji,  len =12) :: string",
-            ParsedType("character", "kanji", "12", None, ":: string"),
+            ParsedType("character", ":: string", kind="kanji", strlen="12"),
         ),
         (
             "CHARACTER(  len =   12,KIND=kanji) :: string",
-            ParsedType("character", "kanji", "12", None, ":: string"),
+            ParsedType("character", ":: string", kind="kanji", strlen="12"),
+        ),
+        (
+            "CHARACTER( 12,kanji ) :: string",
+            ParsedType("character", ":: string", kind="kanji", strlen="12"),
         ),
         (
             "CHARACTER(  kind=    kanji) :: string",
-            ParsedType("character", "kanji", None, None, ":: string"),
+            ParsedType("character", ":: string", kind="kanji", strlen="1"),
         ),
-        ("double PRECISION dp", ParsedType("double precision", None, None, None, "dp")),
-        ("DOUBLE   complex dc", ParsedType("double complex", None, None, None, "dc")),
+        ("double PRECISION dp", ParsedType("double precision", "dp")),
+        ("DOUBLE   complex dc", ParsedType("double complex", "dc")),
         (
             "type(something) :: thing",
-            ParsedType("type", None, None, ["something", ""], ":: thing"),
+            ParsedType("type", ":: thing", proto=["something", ""]),
         ),
         (
             "type(character(kind=kanji, len=10)) :: thing",
-            ParsedType(
-                "type", None, None, ["character", "kind=kanji,len=10"], ":: thing"
-            ),
+            ParsedType("type", ":: thing", proto=["character", "kind=kanji,len=10"]),
         ),
         (
             "class(foo) :: thing",
-            ParsedType("class", None, None, ["foo", ""], ":: thing"),
+            ParsedType("class", ":: thing", proto=["foo", ""]),
         ),
         (
             "procedure(bar) :: thing",
-            ParsedType("procedure", None, None, ["bar", ""], ":: thing"),
+            ParsedType("procedure", ":: thing", proto=["bar", ""]),
         ),
     ],
 )
@@ -757,14 +744,12 @@ def test_parse_type(variable_decl, expected):
     # Tokeniser will have previously replaced strings with index into
     # this list
     capture_strings = ['"a"']
-    vartype, kind, strlen, proto, rest = parse_type(
-        variable_decl, capture_strings, {"extra_vartypes": []}
-    )
-    assert vartype == expected.vartype
-    assert kind == expected.kind
-    assert strlen == expected.strlen
-    assert proto == expected.proto
-    assert rest == expected.rest
+    result = parse_type(variable_decl, capture_strings, {"extra_vartypes": []})
+    assert result.vartype == expected.vartype
+    assert result.kind == expected.kind
+    assert result.strlen == expected.strlen
+    assert result.proto == expected.proto
+    assert result.rest == expected.rest
 
 
 class FakeSource:
