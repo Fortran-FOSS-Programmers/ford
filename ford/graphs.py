@@ -30,7 +30,7 @@ import itertools
 import os
 import pathlib
 import re
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Type, Union
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Type, Union, cast
 import warnings
 
 from graphviz import Digraph, ExecutableNotFound
@@ -215,6 +215,35 @@ class GraphData:
 
         return collection[obj]
 
+    def get_module_node(self, mod: Union[FortranModule, str]) -> ModNode:
+        if isinstance(mod, str):
+            # Most likely a third-party module
+            mod = ExternalModule(mod)
+        return cast(ModNode, self.get_node(mod))
+
+    def get_procedure_node(
+        self,
+        procedure: Union[FortranSubroutine, FortranFunction, str],
+        hist: NodeCollection,
+    ) -> ProcNode:
+        if isinstance(procedure, str):
+            # Most likely a third-party procedure
+            procedure = ExternalSubroutine(procedure)
+            procedure.proctype = "unknown"
+
+        result = hist.get(procedure, self.get_node(procedure, hist))
+        return cast(ProcNode, result)
+
+    def get_type_node(
+        self, type_: Union[FortranType, str], hist: NodeCollection
+    ) -> TypeNode:
+        if isinstance(type_, str):
+            # Most likely a third-party type
+            type_ = ExternalType(type_)
+
+        result = hist.get(type_, self.get_node(type_, hist))
+        return cast(TypeNode, result)
+
 
 class BaseNode:
     """Graph node representing some Fortran entity
@@ -308,11 +337,7 @@ class ModNode(BaseNode):
         if self.fromstr:
             return
         for u in obj.uses:
-            usee = u
-            if isinstance(u, str):
-                # Most likely a third-party module with no docs
-                usee = ExternalModule(u)
-            n = gd.get_node(usee)
+            n = gd.get_module_node(u)
             n.used_by.add(self)
             n.afferent += 1
             self.uses.add(n)
@@ -330,7 +355,7 @@ class SubmodNode(ModNode):
         if obj.parent_submodule:
             self.ancestor = gd.get_node(obj.parent_submodule)
         else:
-            self.ancestor = gd.get_node(obj.ancestor_module)
+            self.ancestor = gd.get_module_node(obj.ancestor_module)
         self.ancestor.children.add(self)
         self.efferent += 1
         self.ancestor.afferent += 1
@@ -345,18 +370,17 @@ class TypeNode(BaseNode):
         self.children = set()
         self.comp_types = dict()
         self.comp_of = dict()
-        hist = hist or {}
         if self.fromstr:
             return
+
+        hist = newdict(hist or {}, obj, self)
+
         if hasattr(obj, "external_url"):
             # Stop following chain, as this object is in an external project
             return
 
         if obj.extends:
-            if obj.extends in hist:
-                self.ancestor = hist[obj.extends]
-            else:
-                self.ancestor = gd.get_node(obj.extends, newdict(hist, obj, self))
+            self.ancestor = gd.get_type_node(obj.extends, hist)
             self.ancestor.children.add(self)
             self.ancestor.visible = getattr(obj.extends, "visible", True)
 
@@ -368,16 +392,7 @@ class TypeNode(BaseNode):
             if proto == "*":
                 continue
 
-            if proto == obj:
-                node = self
-            elif proto in hist:
-                node = hist[proto]
-            else:
-                type_ = proto
-                if isinstance(type_, str):
-                    # Probably a third-party type
-                    type_ = ExternalType(type_)
-                node = gd.get_node(type_, newdict(hist, obj, self))
+            node = gd.get_type_node(proto, hist)
 
             node.visible = getattr(proto, "visible", True)
             if self in node.comp_of:
@@ -407,26 +422,19 @@ class ProcNode(BaseNode):
         self.interfaces = set()
         self.interfaced_by = set()
 
-        hist = hist or {}
-
         if self.fromstr:
             return
+
+        hist = newdict(hist or {}, obj, self)
+
         for u in getattr(obj, "uses", []):
-            n = gd.get_node(u)
+            n = gd.get_module_node(u)
             n.used_by.add(self)
             self.uses.add(n)
+
         for c in getattr(obj, "calls", []):
             if getattr(c, "visible", True):
-                if c == obj:
-                    n = self
-                elif c in hist:
-                    n = hist[c]
-                else:
-                    if isinstance(c, str):
-                        # Probably a third-party procedure
-                        c = ExternalSubroutine(c)
-                        c.proctype = "unknown"
-                    n = gd.get_node(c, newdict(hist, obj, self))
+                n = gd.get_procedure_node(c, hist)
                 n.called_by.add(self)
                 self.calls.add(n)
 
@@ -435,10 +443,7 @@ class ProcNode(BaseNode):
 
         for m in getattr(obj, "modprocs", []):
             if m.procedure and getattr(m.procedure, "visible", True):
-                if m.procedure in hist:
-                    n = hist[m.procedure]
-                else:
-                    n = gd.get_node(m.procedure, newdict(hist, obj, self))
+                n = gd.get_procedure_node(m.procedure, hist)
                 n.interfaced_by.add(self)
                 self.interfaces.add(n)
 
@@ -448,13 +453,7 @@ class ProcNode(BaseNode):
             and obj.procedure.module is not True
             and getattr(obj.procedure.module, "visible", True)
         ):
-            if obj.procedure.module in hist:
-                n = hist[obj.procedure.module]
-            else:
-                n = gd.get_node(
-                    obj.procedure.module,
-                    newdict(hist, obj, self),
-                )
+            n = gd.get_procedure_node(obj.procedure.module, hist)
             n.interfaced_by.add(self)
             self.interfaces.add(n)
 
@@ -469,19 +468,14 @@ class ProgNode(BaseNode):
         if self.fromstr:
             return
         for u in obj.uses:
-            usee = u
-            if isinstance(u, str):
-                usee = ExternalModule(u)
-            n = gd.get_node(usee)
+            n = gd.get_module_node(u)
             n.used_by.add(self)
             self.uses.add(n)
+
         for c in obj.calls:
             if not getattr(c, "visible", False):
                 continue
-            callee = c
-            if isinstance(c, str):
-                callee = ExternalSubmodule(c)
-            n = gd.get_node(callee)
+            n = gd.get_procedure_node(c, {})
             n.called_by.add(self)
             self.calls.add(n)
 
@@ -495,7 +489,7 @@ class BlockNode(BaseNode):
         if self.fromstr:
             return
         for u in obj.uses:
-            n = gd.get_node(u)
+            n = gd.get_module_node(u)
             n.used_by.add(self)
             self.uses.add(n)
 
@@ -507,9 +501,11 @@ class FileNode(BaseNode):
         super().__init__(obj, gd)
         self.afferent = set()  # Things depending on this file
         self.efferent = set()  # Things this file depends on
-        hist = hist or {}
+
         if self.fromstr:
             return
+
+        hist = newdict(hist or {}, obj, self)
 
         for mod in itertools.chain(
             obj.modules,
@@ -520,15 +516,10 @@ class FileNode(BaseNode):
             obj.blockdata,
         ):
             for dep in mod.deplist:
-                if dep.hierarchy[0] == obj:
+                sourcefile = dep.hierarchy[0]
+                if sourcefile == obj:
                     continue
-                if dep.hierarchy[0] in hist:
-                    n = hist[dep.hierarchy[0]]
-                else:
-                    n = gd.get_node(
-                        dep.hierarchy[0],
-                        newdict(hist, obj, self),
-                    )
+                n = hist.get(sourcefile, gd.get_node(sourcefile, hist))
                 n.afferent.add(self)
                 self.efferent.add(n)
 
