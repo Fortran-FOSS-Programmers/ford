@@ -80,6 +80,10 @@ def make_project_graphs(tmp_path_factory):
         call two
         call other_sub
       end subroutine three
+
+      recursive subroutine four
+        call four
+      end subroutine four
     end program foo
     """
 
@@ -155,13 +159,21 @@ TYPE_GRAPH_KEY = ["Type"]
         ),
         (
             ["callgraph"],
-            ["proc~one", "proc~three", "proc~two", "other_sub", "program~foo"],
+            [
+                "proc~one",
+                "proc~three",
+                "proc~two",
+                "proc~four",
+                "other_sub",
+                "program~foo",
+            ],
             [
                 "proc~three->proc~one",
                 "proc~three->proc~two",
                 "proc~two->proc~one",
                 "proc~three->other_sub",
                 "program~foo->proc~three",
+                "proc~four->proc~four",
             ],
             PROC_GRAPH_KEY,
         ),
