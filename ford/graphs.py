@@ -208,6 +208,10 @@ class GraphData:
             registering children during node creation
 
         """
+        hist = hist or {}
+
+        if obj in hist:
+            return hist[obj]
 
         collection, _ = self._get_collection_and_node_type(obj)
         if obj not in collection:
@@ -231,8 +235,7 @@ class GraphData:
             procedure = ExternalSubroutine(procedure)
             procedure.proctype = "unknown"
 
-        result = hist.get(procedure, self.get_node(procedure, hist))
-        return cast(ProcNode, result)
+        return cast(ProcNode, self.get_node(procedure, hist))
 
     def get_type_node(
         self, type_: Union[FortranType, str], hist: NodeCollection
@@ -241,8 +244,7 @@ class GraphData:
             # Most likely a third-party type
             type_ = ExternalType(type_)
 
-        result = hist.get(type_, self.get_node(type_, hist))
-        return cast(TypeNode, result)
+        return cast(TypeNode, self.get_node(type_, hist))
 
 
 class BaseNode:
