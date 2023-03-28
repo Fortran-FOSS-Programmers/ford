@@ -140,6 +140,7 @@ class Documentation(object):
             self.data.get("graph_dir", ""),
             graphparent,
             self.data["coloured_edges"],
+            self.data["show_proc_parent"],
             save_graphs=bool(self.data.get("graph_dir", False)),
         )
 

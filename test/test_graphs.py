@@ -98,7 +98,7 @@ def make_project_graphs(tmp_path_factory):
     settings["graph"] = True
     project = create_project(settings)
 
-    graphs = GraphManager("", "", graphdir="", parentdir="..", coloured_edges=True)
+    graphs = GraphManager("", "", graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=False)
     for entity_list in [
         project.types,
         project.procedures,
