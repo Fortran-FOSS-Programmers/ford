@@ -87,7 +87,7 @@
       {% if project.procedures|length > 0 %}{% set count = count + 1 %}{% endif %}
       {% if project.types|length > 0 %}{% set count = count + 1 %}{% endif %}
       {% set max_length = max_frontpage_items|int %}
-      {% if (count != 0) and (max_length > 0) %}
+      {% if count and max_length %}
         {% set width = (12/count)|int %}
         <div class="row">
           <hr>
