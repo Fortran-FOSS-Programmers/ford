@@ -98,7 +98,9 @@ def make_project_graphs(tmp_path_factory):
     settings["graph"] = True
     project = create_project(settings)
 
-    graphs = GraphManager("", "", graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=False)
+    graphs = GraphManager(
+        "", "", graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=True
+    )
     for entity_list in [
         project.types,
         project.procedures,
@@ -135,15 +137,15 @@ TYPE_GRAPH_KEY = ["Type"]
         (
             ["usegraph"],
             [
-                "module~a",
-                "module~b",
-                "module~c",
-                "module~c_submod",
-                "module~c_subsubmod",
+                "a",
+                "b",
+                "c",
+                "c_submod",
+                "c_subsubmod",
                 "iso_fortran_env",
                 "external_mod",
-                "proc~three",
-                "program~foo",
+                "foo::three",
+                "foo",
             ],
             [
                 "module~b->module~a",
@@ -159,14 +161,7 @@ TYPE_GRAPH_KEY = ["Type"]
         ),
         (
             ["callgraph"],
-            [
-                "proc~one",
-                "proc~three",
-                "proc~two",
-                "proc~four",
-                "other_sub",
-                "program~foo",
-            ],
+            ["c::one", "foo::three", "c::two", "foo::four", "other_sub", "foo"],
             [
                 "proc~three->proc~one",
                 "proc~three->proc~two",
@@ -179,7 +174,7 @@ TYPE_GRAPH_KEY = ["Type"]
         ),
         (
             ["typegraph"],
-            ["type~base", "type~derived", "type~leaf", "external_type", "type~thing"],
+            ["base", "derived", "leaf", "external_type", "thing"],
             [
                 "type~leaf->type~derived",
                 "type~derived->type~base",
@@ -190,19 +185,13 @@ TYPE_GRAPH_KEY = ["Type"]
         ),
         (
             ["modules", "b", "usesgraph"],
-            ["module~a", "module~b"],
+            ["a", "b"],
             ["module~b->module~a"],
             MOD_GRAPH_KEY,
         ),
         (
             ["modules", "b", "usedbygraph"],
-            [
-                "module~b",
-                "module~c",
-                "module~c_submod",
-                "module~c_subsubmod",
-                "program~foo",
-            ],
+            ["b", "c", "c_submod", "c_subsubmod", "foo"],
             [
                 "module~c->module~b",
                 "module~c_submod->module~c",
@@ -213,31 +202,31 @@ TYPE_GRAPH_KEY = ["Type"]
         ),
         (
             ["types", "derived", "inhergraph"],
-            ["type~base", "type~derived"],
+            ["base", "derived"],
             ["type~derived->type~base"],
             TYPE_GRAPH_KEY,
         ),
         (
             ["types", "derived", "inherbygraph"],
-            ["type~derived", "type~leaf", "type~thing"],
+            ["derived", "leaf", "thing"],
             ["type~leaf->type~derived", "type~thing->type~derived"],
             TYPE_GRAPH_KEY,
         ),
         (
             ["procedures", "two", "callsgraph"],
-            ["proc~one", "proc~two"],
+            ["c::one", "c::two"],
             ["proc~two->proc~one"],
             PROC_GRAPH_KEY,
         ),
         (
             ["procedures", "two", "calledbygraph"],
-            ["proc~three", "proc~two", "program~foo"],
+            ["foo::three", "c::two", "foo"],
             ["proc~three->proc~two", "program~foo->proc~three"],
             PROC_GRAPH_KEY,
         ),
         (
             ["procedures", "three", "usesgraph"],
-            ["external_mod", "proc~three"],
+            ["external_mod", "foo::three"],
             ["proc~three->external_mod"],
             MOD_GRAPH_KEY,
         ),
@@ -267,7 +256,7 @@ def test_graphs(
 
     soup = BeautifulSoup(str(graph), features="html.parser")
     # Get nodes and edges just in the graph, and not in the legend
-    node_names = [s.title.text for s in soup.svg.find_all("g", class_="node")]
+    node_names = [s.find("text").text for s in soup.svg.find_all("g", class_="node")]
     edge_names = [s.title.text for s in soup.svg.find_all("g", class_="edge")]
 
     assert sorted(node_names) == sorted(expected_nodes)
