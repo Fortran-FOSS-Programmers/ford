@@ -6,7 +6,7 @@
 
 You can specify various options and information for your project in the
 meta-data of your project file. Quoting from the `Markdown
-Meta-Data <https://pythonhosted.org/Markdown/extensions/meta_data.html>`__
+Meta-Data <https://python-markdown.github.io/extensions/meta_data/>`__
 page (and not intending to give an example of the meta-data fields
 supported by FORD):
 
