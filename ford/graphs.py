@@ -423,8 +423,8 @@ class ProcNode(BaseNode):
         super().__init__(obj, gd)
 
         if gd.show_proc_parent:
-            if hasattr(obj, "parent"):
-                self.attribs["label"] = obj.parent.name + "::" + self.name
+            if parent := getattr(obj, "parent", None):
+                self.attribs["label"] = f"{parent.name}::{self.name}"
 
         self.uses = set()
         self.calls = set()
