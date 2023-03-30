@@ -872,6 +872,15 @@ maximum or, if the even a depth of one would result in more nodes than
 the maximum, it will be restructured to give a clearer visualisation.
 (*default:* 100000000)
 
+.. _option-show_proc_parent:
+
+show_proc_parent
+^^^^^^^^^^^^^^^^
+
+If ``true`` then the parent module of a procedure will be displayed in
+the graphs as follows: parent::procedure. 
+(*default:* ``false``)
+
 Output
 ------
 

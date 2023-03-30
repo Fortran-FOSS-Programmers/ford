@@ -190,6 +190,7 @@ DEFAULT_SETTINGS = {
     "quiet": False,
     "revision": None,
     "search": True,
+    "show_proc_parent": False,
     "sort": "src",
     "source": False,
     "src_dir": ["./src"],

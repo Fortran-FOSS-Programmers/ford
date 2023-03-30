@@ -131,10 +131,12 @@ class GraphData:
         Path to top of site
     coloured_edges:
         If true, arrows between nodes are coloured, otherwise they are black
+    show_proc_parent:
+        If true, the parent of a procedure is shown in the node label
 
     """
 
-    def __init__(self, parent_dir: str, coloured_edges: bool):
+    def __init__(self, parent_dir: str, coloured_edges: bool, show_proc_parent: bool):
         self.submodules: NodeCollection = {}
         self.modules: NodeCollection = {}
         self.types: NodeCollection = {}
@@ -144,6 +146,7 @@ class GraphData:
         self.blockdata: NodeCollection = {}
         self.parent_dir = parent_dir
         self.coloured_edges = coloured_edges
+        self.show_proc_parent = show_proc_parent
 
     def _get_collection_and_node_type(
         self, obj: FortranContainer
@@ -418,6 +421,11 @@ class ProcNode(BaseNode):
         # ToDo: Figure out appropriate way to handle interfaces to routines in submodules.
         self.proctype = getattr(obj, "proctype", "")
         super().__init__(obj, gd)
+
+        if gd.show_proc_parent:
+            if parent := getattr(obj, "parent", None):
+                self.attribs["label"] = f"{parent.name}::{self.name}"
+
         self.uses = set()
         self.calls = set()
         self.called_by = set()
@@ -547,7 +555,7 @@ def _dashed_edge(tail, head, colour, label=None):
 if graphviz_installed:
     # Create the legends for the graphs. These are their own separate graphs,
     # without edges
-    gd = GraphData("", False)
+    gd = GraphData("", False, False)
 
     # Graph nodes for a bunch of fake entities that we'll use in the legend
     _module = gd.get_node(ExternalModule("Module"))
@@ -734,7 +742,7 @@ class FortranGraph:
         # add root nodes to the graph
         for n in sorted(self.root):
             if len(self.root) == 1:
-                self.dot.node(n.ident, label=n.name)
+                self.dot.node(n.ident, label=n.attribs["label"])
             else:
                 self.dot.node(n.ident, **n.attribs)
             self.added.add(n)
@@ -1225,6 +1233,9 @@ class GraphManager:
     coloured_edges:
         If true, arrows in graphs use different colours to help
         distinguish them
+    show_proc_parent:
+        If true, show the parent of a procedure in the call graph
+        as part of the label
     save_graphs:
         If true, save graphs as separate files, as well as embedding
         them in the HTML
@@ -1237,6 +1248,7 @@ class GraphManager:
         graphdir: os.PathLike,
         parentdir: str,
         coloured_edges: bool,
+        show_proc_parent: bool,
         save_graphs: bool = False,
     ):
         self.graph_objs: List[FortranContainer] = []
@@ -1252,7 +1264,7 @@ class GraphManager:
         self.typegraph = None
         self.callgraph = None
         self.filegraph = None
-        self.data = GraphData(parentdir, coloured_edges)
+        self.data = GraphData(parentdir, coloured_edges, show_proc_parent)
 
     def register(self, obj: FortranContainer):
         """Register ``obj`` as a node to be used in graphs"""
