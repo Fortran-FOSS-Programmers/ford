@@ -348,7 +348,16 @@ def test_graphs_as_table(tmp_path):
     # These are the spacing 'w's
     num_ws = len(soup.table.find_all(class_="solidBottom"))
 
-    expected_node_names = ["foo::a", "foo::b", "foo::c", "foo::d", "foo::e", "foo::f", "foo::g", "foo::h"]
+    expected_node_names = [
+        "foo::a",
+        "foo::b",
+        "foo::c",
+        "foo::d",
+        "foo::e",
+        "foo::f",
+        "foo::g",
+        "foo::h",
+    ]
 
     assert node_names == expected_node_names
     assert num_arrows == len(expected_node_names)
