@@ -534,21 +534,31 @@ class FileNode(BaseNode):
                 self.efferent.add(n)
 
 
-def _edge(tail, head, style, colour, label=None):
+def _edge(
+    tail: BaseNode, head: BaseNode, style: str, colour: str, label: Optional[str] = None
+) -> Dict:
     return {
-        "tail_name": tail.ident,
-        "head_name": head.ident,
-        "style": style,
-        "color": colour,
-        "label": label,
+        "tail_node": tail,
+        "head_node": head,
+        "edge": {
+            "tail_name": tail.ident,
+            "head_name": head.ident,
+            "style": style,
+            "color": colour,
+            "label": label,
+        },
     }
 
 
-def _solid_edge(tail, head, colour, label=None):
+def _solid_edge(
+    tail: BaseNode, head: BaseNode, colour: str, label: Optional[str] = None
+) -> Dict:
     return _edge(tail, head, "solid", colour, label)
 
 
-def _dashed_edge(tail, head, colour, label=None):
+def _dashed_edge(
+    tail: BaseNode, head: BaseNode, colour: str, label: Optional[str] = None
+) -> Dict:
     return _edge(tail, head, "dashed", colour, label)
 
 
@@ -787,7 +797,7 @@ class FortranGraph:
             strattribs = {key: str(a) for key, a in n.attribs.items()}
             self.dot.node(n.ident, **strattribs)
         for edge in edges:
-            self.dot.edge(**edge)
+            self.dot.edge(**edge["edge"])
         self.added.update(nodes)
         return True
 
@@ -824,53 +834,11 @@ class FortranGraph:
                 f"Warning: Graph {self.ident} is truncated after {self.truncated} hops"
             )
 
-        rettext = ""
         if graph_as_table:
-            # generate a table graph if maximum number of nodes gets exceeded in
-            # the first hop and there is only one root node.
-            root = f'<td class="root" rowspan="{len(self.hop_nodes) * 2 + 1}">{self.root[0].attribs["label"]}</td>'
-            if self.hop_edges[0][0].ident == self.root[0].ident:
-                key = 1
-                root_on_left = self.RANKDIR == "LR"
-                if root_on_left:
-                    arrowtemp = '<td class="{0}{1}">{2}</td><td rowspan="2" class="triangle-right"></td>'
-                else:
-                    arrowtemp = '<td rowspan="2" class="triangle-left"></td><td class="{0}{1}">{2}</td>'
-            else:
-                key = 0
-                root_on_left = self.RANKDIR == "RL"
-                if root_on_left:
-                    arrowtemp = '<td rowspan="2" class="triangle-left"></td><td class="{0}{1}">{2}</td>'
-                else:
-                    arrowtemp = '<td class="{0}{1}">{2}</td><td rowspan="2" class="triangle-right"></td>'
-            # sort nodes in alphabetical order
-            self.hop_edges.sort(key=lambda x: x[key].attribs["label"].lower())
-            rows = ""
-            for e in self.hop_edges:
-                n = e[key]
-                if len(e) == 5:
-                    arrow = arrowtemp.format(e[2], "Text", e[4])
-                else:
-                    arrow = arrowtemp.format(e[2], "Bottom", "w")
-                node = f'<td rowspan="2" class="node" bgcolor="{n.attribs["color"]}">'
-                try:
-                    node += (
-                        f'<a href="{n.attribs["URL"]}">{n.attribs["label"]}</a></td>'
-                    )
-                except KeyError:
-                    node += n.attribs["label"] + "</td>"
-
-                root_arrow = (
-                    f"{root}{arrow}{node}" if root_on_left else f"{node}{arrow}{root}"
-                )
-                rows += f"<tr>{root_arrow}</tr>\n"
-                rows += f'<tr><td class="{e[2]}Top">w</td></tr>\n'
-                root = ""
-            rettext += f'<table class="graph">\n{rows}</table>\n'
-
+            rettext = self._make_graph_as_table()
         # generate svg graph
         else:
-            rettext += f'<div class="depgraph">{self.svg_src}</div>'
+            rettext = f'<div class="depgraph">{self.svg_src}</div>'
             # add zoom ability for big graphs
             if self.scaled:
                 zoomName = re.sub(r"[^\w]", "", self.ident)
@@ -897,6 +865,60 @@ class FortranGraph:
           </div>
         </div>"""
         return rettext + legend_graph
+
+    def _make_graph_as_table(self):
+        # generate a table graph if maximum number of nodes gets exceeded in
+        # the first hop and there is only one root node.
+
+        # Base templates for the arrows along edges
+        arrow_shaft = '<td class="{style}{text_loc}">{label}</td>'
+        arrow_right = f'{arrow_shaft}<td rowspan="2" class="triangle-right"></td>'
+        arrow_left = f'<td rowspan="2" class="triangle-left"></td>{arrow_shaft}'
+
+        # Work out if the root node is the head or tail of the
+        # arrow, and which direction the arrows point in
+        if self.hop_edges[0]["edge"]["tail_name"] == self.root[0].ident:
+            key = "head_node"
+            root_on_left = self.RANKDIR == "LR"
+            arrowtemp = arrow_right if root_on_left else arrow_left
+        else:
+            key = "tail_node"
+            root_on_left = self.RANKDIR == "RL"
+            arrowtemp = arrow_left if root_on_left else arrow_right
+
+        # Sort nodes in alphabetical order by either the head or
+        # tail node's label
+        self.hop_edges.sort(key=lambda x: x[key].attribs["label"].lower())
+
+        # Now construct each node and associated edge as a single row in a table.
+        # The root node takes up one column and spans all rows
+        total_rows = len(self.hop_nodes) * 2 + 1
+        root = f'<td class="root" rowspan="{total_rows}">{self.root[0].attribs["label"]}</td>'
+        rows = ""
+        for edge in self.hop_edges:
+            style = edge["edge"]["style"]
+            # The 'w' here is in white and is used to correctly position the arrow
+            # shaft in the centre of the arrowhead
+            label = edge["edge"]["label"] or "w"
+            text_loc = "Bottom" if label == "w" else "Text"
+            arrow_args = {"style": style, "label": label, "text_loc": text_loc}
+            arrow = arrowtemp.format(**arrow_args)
+            attribs = edge[key].attribs
+            try:
+                link = f'<a href="{attribs["URL"]}">{attribs["label"]}</a></td>'
+            except KeyError:
+                link = f'{attribs["label"]}</td>'
+
+            node = f'<td rowspan="2" class="node" bgcolor="{attribs["color"]}">{link}'
+
+            root_arrow = (
+                f"{root}{arrow}{node}" if root_on_left else f"{node}{arrow}{root}"
+            )
+            rows += f'<tr>{root_arrow}</tr>\n<tr><td class="{style}Top">w</td></tr>\n'
+            # Root node is handled by first row in table, so clear it
+            root = ""
+
+        return f'<table class="graph">\n{rows}</table>\n'
 
     def __nonzero__(self):
         return self.__bool__()
