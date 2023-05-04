@@ -55,12 +55,24 @@ def make_project_graphs(tmp_path_factory):
         type(derived) :: part
       end type thing
 
+      type alpha
+      contains
+        procedure :: five
+        procedure :: six
+      end type alpha
+
     contains
       subroutine one
       end subroutine one
       subroutine two
         call one
       end subroutine two
+      subroutine five
+      end subroutine five
+      function six(this) result(res)
+        real :: res
+        res = 1
+      end function six
     end module c
 
     submodule (c) c_submod
@@ -72,6 +84,10 @@ def make_project_graphs(tmp_path_factory):
     program foo
       use c
       call three
+      real :: x
+      type(alpha) :: y
+      call y%five()
+      x = y%six()
     contains
       subroutine three
         use external_mod
@@ -161,7 +177,7 @@ TYPE_GRAPH_KEY = ["Type"]
         ),
         (
             ["callgraph"],
-            ["c::one", "foo::three", "c::two", "foo::four", "other_sub", "foo"],
+            ["c::one", "foo::three", "c::two", "foo::four", "other_sub", "foo","c::alpha%five","c::alpha%six"],
             [
                 "proc~three->proc~one",
                 "proc~three->proc~two",
@@ -169,12 +185,14 @@ TYPE_GRAPH_KEY = ["Type"]
                 "proc~three->other_sub",
                 "program~foo->proc~three",
                 "proc~four->proc~four",
+                "program~foo->proc~five",
+                "program~foo->proc~six",
             ],
             PROC_GRAPH_KEY,
         ),
         (
             ["typegraph"],
-            ["base", "derived", "leaf", "external_type", "thing"],
+            ["base", "derived", "leaf", "external_type", "thing", "alpha"],
             [
                 "type~leaf->type~derived",
                 "type~derived->type~base",

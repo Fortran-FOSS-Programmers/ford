@@ -422,9 +422,15 @@ class ProcNode(BaseNode):
         self.proctype = getattr(obj, "proctype", "")
         super().__init__(obj, gd)
 
-        if gd.show_proc_parent:
-            if parent := getattr(obj, "parent", None):
-                self.attribs["label"] = f"{parent.name}::{self.name}"
+        if parent := getattr(obj, "parent", None):
+            parent_label = f"{parent.name}::"
+        else:
+            parent_label = ""
+        if binding := getattr(obj, "binding", None):
+            binding_label = f"{binding.parent.name}%"
+        else:
+            binding_label = ""
+        self.attribs["label"] = f"{parent_label}{binding_label}{self.name}"
 
         self.uses = set()
         self.calls = set()
