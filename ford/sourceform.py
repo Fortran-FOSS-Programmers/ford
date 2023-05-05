@@ -569,7 +569,7 @@ class FortranContainer(FortranBase):
     BOUNDPROC_RE = re.compile(
         r"""^(?P<generic>generic|procedure)\s*  # Required keyword
         (?P<prototype>\([^()]*\))?\s*           # Optional interface name
-        (?P<attributes>.*)\s*::\s*              # Optional list of attributes
+        (?:,\s*(?P<attributes>\w[^:]*))?\s*::\s* # Optional list of attributes
         (?P<names>\w.*)$                        # Required name(s)
         """,
         re.IGNORECASE | re.VERBOSE,
@@ -2143,17 +2143,17 @@ class FortranBoundProcedure(FortranBase):
     def _initialize(self, line: re.Match):
         self.attribs = []
         self.deferred = False
-        if attribstr := line["attributes"]:
-            for attribute in ford.utils.paren_split(",", attribstr[1:]):
-                attribute = attribute.strip()
-                # Preserve original capitalisation -- TODO: needed?
-                attribute_lower = attribute.lower()
-                if attribute_lower in ["public", "private"]:
-                    self.permission = attribute_lower
-                elif attribute_lower == "deferred":
-                    self.deferred = True
-                else:
-                    self.attribs.append(attribute)
+
+        for attribute in ford.utils.paren_split(",", line["attributes"] or ""):
+            attribute = attribute.strip()
+            # Preserve original capitalisation -- TODO: needed?
+            attribute_lower = attribute.lower()
+            if attribute_lower in ["public", "private"]:
+                self.permission = attribute_lower
+            elif attribute_lower == "deferred":
+                self.deferred = True
+            else:
+                self.attribs.append(attribute)
 
         split = self.POINTS_TO_RE.split(line["names"])
         self.name = split[0].strip()
