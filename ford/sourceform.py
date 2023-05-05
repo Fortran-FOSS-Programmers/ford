@@ -1921,9 +1921,7 @@ class FortranInterface(FortranContainer):
         self.generic = bool(self.name)
         self.abstract = bool(line.group(1))
         if self.generic and self.abstract:
-            raise Exception(
-                "Generic interface {} can not be abstract".format(self.name)
-            )
+            raise Exception(f"Generic interface '{self.name}' can not be abstract")
 
     def correlate(self, project):
         self.all_absinterfaces = self.parent.all_absinterfaces
