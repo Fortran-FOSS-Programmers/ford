@@ -1055,9 +1055,9 @@ class FortranCodeUnit(FortranContainer):
                 argname = False
                 for a in getattr(self, "args", []):
                     # Consider allowing procedures passed as arguments to be included in callgraphs
-                    argname = argname or call_low == a.name.lower()
+                    argname |= call_low == a.name.lower()
                 if hasattr(self, "retvar"):
-                    argname = argname or call_low == self.retvar.name.lower()
+                    argname |= call_low == self.retvar.name.lower()
                 if (
                     not argname
                     and call_low not in self.all_vars
@@ -1065,20 +1065,20 @@ class FortranCodeUnit(FortranContainer):
                 ):
                     tmplst.append(call)
             self.calls = tmplst
-            fileprocs = {}
-            if self.parobj == "sourcefile":
-                for proc in self.parent.subroutines + self.parent.functions:
-                    fileprocs[proc.name.lower()] = proc
-            for i in range(len(self.calls)):
-                if self.calls[i].lower() in self.all_procs:
-                    self.calls[i] = self.all_procs[self.calls[i].lower()]
-                elif self.calls[i].lower() in fileprocs:
-                    self.calls[i] = fileprocs[self.calls[i].lower()]
-                else:
-                    for proc in project.procedures:
-                        if self.calls[i] == proc.name.lower():
-                            self.calls[i] = proc
-                            break
+
+            procedures = (
+                {proc.name.lower(): proc for proc in self.parent.routines}
+                if self.parobj == "sourcefile"
+                else {}
+            )
+            procedures.update({proc.name.lower(): proc for proc in project.procedures})
+            procedures.update(self.all_procs)
+
+            for i, call in enumerate(self.calls):
+                try:
+                    self.calls[i] = procedures[call.lower()]
+                except KeyError:
+                    pass
 
         if self.obj == "submodule":
             self.ancestry = []
@@ -1331,7 +1331,7 @@ class FortranModule(FortranCodeUnit):
         self.variables = [v for v in self.variables if "external" not in v.attribs]
 
         def should_be_public(item: FortranBase) -> bool:
-            return item.permission == "public" or item.permission == "protected"
+            return item.permission in ["public", "protected"]
 
         def filter_public(collection: list) -> dict:
             return {
