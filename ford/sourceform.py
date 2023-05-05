@@ -1960,34 +1960,22 @@ class FortranInterface(FortranContainer):
         self.sort_components()
 
     def _cleanup(self):
-        if self.abstract:
-            contents = []
-            for proc in self.routines:
-                proc.visible = False
-                item = copy.copy(self)
-                item.procedure = proc
-                item.procedure.parent = item
-                del item.functions
-                del item.modprocs
-                del item.subroutines
-                item.name = proc.name
-                item.permission = proc.permission
-                contents.append(item)
-            self.contents = contents
-        elif not self.generic:
-            contents = []
-            for proc in self.routines:
-                proc.visible = False
-                item = copy.copy(self)
-                item.procedure = proc
-                item.procedure.parent = item
-                del item.functions
-                del item.modprocs
-                del item.subroutines
-                item.name = proc.name
-                item.permission = proc.permission
-                contents.append(item)
-            self.contents = contents
+        if not self.abstract and self.generic:
+            return
+
+        contents = []
+        for proc in self.routines:
+            proc.visible = False
+            item = copy.copy(self)
+            item.procedure = proc
+            item.procedure.parent = item
+            del item.functions
+            del item.modprocs
+            del item.subroutines
+            item.name = proc.name
+            item.permission = proc.permission
+            contents.append(item)
+        self.contents = contents
 
 
 class FortranFinalProc(FortranBase):
