@@ -566,9 +566,13 @@ class FortranContainer(FortranBase):
         re.IGNORECASE,
     )
     INTERFACE_RE = re.compile(r"^(abstract\s+)?interface(?:\s+(.+))?$", re.IGNORECASE)
-    # ~ ABS_INTERFACE_RE = re.compile(r"^abstract\s+interface(?:\s+(\S.+))?$",re.IGNORECASE)
     BOUNDPROC_RE = re.compile(
-        r"^(generic|procedure)\s*(\([^()]*\))?\s*(.*)\s*::\s*(\w.*)", re.IGNORECASE
+        r"""^(?P<generic>generic|procedure)\s*  # Required keyword
+        (?P<prototype>\([^()]*\))?\s*           # Optional interface name
+        (?P<attributes>.*)\s*::\s*              # Optional list of attributes
+        (?P<names>\w.*)$                        # Required name(s)
+        """,
+        re.IGNORECASE | re.VERBOSE,
     )
     COMMON_RE = re.compile(r"^common(?:\s*/\s*(\w+)\s*/\s*|\s+)(\w+.*)", re.IGNORECASE)
     COMMON_SPLIT_RE = re.compile(r"\s*(/\s*\w+\s*/)\s*", re.IGNORECASE)
@@ -838,26 +842,29 @@ class FortranContainer(FortranBase):
                     self.print_error(line, "Unexpected ENUM")
 
             elif (match := self.BOUNDPROC_RE.match(line)) and incontains:
-                if hasattr(self, "boundprocs"):
-                    split = match.group(4).split(",")
-                    split.reverse()
-                    if match.group(1).lower() == "generic" or len(split) == 1:
-                        self.boundprocs.append(
-                            FortranBoundProcedure(source, match, self, child_permission)
-                        )
-                    else:
-                        for bind in split:
-                            pseudo_line = line[: match.start(4)] + bind
-                            self.boundprocs.append(
-                                FortranBoundProcedure(
-                                    source,
-                                    self.BOUNDPROC_RE.match(pseudo_line),
-                                    self,
-                                    child_permission,
-                                )
-                            )
-                else:
+                if not hasattr(self, "boundprocs"):
                     self.print_error(line, "Unexpected type-bound procedure")
+                    continue
+
+                names = match["names"].split(",")
+                # Generic procedures or single name
+                if match["generic"].lower() == "generic" or len(names) == 1:
+                    self.boundprocs.append(
+                        FortranBoundProcedure(source, match, self, child_permission)
+                    )
+                    continue
+
+                # For multiple procedures, parse each one as if it
+                # were on a line by itself
+                for bind in reversed(names):
+                    pseudo_line = self.BOUNDPROC_RE.match(
+                        line[: match.start("names")] + bind
+                    )
+                    self.boundprocs.append(
+                        FortranBoundProcedure(
+                            source, pseudo_line, self, child_permission
+                        )
+                    )
 
             elif match := self.COMMON_RE.match(line):
                 if hasattr(self, "common"):
@@ -2133,27 +2140,25 @@ class FortranBoundProcedure(FortranBase):
     An object representing a type-bound procedure, possibly overloaded.
     """
 
-    def _initialize(self, line):
-        attribstr = line.group(3)
+    def _initialize(self, line: re.Match):
         self.attribs = []
         self.deferred = False
-        if attribstr:
-            tmp_attribs = ford.utils.paren_split(",", attribstr[1:])
-            for i in range(len(tmp_attribs)):
-                tmp_attribs[i] = tmp_attribs[i].strip()
-                if tmp_attribs[i].lower() == "public":
-                    self.permission = "public"
-                elif tmp_attribs[i].lower() == "private":
-                    self.permission = "private"
-                elif tmp_attribs[i].lower() == "deferred":
+        if attribstr := line["attributes"]:
+            for attribute in ford.utils.paren_split(",", attribstr[1:]):
+                attribute = attribute.strip()
+                # Preserve original capitalisation -- TODO: needed?
+                attribute_lower = attribute.lower()
+                if attribute_lower in ["public", "private"]:
+                    self.permission = attribute_lower
+                elif attribute_lower == "deferred":
                     self.deferred = True
                 else:
-                    self.attribs.append(tmp_attribs[i])
-        rest = line.group(4)
-        split = self.POINTS_TO_RE.split(rest)
+                    self.attribs.append(attribute)
+
+        split = self.POINTS_TO_RE.split(line["names"])
         self.name = split[0].strip()
-        self.generic = line.group(1).lower() == "generic"
-        self.proto = line.group(2)
+        self.generic = line["generic"].lower() == "generic"
+        self.proto = line["prototype"]
         if self.proto:
             self.proto = self.proto[1:-1].strip()
         self.bindings = []
@@ -2163,10 +2168,6 @@ class FortranBoundProcedure(FortranBase):
                 self.bindings.append(bind.strip())
         else:
             self.bindings.append(self.name)
-        if line.group(2):
-            self.prototype = line.group(2)[1:-1]
-        else:
-            self.prototype = None
 
     def correlate(self, project):
         self.all_procs = self.parent.all_procs
