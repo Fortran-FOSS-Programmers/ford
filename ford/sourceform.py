@@ -2174,39 +2174,34 @@ class FortranBoundProcedure(FortranBase):
         self.all_procs = self.parent.all_procs
         self.protomatch = False
         if self.proto:
-            if self.proto.lower() in self.all_procs:
-                self.proto = self.all_procs[self.proto.lower()]
+            proto_lower = self.proto.lower()
+            if proto_lower in self.all_procs:
+                self.proto = self.all_procs[proto_lower]
                 self.protomatch = True
-            elif self.proto.lower() in self.parent.all_absinterfaces:
-                self.proto = self.parent.all_absinterfaces[self.proto.lower()]
+            elif proto_lower in self.parent.all_absinterfaces:
+                self.proto = self.parent.all_absinterfaces[proto_lower]
                 self.protomatch = True
-            # else:
-            #    self.proto = FortranSpoof(self.proto, self, 'INTERFACE')
-            #    self.protomatch = True
+
         if self.generic:
-            for i in range(len(self.bindings)):
-                for proc in self.parent.boundprocs:
-                    if type(self.bindings[i]) is str:
-                        if proc.name and proc.name.lower() == self.bindings[i].lower():
-                            self.bindings[i] = proc
-                            break
-                    else:
-                        if (
-                            proc.name
-                            and proc.name.lower() == self.bindings[i].name.lower()
-                        ):
-                            self.bindings[i] = proc
-                            break
-                # else:
-                #    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
+            parent_boundprocs = {
+                proc.name.lower(): proc for proc in self.parent.boundprocs if proc
+            }
+
+            for i, binding in enumerate(self.bindings):
+                binding_name = getattr(binding, "name", binding).lower()
+
+                try:
+                    self.bindings[i] = parent_boundprocs[binding_name]
+                except KeyError:
+                    pass
+
         elif not self.deferred:
             for i in range(len(self.bindings)):
-                if self.bindings[i].lower() in self.all_procs:
+                try:
                     self.bindings[i] = self.all_procs[self.bindings[i].lower()]
                     self.bindings[i].binding = self
+                except KeyError:
                     break
-            # else:
-            #    self.bindings[i] = FortranSpoof(self.bindings[i], self.parent, 'BOUNDPROC')
 
         self.sort_components()
 
