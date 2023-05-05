@@ -1527,3 +1527,27 @@ def test_function_whitespace(parse_fortran_file):
     function = fortran_file.functions[0]
     arg_names = [arg.name for arg in function.args]
     assert arg_names == ["a", "b", "c", "d"]
+
+
+def test_bind_name_subroutine(parse_fortran_file):
+    data = """\
+    subroutine init() bind(C, name="c_init")
+    end subroutine init
+    """
+
+    fortran_file = parse_fortran_file(data)
+    subroutine = fortran_file.subroutines[0]
+
+    assert subroutine.bindC == 'C, name="c_init"'
+
+
+def test_bind_name_function(parse_fortran_file):
+    data = """\
+    integer function foo() bind(C, name="c_foo")
+    end function foo
+    """
+
+    fortran_file = parse_fortran_file(data)
+    function = fortran_file.functions[0]
+
+    assert function.bindC == 'C, name="c_foo"'

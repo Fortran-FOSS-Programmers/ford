@@ -1468,7 +1468,35 @@ def _list_of_procedure_attributes(attribute_string: str) -> Tuple[List[str], str
     return attribute_list, attribute_string.replace(" ", "")
 
 
-class FortranSubroutine(FortranCodeUnit):
+class FortranProcedure(FortranCodeUnit):
+    """Base class for subroutines and functions for common functionality"""
+
+    def _parse_bind_C(self, bind_C_text: Optional[str]):
+        """Parses a `bind(...)` attribute"""
+
+        if bind_C_text is None:
+            self.bindC = None
+            return
+
+        # Shouldn't have parentheses in, but just to be safe, let's
+        # remove any
+        if "(" in bind_C_text or ")" in bind_C_text:
+            bind_C_text = ford.utils.get_parens(bind_C_text, -1)
+
+        self.bindC = bind_C_text
+
+        # Now we have to replace any quoted text that has previously
+        # been removed
+        search_from = 0
+        while quote := QUOTES_RE.search(self.bindC[search_from:]):
+            num = int(quote.group()[1:-1])
+            self.bindC = self.bindC[0:search_from] + QUOTES_RE.sub(
+                self.parent.strings[num], self.bindC[search_from:], count=1
+            )
+            search_from += QUOTES_RE.search(self.bindC[search_from:]).end(0)
+
+
+class FortranSubroutine(FortranProcedure):
     """
     An object representing a Fortran subroutine and holding all of said
     subroutine's contents.
@@ -1489,7 +1517,7 @@ class FortranSubroutine(FortranCodeUnit):
             # Empty argument lists will contain the empty string, so we need to remove it
             self.args = [arg for arg in arguments if arg]
 
-        self.bindC = line["bindC"]
+        self._parse_bind_C(line["bindC"])
         self.variables = []
         self.enums = []
         self.uses = []
@@ -1552,7 +1580,7 @@ class FortranSubroutine(FortranCodeUnit):
         self.variables = [v for v in self.variables if "external" not in v.attribs]
 
 
-class FortranFunction(FortranCodeUnit):
+class FortranFunction(FortranProcedure):
     """
     An object representing a Fortran function and holding all of said function's
     contents.
@@ -1587,18 +1615,7 @@ class FortranFunction(FortranCodeUnit):
         # Empty argument lists will contain the empty string, so we need to remove it
         self.args = [arg for arg in arguments if arg]
 
-        try:
-            self.bindC = ford.utils.get_parens(line["bindC"], -1)[0:-1]
-        except (RuntimeError, TypeError):
-            self.bindC = line["bindC"]
-        if self.bindC:
-            search_from = 0
-            while quote := QUOTES_RE.search(self.bindC[search_from:]):
-                num = int(quote.group()[1:-1])
-                self.bindC = self.bindC[0:search_from] + QUOTES_RE.sub(
-                    self.parent.strings[num], self.bindC[search_from:], count=1
-                )
-                search_from += QUOTES_RE.search(self.bindC[search_from:]).end(0)
+        self._parse_bind_C(line["bindC"])
         self.variables = []
         self.enums = []
         self.uses = []
