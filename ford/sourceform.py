@@ -1452,6 +1452,14 @@ def _list_of_procedure_attributes(attribute_string: str) -> Tuple[List[str], str
     return attribute_list, attribute_string.replace(" ", "")
 
 
+def implicit_type(name: str) -> str:
+    """Map names to implicit types"""
+
+    if name[0].lower() in "ijklmn":
+        return "integer"
+    return "real"
+
+
 class FortranProcedure(FortranCodeUnit):
     """Base class for subroutines and functions for common functionality"""
 
@@ -1547,26 +1555,13 @@ class FortranProcedure(FortranCodeUnit):
 
         return super().get_dir()
 
-
-class FortranSubroutine(FortranProcedure):
-    """
-    An object representing a Fortran subroutine and holding all of said
-    subroutine's contents.
-    """
-
-    def _initialize(self, line: re.Match):
-        super()._initialize(**line.groupdict())
-        self.proctype = "Subroutine"
-
     def _cleanup(self):
-        self.all_procs = {}
-        for p in self.routines:
-            self.all_procs[p.name.lower()] = p
+        self.all_procs = {p.name.lower(): p for p in self.routines}
         for interface in self.interfaces:
             if not interface.abstract:
                 self.all_procs[interface.name.lower()] = interface
             if interface.generic:
-                for proc in interface.iterator("subroutines", "functions"):
+                for proc in interface.routines:
                     self.all_procs[proc.name.lower()] = proc
         for i in range(len(self.args)):
             for var in self.variables:
@@ -1584,14 +1579,22 @@ class FortranSubroutine(FortranProcedure):
                             self.args[i].parent = self
                             break
             if type(self.args[i]) == str:
-                if self.args[i][0].lower() in "ijklmn":
-                    vartype = "integer"
-                else:
-                    vartype = "real"
-                self.args[i] = FortranVariable(self.args[i], vartype, self)
-                self.args[i].doc = ""
+                self.args[i] = FortranVariable(
+                    self.args[i], implicit_type(self.args[i]), self, doc=""
+                )
         self.process_attribs()
         self.variables = [v for v in self.variables if "external" not in v.attribs]
+
+
+class FortranSubroutine(FortranProcedure):
+    """
+    An object representing a Fortran subroutine and holding all of said
+    subroutine's contents.
+    """
+
+    def _initialize(self, line: re.Match):
+        super()._initialize(**line.groupdict())
+        self.proctype = "Subroutine"
 
 
 class FortranFunction(FortranProcedure):
@@ -1621,37 +1624,6 @@ class FortranFunction(FortranProcedure):
             )
 
     def _cleanup(self):
-        self.all_procs = {}
-        for p in self.routines:
-            self.all_procs[p.name.lower()] = p
-        for interface in self.interfaces:
-            if not interface.abstract:
-                self.all_procs[interface.name.lower()] = interface
-            if interface.generic:
-                for proc in interface.iterator("subroutines", "functions"):
-                    self.all_procs[proc.name.lower()] = proc
-        for i in range(len(self.args)):
-            for var in self.variables:
-                if self.args[i].lower() == var.name.lower():
-                    self.args[i] = var
-                    self.variables.remove(var)
-                    break
-            if type(self.args[i]) == str:
-                for intr in self.interfaces:
-                    if not (intr.abstract or intr.generic):
-                        proc = intr.procedure
-                        if proc.name.lower() == self.args[i].lower():
-                            self.args[i] = proc
-                            self.interfaces.remove(intr)
-                            self.args[i].parent = self
-                            break
-            if type(self.args[i]) == str:
-                if self.args[i][0].lower() in "ijklmn":
-                    vartype = "integer"
-                else:
-                    vartype = "real"
-                self.args[i] = FortranVariable(self.args[i], vartype, self)
-                self.args[i].doc = ""
         if type(self.retvar) != FortranVariable:
             for var in self.variables:
                 if var.name.lower() == self.retvar.lower():
@@ -1659,13 +1631,11 @@ class FortranFunction(FortranProcedure):
                     self.variables.remove(var)
                     break
             else:
-                if self.retvar[0].lower() in "ijklmn":
-                    vartype = "integer"
-                else:
-                    vartype = "real"
-                self.retvar = FortranVariable(self.retvar, vartype, self)
-        self.process_attribs()
-        self.variables = [v for v in self.variables if "external" not in v.attribs]
+                self.retvar = FortranVariable(
+                    self.retvar, implicit_type(self.retvar), self
+                )
+
+        super()._cleanup()
 
 
 class FortranSubmoduleProcedure(FortranCodeUnit):
@@ -2087,7 +2057,7 @@ class FortranVariable(FortranBase):
         self.kind = kind
         self.strlen = strlen
         self.proto = copy.copy(proto)
-        self.doc = copy.copy(doc) or []
+        self.doc = copy.copy(doc) if doc is not None else []
         self.permission = permission
         self.points = points
         self.parameter = parameter
@@ -2420,12 +2390,9 @@ class FortranCommon(FortranBase):
                 except ValueError:
                     pass
             else:
-                if self.variables[i][0].lower() in "ijklmn":
-                    vartype = "integer"
-                else:
-                    vartype = "real"
-                self.variables[i] = FortranVariable(self.variables[i], vartype, self)
-                self.variables[i].doc = ""
+                self.variables[i] = FortranVariable(
+                    self.variables[i], implicit_type(self.variables[i]), self, doc=""
+                )
 
         if self.name in project.common:
             self.other_uses = project.common[self.name]
