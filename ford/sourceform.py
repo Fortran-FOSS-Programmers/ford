@@ -1274,21 +1274,14 @@ class FortranSourceFile(FortranContainer):
             settings["encoding"],
         )
 
-        FortranContainer.__init__(self, source, "")
+        super().__init__(source, "")
         with open(self.path, "r", encoding=settings["encoding"]) as readobj:
             self.raw_src = readobj.read()
-        if self.fixed:
-            self.src = highlight(
-                self.raw_src,
-                FortranFixedLexer(),
-                HtmlFormatter(lineanchors="ln", cssclass="hl"),
-            )
-        else:
-            self.src = highlight(
-                self.raw_src,
-                FortranLexer(),
-                HtmlFormatter(lineanchors="ln", cssclass="hl"),
-            )
+
+        lexer = FortranFixedLexer() if self.fixed else FortranLexer()
+        self.src = highlight(
+            self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
+        )
 
 
 class FortranModule(FortranCodeUnit):
