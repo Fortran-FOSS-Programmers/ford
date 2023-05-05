@@ -233,12 +233,6 @@ class FortranBase(object):
     @property
     def ident(self) -> str:
         """Return a unique identifier for this object"""
-        if (
-            isinstance(self, (FortranSubroutine, FortranFunction))
-            and isinstance(self.parent, FortranInterface)
-            and not self.parent.generic
-        ):
-            return namelist.get_name(self.parent)
         return namelist.get_name(self)
 
     @property
@@ -1511,6 +1505,13 @@ class FortranProcedure(FortranCodeUnit):
     @permission.setter
     def permission(self, value):
         self._permission = value
+
+    @property
+    def ident(self) -> str:
+        """Return a unique identifier for this object"""
+        if self.interface_procedure:
+            return namelist.get_name(self.parent)
+        return super().ident
 
 
 class FortranSubroutine(FortranProcedure):
