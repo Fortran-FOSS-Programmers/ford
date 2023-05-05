@@ -141,53 +141,43 @@ class FortranBase(object):
         return self.hierarchy[0].name if self.hierarchy else self.name
 
     def get_dir(self):
-        if (
-            type(self)
-            in [
-                FortranSubroutine,
-                ExternalSubroutine,
-                FortranFunction,
-                ExternalFunction,
-            ]
-            and type(self.parent) in [FortranInterface, ExternalInterface]
-            and not self.parent.generic
-        ):
+        if isinstance(self, FortranProcedure) and self.interface_procedure:
             return "interface"
-        elif type(self) is FortranSubmodule:
+        if isinstance(self, FortranSubmodule):
             return "module"
-        elif type(self) in [
-            FortranSourceFile,
-            FortranProgram,
-            FortranModule,
-            GenericSource,
-            FortranBlockData,
-            ExternalModule,
-        ] or (
-            type(self)
-            in [
-                FortranType,
-                ExternalType,
-                FortranInterface,
-                ExternalInterface,
-                FortranFunction,
-                ExternalFunction,
-                FortranSubroutine,
-                ExternalSubroutine,
-                FortranSubmoduleProcedure,
-            ]
-            and type(self.parent)
-            in [
+        if isinstance(
+            self,
+            (
                 FortranSourceFile,
                 FortranProgram,
                 FortranModule,
-                FortranSubmodule,
+                GenericSource,
                 FortranBlockData,
-                ExternalModule,
-            ]
+            ),
+        ) or (
+            isinstance(
+                self,
+                (
+                    FortranType,
+                    FortranInterface,
+                    FortranProcedure,
+                    FortranSubmoduleProcedure,
+                ),
+            )
+            and isinstance(
+                self.parent,
+                (
+                    FortranSourceFile,
+                    FortranProgram,
+                    FortranModule,
+                    FortranSubmodule,
+                    FortranBlockData,
+                ),
+            )
         ):
             return self.obj
-        else:
-            return None
+
+        return None
 
     def get_url(self):
         if hasattr(self, "external_url"):
@@ -654,7 +644,7 @@ class FortranContainer(FortranBase):
 
             # Check the various possibilities for what is on this line
             if line_lower == "contains":
-                if not incontains and type(self) in _can_have_contains:
+                if not incontains and isinstance(self, _can_have_contains):
                     incontains = True
                     if isinstance(self, FortranType):
                         child_permission = "public"
@@ -1879,11 +1869,11 @@ class FortranType(FortranContainer):
             self.num_lines_all += proc.procedure.num_lines
         for proc in self.boundprocs:
             for bind in proc.bindings:
-                if isinstance(bind, (FortranFunction, FortranSubroutine)):
+                if isinstance(bind, FortranProcedure):
                     self.num_lines_all += bind.num_lines
                 elif isinstance(bind, FortranBoundProcedure):
                     for b in bind.bindings:
-                        if isinstance(b, (FortranFunction, FortranSubroutine)):
+                        if isinstance(b, FortranProcedure):
                             self.num_lines_all += b.num_lines
 
     def prune(self):
@@ -2634,15 +2624,14 @@ class GenericSource(FortranBase):
         return ""
 
 
-_can_have_contains = [
+_can_have_contains = (
     FortranModule,
     FortranProgram,
-    FortranFunction,
-    FortranSubroutine,
+    FortranProcedure,
     FortranType,
     FortranSubmodule,
     FortranSubmoduleProcedure,
-]
+)
 
 
 def remove_kind_suffix(literal, is_character: bool = False):
