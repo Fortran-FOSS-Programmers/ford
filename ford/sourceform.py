@@ -70,7 +70,7 @@ DIM_RE = re.compile(r"^\w+\s*(\(.*\))\s*$")
 base_url = ""
 
 
-class FortranBase(object):
+class FortranBase:
     """
     An object containing the data common to all of the classes used to represent
     Fortran data.
@@ -502,6 +502,17 @@ class FortranBase(object):
             ),
             filter(None, (getattr(self, item, None) for item in non_list_children)),
         )
+
+    def _should_display(self, item) -> bool:
+        """Return True if item should be displayed"""
+        if self.settings["hide_undoc"] and not item.doc:
+            return False
+        return item.permission in self.display
+
+    def filter_display(self, collection: Sequence) -> List:
+        """Remove items from collection if they shouldn't be displayed"""
+
+        return [obj for obj in collection if self._should_display(obj)]
 
 
 class FortranContainer(FortranBase):
@@ -1191,24 +1202,16 @@ class FortranCodeUnit(FortranContainer):
             self.variables = []
             return
 
-        def to_include(obj) -> bool:
-            if self.settings["hide_undoc"] and not obj.doc:
-                return False
-            return obj.permission in self.display
-
-        def include_objects(collection):
-            return [obj for obj in collection if to_include(obj)]
-
-        self.functions = include_objects(self.functions)
-        self.subroutines = include_objects(self.subroutines)
-        self.types = include_objects(self.types)
-        self.interfaces = include_objects(self.interfaces)
-        self.absinterfaces = include_objects(self.absinterfaces)
-        self.variables = include_objects(self.variables)
+        self.functions = self.filter_display(self.functions)
+        self.subroutines = self.filter_display(self.subroutines)
+        self.types = self.filter_display(self.types)
+        self.interfaces = self.filter_display(self.interfaces)
+        self.absinterfaces = self.filter_display(self.absinterfaces)
+        self.variables = self.filter_display(self.variables)
         if self.obj == "submodule":
-            self.modprocedures = include_objects(self.modprocedures)
-            self.modsubroutines = include_objects(self.modsubroutines)
-            self.modfunctions = include_objects(self.modfunctions)
+            self.modprocedures = self.filter_display(self.modprocedures)
+            self.modsubroutines = self.filter_display(self.modsubroutines)
+            self.modfunctions = self.filter_display(self.modfunctions)
 
         # Recurse
         for obj in self.iterator(
@@ -1850,12 +1853,8 @@ class FortranType(FortranContainer):
         """
         Remove anything which shouldn't be displayed.
         """
-        self.boundprocs = [
-            obj for obj in self.boundprocs if obj.permission in self.display
-        ]
-        self.variables = [
-            obj for obj in self.variables if obj.permission in self.display
-        ]
+        self.boundprocs = self.filter_display(self.boundprocs)
+        self.variables = self.filter_display(self.variables)
         for obj in self.boundprocs + self.variables:
             obj.visible = True
 
@@ -2332,13 +2331,10 @@ class FortranBlockData(FortranContainer):
         self.sort_components()
 
     def prune(self):
-        self.types = [obj for obj in self.types if obj.permission in self.display]
-        self.variables = [
-            obj for obj in self.variables if obj.permission in self.display
-        ]
+        self.types = self.filter_display(self.types)
+        self.variables = self.filter_display(self.variables)
         for dtype in self.types:
             dtype.visible = True
-        for dtype in self.types:
             dtype.prune()
 
     def _cleanup(self):
