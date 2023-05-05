@@ -569,7 +569,8 @@ class FortranContainer(FortranBase):
     BOUNDPROC_RE = re.compile(
         r"""^(?P<generic>generic|procedure)\s*  # Required keyword
         (?P<prototype>\([^()]*\))?\s*           # Optional interface name
-        (?:,\s*(?P<attributes>\w[^:]*))?\s*::\s* # Optional list of attributes
+        (?:,\s*(?P<attributes>\w[^:]*))?        # Optional list of attributes
+        (?:\s*::)?\s*                           # Optional double-colon
         (?P<names>\w.*)$                        # Required name(s)
         """,
         re.IGNORECASE | re.VERBOSE,

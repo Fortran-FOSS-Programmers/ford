@@ -1558,3 +1558,34 @@ def test_bind_name_function(parse_fortran_file):
     function = fortran_file.functions[0]
 
     assert function.bindC == 'C, name="c_foo"'
+
+
+def test_generic_bound_procedure(parse_fortran_file):
+    data = """\
+    module subdomain_m
+      type subdomain_t
+      contains
+        procedure no_colon
+        procedure :: colon
+        generic :: operator(+) => no_colon, colon
+      end type
+      interface
+        module function no_colon(lhs, rhs)
+          class(subdomain_t), intent(in) :: lhs
+          integer, intent(in) :: rhs
+          type(subdomain_t) total
+        end function
+        module function colon(lhs, rhs)
+          class(subdomain_t), intent(in) :: lhs, rhs
+          type(subdomain_t) total
+        end function
+      end interface
+    end module
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_type = fortran_file.modules[0].types[0]
+
+    expected_names = sorted(["no_colon", "colon", "operator(+)"])
+    bound_proc_names = sorted([proc.name for proc in fortran_type.boundprocs])
+    assert bound_proc_names == expected_names
