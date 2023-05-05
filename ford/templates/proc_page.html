@@ -24,6 +24,11 @@
     {{ procedure.doc }}
     {% endif %}
 
+    {% if procedure.binding %}
+    <h3>Type Bound</h3>
+    <p>{{ procedure.binding.parent }}</p>
+    {% endif %}
+
     <h3>Arguments</h3>
     {% if procedure.args|length > 0 %}
       {{ macros.variable_list(procedure.args, intent=True) }}
