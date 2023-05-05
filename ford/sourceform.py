@@ -1182,12 +1182,6 @@ class FortranCodeUnit(FortranContainer):
         Remove anything which shouldn't be displayed.
         """
 
-        def to_include(obj):
-            inc = obj.permission in self.display
-            if self.settings["hide_undoc"] and not obj.doc:
-                inc = False
-            return inc
-
         if self.obj == "proc" and not self.meta["proc_internals"]:
             self.functions = []
             self.subroutines = []
@@ -1195,38 +1189,34 @@ class FortranCodeUnit(FortranContainer):
             self.interfaces = []
             self.absinterfaces = []
             self.variables = []
-        else:
-            self.functions = [obj for obj in self.functions if to_include(obj)]
-            self.subroutines = [obj for obj in self.subroutines if to_include(obj)]
-            self.types = [obj for obj in self.types if to_include(obj)]
-            self.interfaces = [obj for obj in self.interfaces if to_include(obj)]
-            self.absinterfaces = [obj for obj in self.absinterfaces if to_include(obj)]
-            self.variables = [obj for obj in self.variables if to_include(obj)]
-            if hasattr(self, "modprocedures"):
-                self.modprocedures = [
-                    obj for obj in self.modprocedures if to_include(obj)
-                ]
-            if hasattr(self, "modsubroutines"):
-                self.modsubroutines = [
-                    obj for obj in self.modsubroutines if to_include(obj)
-                ]
-            if hasattr(self, "modfunctions"):
-                self.modfunctions = [
-                    obj for obj in self.modfunctions if to_include(obj)
-                ]
+            return
+
+        def to_include(obj) -> bool:
+            if self.settings["hide_undoc"] and not obj.doc:
+                return False
+            return obj.permission in self.display
+
+        def include_objects(collection):
+            return [obj for obj in collection if to_include(obj)]
+
+        self.functions = include_objects(self.functions)
+        self.subroutines = include_objects(self.subroutines)
+        self.types = include_objects(self.types)
+        self.interfaces = include_objects(self.interfaces)
+        self.absinterfaces = include_objects(self.absinterfaces)
+        self.variables = include_objects(self.variables)
+        if self.obj == "submodule":
+            self.modprocedures = include_objects(self.modprocedures)
+            self.modsubroutines = include_objects(self.modsubroutines)
+            self.modfunctions = include_objects(self.modfunctions)
+
         # Recurse
-        for obj in self.absinterfaces:
-            obj.visible = True
         for obj in self.iterator(
-            "functions",
-            "subroutines",
-            "types",
+            "absinterfaces",
             "interfaces",
-            "modprocedures",
-            "modfunctions",
-            "modsubroutines",
         ):
             obj.visible = True
+
         for obj in self.iterator(
             "functions",
             "subroutines",
@@ -1235,6 +1225,7 @@ class FortranCodeUnit(FortranContainer):
             "modfunctions",
             "modsubroutines",
         ):
+            obj.visible = True
             obj.prune()
 
 
