@@ -29,7 +29,7 @@ import re
 import os.path
 import copy
 import textwrap
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Optional, Union, Sequence
 from itertools import chain
 
 # Python 2 or 3:
@@ -1620,23 +1620,23 @@ class FortranFunction(FortranProcedure):
         self.proctype = "Function"
         self.retvar = line["result"] or self.name
 
-        typestr = ""
-        for vtype in self.settings["extra_vartypes"]:
-            typestr = typestr + "|" + vtype
-        var_type_re = re.compile(VAR_TYPE_STRING + typestr, re.IGNORECASE)
-        if var_type_re.search(attribstr):
-            parsed_type = parse_type(attribstr, self.strings, self.settings)
+        try:
+            parsed_type = parse_type(
+                attribstr, self.strings, self.settings["extra_vartypes"]
+            )
             self.retvar = FortranVariable(
-                self.retvar,
-                parsed_type.vartype,
-                self,
+                name=self.retvar,
+                vartype=parsed_type.vartype,
+                parent=self,
                 kind=parsed_type.kind,
                 strlen=parsed_type.strlen,
                 proto=parsed_type.proto,
             )
+        except ValueError:
+            pass
 
     def _cleanup(self):
-        if type(self.retvar) != FortranVariable:
+        if not isinstance(self.retvar, FortranVariable):
             for var in self.variables:
                 if var.name.lower() == self.retvar.lower():
                     self.retvar = var
@@ -2621,7 +2621,7 @@ def line_to_variables(source, line, inherit_permission, parent):
     Returns a list of variables declared in the provided line of code. The
     line of code should be provided as a string.
     """
-    parsed_type = parse_type(line, parent.strings, parent.settings)
+    parsed_type = parse_type(line, parent.strings, parent.settings["extra_vartypes"])
     attribs = []
     intent = ""
     optional = False
@@ -2711,6 +2711,9 @@ def line_to_variables(source, line, inherit_permission, parent):
     return varlist
 
 
+_EXTRA_TYPES_RE_CACHE = {}
+
+
 @dataclass
 class ParsedType:
     vartype: str
@@ -2720,18 +2723,24 @@ class ParsedType:
     proto: Union[None, str, List[str]] = None
 
 
-def parse_type(string: str, capture_strings: List[str], settings: dict) -> ParsedType:
+def parse_type(
+    string: str, capture_strings: List[str], extra_vartypes: Sequence
+) -> ParsedType:
     """
     Gets variable type, kind, length, and/or derived-type attributes from a
     variable declaration.
     """
-    typestr = ""
-    for vtype in settings["extra_vartypes"]:
-        typestr = typestr + "|" + vtype
-    var_type_re = re.compile(VAR_TYPE_STRING + typestr, re.IGNORECASE)
-    match = var_type_re.match(string)
-    if not match:
-        raise Exception("Invalid variable declaration: {}".format(string))
+    extra_vartypes = tuple(extra_vartypes)
+    try:
+        var_type_re = _EXTRA_TYPES_RE_CACHE[extra_vartypes]
+    except KeyError:
+        var_type_re = re.compile(
+            "|".join((VAR_TYPE_STRING, *extra_vartypes)), re.IGNORECASE
+        )
+        _EXTRA_TYPES_RE_CACHE[extra_vartypes] = var_type_re
+
+    if not (match := var_type_re.match(string)):
+        raise ValueError("Invalid variable declaration: {}".format(string))
 
     vartype = match.group().lower()
     if DOUBLE_PREC_RE.match(vartype):

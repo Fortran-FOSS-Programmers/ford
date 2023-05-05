@@ -738,13 +738,15 @@ def test_submodule_ancestors(parse_fortran_file):
             "procedure(bar) :: thing",
             ParsedType("procedure", ":: thing", proto=["bar", ""]),
         ),
+        ("Vec :: vector", ParsedType("vec", ":: vector")),
+        ("Mat :: matrix", ParsedType("mat", ":: matrix")),
     ],
 )
 def test_parse_type(variable_decl, expected):
     # Tokeniser will have previously replaced strings with index into
     # this list
     capture_strings = ['"a"']
-    result = parse_type(variable_decl, capture_strings, {"extra_vartypes": []})
+    result = parse_type(variable_decl, capture_strings, ["Vec", "Mat"])
     assert result.vartype == expected.vartype
     assert result.kind == expected.kind
     assert result.strlen == expected.strlen
