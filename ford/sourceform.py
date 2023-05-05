@@ -1556,6 +1556,8 @@ class FortranProcedure(FortranCodeUnit):
         return super().get_dir()
 
     def _cleanup(self):
+        """Convert all child entities to object instances"""
+
         self.all_procs = {p.name.lower(): p for p in self.routines}
         for interface in self.interfaces:
             if not interface.abstract:
@@ -1563,25 +1565,35 @@ class FortranProcedure(FortranCodeUnit):
             if interface.generic:
                 for proc in interface.routines:
                     self.all_procs[proc.name.lower()] = proc
-        for i in range(len(self.args)):
+
+        for i, arg in enumerate(self.args):
+            # Is there a variable declaration for this argument?
             for var in self.variables:
-                if self.args[i].lower() == var.name.lower():
-                    self.args[i] = var
+                if arg.lower() == var.name.lower():
+                    arg = var
                     self.variables.remove(var)
                     break
-            if type(self.args[i]) == str:
+
+            # Otherwise, is it a procedure with an interface?
+            if isinstance(arg, str):
                 for intr in self.interfaces:
-                    if not (intr.abstract or intr.generic):
-                        proc = intr.procedure
-                        if proc.name.lower() == self.args[i].lower():
-                            self.args[i] = proc
-                            self.interfaces.remove(intr)
-                            self.args[i].parent = self
-                            break
-            if type(self.args[i]) == str:
-                self.args[i] = FortranVariable(
-                    self.args[i], implicit_type(self.args[i]), self, doc=""
-                )
+                    if intr.abstract or intr.generic:
+                        continue
+                    proc = intr.procedure
+                    if proc.name.lower() == arg.lower():
+                        arg = proc
+                        arg.parent = self
+                        self.interfaces.remove(intr)
+                        break
+
+            # If we've still not found it, it's an implicitly-type variable.
+            # FIXME: we pay no attention to `implicit none` or other
+            # `implicit` statements
+            if isinstance(arg, str):
+                arg = FortranVariable(arg, implicit_type(arg), self, doc="")
+
+            self.args[i] = arg
+
         self.process_attribs()
         self.variables = [v for v in self.variables if "external" not in v.attribs]
 
