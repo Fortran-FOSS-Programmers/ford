@@ -85,7 +85,7 @@ def sub_notes(docs):
     return docs
 
 
-def get_parens(line, retlevel=0, retblevel=0):
+def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
     """
     By default akes a string starting with an open parenthesis and returns the portion
     of the string going to the corresponding close parenthesis. If retlevel != 0 then

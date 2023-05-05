@@ -29,7 +29,7 @@ import re
 import os.path
 import copy
 import textwrap
-from typing import List, Tuple, Optional, Union, Sequence
+from typing import List, Tuple, Optional, Union, Sequence, Dict
 from itertools import chain
 
 # Python 2 or 3:
@@ -1418,7 +1418,9 @@ class FortranSubmodule(FortranModule):
         return "module"
 
 
-def _list_of_procedure_attributes(attribute_string: str) -> Tuple[List[str], str]:
+def _list_of_procedure_attributes(
+    attribute_string: Optional[str],
+) -> Tuple[List[str], str]:
     """Convert a string of attributes into a list of attributes"""
     if not attribute_string:
         return [], ""
@@ -1454,14 +1456,14 @@ def implicit_type(name: str) -> str:
 class FortranProcedure(FortranCodeUnit):
     """Base class for subroutines and functions for common functionality"""
 
-    def _initialize(
+    def _procedure_initialize(
         self,
         name: str,
         arguments: Optional[str],
         attributes: Optional[str],
         bindC: Optional[str],
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str:
         self.name = name
         self.attribs, attribstr = _list_of_procedure_attributes(attributes)
         self.mp = False
@@ -1475,19 +1477,18 @@ class FortranProcedure(FortranCodeUnit):
             ]
 
         self._parse_bind_C(bindC)
-        self.variables = []
-        self.enums = []
+        self.variables: List[FortranVariable] = []
+        self.enums: List[FortranEnum] = []
         self.uses = []
         self.calls = []
-        self.optional_list = []
-        self.subroutines = []
-        self.functions = []
-        self.interfaces = []
-        self.absinterfaces = []
-        self.types = []
-        self.common = []
-        self.attr_dict = defaultdict(list)
-        self.param_dict = dict()
+        self.subroutines: List[FortranSubroutine] = []
+        self.functions: List[FortranFunction] = []
+        self.interfaces: List[FortranInterface] = []
+        self.absinterfaces: List[FortranInterface] = []
+        self.types: List[FortranType] = []
+        self.common: List[FortranCommon] = []
+        self.attr_dict: Dict[str, List[str]] = defaultdict(list)
+        self.param_dict: Dict[str, str] = dict()
         self.associate_blocks = []
 
         return attribstr
@@ -1514,7 +1515,11 @@ class FortranProcedure(FortranCodeUnit):
             self.bindC = self.bindC[0:search_from] + QUOTES_RE.sub(
                 self.parent.strings[num], self.bindC[search_from:], count=1
             )
-            search_from += QUOTES_RE.search(self.bindC[search_from:]).end(0)
+            if not (next_match := QUOTES_RE.search(self.bindC[search_from:])):
+                raise ValueError(
+                    f"Unexpected missing quotes in '{self.bindC[search_from:]}'"
+                )
+            search_from += next_match.end(0)
 
     @property
     def is_interface_procedure(self) -> bool:
@@ -1596,7 +1601,7 @@ class FortranSubroutine(FortranProcedure):
     """
 
     def _initialize(self, line: re.Match):
-        super()._initialize(**line.groupdict())
+        self._procedure_initialize(**line.groupdict())
         self.proctype = "Subroutine"
 
 
@@ -1607,7 +1612,7 @@ class FortranFunction(FortranProcedure):
     """
 
     def _initialize(self, line: re.Match):
-        attribstr = super()._initialize(**line.groupdict())
+        attribstr = self._procedure_initialize(**line.groupdict())
         self.proctype = "Function"
         self.retvar = line["result"] or self.name
 
@@ -2702,7 +2707,7 @@ def line_to_variables(source, line, inherit_permission, parent):
     return varlist
 
 
-_EXTRA_TYPES_RE_CACHE = {}
+_EXTRA_TYPES_RE_CACHE: Dict[Tuple[str, ...], re.Pattern] = {}
 
 
 @dataclass
@@ -2715,7 +2720,7 @@ class ParsedType:
 
 
 def parse_type(
-    string: str, capture_strings: List[str], extra_vartypes: Sequence
+    string: str, capture_strings: List[str], extra_vartypes: Sequence[str]
 ) -> ParsedType:
     """
     Gets variable type, kind, length, and/or derived-type attributes from a
