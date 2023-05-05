@@ -556,12 +556,19 @@ class FortranContainer(FortranBase):
     )
     PROGRAM_RE = re.compile(r"^program(?:\s+(\w+))?$", re.IGNORECASE)
     SUBROUTINE_RE = re.compile(
-        r"^\s*(?:(.+?)\s+)?subroutine\s+(\w+)\s*(\([^()]*\))?(?:\s*bind\s*\(\s*(.*)\s*\))?$",
-        re.IGNORECASE,
+        r"""^\s*(?:(?P<attributes>.+?)\s+)?     # Optional attributes
+        subroutine\s+(?P<name>\w+)\s*           # Required subroutine name
+        (?P<arguments>\([^()]*\))?              # Optional arguments
+        (?:\s*bind\s*\(\s*(?P<bindC>.*)\s*\))?$ # Optional C-binding""",
+        re.IGNORECASE | re.VERBOSE,
     )
     FUNCTION_RE = re.compile(
-        r"^(?:(.+?)\s+)?function\s+(\w+)\s*(\([^()]*\))?(?=(?:.*result\s*\(\s*(\w+)\s*\))?)(?=(?:.*bind\s*\(\s*(.*)\s*\))?).*$",
-        re.IGNORECASE,
+        r"""^(?:(?P<attributes>.+?)\s+)?               # Optional attributes (including type)
+        function\s+(?P<name>\w+)\s*                    # Required function name
+        (?P<arguments>\([^()]*\))?                     # Required arguments
+        (?=(?:.*result\s*\(\s*(?P<result>\w+)\s*\))?)  # Optional result name
+        (?=(?:.*bind\s*\(\s*(?P<bindC>.*)\s*\))?).*$   # Optional C-binding""",
+        re.IGNORECASE | re.VERBOSE,
     )
     TYPE_RE = re.compile(
         r"^type(?:\s+|\s*(,.*)?::\s*)((?!(?:is\s*\())\w+)\s*(\([^()]*\))?\s*$",
@@ -1469,20 +1476,20 @@ class FortranSubroutine(FortranCodeUnit):
 
     def _initialize(self, line):
         self.proctype = "Subroutine"
-        self.name = line.group(2)
-        attribstr = line.group(1)
+        self.name = line["name"]
+        attribstr = line["attributes"]
         self.module = False
         self.mp = False
         self.attribs, attribstr = _list_of_procedure_attributes(attribstr)
         self.module = "module" in self.attribs
 
         self.args = []
-        if line.group(3):
-            arguments = self.SPLIT_RE.split(line.group(3)[1:-1].strip())
+        if line["arguments"]:
+            arguments = self.SPLIT_RE.split(line["arguments"][1:-1].strip())
             # Empty argument lists will contain the empty string, so we need to remove it
             self.args = [arg for arg in arguments if arg]
 
-        self.bindC = line.group(4)
+        self.bindC = line["bindC"]
         self.variables = []
         self.enums = []
         self.uses = []
@@ -1553,18 +1560,13 @@ class FortranFunction(FortranCodeUnit):
 
     def _initialize(self, line):
         self.proctype = "Function"
-        self.name = line.group(2)
-        attribstr = line.group(1)
-        self.module = False
+        self.name = line["name"]
+        attribstr = line["attributes"]
         self.mp = False
 
         self.attribs, attribstr = _list_of_procedure_attributes(attribstr)
         self.module = "module" in self.attribs
-
-        if line.group(4):
-            self.retvar = line.group(4)
-        else:
-            self.retvar = self.name
+        self.retvar = line["result"] or self.name
 
         typestr = ""
         for vtype in self.settings["extra_vartypes"]:
@@ -1581,14 +1583,14 @@ class FortranFunction(FortranCodeUnit):
                 proto=parsed_type.proto,
             )
 
-        arguments = self.SPLIT_RE.split(line.group(3)[1:-1].strip())
+        arguments = self.SPLIT_RE.split(line["arguments"][1:-1].strip())
         # Empty argument lists will contain the empty string, so we need to remove it
         self.args = [arg for arg in arguments if arg]
 
         try:
-            self.bindC = ford.utils.get_parens(line.group(5), -1)[0:-1]
+            self.bindC = ford.utils.get_parens(line["bindC"], -1)[0:-1]
         except (RuntimeError, TypeError):
-            self.bindC = line.group(5)
+            self.bindC = line["bindC"]
         if self.bindC:
             search_from = 0
             while quote := QUOTES_RE.search(self.bindC[search_from:]):
