@@ -1496,9 +1496,14 @@ class FortranProcedure(FortranCodeUnit):
             search_from += QUOTES_RE.search(self.bindC[search_from:]).end(0)
 
     @property
+    def interface_procedure(self) -> bool:
+        """Is this procedure just an interface?"""
+        return isinstance(self.parent, FortranInterface) and not self.parent.generic
+
+    @property
     def permission(self):
         """Permission (public/private) of this procedure"""
-        if isinstance(self.parent, FortranInterface) and not self.parent.generic:
+        if self.interface_procedure:
             return self.parent.permission
 
         return self._permission
