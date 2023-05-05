@@ -1495,6 +1495,18 @@ class FortranProcedure(FortranCodeUnit):
             )
             search_from += QUOTES_RE.search(self.bindC[search_from:]).end(0)
 
+    @property
+    def permission(self):
+        """Permission (public/private) of this procedure"""
+        if isinstance(self.parent, FortranInterface) and not self.parent.generic:
+            return self.parent.permission
+
+        return self._permission
+
+    @permission.setter
+    def permission(self, value):
+        self._permission = value
+
 
 class FortranSubroutine(FortranProcedure):
     """
@@ -1532,17 +1544,6 @@ class FortranSubroutine(FortranProcedure):
         self.attr_dict = defaultdict(list)
         self.param_dict = dict()
         self.associate_blocks = []
-
-    def set_permission(self, value):
-        self._permission = value
-
-    def get_permission(self):
-        if type(self.parent) == FortranInterface and not self.parent.generic:
-            return self.parent.permission
-        else:
-            return self._permission
-
-    permission = property(get_permission, set_permission)
 
     def _cleanup(self):
         self.all_procs = {}
@@ -1630,17 +1631,6 @@ class FortranFunction(FortranProcedure):
         self.attr_dict = defaultdict(list)
         self.param_dict = dict()
         self.associate_blocks = []
-
-    def set_permission(self, value):
-        self._permission = value
-
-    def get_permission(self):
-        if type(self.parent) == FortranInterface and not self.parent.generic:
-            return self.parent.permission
-        else:
-            return self._permission
-
-    permission = property(get_permission, set_permission)
 
     def _cleanup(self):
         self.all_procs = {}
