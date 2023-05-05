@@ -141,7 +141,7 @@ class FortranBase(object):
         return self.hierarchy[0].name if self.hierarchy else self.name
 
     def get_dir(self):
-        if isinstance(self, FortranProcedure) and self.interface_procedure:
+        if isinstance(self, FortranProcedure) and self.is_interface_procedure:
             return "interface"
         if isinstance(self, FortranSubmodule):
             return "module"
@@ -1480,14 +1480,14 @@ class FortranProcedure(FortranCodeUnit):
             search_from += QUOTES_RE.search(self.bindC[search_from:]).end(0)
 
     @property
-    def interface_procedure(self) -> bool:
+    def is_interface_procedure(self) -> bool:
         """Is this procedure just an interface?"""
         return isinstance(self.parent, FortranInterface) and not self.parent.generic
 
     @property
     def permission(self):
         """Permission (public/private) of this procedure"""
-        if self.interface_procedure:
+        if self.is_interface_procedure:
             return self.parent.permission
 
         return self._permission
@@ -1499,7 +1499,7 @@ class FortranProcedure(FortranCodeUnit):
     @property
     def ident(self) -> str:
         """Return a unique identifier for this object"""
-        if self.interface_procedure:
+        if self.is_interface_procedure:
             return namelist.get_name(self.parent)
         return super().ident
 
