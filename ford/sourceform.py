@@ -1092,21 +1092,16 @@ class FortranCodeUnit(FortranContainer):
         for dtype in typeorder:
             if dtype in self.types:
                 dtype.correlate(project)
-        for func in self.functions:
-            func.correlate(project)
-        for subrtn in self.subroutines:
-            subrtn.correlate(project)
-        for interface in self.interfaces:
-            interface.correlate(project)
-        for absint in self.absinterfaces:
-            absint.correlate(project)
-        for var in self.variables:
-            var.correlate(project)
-        for com in self.common:
-            com.correlate(project)
-        if hasattr(self, "modprocedures"):
-            for mp in self.modprocedures:
-                mp.correlate(project)
+        for entity in self.iterator(
+            "functions",
+            "subroutines",
+            "interfaces",
+            "absinterfaces",
+            "variables",
+            "common",
+            "modprocedures",
+        ):
+            entity.correlate(project)
         if hasattr(self, "args") and not getattr(self, "mp", False):
             for arg in self.args:
                 arg.correlate(project)
