@@ -15,6 +15,11 @@ import markdown
 import pytest
 
 
+class FakeProject:
+    def __init__(self, procedures=None):
+        self.procedures = procedures or []
+
+
 @pytest.fixture
 def parse_fortran_file(copy_fortran_file):
     def parse_file(data, **kwargs):
@@ -423,7 +428,7 @@ def test_module_default_access(parse_fortran_file):
     """
 
     fortran_file = parse_fortran_file(data)
-    fortran_file.modules[0].correlate(None)
+    fortran_file.modules[0].correlate(FakeProject())
 
     assert set(fortran_file.modules[0].all_procs.keys()) == {
         "sub_public",
@@ -491,7 +496,7 @@ def test_module_public_access(parse_fortran_file):
     """
 
     fortran_file = parse_fortran_file(data)
-    fortran_file.modules[0].correlate(None)
+    fortran_file.modules[0].correlate(FakeProject())
 
     assert set(fortran_file.modules[0].all_procs.keys()) == {
         "sub_public",
@@ -559,7 +564,7 @@ def test_module_private_access(parse_fortran_file):
     """
 
     fortran_file = parse_fortran_file(data)
-    fortran_file.modules[0].correlate(None)
+    fortran_file.modules[0].correlate(FakeProject())
 
     assert set(fortran_file.modules[0].all_procs.keys()) == {
         "sub_public",
@@ -1241,7 +1246,7 @@ def test_type_component_permissions(parse_fortran_file):
     """
 
     fortran_file = parse_fortran_file(data)
-    fortran_file.modules[0].correlate(None)
+    fortran_file.modules[0].correlate(FakeProject())
 
     for ftype in fortran_file.modules[0].types:
         assert (
@@ -1272,7 +1277,7 @@ def test_variable_formatting(parse_fortran_file):
     """
 
     fortran_file = parse_fortran_file(data)
-    fortran_file.modules[0].correlate(None)
+    fortran_file.modules[0].correlate(FakeProject())
     variable0 = fortran_file.modules[0].variables[0]
     variable1 = fortran_file.modules[0].variables[1]
 
@@ -1395,7 +1400,7 @@ def test_module_procedure_in_module(parse_fortran_file):
 
     fortran_file = parse_fortran_file(data)
     module = fortran_file.modules[0]
-    module.correlate(None)
+    module.correlate(FakeProject())
 
     interface = module.interfaces[0]
     assert interface.name == "quaxx"
@@ -1422,7 +1427,7 @@ def test_module_interface_same_name_as_interface(parse_fortran_file):
 
     fortran_file = parse_fortran_file(data)
     module = fortran_file.modules[0]
-    module.correlate(None)
+    module.correlate(FakeProject())
 
     interface = module.interfaces[0]
     assert interface.name == "foo"
@@ -1453,7 +1458,7 @@ def test_procedure_pointer(parse_fortran_file):
 
     fortran_file = parse_fortran_file(data)
     module = fortran_file.modules[0]
-    module.correlate(None)
+    module.correlate(FakeProject())
     assert len(module.interfaces[0].modprocs) == 0
     assert module.interfaces[0].variables[0].name == "unary_f"
 
