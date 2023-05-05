@@ -1455,6 +1455,44 @@ def _list_of_procedure_attributes(attribute_string: str) -> Tuple[List[str], str
 class FortranProcedure(FortranCodeUnit):
     """Base class for subroutines and functions for common functionality"""
 
+    def _initialize(
+        self,
+        name: str,
+        arguments: Optional[str],
+        attributes: Optional[str],
+        bindC: Optional[str],
+        **kwargs,
+    ) -> Optional[str]:
+        self.name = name
+        self.attribs, attribstr = _list_of_procedure_attributes(attributes)
+        self.mp = False
+        self.module = "module" in self.attribs
+
+        self.args = []
+        if arguments:
+            # Empty argument lists will contain the empty string, so we need to remove it
+            self.args = [
+                arg for arg in self.SPLIT_RE.split(arguments[1:-1].strip()) if arg
+            ]
+
+        self._parse_bind_C(bindC)
+        self.variables = []
+        self.enums = []
+        self.uses = []
+        self.calls = []
+        self.optional_list = []
+        self.subroutines = []
+        self.functions = []
+        self.interfaces = []
+        self.absinterfaces = []
+        self.types = []
+        self.common = []
+        self.attr_dict = defaultdict(list)
+        self.param_dict = dict()
+        self.associate_blocks = []
+
+        return attribstr
+
     def _parse_bind_C(self, bind_C_text: Optional[str]):
         """Parses a `bind(...)` attribute"""
 
@@ -1516,36 +1554,9 @@ class FortranSubroutine(FortranProcedure):
     subroutine's contents.
     """
 
-    def _initialize(self, line):
+    def _initialize(self, line: re.Match):
+        super()._initialize(**line.groupdict())
         self.proctype = "Subroutine"
-        self.name = line["name"]
-        attribstr = line["attributes"]
-        self.module = False
-        self.mp = False
-        self.attribs, attribstr = _list_of_procedure_attributes(attribstr)
-        self.module = "module" in self.attribs
-
-        self.args = []
-        if line["arguments"]:
-            arguments = self.SPLIT_RE.split(line["arguments"][1:-1].strip())
-            # Empty argument lists will contain the empty string, so we need to remove it
-            self.args = [arg for arg in arguments if arg]
-
-        self._parse_bind_C(line["bindC"])
-        self.variables = []
-        self.enums = []
-        self.uses = []
-        self.calls = []
-        self.optional_list = []
-        self.subroutines = []
-        self.functions = []
-        self.interfaces = []
-        self.absinterfaces = []
-        self.types = []
-        self.common = []
-        self.attr_dict = defaultdict(list)
-        self.param_dict = dict()
-        self.associate_blocks = []
 
     def _cleanup(self):
         self.all_procs = {}
@@ -1589,14 +1600,9 @@ class FortranFunction(FortranProcedure):
     contents.
     """
 
-    def _initialize(self, line):
+    def _initialize(self, line: re.Match):
+        attribstr = super()._initialize(**line.groupdict())
         self.proctype = "Function"
-        self.name = line["name"]
-        attribstr = line["attributes"]
-        self.mp = False
-
-        self.attribs, attribstr = _list_of_procedure_attributes(attribstr)
-        self.module = "module" in self.attribs
         self.retvar = line["result"] or self.name
 
         typestr = ""
@@ -1613,26 +1619,6 @@ class FortranFunction(FortranProcedure):
                 strlen=parsed_type.strlen,
                 proto=parsed_type.proto,
             )
-
-        arguments = self.SPLIT_RE.split(line["arguments"][1:-1].strip())
-        # Empty argument lists will contain the empty string, so we need to remove it
-        self.args = [arg for arg in arguments if arg]
-
-        self._parse_bind_C(line["bindC"])
-        self.variables = []
-        self.enums = []
-        self.uses = []
-        self.calls = []
-        self.optional_list = []
-        self.subroutines = []
-        self.functions = []
-        self.interfaces = []
-        self.absinterfaces = []
-        self.types = []
-        self.common = []
-        self.attr_dict = defaultdict(list)
-        self.param_dict = dict()
-        self.associate_blocks = []
 
     def _cleanup(self):
         self.all_procs = {}
