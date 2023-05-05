@@ -49,14 +49,13 @@ from ford.sourceform import (
     ExternalType,
     FortranBlockData,
     FortranContainer,
-    FortranFunction,
     FortranInterface,
     FortranModule,
+    FortranProcedure,
     FortranProgram,
     FortranSourceFile,
     FortranSubmodule,
     FortranSubmoduleProcedure,
-    FortranSubroutine,
     FortranType,
 )
 
@@ -96,12 +95,7 @@ def is_type(obj):
 def is_proc(obj):
     return isinstance(
         obj,
-        (
-            FortranFunction,
-            FortranSubroutine,
-            FortranInterface,
-            FortranSubmoduleProcedure,
-        ),
+        (FortranProcedure, FortranInterface, FortranSubmoduleProcedure),
     )
 
 
@@ -230,7 +224,7 @@ class GraphData:
 
     def get_procedure_node(
         self,
-        procedure: Union[FortranSubroutine, FortranFunction, str],
+        procedure: Union[FortranProcedure, str],
         hist: NodeCollection,
     ) -> ProcNode:
         if isinstance(procedure, str):

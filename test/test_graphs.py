@@ -177,7 +177,16 @@ TYPE_GRAPH_KEY = ["Type"]
         ),
         (
             ["callgraph"],
-            ["c::one", "foo::three", "c::two", "foo::four", "other_sub", "foo","c::alpha%five","c::alpha%six"],
+            [
+                "c::one",
+                "foo::three",
+                "c::two",
+                "foo::four",
+                "other_sub",
+                "foo",
+                "c::alpha%five",
+                "c::alpha%six",
+            ],
             [
                 "proc~three->proc~one",
                 "proc~three->proc~two",

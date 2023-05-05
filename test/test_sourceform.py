@@ -738,13 +738,15 @@ def test_submodule_ancestors(parse_fortran_file):
             "procedure(bar) :: thing",
             ParsedType("procedure", ":: thing", proto=["bar", ""]),
         ),
+        ("Vec :: vector", ParsedType("vec", ":: vector")),
+        ("Mat :: matrix", ParsedType("mat", ":: matrix")),
     ],
 )
 def test_parse_type(variable_decl, expected):
     # Tokeniser will have previously replaced strings with index into
     # this list
     capture_strings = ['"a"']
-    result = parse_type(variable_decl, capture_strings, {"extra_vartypes": []})
+    result = parse_type(variable_decl, capture_strings, ["Vec", "Mat"])
     assert result.vartype == expected.vartype
     assert result.kind == expected.kind
     assert result.strlen == expected.strlen
@@ -1527,3 +1529,27 @@ def test_function_whitespace(parse_fortran_file):
     function = fortran_file.functions[0]
     arg_names = [arg.name for arg in function.args]
     assert arg_names == ["a", "b", "c", "d"]
+
+
+def test_bind_name_subroutine(parse_fortran_file):
+    data = """\
+    subroutine init() bind(C, name="c_init")
+    end subroutine init
+    """
+
+    fortran_file = parse_fortran_file(data)
+    subroutine = fortran_file.subroutines[0]
+
+    assert subroutine.bindC == 'C, name="c_init"'
+
+
+def test_bind_name_function(parse_fortran_file):
+    data = """\
+    integer function foo() bind(C, name="c_foo")
+    end function foo
+    """
+
+    fortran_file = parse_fortran_file(data)
+    function = fortran_file.functions[0]
+
+    assert function.bindC == 'C, name="c_foo"'
