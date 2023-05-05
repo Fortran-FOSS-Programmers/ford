@@ -134,17 +134,13 @@ class FortranBase(object):
         self.hierarchy.reverse()
 
     @property
-    def filename(self):
+    def filename(self) -> str:
         """Name of the file containing this entity"""
         # If `hierarchy` is empty, it's probably because it's a source
         # file, so we can use its name directly
         return self.hierarchy[0].name if self.hierarchy else self.name
 
-    def get_dir(self):
-        if isinstance(self, FortranProcedure) and self.is_interface_procedure:
-            return "interface"
-        if isinstance(self, FortranSubmodule):
-            return "module"
+    def get_dir(self) -> Optional[str]:
         if isinstance(
             self,
             (
@@ -1426,6 +1422,9 @@ class FortranSubmodule(FortranModule):
                 for proc in interface.iterator("subroutines", "functions"):
                     self.all_procs[proc.name.lower()] = proc
 
+    def get_dir(self):
+        return "module"
+
 
 def _list_of_procedure_attributes(attribute_string: str) -> Tuple[List[str], str]:
     """Convert a string of attributes into a list of attributes"""
@@ -1502,6 +1501,12 @@ class FortranProcedure(FortranCodeUnit):
         if self.is_interface_procedure:
             return namelist.get_name(self.parent)
         return super().ident
+
+    def get_dir(self) -> Optional[str]:
+        if self.is_interface_procedure:
+            return "interface"
+
+        return super().get_dir()
 
 
 class FortranSubroutine(FortranProcedure):
