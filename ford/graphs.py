@@ -431,6 +431,7 @@ class ProcNode(BaseNode):
         self.called_by = set()
         self.interfaces = set()
         self.interfaced_by = set()
+        self.internal = getattr(obj, 'parobj', None) == 'proc'
 
         if self.fromstr:
             return
@@ -1155,6 +1156,8 @@ class CallGraph(FortranGraph):
             if p not in hop_nodes:
                 hop_nodes.add(p)
             hop_edges.append(_solid_edge(node, p, colour))
+            if p.internal:
+                self._add_node(hop_nodes, hop_edges, p, colour)
         for p in sorted(getattr(node, "interfaces", [])):
             if p not in hop_nodes:
                 hop_nodes.add(p)
