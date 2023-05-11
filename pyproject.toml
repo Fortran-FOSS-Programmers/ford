@@ -64,10 +64,18 @@ Documentation = "https://forddocs.readthedocs.io/en/latest/"
 ford = "ford:run"
 
 [tool.setuptools]
-packages = ["ford"]
+packages = [
+    "ford",
+    "ford.css",
+    "ford.fonts",
+    "ford.js",
+    "ford.templates",
+    "ford.tipuesearch",
+    "ford.tipuesearch.img",
+]
 
 [tool.setuptools.package-data]
-ford = ["css/*", "fonts/*", "js/*", "templates/*", "tipuesearch/*", "config.json", "favicon.png"]
+ford = ["config.json", "favicon.png"]
 
 [tool.setuptools_scm]
 write_to = "ford/_version.py"
