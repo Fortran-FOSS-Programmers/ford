@@ -37,10 +37,11 @@ class PageNode(object):
         with open(path, "r") as page:
             text = md.reset().convert(page.read())
 
-        if "title" in md.Meta:
-            self.title = "\n".join(md.Meta["title"])
-        else:
-            raise Exception("Page {} has no title metadata".format(path))
+        if "title" not in md.Meta:
+            raise ValueError(f"Page '{path}' has no title metadata")
+
+        self.title = "\n".join(md.Meta["title"])
+
         if "author" in md.Meta:
             self.author = "\n".join(md.Meta["author"])
         else:
