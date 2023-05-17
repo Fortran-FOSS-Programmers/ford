@@ -584,7 +584,7 @@ class FortranContainer(FortranBase):
     )
     ARITH_GOTO_RE = re.compile(r"go\s*to\s*\([0-9,\s]+\)", re.IGNORECASE)
     CALL_RE = re.compile(
-        r"(?:^|[^a-zA-Z0-9_% ]\s*(?:\w+%)?)(\w+)(?=\s*\(\s*(?:.*?)\s*\))", re.IGNORECASE
+        r"(?:^|[^a-zA-Z0-9_ ]\s*)(\w+)(?=\s*\(\s*(?:.*?)\s*\))", re.IGNORECASE
     )
     SUBCALL_RE = re.compile(
         r"^(?:if\s*\(.*\)\s*)?call\s+(?:\w+%)?(\w+)\s*(?:\(\s*(.*?)\s*\))?$",
@@ -923,6 +923,40 @@ class FortranContainer(FortranBase):
                 else:
                     self.print_error(line, "Unexpected USE statement")
             else:
+                def get_call_chain(match) -> dict:
+                    bracket = 0
+                    spacer = False
+                    call_chain = []
+                    tmp = ''
+                    for c in line[match.start(1)-1::-1]:
+                        if bracket < 0:
+                            break
+                        if c == ')':
+                            bracket += 1
+                        elif c == '(':
+                            bracket -= 1
+                        elif bracket == 0:
+                            if c.isalnum() or c == '_':
+                                if spacer:
+                                    if len(tmp) == 0:
+                                        spacer = False
+                                    else:
+                                        break
+                                tmp = c + tmp
+                            elif c == '%':
+                                if(len(tmp) != 0):
+                                    call_chain.append(tmp.lower())
+                                    tmp = ''
+                            elif c == ' ':
+                                spacer = True
+                                continue
+                            else:
+                                break
+                    if(len(tmp) != 0):
+                        call_chain.append(tmp.lower())
+                    call_chain.reverse()
+                    return {"name": match.group(1).lower(), "call_chain": call_chain}
+
                 if self.CALL_RE.search(line):
                     if hasattr(self, "calls"):
                         # Arithmetic GOTOs looks little like function references:
@@ -931,13 +965,16 @@ class FortranContainer(FortranBase):
                         # expression doesn't catch that so we first rule such a
                         # GOTO out.
                         if not self.ARITH_GOTO_RE.search(line):
-                            callvals = self.CALL_RE.findall(line)
+                            callvals = []
+                            matches = self.CALL_RE.finditer(line)
+                            for match in matches:
+                                callvals.append(get_call_chain(match))
                             for val in callvals:
                                 if (
-                                    val.lower() not in self.calls
-                                    and val.lower() not in INTRINSICS
+                                    not any(d["name"] == val["name"] for d in self.calls)
+                                    and val["name"] not in INTRINSICS
                                 ):
-                                    self.calls.append(val.lower())
+                                    self.calls.append(val)
                     else:
                         pass
                         # Not raising an error here as too much possibility that something
@@ -945,8 +982,11 @@ class FortranContainer(FortranBase):
                 if match := self.SUBCALL_RE.match(line):
                     # Need this to catch any subroutines called without argument lists
                     if hasattr(self, "calls"):
-                        callval = match.group(1).lower()
-                        if callval not in self.calls and callval not in INTRINSICS:
+                        callval = get_call_chain(match)
+                        if (
+                            not any(d["name"] == callval["name"] for d in self.calls)
+                            and callval["name"] not in INTRINSICS
+                        ):
                             self.calls.append(callval)
                     else:
                         self.print_error(line, "Unexpected procedure call")
@@ -992,11 +1032,13 @@ class FortranCodeUnit(FortranContainer):
             self.all_procs.update(self.parent_submodule.all_procs)
             self.all_absinterfaces.update(self.parent_submodule.all_absinterfaces)
             self.all_types.update(self.parent_submodule.all_types)
+            self.all_vars.update(self.parent_submodule.pub_vars)
         elif type(getattr(self, "ancestor_module", "")) not in [str, type(None)]:
             self.ancestor_module.descendants.append(self)
             self.all_procs.update(self.ancestor_module.all_procs)
             self.all_absinterfaces.update(self.ancestor_module.all_absinterfaces)
             self.all_types.update(self.ancestor_module.all_types)
+            self.all_vars.update(self.ancestor_module.pub_vars)
 
         # Module procedures will be missing (some/all?) metadata, so
         # now we copy it from the interface
@@ -1055,38 +1097,91 @@ class FortranCodeUnit(FortranContainer):
                 typelist[dtype] = set([])
         typeorder = toposort.toposort_flatten(typelist)
 
+        # Correlate types
+        for dtype in typeorder:
+            if dtype in self.types:
+                dtype.correlate(project)
+
         # Match up called procedures
         if hasattr(self, "calls"):
             tmplst = []
             for call in self.calls:
-                call_low = call.lower()
+                call_low = call["name"].lower()
                 argname = False
                 for a in getattr(self, "args", []):
                     # Consider allowing procedures passed as arguments to be included in callgraphs
                     argname |= call_low == a.name.lower()
                 if hasattr(self, "retvar"):
                     argname |= call_low == self.retvar.name.lower()
+                
+                # travers the call chain of the call to descover the context the call is made on
+                context = self
+                call_chain = call["call_chain"]
+                if len(call_chain) > 0:
+                    class NoLabel(Exception):
+                        pass
+                    try:
+                        call_type = None
+                        # strip off the "type()" or "class()" if it's there
+                        strip_type = lambda s: re.match(r"^(type|class)\((.*?)(?:\(.*\))?\)$", s, re.IGNORECASE).group(2) if re.match(r"^(type|class)\((.*?)(?:\(.*\))?\)$", s, re.IGNORECASE) else s
+                        try: # try call type is a variable
+                            vars = self.all_vars
+                            if hasattr(self, "args"):
+                                vars = {**vars, **{a.name.lower(): a for a in self.args}}
+                            if hasattr(self, "retvar"):
+                                vars = {**vars, **{self.retvar.name.lower(): self.retvar}}
+                            call_type = vars[call_chain[0].lower()].full_type
+                            call_type = strip_type(call_type)
+                            call_type = self.all_types[call_type.lower()]
+                        except (KeyError, AttributeError): # not a variable, try call type is a procedure
+                            try:
+                                call_type = self.all_procs[call_chain[0].lower()].retvar.full_type
+                                call_type = strip_type(call_type)
+                                call_type = self.all_procs[call_chain[0].lower()].all_types[call_type.lower()]
+                            except (KeyError, AttributeError): # not a procedure, give up
+                                raise NoLabel
+                        for c in [c.lower() for c in call_chain[1:]]: # traverse the call chain
+                            try: # try call type is a variable
+                                new_call_type = None
+                                for var in call_type.variables:
+                                    if var.name.lower() == c:
+                                        new_call_type = var.full_type
+                                        break
+                                if new_call_type is None:
+                                    raise KeyError(f"Variable {c} not found in type {call_type.name}")
+                                new_call_type = strip_type(new_call_type)
+                                call_type = call_type.all_types[new_call_type.lower()]
+                            except (KeyError, AttributeError): # not a variable, try call type is a procedure
+                                try:
+                                    new_call_type = None
+                                    for proc in call_type.boundprocs:
+                                        if proc.name.lower() == c:
+                                            new_call_type = proc.retvar.full_type
+                                            break
+                                    if new_call_type is None:
+                                        raise KeyError(f"Procedure {c} not found in type {call_type.name}")
+                                except (KeyError, AttributeError): # not a procedure, give up
+                                    raise NoLabel
+                        context = call_type
+                    except NoLabel:
+                        pass
+                all_vars = {}
+                if hasattr(context, "all_vars"):
+                    all_vars = context.all_vars
+                if hasattr(context, "variables"):
+                    all_vars = {**all_vars, **{v.name.lower(): v for v in context.variables}}
+
                 if (
                     not argname
-                    and call_low not in self.all_vars
+                    and call_low not in all_vars
                     and (call_low not in self.all_types or call_low in self.all_procs)
                 ):
+                    try:
+                        call = context.all_procs[call["name"].lower()]
+                    except KeyError:
+                        call = call["name"]
                     tmplst.append(call)
             self.calls = tmplst
-
-            procedures = (
-                {proc.name.lower(): proc for proc in self.parent.routines}
-                if self.parobj == "sourcefile"
-                else {}
-            )
-            procedures.update({proc.name.lower(): proc for proc in project.procedures})
-            procedures.update(self.all_procs)
-
-            for i, call in enumerate(self.calls):
-                try:
-                    self.calls[i] = procedures[call.lower()]
-                except KeyError:
-                    pass
 
         if self.obj == "submodule":
             self.ancestry = []
@@ -1097,9 +1192,6 @@ class FortranCodeUnit(FortranContainer):
             self.ancestry.insert(0, item.ancestor_module)
 
         # Recurse
-        for dtype in typeorder:
-            if dtype in self.types:
-                dtype.correlate(project)
         for entity in self.iterator(
             "functions",
             "subroutines",
