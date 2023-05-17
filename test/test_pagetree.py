@@ -56,6 +56,8 @@ def test_footnotes_on_one_page_parse_failure(tmp_path):
         f.write(
             dedent(
                 """\
+            This page is missing a title and so expected not to be parsed
+
             This has a footnote[^1] that should only appear on this page
 
             [^1]: This is the footnote on page A

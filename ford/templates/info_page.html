@@ -8,10 +8,10 @@
     <div class="well well-sm" style="min-height: 40px;">
       <ul class="list-inline" style="margin-bottom:0px; display:inline">
          {% if page.author %}
-        <li><i class="fa fa-pencil"></i> {{ page.author }}</li>
+        <li id="author"><i class="fa fa-pencil"></i> {{ page.author }}</li>
          {% endif %}
          {% if page.date %}
-        <li><i class="fa fa-calendar-o"></i> {{ page.date }}</li>
+        <li id="date"><i class="fa fa-calendar-o"></i> {{ page.date }}</li>
          {% endif %}
 <!--
         {% if page.subpages %}
