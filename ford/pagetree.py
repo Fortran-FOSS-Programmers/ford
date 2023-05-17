@@ -47,34 +47,20 @@ class PageNode:
             raise ValueError(f"Page '{path}' has no title metadata")
 
         self.title = "\n".join(md.Meta["title"])
+        self.author = "\n".join(md.Meta.get("author", []))
+        self.date = "\n".join(md.Meta.get("date", []))
 
-        if "author" in md.Meta:
-            self.author = "\n".join(md.Meta["author"])
-        else:
-            self.author = None
-        if "date" in md.Meta:
-            self.date = "\n".join(md.Meta["date"])
-        else:
-            self.date = None
-
-        if "ordered_subpage" in md.Meta:
-            # index.md is the main page, it should not be added by the user in the subpage lists.
-            self.ordered_subpages = [
-                x for x in md.Meta["ordered_subpage"] if x != "index.md"
-            ]
-        else:
-            self.ordered_subpages = None
+        # index.md is the main page, it should not be added by the user in the subpage lists.
+        self.ordered_subpages = [
+            x for x in md.Meta.get("ordered_subpage", []) if x != "index.md"
+        ]
 
         # set list of directory names that are to be copied along without
         # containing an index.md itself.
         #   first priority is the copy_dir option in the *.md file
         #   if this option is not set in the file fall back to the global
         #   project settings
-        if "copy_subdir" in md.Meta:
-            self.copy_subdir = md.Meta["copy_subdir"]
-        else:
-            self.copy_subdir = proj_copy_subdir
-
+        self.copy_subdir = md.Meta.get("copy_subdir", proj_copy_subdir)
         self.parent = parent
         self.contents = text
         self.subpages: List[PageNode] = []
