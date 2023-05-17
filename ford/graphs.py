@@ -31,6 +31,7 @@ import os
 import pathlib
 import re
 from typing import Dict, Iterable, List, Optional, Set, Tuple, Type, Union, cast
+from collections import deque
 import warnings
 
 from graphviz import Digraph, ExecutableNotFound
@@ -443,11 +444,17 @@ class ProcNode(BaseNode):
             n.used_by.add(self)
             self.uses.add(n)
 
-        for c in getattr(obj, "calls", []):
+        seen = {}
+        calls = deque(getattr(obj, "calls", []))
+        while calls:
+            c = calls.popleft()
             if getattr(c, "visible", True):
                 n = gd.get_procedure_node(c, hist)
                 n.called_by.add(self)
                 self.calls.add(n)
+            elif getattr(c, 'parobj', None) == 'proc' and c not in seen:
+                calls.extend(getattr(c, "calls", []))
+                seen[c] = True
 
         if obj.proctype.lower() != "interface":
             return
