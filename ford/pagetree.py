@@ -37,10 +37,15 @@ class PageNode:
     base_url = Path("..")
 
     def __init__(
-        self, md, path: Path, proj_copy_subdir: List[str], parent: Optional[PageNode]
+        self,
+        md,
+        path: Path,
+        proj_copy_subdir: List[str],
+        parent: Optional[PageNode],
+        encoding: str = "utf-8",
     ):
         print("Reading page {}".format(os.path.relpath(path)))
-        with open(path, "r") as page:
+        with open(path, "r", encoding=encoding) as page:
             text = md.reset().convert(page.read())
 
         if "title" not in md.Meta:
@@ -91,7 +96,13 @@ class PageNode:
         return iter(retlist)
 
 
-def get_page_tree(topdir: os.PathLike, proj_copy_subdir: List[str], md, parent=None):
+def get_page_tree(
+    topdir: os.PathLike,
+    proj_copy_subdir: List[str],
+    md,
+    parent=None,
+    encoding: str = "utf-8",
+):
     # In python 3.6 or newer, the normal dict is guaranteed to be ordered.
     # However, to keep compatibility with older versions I use OrderedDict.
     # I will use this later to remove duplicates from a list in a short way.
@@ -108,7 +119,7 @@ def get_page_tree(topdir: os.PathLike, proj_copy_subdir: List[str], md, parent=N
 
     # process index.md
     try:
-        node = PageNode(md, index_file, proj_copy_subdir, parent)
+        node = PageNode(md, index_file, proj_copy_subdir, parent, encoding)
     except Exception as e:
         print(f"Warning: Error parsing {index_file.relative_to('.')}.\n\t{e.args[0]}")
         return None
@@ -138,12 +149,14 @@ def get_page_tree(topdir: os.PathLike, proj_copy_subdir: List[str], md, parent=N
             if parent and name in parent.copy_subdir:
                 continue
 
-            if subnode := get_page_tree(filename, proj_copy_subdir, md, node):
+            if subnode := get_page_tree(filename, proj_copy_subdir, md, node, encoding):
                 node.subpages.append(subnode)
         elif filename.suffix == ".md":
             # process subpages
             try:
-                node.subpages.append(PageNode(md, filename, proj_copy_subdir, node))
+                node.subpages.append(
+                    PageNode(md, filename, proj_copy_subdir, node, encoding)
+                )
             except ValueError as e:
                 print(f"Warning: Error parsing '{filename}'.\n\t{e.args[0]}")
                 continue

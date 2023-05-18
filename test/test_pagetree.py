@@ -1,8 +1,9 @@
-from ford.pagetree import PageNode, get_page_tree
+from ford.pagetree import get_page_tree
 
 from markdown import Markdown
 
 from textwrap import dedent
+from locale import getpreferredencoding
 
 
 def test_footnotes_on_one_page(tmp_path):
@@ -82,3 +83,33 @@ def test_footnotes_on_one_page_parse_failure(tmp_path):
 
     assert len(nodes.subpages) == 1
     assert "This is the footnote on page A" not in nodes.subpages[0].contents
+
+
+def test_non_utf8_encoding(tmp_path):
+    """This is not really a full test for issue #518, as it only tests
+    the lower part of the call-tree. A more thorough test would do
+    something like encode a whole project in the non-default encoding.
+
+    """
+    # Try to get an encoding which is *not* the default for `open`
+    encoding = "gbk" if getpreferredencoding().lower() == "utf-8" else "utf-8"
+
+    with open(tmp_path / "index.md", "wb") as f:
+        f.write(
+            dedent(
+                """\
+        ---
+        title: Specification
+        ---
+
+        @warning
+        本文档是一个简易的规范文档，仅供参考
+        """
+            ).encode(encoding)
+        )
+
+    md = Markdown(extensions=["markdown.extensions.meta", "markdown.extensions.extra"])
+    result_dir = tmp_path / "result"
+    nodes = get_page_tree(tmp_path, result_dir, md, encoding=encoding)
+
+    assert "本文档是" in nodes.contents
