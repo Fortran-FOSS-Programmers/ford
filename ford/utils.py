@@ -446,9 +446,7 @@ def external(project, make=False, path="."):
         """
         Get module information from an external project but on the
         local file system.
-        Uses the io module to work in both, Python 2 and 3.
         """
-        from io import open
 
         with open(url / "modules.json", mode="r", encoding="utf-8") as extfile:
             return json.loads(extfile.read())

@@ -22,79 +22,72 @@
 #
 #
 
+from __future__ import annotations
+
 import os
+from pathlib import Path
+from typing import List, Optional
 
 
-class PageNode(object):
+class PageNode:
     """
     Object representing a page in a tree of pages and subpages.
     """
 
-    base_url = ".."
+    base_url = Path("..")
 
-    def __init__(self, md, path, proj_copy_subdir, parent):
+    def __init__(
+        self,
+        md,
+        path: Path,
+        proj_copy_subdir: List[str],
+        parent: Optional[PageNode],
+        encoding: str = "utf-8",
+    ):
         print("Reading page {}".format(os.path.relpath(path)))
-        with open(path, "r") as page:
+        with open(path, "r", encoding=encoding) as page:
             text = md.reset().convert(page.read())
 
-        if "title" in md.Meta:
-            self.title = "\n".join(md.Meta["title"])
-        else:
-            raise Exception("Page {} has no title metadata".format(path))
-        if "author" in md.Meta:
-            self.author = "\n".join(md.Meta["author"])
-        else:
-            self.author = None
-        if "date" in md.Meta:
-            self.date = "\n".join(md.Meta["date"])
-        else:
-            self.date = None
+        if "title" not in md.Meta:
+            raise ValueError(f"Page '{path}' has no title metadata")
 
-        if "ordered_subpage" in md.Meta:
-            # index.md is the main page, it should not be added by the user in the subpage lists.
-            self.ordered_subpages = [
-                x for x in md.Meta["ordered_subpage"] if x != "index.md"
-            ]
-        else:
-            self.ordered_subpages = None
+        self.title = "\n".join(md.Meta["title"])
+        self.author = "\n".join(md.Meta.get("author", []))
+        self.date = "\n".join(md.Meta.get("date", []))
+
+        # index.md is the main page, it should not be added by the user in the subpage lists.
+        self.ordered_subpages = [
+            x for x in md.Meta.get("ordered_subpage", []) if x != "index.md"
+        ]
 
         # set list of directory names that are to be copied along without
         # containing an index.md itself.
         #   first priority is the copy_dir option in the *.md file
         #   if this option is not set in the file fall back to the global
         #   project settings
-        if "copy_subdir" in md.Meta:
-            self.copy_subdir = md.Meta["copy_subdir"]
-        else:
-            self.copy_subdir = proj_copy_subdir
-
+        self.copy_subdir = md.Meta.get("copy_subdir", proj_copy_subdir)
         self.parent = parent
         self.contents = text
-        self.subpages = []
-        self.files = []
+        self.subpages: List[PageNode] = []
+        self.files: List[os.PathLike] = []
+        self.filename = Path(path.stem)
         if self.parent:
-            self.hierarchy = self.parent.hierarchy + [self.parent]
+            self.hierarchy: List[PageNode] = self.parent.hierarchy + [self.parent]
+            self.topdir: Path = self.parent.topdir
+            self.location = Path(os.path.relpath(path.parent, self.topdir))
+            self.topnode: PageNode = self.parent.topnode
         else:
             self.hierarchy = []
-
-        self.filename = os.path.split(path)[1][:-3]
-        if parent:
-            self.topdir = parent.topdir
-            self.location = os.path.relpath(os.path.split(path)[0], self.topdir)
-            self.topnode = parent.topnode
-        else:
-            self.topdir = os.path.split(path)[0]
-            self.location = ""
+            self.topdir = path.parent
+            self.location = Path("")
             self.topnode = self
 
+    @property
+    def path(self):
+        return self.location / self.filename.with_suffix(".html")
+
     def __str__(self):
-        # ~ urlstr = "<a href='{0}/page/{1}/{2}.html'>{3}</a>"
-        urlstr = "<a href='{0}'>{1}</a>"
-        url = urlstr.format(
-            os.path.join(self.base_url, "page", self.location, self.filename + ".html"),
-            self.title,
-        )
-        return url
+        return f"<a href='{self.base_url / 'page' / self.path}'>{self.title}</a>"
 
     def __iter__(self):
         retlist = [self]
@@ -103,28 +96,35 @@ class PageNode(object):
         return iter(retlist)
 
 
-def get_page_tree(topdir, proj_copy_subdir, md, parent=None):
+def get_page_tree(
+    topdir: os.PathLike,
+    proj_copy_subdir: List[str],
+    md,
+    parent=None,
+    encoding: str = "utf-8",
+):
     # In python 3.6 or newer, the normal dict is guaranteed to be ordered.
     # However, to keep compatibility with older versions I use OrderedDict.
     # I will use this later to remove duplicates from a list in a short way.
     from collections import OrderedDict
 
+    topdir = Path(topdir)
+
     # look for files within topdir
-    filelist = sorted(os.listdir(topdir))
-    if "index.md" not in filelist:
-        print(f"Warning: No index.md file in directory {topdir}")
+    index_file = topdir / "index.md"
+
+    if not index_file.exists():
+        print(f"Warning: '{index_file}' does not exist")
         return None
 
     # process index.md
     try:
-        node = PageNode(md, os.path.join(topdir, "index.md"), proj_copy_subdir, parent)
+        node = PageNode(md, index_file, proj_copy_subdir, parent, encoding)
     except Exception as e:
-        print(
-            "Warning: Error parsing {}.\n\t{}".format(
-                os.path.relpath(os.path.join(topdir, "index.md")), e.args[0]
-            )
-        )
+        print(f"Warning: Error parsing {index_file.relative_to('.')}.\n\t{e.args[0]}")
         return None
+
+    filelist = sorted(os.listdir(topdir))
     filelist.remove("index.md")
 
     if node.ordered_subpages:
@@ -134,37 +134,37 @@ def get_page_tree(topdir, proj_copy_subdir, md, parent=None):
         mergedfilelist = filelist
 
     for name in mergedfilelist:
-        if name[0] != "." and name[-1] != "~":
-            if not os.path.exists(os.path.join(topdir, name)):
-                raise Exception("Requested page file {} does not exist.".format(name))
-            elif os.path.isdir(os.path.join(topdir, name)):
-                # recurse into subdirectories
-                traversedir = True
-                if parent is not None:
-                    traversedir = name not in parent.copy_subdir
-                if traversedir:
-                    subnode = get_page_tree(
-                        os.path.join(topdir, name), proj_copy_subdir, md, node
-                    )
-                    if subnode:
-                        node.subpages.append(subnode)
-            elif name[-3:] == ".md":
-                # process subpages
-                try:
-                    node.subpages.append(
-                        PageNode(md, os.path.join(topdir, name), proj_copy_subdir, node)
-                    )
-                except Exception as e:
-                    print(
-                        "Warning: Error parsing {}.\n\t{}".format(
-                            os.path.relpath(os.path.join(topdir, name)), e.args[0]
-                        )
-                    )
-                    continue
-            else:
-                node.files.append(name)
+        if name[0] == ".":
+            continue
+        if name[-1] == "~":
+            continue
+
+        filename = topdir / name
+
+        if not filename.exists():
+            raise ValueError(f"Requested page file '{filename}' does not exist")
+
+        if filename.is_dir():
+            # recurse into subdirectories
+            if parent and name in parent.copy_subdir:
+                continue
+
+            if subnode := get_page_tree(filename, proj_copy_subdir, md, node, encoding):
+                node.subpages.append(subnode)
+        elif filename.suffix == ".md":
+            # process subpages
+            try:
+                node.subpages.append(
+                    PageNode(md, filename, proj_copy_subdir, node, encoding)
+                )
+            except ValueError as e:
+                print(f"Warning: Error parsing '{filename}'.\n\t{e.args[0]}")
+                continue
+        else:
+            node.files.append(name)
+
     return node
 
 
 def set_base_url(url):
-    PageNode.base_url = url
+    PageNode.base_url = Path(url)

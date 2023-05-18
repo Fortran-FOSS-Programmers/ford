@@ -479,21 +479,17 @@ def ProcPage(data, proj, obj):
 
 class PagetreePage(BasePage):
     @property
-    def object_page(self):
-        return self.obj.filename + ".html"
-
-    @property
     def loc(self):
-        return pathlib.Path("page") / self.obj.location / self.object_page
+        return pathlib.Path("page") / self.obj.path
 
     @property
     def outfile(self):
-        return self.page_dir / self.obj.location / self.object_page
+        return self.page_dir / self.obj.path
 
     def render(self, data, proj, obj):
         if data["relative"]:
             base_url = ("../" * len(obj.hierarchy))[:-1]
-            if obj.filename == "index":
+            if obj.filename.stem == "index":
                 if len(obj.hierarchy) > 0:
                     base_url = base_url + "/.."
                 else:
@@ -508,23 +504,26 @@ class PagetreePage(BasePage):
         return template.render(data, page=obj, project=proj, topnode=obj.topnode)
 
     def writeout(self):
-        if self.obj.filename == "index":
+        if self.obj.filename.stem == "index":
             (self.page_dir / self.obj.location).mkdir(USER_WRITABLE_ONLY, exist_ok=True)
         super(PagetreePage, self).writeout()
 
+        from_path = self.data["page_dir"] / self.obj.location
+        to_path = self.page_dir / self.obj.location
+
         for item in self.obj.copy_subdir:
-            item_path = self.data["page_dir"] / self.obj.location / item
+            item_path = from_path / item
             try:
-                copytree(item_path, self.page_dir / self.obj.location / item)
+                copytree(item_path, to_path / item)
             except Exception as e:
                 print(
                     f"Warning: could not copy directory '{item_path}'. Error: {e.args[0]}"
                 )
 
         for item in self.obj.files:
-            item_path = self.data["page_dir"] / self.obj.location / item
+            item_path = from_path / item
             try:
-                shutil.copy(item_path, self.page_dir / self.obj.location)
+                shutil.copy(item_path, to_path)
             except Exception as e:
                 print(f"Warning: could not copy file '{item_path}'. Error: {e.args[0]}")
 

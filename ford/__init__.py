@@ -40,7 +40,7 @@ import ford.fortran_project
 import ford.sourceform
 import ford.output
 import ford.utils
-import ford.pagetree
+from ford.pagetree import get_page_tree
 from ford.md_environ import EnvironExtension
 
 from importlib.metadata import version, PackageNotFoundError
@@ -616,8 +616,11 @@ def main(proj_data, proj_docs, md):
     )
     # Process any pages
     if proj_data["page_dir"] is not None:
-        page_tree = ford.pagetree.get_page_tree(
-            os.path.normpath(proj_data["page_dir"]), proj_data["copy_subdir"], md
+        page_tree = get_page_tree(
+            pathlib.Path(proj_data["page_dir"]),
+            proj_data["copy_subdir"],
+            md,
+            encoding=proj_data["encoding"],
         )
         print()
     else:
