@@ -39,6 +39,8 @@ from graphviz import version as graphviz_version
 from tqdm import tqdm
 from tqdm.contrib.concurrent import process_map
 
+import ford.utils
+
 from ford.sourceform import (
     ExternalFunction,
     ExternalInterface,
@@ -432,7 +434,6 @@ class ProcNode(BaseNode):
         self.called_by = set()
         self.interfaces = set()
         self.interfaced_by = set()
-        self.internal = getattr(obj, 'parobj', None) == 'proc'
 
         if self.fromstr:
             return
@@ -1163,8 +1164,6 @@ class CallGraph(FortranGraph):
             if p not in hop_nodes:
                 hop_nodes.add(p)
             hop_edges.append(_solid_edge(node, p, colour))
-            if p.internal:
-                self._add_node(hop_nodes, hop_edges, p, colour)
         for p in sorted(getattr(node, "interfaces", [])):
             if p not in hop_nodes:
                 hop_nodes.add(p)
@@ -1287,6 +1286,7 @@ class GraphManager:
         self.modules: Set[FortranContainer] = set()
         self.programs: Set[FortranContainer] = set()
         self.procedures: Set[FortranContainer] = set()
+        self.internal_procedures: Set[FortranContainer] = set()
         self.types: Set[FortranContainer] = set()
         self.sourcefiles: Set[FortranContainer] = set()
         self.blockdata: Set[FortranContainer] = set()
@@ -1320,6 +1320,9 @@ class GraphManager:
                 obj.calledbygraph = CalledByGraph(obj, self.data)
                 obj.usesgraph = UsesGraph(obj, self.data)
                 self.procedures.add(obj)
+                # regester internal procedures 
+                for p in ford.utils.traverse(obj, ["subroutines","functions"]):
+                    self.internal_procedures.add(p) if getattr(p, "visible", False) else None
             elif is_program(obj):
                 obj.usesgraph = UsesGraph(obj, self.data)
                 obj.callsgraph = CallsGraph(obj, self.data)
@@ -1333,7 +1336,7 @@ class GraphManager:
                 self.blockdata.add(obj)
 
         usenodes = sorted(list(self.modules))
-        callnodes = sorted(list(self.procedures))
+        callnodes = sorted(list(self.procedures | self.internal_procedures))
         for p in sorted(self.programs):
             if len(p.usesgraph.added) > 1:
                 usenodes.append(p)
