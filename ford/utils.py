@@ -31,6 +31,7 @@ from urllib.request import urlopen, URLError
 from urllib.parse import urljoin
 import pathlib
 from typing import Union
+import itertools
 
 
 NOTE_TYPE = {
@@ -546,3 +547,12 @@ def normalise_path(
 ) -> pathlib.Path:
     """Tidy up path, making it absolute, relative to base_dir"""
     return (base_dir / os.path.expandvars(path)).absolute()
+
+def traverse(root, attrs) -> list:
+    """Traverse a tree of objects, returning a list of all objects found
+    within the attributes attrs"""
+    nodes = []
+    for obj in itertools.chain(*[getattr(root, attr, []) for attr in attrs]):
+        nodes.append(obj)
+        nodes.extend(traverse(obj, attrs))
+    return nodes
