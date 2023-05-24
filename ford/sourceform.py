@@ -1297,18 +1297,8 @@ class FortranCodeUnit(FortranContainer):
             ):
             call_type_str = strip_type(vars[call.chain[0]].full_type)
             call_type = self.all_types.get(call_type_str, None)
-        
-        # if None, not a variable, try call type is a procedure
-        if (call_type is None
-            and hasattr(self, 'all_procs')
-            and hasattr(self, 'all_types')
-            and call.chain[0] in self.all_procs
-            and hasattr(self.all_procs[call.chain[0]], 'retvar')
-            ):
-            call_type_str = strip_type(self.all_procs[call.chain[0]].retvar.full_type) 
-            call_type = self.all_types.get(call_type_str, None)
 
-        # if None, not a procedure, try call type is an extended type
+        # if None, not a variable, try call type is an extended type
         if (call_type is None
             and isinstance(self, FortranType)
             and hasattr(self, 'extends')):
@@ -1334,19 +1324,8 @@ class FortranCodeUnit(FortranContainer):
                         new_call_type_str = strip_type(v.full_type)
                         break
                 new_call_type = call_type.all_types.get(new_call_type_str, None)
-            
-            # not a variable, try call type is a procedure
-            if (new_call_type is None
-                and hasattr(call_type, 'boundprocs')
-                ):
-                new_call_type_str = None
-                for b in call_type.boundprocs:
-                    if b.name.lower() == c:
-                        new_call_type_str = strip_type(v.retvar.full_type)
-                        break
-                new_call_type = call_type.all_types.get(new_call_type_str, None)
 
-            # not a procedure, try call type is an extended type
+            # not a variable, try call type is an extended type
             if (new_call_type is None
                 and isinstance(call_type, FortranType)):
                 extend = call_type
