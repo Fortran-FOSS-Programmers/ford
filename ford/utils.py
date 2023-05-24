@@ -120,10 +120,10 @@ def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
 
 def strip_paren(line: str, retlevel: int = 0, retblevel: int = 0, index = -1) -> str:
     """
-    By default takes a string starting with an open parenthesis and returns the portion
-    of the string going to the corresponding close parenthesis. If retlevel != 0 then
-    will return when that level (for parentheses) is reached. Same for retblevel.
-    If index >= 0, then only the characters inside the same scope as index are returned.
+    Takes a string with parentheses and returns only the portion of the string
+    that is in the same level of nested parentheses as specified by retlevel.
+    If index is specified, then characters in the same level but not in the same
+    scope as the char at index are also stripped. 
     """
     if len(line) == 0:
         return line
