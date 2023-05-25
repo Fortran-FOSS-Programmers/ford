@@ -1,6 +1,7 @@
 from ford.fortran_project import Project
 from ford import DEFAULT_SETTINGS
 from ford.graphs import graphviz_installed, GraphManager
+import ford.sourceform
 
 from copy import deepcopy
 from textwrap import dedent
@@ -25,9 +26,9 @@ def create_project(settings: dict):
     project.correlate()
     return project
 
-
+project_graphs = {}
 @pytest.fixture(scope="module")
-def make_project_graphs(tmp_path_factory):
+def make_project_graphs(tmp_path_factory, request):
     data = """\
     module a
     end module a
@@ -73,6 +74,17 @@ def make_project_graphs(tmp_path_factory):
         real :: res
         res = 1
       end function six
+      subroutine seven
+        contains
+          call seven_one
+          call seven_two
+          subroutine seven_one
+            call seven_two
+          end subroutine seven_one
+          subroutine seven_two
+            call one
+          end subroutine seven_two
+      end subroutine seven
     end module c
 
     submodule (c) c_submod
@@ -102,6 +114,10 @@ def make_project_graphs(tmp_path_factory):
       end subroutine four
     end program foo
     """
+    # check if we've already created the graphs for this test
+    if "proc_internals_" + str(getattr(request, 'param', {}).get('proc_internals', False)) in project_graphs:
+        yield project_graphs["proc_internals_" + str(getattr(request, 'param', {}).get('proc_internals', False))]
+        return
 
     src_dir = tmp_path_factory.getbasetemp() / "graphs" / "src"
     src_dir.mkdir(exist_ok=True, parents=True)
@@ -112,6 +128,9 @@ def make_project_graphs(tmp_path_factory):
     settings = deepcopy(DEFAULT_SETTINGS)
     settings["src_dir"] = [src_dir]
     settings["graph"] = True
+    if 'proc_internals' in getattr(request, 'param', {}):
+        settings["proc_internals"] = request.param["proc_internals"]
+
     project = create_project(settings)
 
     graphs = GraphManager(
@@ -132,7 +151,13 @@ def make_project_graphs(tmp_path_factory):
 
     graphs.graph_all()
     graphs.output_graphs(0)
-    return graphs
+
+    # save graphs for future use
+    project_graphs["proc_internals_" + str(getattr(request, 'param', {}).get('proc_internals', False))] = graphs
+    
+    yield graphs
+    # reset namelist so it doesn't affect future generated graphs
+    ford.sourceform.namelist = ford.sourceform.NameSelector()
 
 
 MOD_GRAPH_KEY = ["Module", "Submodule", "Subroutine", "Function", "Program"]
@@ -148,9 +173,10 @@ TYPE_GRAPH_KEY = ["Type"]
 
 @pytest.mark.skipif(not graphviz_installed, reason="Requires graphviz")
 @pytest.mark.parametrize(
-    ("graph_name", "expected_nodes", "expected_edges", "expected_legend_nodes"),
+    ("make_project_graphs","graph_name", "expected_nodes", "expected_edges", "expected_legend_nodes"),
     [
         (
+            {"proc_internals":False},
             ["usegraph"],
             [
                 "a",
@@ -176,6 +202,7 @@ TYPE_GRAPH_KEY = ["Type"]
             MOD_GRAPH_KEY,
         ),
         (
+            {"proc_internals":False},
             ["callgraph"],
             [
                 "c::one",
@@ -186,6 +213,7 @@ TYPE_GRAPH_KEY = ["Type"]
                 "foo",
                 "c::alpha%five",
                 "c::alpha%six",
+                "c::seven",
             ],
             [
                 "proc~three->proc~one",
@@ -196,10 +224,44 @@ TYPE_GRAPH_KEY = ["Type"]
                 "proc~four->proc~four",
                 "program~foo->proc~five",
                 "program~foo->proc~six",
+                "proc~seven->proc~one",
             ],
             PROC_GRAPH_KEY,
         ),
         (
+            {"proc_internals":True},
+            ["callgraph"],
+            [
+                "c::one",
+                "foo::three",
+                "c::two",
+                "foo::four",
+                "other_sub",
+                "foo",
+                "c::alpha%five",
+                "c::alpha%six",
+                "c::seven",
+                "seven::seven_one",
+                "seven::seven_two",
+            ],
+            [
+                "proc~three->proc~one",
+                "proc~three->proc~two",
+                "proc~two->proc~one",
+                "proc~three->other_sub",
+                "program~foo->proc~three",
+                "proc~four->proc~four",
+                "program~foo->proc~five",
+                "program~foo->proc~six",
+                "proc~seven->none~seven_one",
+                "proc~seven->none~seven_two",
+                "none~seven_one->none~seven_two",
+                "none~seven_two->proc~one",
+            ],
+            PROC_GRAPH_KEY,
+        ),
+        (
+            {"proc_internals":False},
             ["typegraph"],
             ["base", "derived", "leaf", "external_type", "thing", "alpha"],
             [
@@ -211,12 +273,14 @@ TYPE_GRAPH_KEY = ["Type"]
             TYPE_GRAPH_KEY,
         ),
         (
+            {"proc_internals":False},
             ["modules", "b", "usesgraph"],
             ["a", "b"],
             ["module~b->module~a"],
             MOD_GRAPH_KEY,
         ),
         (
+            {"proc_internals":False},
             ["modules", "b", "usedbygraph"],
             ["b", "c", "c_submod", "c_subsubmod", "foo"],
             [
@@ -228,36 +292,54 @@ TYPE_GRAPH_KEY = ["Type"]
             MOD_GRAPH_KEY,
         ),
         (
+            {"proc_internals":False},
             ["types", "derived", "inhergraph"],
             ["base", "derived"],
             ["type~derived->type~base"],
             TYPE_GRAPH_KEY,
         ),
         (
+            {"proc_internals":False},
             ["types", "derived", "inherbygraph"],
             ["derived", "leaf", "thing"],
             ["type~leaf->type~derived", "type~thing->type~derived"],
             TYPE_GRAPH_KEY,
         ),
         (
+            {"proc_internals":False},
             ["procedures", "two", "callsgraph"],
             ["c::one", "c::two"],
             ["proc~two->proc~one"],
             PROC_GRAPH_KEY,
         ),
         (
+            {"proc_internals":True},
+            ["procedures", "seven", "callsgraph"],
+            ["c::seven", "c::one", "seven::seven_one", "seven::seven_two"],
+            [
+                "proc~seven->none~seven_one", 
+                "proc~seven->none~seven_two", 
+                "none~seven_one->none~seven_two", 
+                "none~seven_two->proc~one",
+            ],
+            PROC_GRAPH_KEY,
+        ),
+        (
+            {"proc_internals":False},
             ["procedures", "two", "calledbygraph"],
             ["foo::three", "c::two", "foo"],
             ["proc~three->proc~two", "program~foo->proc~three"],
             PROC_GRAPH_KEY,
         ),
         (
+            {"proc_internals":False},
             ["procedures", "three", "usesgraph"],
             ["external_mod", "foo::three"],
             ["proc~three->external_mod"],
             MOD_GRAPH_KEY,
         ),
     ],
+    indirect=["make_project_graphs"]
 )
 def test_graphs(
     make_project_graphs,

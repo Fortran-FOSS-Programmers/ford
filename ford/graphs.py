@@ -31,12 +31,15 @@ import os
 import pathlib
 import re
 from typing import Dict, Iterable, List, Optional, Set, Tuple, Type, Union, cast
+from collections import deque
 import warnings
 
 from graphviz import Digraph, ExecutableNotFound
 from graphviz import version as graphviz_version
 from tqdm import tqdm
 from tqdm.contrib.concurrent import process_map
+
+import ford.utils
 
 from ford.sourceform import (
     ExternalFunction,
@@ -442,11 +445,17 @@ class ProcNode(BaseNode):
             n.used_by.add(self)
             self.uses.add(n)
 
-        for c in getattr(obj, "calls", []):
+        seen = {}
+        calls = deque(getattr(obj, "calls", []))
+        while calls:
+            c = calls.popleft()
             if getattr(c, "visible", True):
                 n = gd.get_procedure_node(c, hist)
                 n.called_by.add(self)
                 self.calls.add(n)
+            elif getattr(c, 'parobj', None) == 'proc' and c not in seen:
+                calls.extend(getattr(c, "calls", []))
+                seen[c] = True
 
         if obj.proctype.lower() != "interface":
             return
@@ -1277,6 +1286,7 @@ class GraphManager:
         self.modules: Set[FortranContainer] = set()
         self.programs: Set[FortranContainer] = set()
         self.procedures: Set[FortranContainer] = set()
+        self.internal_procedures: Set[FortranContainer] = set()
         self.types: Set[FortranContainer] = set()
         self.sourcefiles: Set[FortranContainer] = set()
         self.blockdata: Set[FortranContainer] = set()
@@ -1310,6 +1320,9 @@ class GraphManager:
                 obj.calledbygraph = CalledByGraph(obj, self.data)
                 obj.usesgraph = UsesGraph(obj, self.data)
                 self.procedures.add(obj)
+                # regester internal procedures 
+                for p in ford.utils.traverse(obj, ["subroutines","functions"]):
+                    self.internal_procedures.add(p) if getattr(p, "visible", False) else None
             elif is_program(obj):
                 obj.usesgraph = UsesGraph(obj, self.data)
                 obj.callsgraph = CallsGraph(obj, self.data)
@@ -1323,7 +1336,7 @@ class GraphManager:
                 self.blockdata.add(obj)
 
         usenodes = sorted(list(self.modules))
-        callnodes = sorted(list(self.procedures))
+        callnodes = sorted(list(self.procedures | self.internal_procedures))
         for p in sorted(self.programs):
             if len(p.usesgraph.added) > 1:
                 usenodes.append(p)

@@ -60,6 +60,7 @@ def test_nav_bar(example_index):
 
     expected_pages = {
         settings["project"],
+        "Notes",
         "Source Files",
         "Block Data",
         "Modules",
@@ -442,3 +443,29 @@ def test_interfaces(example_project):
     )
 
     assert len(list_items[-1]("tr")) == 2
+
+
+def test_static_pages(example_project):
+    path, _ = example_project
+    notes_page = read_html(path / "page/index.html")
+
+    # We should have some "author" metadata, but no date
+    assert notes_page.find(id="author").text.strip() == "Jane Bloggs", "author"
+    assert notes_page.find(id="date") is None, "date"
+
+    sidebar = notes_page.find(class_="well toc")
+    subpage_links = sidebar.find_all("a")
+
+    # Check the links in the sidebare to subpages is correct
+
+    subpage_names = [link.text for link in subpage_links]
+    # Note that order matters here, so no `sorted`!
+    expected_subpage_names = ["Notes", "First page", "Second page", "Yet Another Page"]
+    assert subpage_names == expected_subpage_names, "subpages"
+
+    subpage_paths = [pathlib.Path(link["href"]) for link in subpage_links]
+    expected_subpage_paths = [
+        pathlib.Path(f"../page/{link}.html")
+        for link in ("index", "subpage2", "subpage1", "subpage3")
+    ]
+    assert subpage_paths == expected_subpage_paths, "ordered_subpages"

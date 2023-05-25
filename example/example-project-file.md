@@ -28,6 +28,7 @@ extra_filetypes: sh #
 max_frontpage_items: 4
 exclude: excluded_file.f90
 exclude_dir: src/excluded_directory
+page_dir: pages
 ---
 
 Hi, my name is ${USER}.

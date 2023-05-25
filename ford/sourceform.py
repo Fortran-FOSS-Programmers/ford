@@ -24,19 +24,13 @@
 
 from collections import defaultdict
 from dataclasses import dataclass
-import sys
 import re
 import os.path
 import copy
 import textwrap
 from typing import List, Tuple, Optional, Union, Sequence, Dict
 from itertools import chain
-
-# Python 2 or 3:
-if sys.version_info[0] > 2:
-    from urllib.parse import quote
-else:
-    from urllib import quote
+from urllib.parse import quote
 
 import toposort
 from pygments import highlight
