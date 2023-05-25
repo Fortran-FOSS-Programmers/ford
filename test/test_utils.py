@@ -40,3 +40,15 @@ def test_str_to_bool_false(string):
 def test_str_to_bool_already_bool():
     assert ford.utils.str_to_bool(True)
     assert not ford.utils.str_to_bool(False)
+
+@pytest.mark.parametrize(("string", "level", "index", "expected"),
+                            [("abcdefghi", 0, -1, "abcdefghi"),
+                             ("abc(def)ghi", 1, -1, "def"),
+                             ("abc(def)ghi", 0, -1, "abcghi"),
+                             ("(abc)def(ghi)", 1, 1, "abc"),
+                             ("(abc)def(ghi)", 1, 9, "ghi"),
+                             ("(abc)def(ghi)", 1, -1, "abcghi"),
+                             ("(a(b)c)def(gh(i))", 1, 2, "ac"),
+                            ])
+def test_strip_paren(string, level, index, expected):
+    assert ford.utils.strip_paren(string, retlevel = level, index = index) == expected

@@ -1,6 +1,7 @@
 from ford.sourceform import (
     FortranSourceFile,
     FortranModule,
+    FortranBase,
     parse_type,
     ParsedType,
     line_to_variables,
@@ -231,7 +232,102 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
     program = fortran_file.programs[0]
     assert len(program.calls) == 2
     expected_calls = {"bar", "foo"}
-    assert set(program.calls) == expected_calls
+    assert set([call.name for call in program.calls]) == expected_calls
+
+@pytest.mark.parametrize(
+    ["call_segment", "expected"],
+    [
+        ("""
+        TYPE(t_bar) :: v_bar
+        TYPE(t_baz) :: var
+        var = v_bar%p_foo()
+        """
+        , ["p_foo"]),
+        ("""
+        TYPE(t_bar) :: v_bar
+        INTEGER :: var
+        var = v_bar%v_foo(0)
+        """
+        , []),
+        ("""
+        TYPE(t_bar) :: v_bar
+        INTEGER, DIMENSION(:), ALLOCATABLE :: var
+        var = v_bar%v_baz%p_baz()
+        """
+        , ["p_baz"]),
+        ("""
+        TYPE(t_bar) :: v_bar
+        TYPE(t_baz) :: var
+        var = v_bar%t_foo%p_foo()
+        """
+        , ["p_foo"]),
+        ("""
+        TYPE(t_bar) :: v_bar
+        INTEGER :: var
+        var = v_bar%v_baz%v_faz(0)
+        """
+        , []),
+    ])
+def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segment, expected):
+    data = """\
+    MODULE m_foo
+        IMPLICIT NONE
+        TYPE :: t_baz
+            INTEGER, DIMENSION(:), ALLOCATABLE :: v_faz
+        CONTAINS
+            PROCEDURE :: p_baz
+        END TYPE t_baz
+            
+        TYPE :: t_foo
+            INTEGER, DIMENSION(:), ALLOCATABLE :: v_foo
+        CONTAINS
+            PROCEDURE :: p_foo
+        END TYPE t_foo
+
+        TYPE, EXTENDS(t_foo) :: t_bar
+            TYPE(t_baz) :: v_baz
+        END TYPE t_bar
+        
+        CONTAINS
+
+        FUNCTION p_baz(self) RESULT(ret_val)
+            CLASS(t_baz), INTENT(IN) :: self
+            INTEGER, DIMENSION(:), ALLOCATABLE :: ret_val
+        END FUNCTION p_baz
+
+        FUNCTION p_foo(self) RESULT(ret_val)
+            CLASS(t_foo), INTENT(IN) :: self
+            TYPE(t_baz) :: ret_val
+        END FUNCTION p_foo
+
+        FUNCTION p_bar() RESULT(ret_val)
+            TYPE(t_baz) :: ret_val
+        END FUNCTION p_bar
+
+        SUBROUTINE main
+            ! Call segment
+            {}
+            ! Call segment
+        END SUBROUTINE main
+
+    END MODULE m_foo
+
+    """.format(call_segment)
+
+    fortran_file = parse_fortran_file(data)
+    fp = FakeProject()
+    fortran_file.modules[0].correlate(fp)
+
+    calls = fortran_file.modules[0].subroutines[0].calls
+
+    assert len(calls) == len(expected)
+
+    calls_sorted = sorted(calls, key=lambda x: x.name)
+    expected_sorted = sorted(expected)
+    for call, expected_name in zip(calls_sorted, expected_sorted):
+        assert isinstance(call, FortranBase)
+
+        assert call.name == expected_name
 
 
 def test_component_access(parse_fortran_file):

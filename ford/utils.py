@@ -31,6 +31,7 @@ from urllib.request import urlopen, URLError
 from urllib.parse import urljoin
 import pathlib
 from typing import Union
+from io import StringIO
 import itertools
 
 
@@ -88,7 +89,7 @@ def sub_notes(docs):
 
 def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
     """
-    By default akes a string starting with an open parenthesis and returns the portion
+    By default takes a string starting with an open parenthesis and returns the portion
     of the string going to the corresponding close parenthesis. If retlevel != 0 then
     will return when that level (for parentheses) is reached. Same for retblevel.
     """
@@ -118,6 +119,42 @@ def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
         return parenstr
     raise RuntimeError("Couldn't parse parentheses: {}".format(line))
 
+def strip_paren(line: str, retlevel: int = 0, retblevel: int = 0, index = -1) -> str:
+    """
+    Takes a string with parentheses and returns only the portion of the string
+    that is in the same level of nested parentheses as specified by retlevel.
+    If index is specified, then characters in the same level but not in the same
+    scope as the char at index are also stripped. 
+    """
+    if len(line) == 0:
+        return line
+    retstr = StringIO()
+    level = 0
+    blevel = 0
+    for i,char in enumerate(line):
+        if char == "(":
+            level += 1
+        elif char == ")":
+            level -= 1
+        elif char == "[":
+            blevel += 1
+        elif char == "]":
+            blevel -= 1
+        elif (
+            level == retlevel
+            and blevel == retblevel
+        ):
+            retstr.write(char)
+        
+        if index >= 0 and char == ')' and level < retlevel:
+            # scope of index is yet to start, reset retstr
+            if i < index:
+                retstr = StringIO()
+            # scope of index is over, return retstr
+            else:
+                return retstr.getvalue()
+
+    return retstr.getvalue()
 
 def paren_split(sep, string):
     """
