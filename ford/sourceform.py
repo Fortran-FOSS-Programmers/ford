@@ -2909,12 +2909,13 @@ class CallChain:
     chain: List[str]
 
 def get_call_chain(line, match) -> CallChain:
-    sub_line = line[:match.start(1)].lower()
+    sub_line = line[:match.start(1)].lower().rstrip()
     if len(sub_line) == 0 or sub_line[-1] != "%":
         # not a chain call
         return CallChain(match.group(1).lower(), [])
     level = sub_line.count("(") - sub_line.count(")")
-    sub_line = ford.utils.strip_paren(sub_line, retlevel=level, index = len(sub_line) - 1)
+    blevel = sub_line.count("[") - sub_line.count("]")
+    sub_line = ford.utils.strip_paren(sub_line, retlevel=level, retblevel=blevel, index = len(sub_line) - 1)
     # remove 'call ' from the start if present
     sub_line = sub_line[5:] if sub_line.startswith("call ") else sub_line
     # get end of sub_line after last non-alphanumeric character
