@@ -453,7 +453,7 @@ class ProcNode(BaseNode):
                 n = gd.get_procedure_node(c, hist)
                 n.called_by.add(self)
                 self.calls.add(n)
-            elif getattr(c, 'parobj', None) == 'proc' and c not in seen:
+            elif getattr(c, "parobj", None) == "proc" and c not in seen:
                 calls.extend(getattr(c, "calls", []))
                 seen[c] = True
 
@@ -1320,9 +1320,11 @@ class GraphManager:
                 obj.calledbygraph = CalledByGraph(obj, self.data)
                 obj.usesgraph = UsesGraph(obj, self.data)
                 self.procedures.add(obj)
-                # regester internal procedures 
-                for p in ford.utils.traverse(obj, ["subroutines","functions"]):
-                    self.internal_procedures.add(p) if getattr(p, "visible", False) else None
+                # regester internal procedures
+                for p in ford.utils.traverse(obj, ["subroutines", "functions"]):
+                    self.internal_procedures.add(p) if getattr(
+                        p, "visible", False
+                    ) else None
             elif is_program(obj):
                 obj.usesgraph = UsesGraph(obj, self.data)
                 obj.callsgraph = CallsGraph(obj, self.data)

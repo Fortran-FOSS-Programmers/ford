@@ -234,63 +234,85 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
     expected_calls = {"bar", "foo"}
     assert set([call.name for call in program.calls]) == expected_calls
 
+
 @pytest.mark.parametrize(
     ["call_segment", "expected"],
     [
-        ("""
-        TYPE(t_bar) :: v_bar
-        TYPE(t_baz) :: var
-        var = v_bar%p_foo()
-        """
-        , ["p_foo"]),
-        ("""
-        TYPE(t_bar) :: v_bar
-        INTEGER :: var
-        var = v_bar%v_foo(0)
-        """
-        , []),
-        ("""
-        TYPE(t_bar) :: v_bar
-        INTEGER :: var
-        var = [v_bar%v_foo(0)]
-        """
-        , []),
-        ("""
-        TYPE(t_bar) :: v_bar
-        INTEGER, DIMENSION(:), ALLOCATABLE :: var
-        var = v_bar%v_baz%p_baz()
-        """
-        , ["p_baz"]),
-        ("""
-        TYPE(t_bar) :: v_bar
-        TYPE(t_baz) :: var
-        var = v_bar%t_foo%p_foo()
-        """
-        , ["p_foo"]),
-        ("""
-        TYPE(t_bar) :: v_bar
-        TYPE(t_baz) :: var(1)
-        var = [v_bar%t_foo%p_foo()]
-        """
-        , ["p_foo"]),
-        ("""
-        TYPE(t_bar) :: v_bar
-        INTEGER :: var
-        var = v_bar%v_baz%v_faz(0)
-        """
-        , []),
-        ("""
-        TYPE(t_bar) :: v_bar
-        call v_bar % p_bar ( )
-        """
-        , ["p_bar"]),
-        ("""
-        TYPE(t_bar) :: v_bar
-        call v_bar % p_bar ( v_bar % v_baz % p_baz () )
-        """
-        , ["p_bar", "p_baz"]), 
-   ])
-def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segment, expected):
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            TYPE(t_baz) :: var
+            var = v_bar%p_foo()
+            """,
+            ["p_foo"],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            INTEGER :: var
+            var = v_bar%v_foo(0)
+            """,
+            [],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            INTEGER :: var
+            var = [v_bar%v_foo(0)]
+            """,
+            [],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            INTEGER, DIMENSION(:), ALLOCATABLE :: var
+            var = v_bar%v_baz%p_baz()
+            """,
+            ["p_baz"],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            TYPE(t_baz) :: var
+            var = v_bar%t_foo%p_foo()
+            """,
+            ["p_foo"],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            TYPE(t_baz) :: var(1)
+            var = [v_bar%t_foo%p_foo()]
+            """,
+            ["p_foo"],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            INTEGER :: var
+            var = v_bar%v_baz%v_faz(0)
+            """,
+            [],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            call v_bar % p_bar ( )
+            """,
+            ["p_bar"],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            call v_bar % p_bar ( v_bar % v_baz % p_baz () )
+            """,
+            ["p_bar", "p_baz"],
+        ),
+    ],
+)
+def test_type_chain_function_and_subroutine_calls(
+    parse_fortran_file, call_segment, expected
+):
     data = """\
     MODULE m_foo
         IMPLICIT NONE
@@ -299,7 +321,7 @@ def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segmen
         CONTAINS
             PROCEDURE :: p_baz
         END TYPE t_baz
-            
+
         TYPE :: t_foo
             INTEGER, DIMENSION(:), ALLOCATABLE :: v_foo
         CONTAINS
@@ -311,7 +333,7 @@ def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segmen
         CONTAINS
             PROCEDURE :: p_bar
         END TYPE t_bar
-        
+
         CONTAINS
 
         FUNCTION p_baz(self) RESULT(ret_val)
@@ -335,7 +357,9 @@ def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segmen
 
     END MODULE m_foo
 
-    """.format(call_segment)
+    """.format(
+        call_segment
+    )
 
     fortran_file = parse_fortran_file(data)
     fp = FakeProject()

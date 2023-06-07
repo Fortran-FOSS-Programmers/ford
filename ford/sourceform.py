@@ -930,10 +930,9 @@ class FortranContainer(FortranBase):
 
                 def is_unique_call(call):
                     """Check if a call is unique in this container, and not an intrinsic call."""
-                    return (
-                        call.name not in INTRINSICS
-                        and not any(c.name == call.name for c in self.calls)
-                        )
+                    return call.name not in INTRINSICS and not any(
+                        c.name == call.name for c in self.calls
+                    )
 
                 if self.CALL_RE.search(line):
                     if hasattr(self, "calls"):
@@ -1079,7 +1078,7 @@ class FortranCodeUnit(FortranContainer):
                 call: CallChain
                 call.name = call.name.lower()
 
-                if call.name == 'c':
+                if call.name == "c":
                     pass
 
                 # get the context of the call
@@ -1087,12 +1086,12 @@ class FortranCodeUnit(FortranContainer):
 
                 if context is None:
                     pass
-                
+
                 # failed to find context, give up and add call's string name to the list
                 if context is None:
                     tmplst.append(call.name)
                     continue
-                
+
                 argname = False
                 # arguments and returns are only possible labels if the call is made within self's context
                 if context == self:
@@ -1101,13 +1100,16 @@ class FortranCodeUnit(FortranContainer):
                         argname |= call.name == a.name.lower()
                     if hasattr(self, "retvar"):
                         argname |= call.name == self.retvar.name.lower()
-                
+
                 # get all the variables in the call's context
                 all_vars = {}
                 if hasattr(context, "all_vars"):
                     all_vars = context.all_vars
                 if hasattr(context, "variables"):
-                    all_vars = {**all_vars, **{v.name.lower(): v for v in context.variables}}
+                    all_vars = {
+                        **all_vars,
+                        **{v.name.lower(): v for v in context.variables},
+                    }
 
                 # if call isn't to a variable (i.e. an array), and isn't a type, add it to the list
                 if (
@@ -1286,7 +1288,7 @@ class FortranCodeUnit(FortranContainer):
         # context is self if call is not a chain
         if len(call.chain) == 0:
             return self
-        
+
         call.chain[0] = call.chain[0].lower()
 
         call_type = None
@@ -1296,16 +1298,16 @@ class FortranCodeUnit(FortranContainer):
             vars = {**vars, **{a.name.lower(): a for a in self.args}}
         if hasattr(self, "retvar"):
             vars = {**vars, **{self.retvar.name.lower(): self.retvar}}
-        if (hasattr(self, 'all_types')
-            and call.chain[0] in vars
-            ):
+        if hasattr(self, "all_types") and call.chain[0] in vars:
             call_type_str = strip_type(vars[call.chain[0]].full_type)
             call_type = self.all_types.get(call_type_str, None)
 
         # if None, not a variable, try call type is an extended type
-        if (call_type is None
+        if (
+            call_type is None
             and isinstance(self, FortranType)
-            and hasattr(self, 'extends')):
+            and hasattr(self, "extends")
+        ):
             extend = self
             while getattr(extend, "extends", None) is not None:
                 if extend.extends.name.lower() == c:
@@ -1318,10 +1320,10 @@ class FortranCodeUnit(FortranContainer):
             return None
 
         # traverse the call chain
-        for c in [c.lower() for c in call.chain[1:]]:  
+        for c in [c.lower() for c in call.chain[1:]]:
             new_call_type = None
             # try call type is a variable
-            if hasattr(call_type, 'variables'):
+            if hasattr(call_type, "variables"):
                 new_call_type_str = None
                 for v in call_type.variables:
                     if v.name.lower() == c:
@@ -1330,8 +1332,7 @@ class FortranCodeUnit(FortranContainer):
                 new_call_type = call_type.all_types.get(new_call_type_str, None)
 
             # not a variable, try call type is an extended type
-            if (new_call_type is None
-                and isinstance(call_type, FortranType)):
+            if new_call_type is None and isinstance(call_type, FortranType):
                 extend = call_type
                 while getattr(extend, "extends", None) is not None:
                     if extend.extends.name.lower() == c:
@@ -1340,7 +1341,7 @@ class FortranCodeUnit(FortranContainer):
                     extend = extend.extends
 
             # not a subtype, give up
-            if new_call_type is None:  
+            if new_call_type is None:
                 return None
 
             call_type = new_call_type
