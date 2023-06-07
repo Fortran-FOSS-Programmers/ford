@@ -313,7 +313,7 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
 def test_type_chain_function_and_subroutine_calls(
     parse_fortran_file, call_segment, expected
 ):
-    data = """\
+    data = f"""\
     MODULE m_foo
         IMPLICIT NONE
         TYPE :: t_baz
@@ -350,16 +350,11 @@ def test_type_chain_function_and_subroutine_calls(
         END SUBROUTINE p_bar
 
         SUBROUTINE main
-            ! Call segment
-            {}
-            ! Call segment
+            {call_segment}
         END SUBROUTINE main
 
     END MODULE m_foo
-
-    """.format(
-        call_segment
-    )
+    """
 
     fortran_file = parse_fortran_file(data)
     fp = FakeProject()
