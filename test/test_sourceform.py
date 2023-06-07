@@ -284,7 +284,12 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
         call v_bar % p_bar ( )
         """
         , ["p_bar"]),
-    ])
+        ("""
+        TYPE(t_bar) :: v_bar
+        call v_bar % p_bar ( v_bar % v_baz % p_baz () )
+        """
+        , ["p_bar", "p_baz"]), 
+   ])
 def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segment, expected):
     data = """\
     MODULE m_foo

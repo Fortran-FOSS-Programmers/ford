@@ -578,12 +578,17 @@ class FortranContainer(FortranBase):
     )
     ARITH_GOTO_RE = re.compile(r"go\s*to\s*\([0-9,\s]+\)", re.IGNORECASE)
     CALL_RE = re.compile(
-        r"(?:^|[^a-zA-Z0-9_ ]\s*)(\w+)(?=\s*\(\s*(?:.*?)\s*\))", re.IGNORECASE
+        r"""(?:^|[^a-zA-Z0-9_ ]\s*)
+        (?P<parent>(\s*\w+\s*%\s*)+)?  # Optional type component access
+        (?P<name>\w+)                  # Required function name
+        (?=\s*\(\s*(?:.*?)\s*\))       # Must be followed by argument list (not captured)
+        """,
+        re.IGNORECASE | re.VERBOSE,
     )
     SUBCALL_RE = re.compile(
         r"""^(?:if\s*\(.*\)\s*)?               # Optional 'if' statement
         call\s+                                # Required keyword
-        (?:\s*\w+\s*%\s*)*                     # Optional type component access
+        (?P<parent>(\s*\w+\s*%\s*)+)?          # Optional type component access
         (?P<name>\w+)                          # Required subroutine name
         \s*(?:\(\s*(?P<arguments>.*?)\s*\))?$  # Optional arguments
         """,
@@ -940,7 +945,7 @@ class FortranContainer(FortranBase):
                         if not self.ARITH_GOTO_RE.search(line):
                             matches = self.CALL_RE.finditer(line)
                             for match in matches:
-                                call = get_call_chain(line,match)
+                                call = CallChain(match["name"], match["parent"])
                                 if is_unique_call(call):
                                     self.calls.append(call)
                     else:
@@ -950,7 +955,7 @@ class FortranContainer(FortranBase):
                 if match := self.SUBCALL_RE.match(line):
                     # Need this to catch any subroutines called without argument lists
                     if hasattr(self, "calls"):
-                        call = get_call_chain(line, match)
+                        call = CallChain(match["name"], match["parent"])
                         if is_unique_call(call):
                             self.calls.append(call)
                     else:
@@ -2908,25 +2913,32 @@ def parse_type(
     kind = kind.group(1) if kind else args
     return ParsedType(vartype, rest, kind=kind)
 
+
 @dataclass
 class CallChain:
+    """
+    Representation of a procedure call, including any parent type components
+
+    Example
+    -------
+
+    >>> match = FortranContainer.SUBCALL_RE.match("v_bar%v_baz%p_baz()")
+    >>> CallChain(match["name"], match["parent"])
+
+    CallChain(name="p_baz", chain=["v_bar", "v_baz"])
+    """
+
     name: str
     chain: List[str]
 
-def get_call_chain(line, match) -> CallChain:
-    sub_line = line[:match.start(1)].lower().rstrip()
-    if len(sub_line) == 0 or sub_line[-1] != "%":
-        # not a chain call
-        return CallChain(match.group(1).lower(), [])
-    level = sub_line.count("(") - sub_line.count(")")
-    blevel = sub_line.count("[") - sub_line.count("]")
-    sub_line = ford.utils.strip_paren(sub_line, retlevel=level, retblevel=blevel, index = len(sub_line) - 1)
-    # remove 'call ' from the start if present
-    sub_line = sub_line[5:] if sub_line.startswith("call ") else sub_line
-    # get end of sub_line after last non-alphanumeric character
-    sub_line = re.split(r'([^\w\s_%]|(?<=[^\s%])\s+(?=[^\s%]))+', sub_line)[-1].replace(' ','')
-    call_chain = sub_line.split("%")[:-1]
-    return CallChain(match.group(1).lower(), call_chain)
+    def __init__(self, name: str, parent: str):
+        self.name = name.lower()
+        # Remove whitespace and trailing accessor so we don't have to
+        # worry about empty last item
+        self.chain = (
+            parent.replace(" ", "").rstrip("%").split("%") if parent is not None else []
+        )
+
 
 def set_base_url(url):
     FortranBase.base_url = url
