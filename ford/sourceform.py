@@ -926,42 +926,41 @@ class FortranContainer(FortranBase):
                     self.uses.append(list(match.groups()))
                 else:
                     self.print_error(line, "Unexpected USE statement")
-            else:
 
-                def is_unique_call(call):
-                    """Check if a call is unique in this container, and not an intrinsic call."""
-                    return call.name not in INTRINSICS and not any(
-                        c.name == call.name for c in self.calls
-                    )
+            elif match := self.SUBCALL_RE.match(line):
+                if not hasattr(self, "calls"):
+                    self.print_error(line, "Unexpected procedure call")
+                    continue
 
-                if self.CALL_RE.search(line):
-                    if hasattr(self, "calls"):
-                        # Arithmetic GOTOs looks little like function references:
-                        # "goto (1, 2, 3) i".  But even in free-form source we're
-                        # allowed to use a space: "go to (1, 2, 3) i".  Our CALL_RE
-                        # expression doesn't catch that so we first rule such a
-                        # GOTO out.
-                        if not self.ARITH_GOTO_RE.search(line):
-                            matches = self.CALL_RE.finditer(line)
-                            for match in matches:
-                                call = CallChain(match["name"], match["parent"])
-                                if is_unique_call(call):
-                                    self.calls.append(call)
-                    else:
-                        pass
-                        # Not raising an error here as too much possibility that something
-                        # has been misidentified as a function call
-                if match := self.SUBCALL_RE.match(line):
-                    # Need this to catch any subroutines called without argument lists
-                    if hasattr(self, "calls"):
-                        call = CallChain(match["name"], match["parent"])
-                        if is_unique_call(call):
-                            self.calls.append(call)
-                    else:
-                        self.print_error(line, "Unexpected procedure call")
+                self._add_procedure_call(match["name"], match["parent"])
+                # We also need to find any function calls in the arguments
+                for arg_match in self.CALL_RE.finditer(match["arguments"] or ""):
+                    self._add_procedure_call(arg_match["name"], arg_match["parent"])
+
+            elif self.ARITH_GOTO_RE.search(line):
+                # Arithmetic GOTOs look a little like function references: "goto
+                # (1, 2, 3) i". We don't do anything with these, but we do need
+                # to disambiguate them from function calls
+                continue
+
+            elif self.CALL_RE.search(line):
+                if not hasattr(self, "calls"):
+                    # Not raising an error here as too much possibility that something
+                    # has been misidentified as a function call
+                    continue
+
+                for match in self.CALL_RE.finditer(line):
+                    self._add_procedure_call(match["name"], match["parent"])
 
         if not isinstance(self, FortranSourceFile):
             raise Exception("File ended while still nested.")
+
+    def _add_procedure_call(self, name: str, parent: str):
+        name = name.lower()
+        if name in INTRINSICS or name in (call.name for call in self.calls):
+            return
+
+        self.calls.append(CallChain(name, parent))
 
     def _cleanup(self):
         raise NotImplementedError()
@@ -1129,7 +1128,6 @@ class FortranCodeUnit(FortranContainer):
                         else:
                             # failed to find the call in context, add it as a string
                             tmplst.append(call.name)
-                                    
 
             self.calls = tmplst
 
