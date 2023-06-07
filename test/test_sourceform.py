@@ -279,6 +279,11 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
         var = v_bar%v_baz%v_faz(0)
         """
         , []),
+        ("""
+        TYPE(t_bar) :: v_bar
+        call v_bar % p_bar ( )
+        """
+        , ["p_bar"]),
     ])
 def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segment, expected):
     data = """\
@@ -298,6 +303,8 @@ def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segmen
 
         TYPE, EXTENDS(t_foo) :: t_bar
             TYPE(t_baz) :: v_baz
+        CONTAINS
+            PROCEDURE :: p_bar
         END TYPE t_bar
         
         CONTAINS
@@ -312,9 +319,8 @@ def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segmen
             TYPE(t_baz) :: ret_val
         END FUNCTION p_foo
 
-        FUNCTION p_bar() RESULT(ret_val)
-            TYPE(t_baz) :: ret_val
-        END FUNCTION p_bar
+        SUBROUTINE p_bar()
+        END SUBROUTINE p_bar
 
         SUBROUTINE main
             ! Call segment
@@ -328,9 +334,10 @@ def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segmen
 
     fortran_file = parse_fortran_file(data)
     fp = FakeProject()
-    fortran_file.modules[0].correlate(fp)
-
-    calls = fortran_file.modules[0].subroutines[0].calls
+    module = fortran_file.modules[0]
+    module.correlate(fp)
+    subroutines = {sub.name: sub for sub in module.subroutines}
+    calls = subroutines["main"].calls
 
     assert len(calls) == len(expected)
 

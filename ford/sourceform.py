@@ -581,8 +581,13 @@ class FortranContainer(FortranBase):
         r"(?:^|[^a-zA-Z0-9_ ]\s*)(\w+)(?=\s*\(\s*(?:.*?)\s*\))", re.IGNORECASE
     )
     SUBCALL_RE = re.compile(
-        r"^(?:if\s*\(.*\)\s*)?call\s+(?:\w+%)*(\w+)\s*(?:\(\s*(.*?)\s*\))?$",
-        re.IGNORECASE,
+        r"""^(?:if\s*\(.*\)\s*)?               # Optional 'if' statement
+        call\s+                                # Required keyword
+        (?:\s*\w+\s*%\s*)*                     # Optional type component access
+        (?P<name>\w+)                          # Required subroutine name
+        \s*(?:\(\s*(?P<arguments>.*?)\s*\))?$  # Optional arguments
+        """,
+        re.IGNORECASE | re.VERBOSE,
     )
     FORMAT_RE = re.compile(r"^[0-9]+\s+format\s+\(.*\)", re.IGNORECASE)
 
