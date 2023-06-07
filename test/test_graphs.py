@@ -63,6 +63,9 @@ def make_project_graphs(tmp_path_factory, request):
       contains
         procedure :: five
         procedure :: six
+        procedure :: ei => eight
+        procedure :: ni => nine
+        generic :: eight_nine => ei, ni
       end type alpha
 
     contains
@@ -88,6 +91,14 @@ def make_project_graphs(tmp_path_factory, request):
             call one
           end subroutine seven_two
       end subroutine seven
+      subroutine eight(this,x)
+        class(alpha) :: this
+        real :: x
+      end subroutine eight
+      subroutine nine(this,x)
+        class(alpha) :: this
+        integer :: x
+      end subroutine nine
     end module c
 
     submodule (c) c_submod
@@ -103,6 +114,8 @@ def make_project_graphs(tmp_path_factory, request):
       type(alpha) :: y
       call y%five()
       x = y%six()
+      call y%ei(1.0)
+      call y%eight_nine(1.0)
     contains
       subroutine three
         use external_mod
@@ -233,6 +246,9 @@ TYPE_GRAPH_KEY = ["Type"]
                 "c::alpha%five",
                 "c::alpha%six",
                 "c::seven",
+                "c::alpha%eight",
+                "c::alpha%nine",
+                "c::alpha%eight_nine",
             ],
             [
                 "proc~three->proc~one",
@@ -244,6 +260,10 @@ TYPE_GRAPH_KEY = ["Type"]
                 "program~foo->proc~five",
                 "program~foo->proc~six",
                 "proc~seven->proc~one",
+                "program~foo->proc~eight",
+                "program~foo->none~eight_nine",
+                "none~eight_nine->proc~eight",
+                "none~eight_nine->proc~nine",
             ],
             PROC_GRAPH_KEY,
         ),
@@ -262,6 +282,9 @@ TYPE_GRAPH_KEY = ["Type"]
                 "c::seven",
                 "seven::seven_one",
                 "seven::seven_two",
+                "c::alpha%eight",
+                "c::alpha%nine",
+                "c::alpha%eight_nine",
             ],
             [
                 "proc~three->proc~one",
@@ -276,6 +299,10 @@ TYPE_GRAPH_KEY = ["Type"]
                 "proc~seven->none~seven_two",
                 "none~seven_one->none~seven_two",
                 "none~seven_two->proc~one",
+                "program~foo->proc~eight",
+                "program~foo->none~eight_nine",
+                "none~eight_nine->proc~eight",
+                "none~eight_nine->proc~nine",
             ],
             PROC_GRAPH_KEY,
         ),

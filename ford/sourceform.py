@@ -1117,9 +1117,19 @@ class FortranCodeUnit(FortranContainer):
                     and call.name not in getattr(context, "all_types", {})
                     and call.name not in all_vars
                 ):
-                    # if can't find the call in context, add it as a string
-                    call = context.all_procs.get(call.name, call.name)
-                    tmplst.append(call)
+                    if call.chain == []:
+                        # if can't find the call in context, add it as a string
+                        tmplst.append(context.all_procs.get(call.name, call.name))
+                    # if the call is made from a type, then it must be a bound procedure
+                    else:
+                        for bound in context.boundprocs:
+                            if call.name == bound.name.lower():
+                                tmplst.append(bound)
+                                break
+                        else:
+                            # failed to find the call in context, add it as a string
+                            tmplst.append(call.name)
+                                    
 
             self.calls = tmplst
 
