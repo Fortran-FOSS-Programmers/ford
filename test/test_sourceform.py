@@ -251,6 +251,12 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
         , []),
         ("""
         TYPE(t_bar) :: v_bar
+        INTEGER :: var
+        var = [v_bar%v_foo(0)]
+        """
+        , []),
+        ("""
+        TYPE(t_bar) :: v_bar
         INTEGER, DIMENSION(:), ALLOCATABLE :: var
         var = v_bar%v_baz%p_baz()
         """
@@ -259,6 +265,12 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
         TYPE(t_bar) :: v_bar
         TYPE(t_baz) :: var
         var = v_bar%t_foo%p_foo()
+        """
+        , ["p_foo"]),
+        ("""
+        TYPE(t_bar) :: v_bar
+        TYPE(t_baz) :: var(1)
+        var = [v_bar%t_foo%p_foo()]
         """
         , ["p_foo"]),
         ("""
