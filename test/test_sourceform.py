@@ -234,42 +234,93 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
     expected_calls = {"bar", "foo"}
     assert set([call.name for call in program.calls]) == expected_calls
 
+
 @pytest.mark.parametrize(
     ["call_segment", "expected"],
     [
-        ("""
-        TYPE(t_bar) :: v_bar
-        TYPE(t_baz) :: var
-        var = v_bar%p_foo()
-        """
-        , ["p_foo"]),
-        ("""
-        TYPE(t_bar) :: v_bar
-        INTEGER :: var
-        var = v_bar%v_foo(0)
-        """
-        , []),
-        ("""
-        TYPE(t_bar) :: v_bar
-        INTEGER, DIMENSION(:), ALLOCATABLE :: var
-        var = v_bar%v_baz%p_baz()
-        """
-        , ["p_baz"]),
-        ("""
-        TYPE(t_bar) :: v_bar
-        TYPE(t_baz) :: var
-        var = v_bar%t_foo%p_foo()
-        """
-        , ["p_foo"]),
-        ("""
-        TYPE(t_bar) :: v_bar
-        INTEGER :: var
-        var = v_bar%v_baz%v_faz(0)
-        """
-        , []),
-    ])
-def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segment, expected):
-    data = """\
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            TYPE(t_baz) :: var
+            var = v_bar%p_foo()
+            """,
+            ["p_foo"],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            INTEGER :: var
+            var = v_bar%v_foo(0)
+            """,
+            [],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            INTEGER :: var
+            var = [v_bar%v_foo(0)]
+            """,
+            [],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            INTEGER, DIMENSION(:), ALLOCATABLE :: var
+            var = v_bar%v_baz%p_baz()
+            """,
+            ["p_baz"],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            TYPE(t_baz) :: var
+            var = v_bar%t_foo%p_foo()
+            """,
+            ["p_foo"],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            TYPE(t_baz) :: var(1)
+            var = [v_bar%t_foo%p_foo()]
+            """,
+            ["p_foo"],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            INTEGER :: var
+            var = v_bar%v_baz%v_faz(0)
+            """,
+            [],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            call v_bar%renamed()
+            """,
+            ["renamed"],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            call v_bar % p_bar ( )
+            """,
+            ["p_bar"],
+        ),
+        (
+            """
+            TYPE(t_bar) :: v_bar
+            call v_bar % p_bar ( v_bar % v_baz % p_baz () )
+            """,
+            ["p_bar", "p_baz"],
+        ),
+    ],
+)
+def test_type_chain_function_and_subroutine_calls(
+    parse_fortran_file, call_segment, expected
+):
+    data = f"""\
     MODULE m_foo
         IMPLICIT NONE
         TYPE :: t_baz
@@ -277,7 +328,7 @@ def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segmen
         CONTAINS
             PROCEDURE :: p_baz
         END TYPE t_baz
-            
+
         TYPE :: t_foo
             INTEGER, DIMENSION(:), ALLOCATABLE :: v_foo
         CONTAINS
@@ -286,8 +337,11 @@ def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segmen
 
         TYPE, EXTENDS(t_foo) :: t_bar
             TYPE(t_baz) :: v_baz
+        CONTAINS
+            PROCEDURE :: p_bar
+            PROCEDURE :: renamed => p_bar
         END TYPE t_bar
-        
+
         CONTAINS
 
         FUNCTION p_baz(self) RESULT(ret_val)
@@ -300,25 +354,22 @@ def test_type_chain_function_and_subroutine_calls(parse_fortran_file,call_segmen
             TYPE(t_baz) :: ret_val
         END FUNCTION p_foo
 
-        FUNCTION p_bar() RESULT(ret_val)
-            TYPE(t_baz) :: ret_val
-        END FUNCTION p_bar
+        SUBROUTINE p_bar()
+        END SUBROUTINE p_bar
 
         SUBROUTINE main
-            ! Call segment
-            {}
-            ! Call segment
+            {call_segment}
         END SUBROUTINE main
 
     END MODULE m_foo
-
-    """.format(call_segment)
+    """
 
     fortran_file = parse_fortran_file(data)
     fp = FakeProject()
-    fortran_file.modules[0].correlate(fp)
-
-    calls = fortran_file.modules[0].subroutines[0].calls
+    module = fortran_file.modules[0]
+    module.correlate(fp)
+    subroutines = {sub.name: sub for sub in module.subroutines}
+    calls = subroutines["main"].calls
 
     assert len(calls) == len(expected)
 

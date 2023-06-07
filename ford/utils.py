@@ -119,19 +119,20 @@ def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
         return parenstr
     raise RuntimeError("Couldn't parse parentheses: {}".format(line))
 
-def strip_paren(line: str, retlevel: int = 0, retblevel: int = 0, index = -1) -> str:
+
+def strip_paren(line: str, retlevel: int = 0, retblevel: int = 0, index=-1) -> str:
     """
     Takes a string with parentheses and returns only the portion of the string
     that is in the same level of nested parentheses as specified by retlevel.
     If index is specified, then characters in the same level but not in the same
-    scope as the char at index are also stripped. 
+    scope as the char at index are also stripped.
     """
     if len(line) == 0:
         return line
     retstr = StringIO()
     level = 0
     blevel = 0
-    for i,char in enumerate(line):
+    for i, char in enumerate(line):
         if char == "(":
             level += 1
         elif char == ")":
@@ -140,13 +141,10 @@ def strip_paren(line: str, retlevel: int = 0, retblevel: int = 0, index = -1) ->
             blevel += 1
         elif char == "]":
             blevel -= 1
-        elif (
-            level == retlevel
-            and blevel == retblevel
-        ):
+        elif level == retlevel and blevel == retblevel:
             retstr.write(char)
-        
-        if index >= 0 and char == ')' and level < retlevel:
+
+        if index >= 0 and char == ")" and level < retlevel:
             # scope of index is yet to start, reset retstr
             if i < index:
                 retstr = StringIO()
@@ -155,6 +153,7 @@ def strip_paren(line: str, retlevel: int = 0, retblevel: int = 0, index = -1) ->
                 return retstr.getvalue()
 
     return retstr.getvalue()
+
 
 def paren_split(sep, string):
     """
@@ -584,6 +583,7 @@ def normalise_path(
 ) -> pathlib.Path:
     """Tidy up path, making it absolute, relative to base_dir"""
     return (base_dir / os.path.expandvars(path)).absolute()
+
 
 def traverse(root, attrs) -> list:
     """Traverse a tree of objects, returning a list of all objects found

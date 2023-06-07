@@ -98,7 +98,12 @@ def is_type(obj):
 def is_proc(obj):
     return isinstance(
         obj,
-        (FortranProcedure, FortranInterface, FortranSubmoduleProcedure, FortranBoundProcedure),
+        (
+            FortranProcedure,
+            FortranInterface,
+            FortranSubmoduleProcedure,
+            FortranBoundProcedure,
+        ),
     )
 
 
@@ -248,21 +253,21 @@ class GraphData:
 
 
 def get_call_nodes(calls, visited=None, result=None):
-    '''
+    """
     takes a list of calls, and returns a set of all the calls that should
     be nodes in the graph
 
-    not all calls are a node, some are not visible, and some are simple 
+    not all calls are a node, some are not visible, and some are simple
     procedure bindings (bindings that bind one procedure to one label)
 
     these should be skipped, and show a call to their descendant instead
-    '''
-    
+    """
+
     if visited is None:
         visited = set()
     if result is None:
         result = set()
-    
+
     for call in calls:
         # ensure we haven't already visited this call
         if call in visited:
@@ -270,11 +275,13 @@ def get_call_nodes(calls, visited=None, result=None):
         visited.add(call)
 
         # value for if the call is a simple binding
-        is_simple_binding = (isinstance(call, FortranBoundProcedure) 
-                            and len(call.bindings) == 1 
-                            and not isinstance(call.bindings[0], FortranBoundProcedure))
+        is_simple_binding = (
+            isinstance(call, FortranBoundProcedure)
+            and len(call.bindings) == 1
+            and not isinstance(call.bindings[0], FortranBoundProcedure)
+        )
 
-        if getattr(call,"visible",True) and not is_simple_binding:
+        if getattr(call, "visible", True) and not is_simple_binding:
             # If the call is visible and isn't a simple binding, add it to the result.
             result.add(call)
         else:
@@ -446,7 +453,12 @@ class TypeNode(BaseNode):
 
 
 class ProcNode(BaseNode):
-    COLOURS = {"subroutine": "#d9534f", "function": "#d94e8f", "interface": "#A7506F", "boundproc": "#A7506F"}
+    COLOURS = {
+        "subroutine": "#d9534f",
+        "function": "#d94e8f",
+        "interface": "#A7506F",
+        "boundproc": "#A7506F",
+    }
 
     @property
     def colour(self):
@@ -490,8 +502,10 @@ class ProcNode(BaseNode):
             n = gd.get_module_node(u)
             n.used_by.add(self)
             self.uses.add(n)
-        
-        for call in get_call_nodes(getattr(obj, "calls", []) + getattr(obj, "bindings", [])):
+
+        for call in get_call_nodes(
+            getattr(obj, "calls", []) + getattr(obj, "bindings", [])
+        ):
             n = gd.get_procedure_node(call, hist)
             n.called_by.add(self)
             self.calls.add(n)
@@ -1200,7 +1214,7 @@ class CallGraph(FortranGraph):
         for p in sorted(node.calls):
             if p not in hop_nodes:
                 hop_nodes.add(p)
-            if getattr(node,"proctype","") != "boundproc":
+            if getattr(node, "proctype", "") != "boundproc":
                 hop_edges.append(_solid_edge(node, p, colour))
             else:
                 hop_edges.append(_dashed_edge(node, p, colour))
@@ -1225,7 +1239,7 @@ class CallsGraph(FortranGraph):
         for p in sorted(node.calls):
             if p not in self.added:
                 hop_nodes.add(p)
-            if getattr(node,"proctype","") != "boundproc":
+            if getattr(node, "proctype", "") != "boundproc":
                 hop_edges.append(_solid_edge(node, p, colour))
             else:
                 hop_edges.append(_dashed_edge(node, p, colour))
@@ -1360,17 +1374,22 @@ class GraphManager:
                 obj.inherbygraph = InheritedByGraph(obj, self.data)
                 self.types.add(obj)
                 # register bound procedures that arn't simple bindings (bindings that bind one procedure to one label)
-                for bp in getattr(obj,"boundprocs",[]):
-                    if not (len(bp.bindings) == 1 and not isinstance(bp.bindings[0], FortranBoundProcedure)):
+                for bp in getattr(obj, "boundprocs", []):
+                    if not (
+                        len(bp.bindings) == 1
+                        and not isinstance(bp.bindings[0], FortranBoundProcedure)
+                    ):
                         self.bound_procedures.add(bp)
             elif is_proc(obj):
                 obj.callsgraph = CallsGraph(obj, self.data)
                 obj.calledbygraph = CalledByGraph(obj, self.data)
                 obj.usesgraph = UsesGraph(obj, self.data)
                 self.procedures.add(obj)
-                # regester internal procedures 
-                for p in ford.utils.traverse(obj, ["subroutines","functions"]):
-                    self.internal_procedures.add(p) if getattr(p, "visible", False) else None
+                # regester internal procedures
+                for p in ford.utils.traverse(obj, ["subroutines", "functions"]):
+                    self.internal_procedures.add(p) if getattr(
+                        p, "visible", False
+                    ) else None
             elif is_program(obj):
                 obj.usesgraph = UsesGraph(obj, self.data)
                 obj.callsgraph = CallsGraph(obj, self.data)
@@ -1384,7 +1403,9 @@ class GraphManager:
                 self.blockdata.add(obj)
 
         usenodes = sorted(list(self.modules))
-        callnodes = sorted(list(self.procedures | self.internal_procedures | self.bound_procedures))
+        callnodes = sorted(
+            list(self.procedures | self.internal_procedures | self.bound_procedures)
+        )
         for p in sorted(self.programs):
             if len(p.usesgraph.added) > 1:
                 usenodes.append(p)

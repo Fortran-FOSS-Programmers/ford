@@ -578,11 +578,21 @@ class FortranContainer(FortranBase):
     )
     ARITH_GOTO_RE = re.compile(r"go\s*to\s*\([0-9,\s]+\)", re.IGNORECASE)
     CALL_RE = re.compile(
-        r"(?:^|[^a-zA-Z0-9_ ]\s*)(\w+)(?=\s*\(\s*(?:.*?)\s*\))", re.IGNORECASE
+        r"""(?:^|[^a-zA-Z0-9_ ]\s*)
+        (?P<parent>(\s*\w+\s*%\s*)+)?  # Optional type component access
+        (?P<name>\w+)                  # Required function name
+        (?=\s*\(\s*(?:.*?)\s*\))       # Must be followed by argument list (not captured)
+        """,
+        re.IGNORECASE | re.VERBOSE,
     )
     SUBCALL_RE = re.compile(
-        r"^(?:if\s*\(.*\)\s*)?call\s+(?:\w+%)*(\w+)\s*(?:\(\s*(.*?)\s*\))?$",
-        re.IGNORECASE,
+        r"""^(?:if\s*\(.*\)\s*)?               # Optional 'if' statement
+        call\s+                                # Required keyword
+        (?P<parent>(\s*\w+\s*%\s*)+)?          # Optional type component access
+        (?P<name>\w+)                          # Required subroutine name
+        \s*(?:\(\s*(?P<arguments>.*?)\s*\))?$  # Optional arguments
+        """,
+        re.IGNORECASE | re.VERBOSE,
     )
     FORMAT_RE = re.compile(r"^[0-9]+\s+format\s+\(.*\)", re.IGNORECASE)
 
@@ -916,43 +926,41 @@ class FortranContainer(FortranBase):
                     self.uses.append(list(match.groups()))
                 else:
                     self.print_error(line, "Unexpected USE statement")
-            else:
 
-                def is_unique_call(call):
-                    """Check if a call is unique in this container, and not an intrinsic call."""
-                    return (
-                        call.name not in INTRINSICS
-                        and not any(c.name == call.name for c in self.calls)
-                        )
+            elif match := self.SUBCALL_RE.match(line):
+                if not hasattr(self, "calls"):
+                    self.print_error(line, "Unexpected procedure call")
+                    continue
 
-                if self.CALL_RE.search(line):
-                    if hasattr(self, "calls"):
-                        # Arithmetic GOTOs looks little like function references:
-                        # "goto (1, 2, 3) i".  But even in free-form source we're
-                        # allowed to use a space: "go to (1, 2, 3) i".  Our CALL_RE
-                        # expression doesn't catch that so we first rule such a
-                        # GOTO out.
-                        if not self.ARITH_GOTO_RE.search(line):
-                            matches = self.CALL_RE.finditer(line)
-                            for match in matches:
-                                call = get_call_chain(line,match)
-                                if is_unique_call(call):
-                                    self.calls.append(call)
-                    else:
-                        pass
-                        # Not raising an error here as too much possibility that something
-                        # has been misidentified as a function call
-                if match := self.SUBCALL_RE.match(line):
-                    # Need this to catch any subroutines called without argument lists
-                    if hasattr(self, "calls"):
-                        call = get_call_chain(line, match)
-                        if is_unique_call(call):
-                            self.calls.append(call)
-                    else:
-                        self.print_error(line, "Unexpected procedure call")
+                self._add_procedure_call(match["name"], match["parent"])
+                # We also need to find any function calls in the arguments
+                for arg_match in self.CALL_RE.finditer(match["arguments"] or ""):
+                    self._add_procedure_call(arg_match["name"], arg_match["parent"])
+
+            elif self.ARITH_GOTO_RE.search(line):
+                # Arithmetic GOTOs look a little like function references: "goto
+                # (1, 2, 3) i". We don't do anything with these, but we do need
+                # to disambiguate them from function calls
+                continue
+
+            elif self.CALL_RE.search(line):
+                if not hasattr(self, "calls"):
+                    # Not raising an error here as too much possibility that something
+                    # has been misidentified as a function call
+                    continue
+
+                for match in self.CALL_RE.finditer(line):
+                    self._add_procedure_call(match["name"], match["parent"])
 
         if not isinstance(self, FortranSourceFile):
             raise Exception("File ended while still nested.")
+
+    def _add_procedure_call(self, name: str, parent: str):
+        name = name.lower()
+        if name in INTRINSICS or name in (call.name for call in self.calls):
+            return
+
+        self.calls.append(CallChain(name, parent))
 
     def _cleanup(self):
         raise NotImplementedError()
@@ -1069,7 +1077,7 @@ class FortranCodeUnit(FortranContainer):
                 call: CallChain
                 call.name = call.name.lower()
 
-                if call.name == 'c':
+                if call.name == "c":
                     pass
 
                 # get the context of the call
@@ -1077,12 +1085,12 @@ class FortranCodeUnit(FortranContainer):
 
                 if context is None:
                     pass
-                
+
                 # failed to find context, give up and add call's string name to the list
                 if context is None:
                     tmplst.append(call.name)
                     continue
-                
+
                 argname = False
                 # arguments and returns are only possible labels if the call is made within self's context
                 if context == self:
@@ -1091,13 +1099,16 @@ class FortranCodeUnit(FortranContainer):
                         argname |= call.name == a.name.lower()
                     if hasattr(self, "retvar"):
                         argname |= call.name == self.retvar.name.lower()
-                
+
                 # get all the variables in the call's context
                 all_vars = {}
                 if hasattr(context, "all_vars"):
                     all_vars = context.all_vars
                 if hasattr(context, "variables"):
-                    all_vars = {**all_vars, **{v.name.lower(): v for v in context.variables}}
+                    all_vars = {
+                        **all_vars,
+                        **{v.name.lower(): v for v in context.variables},
+                    }
 
                 # if call isn't to a variable (i.e. an array), and isn't a type, add it to the list
                 if (
@@ -1117,7 +1128,6 @@ class FortranCodeUnit(FortranContainer):
                         else:
                             # failed to find the call in context, add it as a string
                             tmplst.append(call.name)
-                                    
 
             self.calls = tmplst
 
@@ -1286,7 +1296,7 @@ class FortranCodeUnit(FortranContainer):
         # context is self if call is not a chain
         if len(call.chain) == 0:
             return self
-        
+
         call.chain[0] = call.chain[0].lower()
 
         call_type = None
@@ -1296,16 +1306,16 @@ class FortranCodeUnit(FortranContainer):
             vars = {**vars, **{a.name.lower(): a for a in self.args}}
         if hasattr(self, "retvar"):
             vars = {**vars, **{self.retvar.name.lower(): self.retvar}}
-        if (hasattr(self, 'all_types')
-            and call.chain[0] in vars
-            ):
+        if hasattr(self, "all_types") and call.chain[0] in vars:
             call_type_str = strip_type(vars[call.chain[0]].full_type)
             call_type = self.all_types.get(call_type_str, None)
 
         # if None, not a variable, try call type is an extended type
-        if (call_type is None
+        if (
+            call_type is None
             and isinstance(self, FortranType)
-            and hasattr(self, 'extends')):
+            and hasattr(self, "extends")
+        ):
             extend = self
             while getattr(extend, "extends", None) is not None:
                 if extend.extends.name.lower() == c:
@@ -1318,10 +1328,10 @@ class FortranCodeUnit(FortranContainer):
             return None
 
         # traverse the call chain
-        for c in [c.lower() for c in call.chain[1:]]:  
+        for c in [c.lower() for c in call.chain[1:]]:
             new_call_type = None
             # try call type is a variable
-            if hasattr(call_type, 'variables'):
+            if hasattr(call_type, "variables"):
                 new_call_type_str = None
                 for v in call_type.variables:
                     if v.name.lower() == c:
@@ -1330,8 +1340,7 @@ class FortranCodeUnit(FortranContainer):
                 new_call_type = call_type.all_types.get(new_call_type_str, None)
 
             # not a variable, try call type is an extended type
-            if (new_call_type is None
-                and isinstance(call_type, FortranType)):
+            if new_call_type is None and isinstance(call_type, FortranType):
                 extend = call_type
                 while getattr(extend, "extends", None) is not None:
                     if extend.extends.name.lower() == c:
@@ -1340,7 +1349,7 @@ class FortranCodeUnit(FortranContainer):
                     extend = extend.extends
 
             # not a subtype, give up
-            if new_call_type is None:  
+            if new_call_type is None:
                 return None
 
             call_type = new_call_type
@@ -2913,24 +2922,32 @@ def parse_type(
     kind = kind.group(1) if kind else args
     return ParsedType(vartype, rest, kind=kind)
 
+
 @dataclass
 class CallChain:
+    """
+    Representation of a procedure call, including any parent type components
+
+    Example
+    -------
+
+    >>> match = FortranContainer.SUBCALL_RE.match("v_bar%v_baz%p_baz()")
+    >>> CallChain(match["name"], match["parent"])
+
+    CallChain(name="p_baz", chain=["v_bar", "v_baz"])
+    """
+
     name: str
     chain: List[str]
 
-def get_call_chain(line, match) -> CallChain:
-    sub_line = line[:match.start(1)].lower()
-    if len(sub_line) == 0 or sub_line[-1] != "%":
-        # not a chain call
-        return CallChain(match.group(1).lower(), [])
-    level = sub_line.count("(") - sub_line.count(")")
-    sub_line = ford.utils.strip_paren(sub_line, retlevel=level, index = len(sub_line) - 1)
-    # remove 'call ' from the start if present
-    sub_line = sub_line[5:] if sub_line.startswith("call ") else sub_line
-    # get end of sub_line after last non-alphanumeric character
-    sub_line = re.split(r'([^\w\s_%]|(?<=[^\s%])\s+(?=[^\s%]))+', sub_line)[-1].replace(' ','')
-    call_chain = sub_line.split("%")[:-1]
-    return CallChain(match.group(1).lower(), call_chain)
+    def __init__(self, name: str, parent: str):
+        self.name = name.lower()
+        # Remove whitespace and trailing accessor so we don't have to
+        # worry about empty last item
+        self.chain = (
+            parent.replace(" ", "").rstrip("%").split("%") if parent is not None else []
+        )
+
 
 def set_base_url(url):
     FortranBase.base_url = url

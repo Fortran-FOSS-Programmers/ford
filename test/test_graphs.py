@@ -26,7 +26,10 @@ def create_project(settings: dict):
     project.correlate()
     return project
 
+
 project_graphs = {}
+
+
 @pytest.fixture(scope="module")
 def make_project_graphs(tmp_path_factory, request):
     data = """\
@@ -128,8 +131,15 @@ def make_project_graphs(tmp_path_factory, request):
     end program foo
     """
     # check if we've already created the graphs for this test
-    if "proc_internals_" + str(getattr(request, 'param', {}).get('proc_internals', False)) in project_graphs:
-        yield project_graphs["proc_internals_" + str(getattr(request, 'param', {}).get('proc_internals', False))]
+    if (
+        "proc_internals_"
+        + str(getattr(request, "param", {}).get("proc_internals", False))
+        in project_graphs
+    ):
+        yield project_graphs[
+            "proc_internals_"
+            + str(getattr(request, "param", {}).get("proc_internals", False))
+        ]
         return
 
     src_dir = tmp_path_factory.getbasetemp() / "graphs" / "src"
@@ -141,7 +151,7 @@ def make_project_graphs(tmp_path_factory, request):
     settings = deepcopy(DEFAULT_SETTINGS)
     settings["src_dir"] = [src_dir]
     settings["graph"] = True
-    if 'proc_internals' in getattr(request, 'param', {}):
+    if "proc_internals" in getattr(request, "param", {}):
         settings["proc_internals"] = request.param["proc_internals"]
 
     project = create_project(settings)
@@ -166,8 +176,11 @@ def make_project_graphs(tmp_path_factory, request):
     graphs.output_graphs(0)
 
     # save graphs for future use
-    project_graphs["proc_internals_" + str(getattr(request, 'param', {}).get('proc_internals', False))] = graphs
-    
+    project_graphs[
+        "proc_internals_"
+        + str(getattr(request, "param", {}).get("proc_internals", False))
+    ] = graphs
+
     yield graphs
     # reset namelist so it doesn't affect future generated graphs
     ford.sourceform.namelist = ford.sourceform.NameSelector()
@@ -186,10 +199,16 @@ TYPE_GRAPH_KEY = ["Type"]
 
 @pytest.mark.skipif(not graphviz_installed, reason="Requires graphviz")
 @pytest.mark.parametrize(
-    ("make_project_graphs","graph_name", "expected_nodes", "expected_edges", "expected_legend_nodes"),
+    (
+        "make_project_graphs",
+        "graph_name",
+        "expected_nodes",
+        "expected_edges",
+        "expected_legend_nodes",
+    ),
     [
         (
-            {"proc_internals":False},
+            {"proc_internals": False},
             ["usegraph"],
             [
                 "a",
@@ -215,7 +234,7 @@ TYPE_GRAPH_KEY = ["Type"]
             MOD_GRAPH_KEY,
         ),
         (
-            {"proc_internals":False},
+            {"proc_internals": False},
             ["callgraph"],
             [
                 "c::one",
@@ -249,7 +268,7 @@ TYPE_GRAPH_KEY = ["Type"]
             PROC_GRAPH_KEY,
         ),
         (
-            {"proc_internals":True},
+            {"proc_internals": True},
             ["callgraph"],
             [
                 "c::one",
@@ -288,7 +307,7 @@ TYPE_GRAPH_KEY = ["Type"]
             PROC_GRAPH_KEY,
         ),
         (
-            {"proc_internals":False},
+            {"proc_internals": False},
             ["typegraph"],
             ["base", "derived", "leaf", "external_type", "thing", "alpha"],
             [
@@ -300,14 +319,14 @@ TYPE_GRAPH_KEY = ["Type"]
             TYPE_GRAPH_KEY,
         ),
         (
-            {"proc_internals":False},
+            {"proc_internals": False},
             ["modules", "b", "usesgraph"],
             ["a", "b"],
             ["module~b->module~a"],
             MOD_GRAPH_KEY,
         ),
         (
-            {"proc_internals":False},
+            {"proc_internals": False},
             ["modules", "b", "usedbygraph"],
             ["b", "c", "c_submod", "c_subsubmod", "foo"],
             [
@@ -319,54 +338,54 @@ TYPE_GRAPH_KEY = ["Type"]
             MOD_GRAPH_KEY,
         ),
         (
-            {"proc_internals":False},
+            {"proc_internals": False},
             ["types", "derived", "inhergraph"],
             ["base", "derived"],
             ["type~derived->type~base"],
             TYPE_GRAPH_KEY,
         ),
         (
-            {"proc_internals":False},
+            {"proc_internals": False},
             ["types", "derived", "inherbygraph"],
             ["derived", "leaf", "thing"],
             ["type~leaf->type~derived", "type~thing->type~derived"],
             TYPE_GRAPH_KEY,
         ),
         (
-            {"proc_internals":False},
+            {"proc_internals": False},
             ["procedures", "two", "callsgraph"],
             ["c::one", "c::two"],
             ["proc~two->proc~one"],
             PROC_GRAPH_KEY,
         ),
         (
-            {"proc_internals":True},
+            {"proc_internals": True},
             ["procedures", "seven", "callsgraph"],
             ["c::seven", "c::one", "seven::seven_one", "seven::seven_two"],
             [
-                "proc~seven->none~seven_one", 
-                "proc~seven->none~seven_two", 
-                "none~seven_one->none~seven_two", 
+                "proc~seven->none~seven_one",
+                "proc~seven->none~seven_two",
+                "none~seven_one->none~seven_two",
                 "none~seven_two->proc~one",
             ],
             PROC_GRAPH_KEY,
         ),
         (
-            {"proc_internals":False},
+            {"proc_internals": False},
             ["procedures", "two", "calledbygraph"],
             ["foo::three", "c::two", "foo"],
             ["proc~three->proc~two", "program~foo->proc~three"],
             PROC_GRAPH_KEY,
         ),
         (
-            {"proc_internals":False},
+            {"proc_internals": False},
             ["procedures", "three", "usesgraph"],
             ["external_mod", "foo::three"],
             ["proc~three->external_mod"],
             MOD_GRAPH_KEY,
         ),
     ],
-    indirect=["make_project_graphs"]
+    indirect=["make_project_graphs"],
 )
 def test_graphs(
     make_project_graphs,
