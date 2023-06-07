@@ -10,7 +10,7 @@ All Programs &ndash; {{ project }}
 			 <thead><tr><th>Program</th><th>Source File</th><th>Description</th></tr></thead>
 			 <tbody>
 			 {% for prog in project.programs|sort(attribute='name') %}
-			   <tr><td>{{ prog }}</td><td>{{ prog.parent }}</td><td>{{ prog.meta['summary'] }}</td></tr>
+			   <tr><td>{{ prog }}</td><td>{{ prog.parent }}</td><td>{{ prog | meta('summary') }}</td></tr>
 			 {% endfor %}
 			 </tbody></table>
         </div>

@@ -51,7 +51,25 @@ def is_more_than_one(collection):
     return collection > 1
 
 
+def meta(entity, item):
+    """Get item from entity's meta dict, but give a more helpful
+    error message if entity doesn't have a meta attribute
+
+    Hopefully gives a better error than the common "RuntimeError: 'str
+    object' has no attribute 'meta'"
+
+    """
+    if not hasattr(entity, "meta"):
+        return jinja2.StrictUndefined(
+            f"Unknown entity '{entity}': This likely means an error in parsing, "
+            "please check that this file compiles with a Fortran compiler"
+        )
+
+    return entity.meta.get(item, None)
+
+
 env.tests["more_than_one"] = is_more_than_one
+env.filters["meta"] = meta
 
 USER_WRITABLE_ONLY = 0o755
 
@@ -286,7 +304,9 @@ class BasePage:
             return self.render(self.data, self.proj, self.obj)
         except Exception as e:
             raise RuntimeError(
-                f"Error rendering '{self.outfile.name}' for '{self.obj.name}' : {e}"
+                f"Error rendering '{self.outfile.name}':\n"
+                f'  File "{self.obj.filename}": {self.obj.obj} "{self.obj.name}"\n'
+                f"    {e}"
             )
 
     def writeout(self):
