@@ -203,7 +203,7 @@ class Documentation:
                 self.tipue.create_node(p.html, p.loc, p.meta)
             print("")
 
-    def writeout(self):
+    def writeout(self) -> None:
         out_dir: pathlib.Path = self.data["output_dir"]
         print(f"Writing documentation to '{out_dir}'...")
         # Remove any existing file/directory. This avoids errors coming from

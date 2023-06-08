@@ -33,7 +33,7 @@ import os
 import pathlib
 import subprocess
 from datetime import date, datetime
-from typing import Union
+from typing import List, Union
 from textwrap import dedent
 
 import ford.fortran_project
@@ -394,7 +394,7 @@ def parse_arguments(
     DEFAULT_SETTINGS["parallel"] = ncpus
 
     # Set up Markdown reader
-    md_ext = [
+    md_ext: List[Union[str, markdown.Extension]] = [
         "markdown.extensions.meta",
         "markdown.extensions.codehilite",
         "markdown.extensions.extra",

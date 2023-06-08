@@ -42,7 +42,7 @@ from urllib.error import URLError
 from urllib.request import urlopen
 from urllib.parse import urljoin
 import pathlib
-from typing import Union
+from typing import Dict, Union
 from io import StringIO
 import itertools
 
@@ -72,7 +72,7 @@ LINK_RE = re.compile(r"\[\[(\w+(?:\.\w+)?)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)
 # Dictionary for all macro definitions to be used in the documentation.
 # Each key of the form |name| will be replaced by the value found in the
 # dictionary in sub_macros.
-_MACRO_DICT = {}
+_MACRO_DICT: Dict[str, str] = {}
 
 
 def sub_notes(docs):
@@ -491,7 +491,7 @@ def external(project, make=False, path="."):
         with open(url / "modules.json", mode="r", encoding="utf-8") as extfile:
             return json.loads(extfile.read())
 
-    def dict2obj(extDict, url, parent=None, remote: bool = False) -> None:
+    def dict2obj(extDict, url, parent=None, remote: bool = False) -> FortranBase:
         """
         Converts a dictionary to an object and immediately adds it to the project
         """
@@ -508,7 +508,7 @@ def external(project, make=False, path="."):
         # Look up what type of entity this is
         obj_type = extDict.get("proctype", extDict["obj"]).lower()
         # Construct the entity
-        extObj: FortranBase = ENTITIES[obj_type](name, external_url, parent)
+        extObj = ENTITIES[obj_type](name, external_url, parent)
         # Now add it to the correct project list
         project_list = getattr(project, extObj._project_list)
         project_list.append(extObj)
