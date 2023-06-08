@@ -1610,7 +1610,6 @@ class FortranProcedure(FortranCodeUnit):
         self.common: List[FortranCommon] = []
         self.attr_dict: Dict[str, List[str]] = defaultdict(list)
         self.param_dict: Dict[str, str] = dict()
-        self.associate_blocks = []
 
         return attribstr
 
@@ -1790,7 +1789,6 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.attr_dict = defaultdict(list)
         self.mp = True
         self.param_dict = dict()
-        self.associate_blocks = []
         self.common = []
 
     def _cleanup(self):
@@ -1825,7 +1823,6 @@ class FortranProgram(FortranCodeUnit):
         self.absinterfaces = []
         self.attr_dict = defaultdict(list)
         self.param_dict = dict()
-        self.associate_blocks = []
         self.common = []
 
     def _cleanup(self):
