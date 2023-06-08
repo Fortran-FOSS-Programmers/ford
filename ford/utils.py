@@ -26,8 +26,20 @@
 import re
 import os.path
 import json
-import ford.sourceform
-from urllib.request import urlopen, URLError
+from ford.sourceform import (
+    FortranBase,
+    FortranType,
+    ExternalModule,
+    ExternalFunction,
+    ExternalSubroutine,
+    ExternalInterface,
+    ExternalType,
+    ExternalVariable,
+    ExternalBoundProcedure,
+)
+
+from urllib.error import URLError
+from urllib.request import urlopen
 from urllib.parse import urljoin
 import pathlib
 from typing import Union
@@ -408,15 +420,6 @@ def external(project, make=False, path="."):
     """
     Reads and writes the information needed for processing external modules.
     """
-    from ford.sourceform import (
-        ExternalModule,
-        ExternalFunction,
-        ExternalSubroutine,
-        ExternalInterface,
-        ExternalType,
-        ExternalVariable,
-        ExternalBoundProcedure,
-    )
 
     # attributes of a module object needed for further processing
     ATTRIBUTES = [
@@ -461,7 +464,7 @@ def external(project, make=False, path="."):
         if hasattr(intObj, "proctype"):
             extDict["proctype"] = intObj.proctype
         if hasattr(intObj, "extends"):
-            if isinstance(intObj.extends, ford.sourceform.FortranType):
+            if isinstance(intObj.extends, FortranType):
                 extDict["extends"] = obj2dict(intObj.extends)
             else:
                 extDict["extends"] = intObj.extends
