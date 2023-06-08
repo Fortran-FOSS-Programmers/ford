@@ -193,11 +193,7 @@ class FortranReader:
     def pass_back(self, line: str):
         self.pending.insert(0, line)
 
-    # for Python 2:
-    def next(self):
-        return self.__next__()
-
-    def __next__(self):  # Python 3
+    def __next__(self):
         # If there are any lines waiting to be returned, return them
         if len(self.pending) != 0:
             self.include()

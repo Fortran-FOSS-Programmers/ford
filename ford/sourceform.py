@@ -115,10 +115,10 @@ class FortranBase:
         self._initialize(first_line)
         del self.strings
         self.doc = []
-        line = source.__next__()
+        line = next(source)
         while line[0:2] == "!" + self.settings["docmark"]:
             self.doc.append(line[2:])
-            line = source.__next__()
+            line = next(source)
         source.pass_back(line)
         self.hierarchy = []
         cur = self.parent
@@ -2112,10 +2112,10 @@ class FortranFinalProc(FortranBase):
         self.settings = self.parent.settings
         self.doc = []
         if source:
-            line = source.__next__()
+            line = next(source)
             while line[0:2] == "!" + self.settings["docmark"]:
                 self.doc.append(line[2:])
-                line = source.__next__()
+                line = next(source)
             source.pass_back(line)
         self.hierarchy = []
         cur = self.parent
@@ -2502,7 +2502,7 @@ class FortranCommon(FortranBase):
         self.sort_components()
 
 
-class FortranSpoof(object):
+class FortranSpoof:
     """
     A dummy-type which is used to represent arguments, interfaces, type-bound
     procedures, etc. which lack a corresponding variable or implementation.
@@ -2967,17 +2967,17 @@ def get_mod_procs(source, line, parent):
         )
 
     doc = []
-    docline = source.__next__()
+    docline = next(source)
     while docline[0:2] == "!" + parent.settings["docmark"]:
         doc.append(docline[2:])
-        docline = source.__next__()
+        docline = next(source)
     source.pass_back(docline)
     retlist[-1].doc = doc
 
     return retlist
 
 
-class NameSelector(object):
+class NameSelector:
     """
     Object which tracks what names have been provided for different
     entities in Fortran code. It will provide an identifier which is

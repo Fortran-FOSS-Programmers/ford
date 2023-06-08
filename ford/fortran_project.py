@@ -50,7 +50,7 @@ INTRINSIC_MODS = {
 }
 
 
-class Project(object):
+class Project:
     """
     An object which collects and contains all of the information about the
     project which is to be documented.

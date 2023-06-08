@@ -45,7 +45,7 @@ except ImportError:
     from urllib.parse import urljoin
 
 
-class Tipue_Search_JSON_Generator(object):
+class Tipue_Search_JSON_Generator:
     def __init__(self, output_path: os.PathLike, project_url: str):
         self.output_path = pathlib.Path(output_path)
         self.siteurl = project_url

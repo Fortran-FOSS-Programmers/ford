@@ -74,7 +74,7 @@ env.filters["meta"] = meta
 USER_WRITABLE_ONLY = 0o755
 
 
-class Documentation(object):
+class Documentation:
     """
     Represents and handles the creation of the documentation files from
     a project.
