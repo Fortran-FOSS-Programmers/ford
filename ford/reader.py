@@ -28,11 +28,8 @@ import re
 import ford.utils
 import subprocess
 from typing import List, Optional, Union
+from io import StringIO, TextIOWrapper
 
-if sys.version_info[0] > 2:
-    from io import StringIO
-else:
-    from StringIO import StringIO
 import os.path
 
 from ford.fixed2free2 import convertToFree
@@ -86,7 +83,7 @@ def _match_docmark(
     return docmark.match(line)
 
 
-class FortranReader(object):
+class FortranReader:
     """
     An iterator which will convert a free-form Fortran source file into
     a format more conducive for analyzing. It does the following:
@@ -109,20 +106,18 @@ class FortranReader(object):
 
     def __init__(
         self,
-        filename,
-        docmark="!",
-        predocmark="",
-        docmark_alt="",
-        predocmark_alt="",
-        fixed=False,
-        length_limit=True,
-        preprocessor=None,
-        macros=[],
-        inc_dirs=[],
-        encoding="utf-8",
+        filename: str,
+        docmark: str = "!",
+        predocmark: str = "",
+        docmark_alt: str = "",
+        predocmark_alt: str = "",
+        fixed: bool = False,
+        length_limit: bool = True,
+        preprocessor: Optional[List[str]] = None,
+        macros: Optional[List[str]] = None,
+        inc_dirs: Optional[List[str]] = None,
+        encoding: str = "utf-8",
     ):
-        self.name = filename
-
         # Check that none of the docmarks are the same
         if docmark == predocmark != "":
             raise ValueError("Error: docmark and predocmark are the same.")
@@ -137,14 +132,37 @@ class FortranReader(object):
         if predocmark == predocmark_alt != "":
             raise ValueError("Error: predocmark and predocmark_alt are the same.")
 
+        self.name = filename
+        self.fixed = fixed
+        self.length_limit = length_limit
+        self.inc_dirs = inc_dirs or []
+        self.docbuffer: List[str] = []
+        self.pending: List[str] = []
+        self.prevdoc = False
+        self.reading_alt = 0
+        self.encoding = encoding
+
+        self.docmark = docmark
+        self.doc_re = _compile_docmark(docmark)
+        self.predocmark = predocmark
+        self.predoc_re = _compile_docmark(predocmark)
+        self.docmark_alt = docmark_alt
+        self.doc_alt_re = _compile_docmark(docmark_alt)
+        self.predocmark_alt = predocmark_alt
+        self.predoc_alt_re = _compile_docmark(predocmark_alt)
+
+        self.line_number = 0
+
+        self.reader: Union[StringIO, TextIOWrapper]
+
         if preprocessor:
             # Populate the macro definition and include directory path from
             # the input lists.  To define a macro we prepend '-D' and for an
             # include path we prepend '-I'.  It's important that we do not
             # prepend to an empty string as 'cpp ... -D file.F90' doesn't do
             # what is desired; use filter to remove these.
-            macros = ["-D" + mac.strip() for mac in filter(None, macros)]
-            incdirs = [f"-I{d}" for d in inc_dirs]
+            macros = ["-D" + mac.strip() for mac in filter(None, macros or [])]
+            incdirs = [f"-I{d}" for d in self.inc_dirs]
             preprocessor = preprocessor + macros + incdirs + [filename]
             command = " ".join(preprocessor)
             print(f"Preprocessing {filename}")
@@ -169,30 +187,10 @@ class FortranReader(object):
         if fixed:
             self.reader = convertToFree(self.reader, length_limit)
 
-        self.fixed = fixed
-        self.length_limit = length_limit
-        self.inc_dirs = inc_dirs
-        self.docbuffer = []
-        self.pending = []
-        self.prevdoc = False
-        self.reading_alt = 0
-        self.encoding = encoding
-
-        self.docmark = docmark
-        self.doc_re = _compile_docmark(docmark)
-        self.predocmark = predocmark
-        self.predoc_re = _compile_docmark(predocmark)
-        self.docmark_alt = docmark_alt
-        self.doc_alt_re = _compile_docmark(docmark_alt)
-        self.predocmark_alt = predocmark_alt
-        self.predoc_alt_re = _compile_docmark(predocmark_alt)
-
-        self.line_number = 0
-
     def __iter__(self):
         return self
 
-    def pass_back(self, line):
+    def pass_back(self, line: str):
         self.pending.insert(0, line)
 
     # for Python 2:
