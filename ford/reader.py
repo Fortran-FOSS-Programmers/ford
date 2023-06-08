@@ -27,6 +27,7 @@ import sys
 import re
 import ford.utils
 import subprocess
+from typing import List, Optional, Union
 
 if sys.version_info[0] > 2:
     from io import StringIO
@@ -66,7 +67,17 @@ def _contains_unterminated_string(string: str) -> bool:
     return in_quote
 
 
-def _match_docmark(docmark, line: str, in_quote: bool):
+def _compile_docmark(docmark: str) -> Optional[re.Pattern]:
+    """Compile ``docmark`` into a regex pattern to match Fortran comments"""
+    if not docmark:
+        return None
+
+    return re.compile(f"^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{re.escape(docmark)}.*)$")
+
+
+def _match_docmark(
+    docmark: Optional[re.Pattern], line: str, in_quote: bool
+) -> Optional[re.Match]:
     """If docmark exists, and we're not in a string literal, try to match it"""
     if in_quote:
         return None
@@ -165,38 +176,16 @@ class FortranReader(object):
         self.pending = []
         self.prevdoc = False
         self.reading_alt = 0
-        self.docmark = docmark
-        self.doc_re = re.compile(
-            "^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(re.escape(docmark))
-        )
-        self.predocmark = predocmark
         self.encoding = encoding
-        if len(self.predocmark) != 0:
-            self.predoc_re = re.compile(
-                "^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(
-                    re.escape(predocmark)
-                )
-            )
-        else:
-            self.predoc_re = None
+
+        self.docmark = docmark
+        self.doc_re = _compile_docmark(docmark)
+        self.predocmark = predocmark
+        self.predoc_re = _compile_docmark(predocmark)
         self.docmark_alt = docmark_alt
-        if len(self.docmark_alt) != 0:
-            self.doc_alt_re = re.compile(
-                "^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(
-                    re.escape(docmark_alt)
-                )
-            )
-        else:
-            self.doc_alt_re = None
+        self.doc_alt_re = _compile_docmark(docmark_alt)
         self.predocmark_alt = predocmark_alt
-        if len(self.predocmark_alt) != 0:
-            self.predoc_alt_re = re.compile(
-                "^([^\"'!]|('[^']*')|(\"[^\"]*\"))*(!{}.*)$".format(
-                    re.escape(predocmark_alt)
-                )
-            )
-        else:
-            self.predoc_alt_re = None
+        self.predoc_alt_re = _compile_docmark(predocmark_alt)
 
         self.line_number = 0
 
