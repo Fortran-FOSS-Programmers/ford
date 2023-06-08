@@ -10,7 +10,7 @@ All Block Data Units &ndash; {{ project }}
 			 <thead><tr><th>Block Data Unit</th><th>Source File</th><th>Description</th></tr></thead>
 			 <tbody>
 			 {% for block in project.blockdata|sort(attribute='name') %}
-			   <tr><td>{{ block }}</td><td>{{ block.parent }}</td><td>{{ block.meta['summary'] }}</td></tr>
+			   <tr><td>{{ block }}</td><td>{{ block.parent }}</td><td>{{ block | meta('summary') }}</td></tr>
 			 {% endfor %}
 			 </tbody></table>
         </div>

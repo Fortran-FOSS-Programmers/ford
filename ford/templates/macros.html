@@ -3,31 +3,31 @@
     <div class="col-lg-12">
       <div class="well well-sm">
         <ul class="list-inline" style="margin-bottom:0px;display:inline">
-          {% if entity.meta['author'] %}
-            <li id="meta-author"><i class="fa fa-pencil"></i> {{ entity.meta['author'] }}</li>
+          {% if entity | meta('author') %}
+            <li id="meta-author"><i class="fa fa-pencil"></i> {{ entity | meta('author') }}</li>
           {% endif %}
-          {% if entity.meta['date'] %}
-            <li id="meta-date"><i class="fa fa-calendar-o"></i> {{ entity.meta['date'] }}</li>
+          {% if entity | meta('date') %}
+            <li id="meta-date"><i class="fa fa-calendar-o"></i> {{ entity | meta('date') }}</li>
           {% endif %}
-          {% if entity.meta['license'] %}
-            <li id="meta-license"><i class="fa fa-legal"></i> {{ entity.meta['license'] }}</li>
+          {% if entity | meta('license') %}
+            <li id="meta-license"><i class="fa fa-legal"></i> {{ entity | meta('license') }}</li>
           {% elif projectData['license'] %}
             <li id="meta-license"><i class="fa fa-legal"></i> {{ projectData['license'] }}</li>
           {% endif %}
-          {% if entity.meta['since'] %}
-            <li id="meta-since"><i class="fa fa-history"></i> Since: {{ entity.meta['since'] }}</li>
+          {% if entity | meta('since') %}
+            <li id="meta-since"><i class="fa fa-history"></i> Since: {{ entity | meta('since') }}</li>
           {% endif %}
-          {% if entity.meta['version'] %}
-            <li id="meta-version"><i class="fa fa-barcode"></i> {{ entity.meta['version'] }}</li>
+          {% if entity | meta('version') %}
+            <li id="meta-version"><i class="fa fa-barcode"></i> {{ entity | meta('version') }}</li>
           {% endif %}
-          {% if entity.meta['category'] %}
-            <li id="meta-category"><i class="fa fa-folder-open"></i> {{ entity.meta['category'] }}</li>
+          {% if entity | meta('category') %}
+            <li id="meta-category"><i class="fa fa-folder-open"></i> {{ entity | meta('category') }}</li>
           {% endif %}
 
           <li id="statements"><i class="fa fa-list-ol"></i>
             <a data-toggle="tooltip"
                data-placement="bottom" data-html="true"
-               title="{{ line_info }}">{{ entity.meta['num_lines'] }} statements</a>
+               title="{{ line_info }}">{{ entity | meta('num_lines') }} statements</a>
           </li>
 
           {% if incl_src %}
@@ -153,7 +153,7 @@
 
 {% macro deprecated(entity) %}
   {# Add 'Deprecated' warning #}
-  {%- if entity.meta['deprecated'] -%}
+  {%- if entity | meta('deprecated') -%}
     <span class="label label-danger depwarn">Deprecated</span>
   {%- endif -%}
 {% endmacro %}
@@ -208,7 +208,7 @@
             {% endif %}
             <td>
               {% if summary -%}
-                {{ var.meta['summary'] }}
+                {{ var | meta('summary') }}
               {% else %}
                 {{ var.doc }}
               {% endif %}
@@ -245,7 +245,7 @@
   {%- if full_docstring or not entity.visible -%}
     {{ entity.doc }}
   {%- else -%}
-    {{ entity.meta["summary"] }}
+    {{ entity | meta("summary") }}
   {%- endif -%}
 {%- endmacro -%}
 
@@ -344,7 +344,7 @@
                 {% if not bind.visible %}
                   {{ meta_list(bind.meta) }}
                 {% endif %}
-                {{ bind.meta['summary'] }}
+                {{ bind | meta('summary') }}
               {% endif %}
               {{ binding_summary(bind.procedure) }}
             {% else %}
@@ -411,7 +411,7 @@
     {% if intr.doc or meta_list(intr.meta)|trim %}
       <div class="panel-body">
         {{ meta_list(intr.meta) }}
-        {{ intr.meta['summary'] }}
+        {{ intr | meta('summary') }}
       </div>
     {% endif %}
     <ul class="list-group">
@@ -481,7 +481,7 @@
       {% if not dtype.visible %}
         {{ meta_list(dtype.meta) }}
       {% endif %}
-      {{ dtype.meta['summary'] }}
+      {{ dtype | meta('summary') }}
 
       {% if dtype.variables %}
         <h4>Components</h4>
@@ -526,7 +526,7 @@
             {% for fin in dtype.finalprocs %}
               <tr>
                 <td>final :: <strong>{{ fin.name }}</strong></td>
-                <td>{{ fin.meta['summary'] }}</td>
+                <td>{{ fin | meta('summary') }}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -557,7 +557,7 @@
                   {% endif %}
                   {% if tb.bindings|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
                 </td>
-                <td>{{ tb.meta['summary'] }}</td>
+                <td>{{ tb | meta('summary') }}</td>
               </tr>
               {% endfor %}
           </tbody>
@@ -598,7 +598,7 @@
           {% for var in enum.variables %}
             <tr>
               <td>{{ var.vartype }}</td><td>::</td>
-              <td><strong>{{ var.name }}</strong></td><td> = </td><td>{{ var.initial }}</td><td>{% if summary -%}{{ var.meta['summary'] }}{% else %}{{ var.doc }}{% endif %}</td>
+              <td><strong>{{ var.name }}</strong></td><td> = </td><td>{{ var.initial }}</td><td>{% if summary -%}{{ var | meta('summary') }}{% else %}{{ var.doc }}{% endif %}</td>
             </tr>
           {% endfor %}
         </tbody>

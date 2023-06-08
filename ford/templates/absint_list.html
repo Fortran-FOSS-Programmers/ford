@@ -11,7 +11,7 @@ All Abstract Interfaces &ndash; {{ project }}
 			 <tr><th>Abstract Interface</th><th>Location</th><th>Description</th></tr>
 			 </thead><tbody>
 			 {% for absint in project.absinterfaces|sort(attribute='name') %}
-			   <tr><td>{{ absint }}</td><td>{{ absint.parent }}</td><td>{{ absint.procedure.meta['summary'] }}</td></tr>
+			   <tr><td>{{ absint }}</td><td>{{ absint.parent }}</td><td>{{ absint.procedure | meta('summary') }}</td></tr>
 			 {% endfor %}
 			 </tbody></table>
         </div>
