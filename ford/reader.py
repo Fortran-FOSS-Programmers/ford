@@ -125,17 +125,17 @@ class FortranReader(object):
 
         # Check that none of the docmarks are the same
         if docmark == predocmark != "":
-            raise Exception("Error: docmark and predocmark are the same.")
+            raise ValueError("Error: docmark and predocmark are the same.")
         if docmark == docmark_alt != "":
-            raise Exception("Error: docmark and docmark_alt are the same.")
+            raise ValueError("Error: docmark and docmark_alt are the same.")
         if docmark == predocmark_alt != "":
-            raise Exception("Error: docmark and predocmark_alt are the same.")
+            raise ValueError("Error: docmark and predocmark_alt are the same.")
         if docmark_alt == predocmark != "":
-            raise Exception("Error: docmark_alt and predocmark are the same.")
+            raise ValueError("Error: docmark_alt and predocmark are the same.")
         if docmark_alt == predocmark_alt != "":
-            raise Exception("Error: docmark_alt and predocmark_alt are the same.")
+            raise ValueError("Error: docmark_alt and predocmark_alt are the same.")
         if predocmark == predocmark_alt != "":
-            raise Exception("Error: predocmark and predocmark_alt are the same.")
+            raise ValueError("Error: predocmark and predocmark_alt are the same.")
 
         if preprocessor:
             # Populate the macro definition and include directory path from
