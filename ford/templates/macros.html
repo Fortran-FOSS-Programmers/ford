@@ -200,7 +200,7 @@
             {% if not intent %}
               {% if var.initial -%}
                 <td>{% if var.points -%} =&gt; {% else %} = {%- endif %}</td>
-                <td>{{ var.initial }}</td>
+                <td>{{ var.initial|e }}</td>
               {% else %}
                 <td></td>
                 <td></td>
