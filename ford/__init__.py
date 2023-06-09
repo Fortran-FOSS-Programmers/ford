@@ -446,7 +446,7 @@ def parse_arguments(
     base_dir = pathlib.Path(directory).absolute()
     proj_data["base_dir"] = base_dir
 
-    for var in [
+    for var in (
         "page_dir",
         "output_dir",
         "graph_dir",
@@ -456,7 +456,7 @@ def parse_arguments(
         "src_dir",
         "exclude_dir",
         "include",
-    ]:
+    ):
         if proj_data[var] is None:
             continue
         if isinstance(proj_data[var], list):

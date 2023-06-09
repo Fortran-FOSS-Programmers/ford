@@ -42,7 +42,7 @@ def _contains_unterminated_string(string: str) -> bool:
     previous_char = None
     for char in string:
         # Non-quote characters don't bother us
-        if not (char == "'" or char == '"'):
+        if char not in ("'", '"'):
             previous_char = char
             continue
         # Doubling-up a quote character doesn't make us leave a quote
@@ -415,4 +415,3 @@ if __name__ == "__main__":
         predocmark_alt="<",
     ):
         print(line)
-        continue

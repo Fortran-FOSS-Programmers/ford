@@ -75,7 +75,7 @@ base_url = ""
 def read_docstring(source: FortranReader, docmark: str) -> List[str]:
     """Read a contiguous docstring"""
     docstring = []
-    docmark = f'!{docmark}'
+    docmark = f"!{docmark}"
     length = len(docmark)
     while (line := next(source)).startswith(docmark):
         docstring.append(line[length:])
@@ -123,11 +123,7 @@ class FortranBase:
         self.strings: List[str] = strings or []
 
         self.obj = type(self).__name__[7:].lower()
-        if (
-            self.obj == "subroutine"
-            or self.obj == "function"
-            or self.obj == "submoduleprocedure"
-        ):
+        if self.obj in ["subroutine", "function", "submoduleprocedure"]:
             self.obj = "proc"
 
         self.parent = parent
@@ -319,8 +315,8 @@ class FortranBase:
                 if type(self) == FortranSourceFile:
                     while "none" in tmp:
                         tmp.remove("none")
-                if len(tmp) == 0:
-                    pass
+                if not tmp:
+                    continue
                 elif "none" in tmp:
                     self.display = []
                 elif (
@@ -2094,7 +2090,9 @@ class FortranFinalProc(FortranBase):
         self.parobj = self.parent.obj
         self.display = self.parent.display
         self.settings = self.parent.settings
-        self.doc_list = read_docstring(source, self.settings["docmark"]) if source else []
+        self.doc_list = (
+            read_docstring(source, self.settings["docmark"]) if source else []
+        )
         self.hierarchy = self._make_hierarchy()
 
     def correlate(self, project):
@@ -2399,7 +2397,7 @@ class FortranBlockData(FortranContainer):
     def process_attribs(self):
         for item in self.types:
             for attr in self.attr_dict[item.name.lower()]:
-                if attr == "public" or attr == "private" or attr == "protected":
+                if attr in ("public", "private", "protected"):
                     item.permission = attr
                 elif attr[0:4] == "bind":
                     if hasattr(item, "bindC"):
@@ -2410,7 +2408,7 @@ class FortranBlockData(FortranContainer):
                         item.attribs.append(attr[5:-1])
         for var in self.variables:
             for attr in self.attr_dict[var.name.lower()]:
-                if attr == "public" or attr == "private" or attr == "protected":
+                if attr in ("public", "private", "protected"):
                     var.permission = attr
                 elif attr[0:6] == "intent":
                     var.intent = attr[7:-1]

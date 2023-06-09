@@ -120,7 +120,7 @@ def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
         elif char == "]":
             blevel -= 1
         elif (
-            (char.isalpha() or char == "_" or char == ":" or char == "," or char == " ")
+            (char.isalpha() or char in ("_", ":", ",", " "))
             and level == retlevel
             and blevel == retblevel
         ):
