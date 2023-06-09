@@ -24,6 +24,7 @@
 
 from __future__ import annotations
 
+from contextlib import suppress
 from collections import defaultdict
 from dataclasses import dataclass
 import re
@@ -1201,10 +1202,8 @@ class FortranCodeUnit(FortranContainer):
                         item.attribs.append(attr)
                 else:
                     item.attribs.append(attr)
-            try:
+            with suppress(KeyError):
                 del self.attr_dict[item.name.lower()]
-            except KeyError:
-                pass
 
         for var in self.variables:
             for attr in self.attr_dict[var.name.lower()]:
@@ -1223,10 +1222,8 @@ class FortranCodeUnit(FortranContainer):
                     var.initial = self.param_dict[var.name.lower()]
                 else:
                     var.attribs.append(attr)
-            try:
+            with suppress(KeyError):
                 del self.attr_dict[var.name.lower()]
-            except KeyError:
-                pass
 
         # Now we want a list of all the objects we've declared, plus
         # any we've imported that have a "public" attribute
@@ -1738,7 +1735,7 @@ class FortranFunction(FortranProcedure):
         self.proctype = "Function"
         self.retvar = line["result"] or self.name
 
-        try:
+        with suppress(ValueError):
             parsed_type = parse_type(
                 attribstr, self.strings, self.settings["extra_vartypes"]
             )
@@ -1750,8 +1747,6 @@ class FortranFunction(FortranProcedure):
                 strlen=parsed_type.strlen,
                 proto=parsed_type.proto,
             )
-        except ValueError:
-            pass
 
     def _cleanup(self):
         if not isinstance(self.retvar, FortranVariable):
@@ -2276,19 +2271,14 @@ class FortranBoundProcedure(FortranBase):
 
             for i, binding in enumerate(self.bindings):
                 binding_name = getattr(binding, "name", binding).lower()
-
-                try:
+                with suppress(KeyError):
                     self.bindings[i] = parent_boundprocs[binding_name]
-                except KeyError:
-                    pass
 
         elif not self.deferred:
             for i in range(len(self.bindings)):
-                try:
+                with suppress(KeyError):
                     self.bindings[i] = self.all_procs[self.bindings[i].lower()]
                     self.bindings[i].binding = self
-                except KeyError:
-                    break
 
         self.sort_components()
 
@@ -2442,10 +2432,8 @@ class FortranCommon(FortranBase):
         for i in range(len(self.variables)):
             if self.variables[i] in self.parent.all_vars:
                 self.variables[i] = self.parent.all_vars[self.variables[i]]
-                try:
+                with suppress(ValueError):
                     self.parent.variables.remove(self.variables[i])
-                except ValueError:
-                    pass
             else:
                 self.variables[i] = FortranVariable(
                     self.variables[i], implicit_type(self.variables[i]), self, doc=""
