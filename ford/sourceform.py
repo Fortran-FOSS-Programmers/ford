@@ -960,22 +960,21 @@ class FortranContainer(FortranBase):
                 continue
 
             elif self.CALL_RE.search(line):
-                if not hasattr(self, "calls"):
-                    # Not raising an error here as too much possibility that something
-                    # has been misidentified as a function call
-                    continue
-
                 for match in self.CALL_RE.finditer(line):
                     self._add_procedure_call(match["name"], match["parent"])
 
         if not isinstance(self, FortranSourceFile):
             raise Exception("File ended while still nested.")
 
-    def _add_procedure_call(
-        self: Union[FortranProgram, FortranProcedure, FortranSubmoduleProcedure],
-        name: str,
-        parent: str,
-    ):
+    def _add_procedure_call(self, name: str, parent: str) -> None:
+        """Helper to register procedure calls. For FortranProgram,
+        FortranProcedure, and FortranSubmoduleProcedure
+        """
+        # Not raising an error here as too much possibility that something
+        # has been misidentified as a function call
+        if not hasattr(self, "calls"):
+            return
+
         name = name.lower()
         if name in INTRINSICS or name in (call.name for call in self.calls):
             return
