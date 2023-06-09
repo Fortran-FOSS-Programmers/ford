@@ -235,10 +235,8 @@ class FortranReader:
                 tmp = tmp[:1] + self.docmark + tmp[1 + len(self.predocmark) :]
                 self.docbuffer.append(tmp)
                 if len(line[0 : match.start(4)].strip()) > 0:
-                    raise Exception(
-                        "Preceding documentation lines can not be inline: {}".format(
-                            line
-                        )
+                    raise ValueError(
+                        f"Preceding documentation lines can not be inline: {line}"
                     )
 
             # Check for alternate preceding documentation
@@ -272,10 +270,8 @@ class FortranReader:
                 tmp = tmp[:1] + self.docmark + tmp[1 + len(self.docmark_alt) :]
                 self.docbuffer.append(tmp)
                 if len(line[0 : match.start(4)].strip()) > 0:
-                    raise Exception(
-                        "Alternate documentation lines can not be inline: {}".format(
-                            line
-                        )
+                    raise ValueError(
+                        f"Alternate documentation lines can not be inline: {f}"
                     )
 
             # Capture any documentation comments
@@ -325,10 +321,8 @@ class FortranReader:
                     elif len(line.strip()) == 1:
                         continue
                     else:
-                        raise Exception(
-                            'Can not start a new line in Fortran with "&": {}'.format(
-                                line
-                            )
+                        raise ValueError(
+                            f"Can not start a new line in Fortran with '&': {line}"
                         )
                 else:
                     linebuffer = linebuffer.strip() + " "
@@ -386,7 +380,7 @@ class FortranReader:
                 name = pname
                 break
         else:
-            msg = 'Can not find include file "{}".'.format(name)
+            msg = f'Can not find include file "{name}"'
             if name.endswith(".h"):
                 print("WARNING:", msg)
                 # undo pop and return

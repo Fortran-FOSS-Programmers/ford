@@ -71,7 +71,7 @@ class Tipue_Search_JSON_Generator:
 
         # What happens if there is not a title.
         if soup_title.title is not None:
-            page_title = "{0}".format(soup_title.title.string)
+            page_title = str(soup_title.title.string)
         else:
             page_title = ""
 

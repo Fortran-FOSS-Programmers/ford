@@ -87,12 +87,8 @@ def sub_notes(docs):
 
     def substitute(match):
         ret = (
-            '</p><div class="alert alert-{}" role="alert"><h4>{}</h4>'
-            "<p>{}</p></div>".format(
-                NOTE_TYPE[match.group(1).lower()],
-                match.group(1).capitalize(),
-                match.group(2),
-            )
+            f'</p><div class="alert alert-{NOTE_TYPE[match.group(1).lower()]}" role="alert">'
+            f"<h4>{match.group(1).capitalize()}</h4><p>{match.group(2)}</p></div>"
         )
         if len(match.groups()) >= 4 and not match.group(4):
             ret += "\n<p>"
@@ -133,7 +129,7 @@ def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
 
     if level == retlevel and blevel == retblevel:
         return parenstr
-    raise RuntimeError("Couldn't parse parentheses: {}".format(line))
+    raise RuntimeError(f"Couldn't parse parentheses: {line}")
 
 
 def strip_paren(line: str, retlevel: int = 0, retblevel: int = 0, index=-1) -> str:
@@ -292,8 +288,7 @@ def sub_links(string: str, project: Project) -> str:
             else:
                 print(
                     ERR.format(
-                        match.group(),
-                        'Unrecognized classification "{}".'.format(match.group(2)),
+                        match.group(), f'Unrecognized classification "{match.group(2)}"'
                     )
                 )
                 return match.group()
@@ -306,7 +301,7 @@ def sub_links(string: str, project: Project) -> str:
                 item = obj
                 break
         else:
-            print(ERR.format(match.group(), '"{}" not found.'.format(match.group(1))))
+            print(ERR.format(match.group(), f'"{match.group(1)}" not found.'))
             url = ""
             name = match.group(1)
 
@@ -335,9 +330,7 @@ def sub_links(string: str, project: Project) -> str:
                         print(
                             ERR.format(
                                 match.group(),
-                                '"{}" can not be contained in "{}"'.format(
-                                    match.group(4), item.obj
-                                ),
+                                f'"{match.group(4)}" can not be contained in "{item.obj}"',
                             )
                         )
                         return match.group()
@@ -345,7 +338,7 @@ def sub_links(string: str, project: Project) -> str:
                     print(
                         ERR.format(
                             match.group(),
-                            'Unrecognized classification "{}".'.format(match.group(2)),
+                            f'Unrecognized classification "{match.group(2)}".',
                         )
                     )
                     return match.group()
@@ -360,16 +353,13 @@ def sub_links(string: str, project: Project) -> str:
                 print(
                     ERR.format(
                         match.group(),
-                        '"{0}" not found in "{1}", linking to page for "{1}" instead.'.format(
-                            match.group(3), name
-                        ),
+                        f'"{match.group(3)}" not found in "{name}", linking to page for "{name}" instead.',
                     )
                 )
 
         if found:
-            return '<a href="{}">{}</a>'.format(url, name)
-        else:
-            return "<a>{}</a>".format(name)
+            return f'<a href="{url}">{name}</a>'
+        return f"<a>{name}</a>"
 
     # Get information from links (need to build an RE)
     string = LINK_RE.sub(convert_link, string)
@@ -391,7 +381,7 @@ def register_macro(string):
         raise RuntimeError(f"Error, no alias name provided for {string}")
 
     chunks = string.split("=", 1)
-    key = "|{0}|".format(chunks[0].strip())
+    key = f"|{chunks[0].strip()}|"
     val = chunks[1].strip()
 
     if key in _MACRO_DICT and val != _MACRO_DICT[key]:
@@ -564,7 +554,7 @@ def external(project, make=False, path="."):
                     extModules = modules_from_local(url)
             except (URLError, json.JSONDecodeError) as error:
                 extModules = []
-                print("Could not open external URL '{}', reason: {}".format(url, error))
+                print(f"Could not open external URL '{url}', reason: {error}")
             # convert modules defined in the JSON database to module objects
             for extModule in extModules:
                 dict2obj(extModule, url, remote=remote)

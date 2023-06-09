@@ -387,7 +387,7 @@ def parse_arguments(
     try:
         import multiprocessing
 
-        ncpus = "{0}".format(multiprocessing.cpu_count())
+        ncpus = str(multiprocessing.cpu_count())
     except (ImportError, NotImplementedError):
         ncpus = "0"
 
@@ -505,16 +505,14 @@ def parse_arguments(
 
     # Add gitter sidecar if specified in metadata
     if proj_data["gitter_sidecar"] is not None:
-        proj_docs += """
+        proj_docs += f"""
         <script>
             ((window.gitter = {{}}).chat = {{}}).options = {{
-            room: '{}'
+            room: '{proj_data["gitter_sidecar"].strip()}'
             }};
         </script>
         <script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
-        """.format(
-            proj_data["gitter_sidecar"].strip()
-        )
+        """
     # Handle preprocessor:
     if proj_data["preprocess"]:
         proj_data["preprocessor"] = proj_data["preprocessor"].split()
@@ -542,18 +540,14 @@ def parse_arguments(
         proj_data["license"] = LICENSES[proj_data["license"].lower()]
     except KeyError:
         print(
-            'Notice: license "{}" is not a recognized value, using the value as a custom license value.'.format(
-                proj_data["license"]
-            )
+            f'Notice: license "{proj_data["license"]}" is not a recognized value, using the value as a custom license value.'
         )
     # Get the correct license for doc license(website or doc) or use value as a custom license value.
     try:
         proj_data["doc_license"] = LICENSES[proj_data["doc_license"].lower()]
     except KeyError:
         print(
-            'Notice: doc_license "{}" is not a recognized value, using the value as a custom license value.'.format(
-                proj_data["doc_license"]
-            )
+            f'Notice: doc_license "{proj_data["doc_license"]}" is not a recognized value, using the value as a custom license value.'
         )
 
     # Return project data, docs, and the Markdown reader
@@ -576,12 +570,12 @@ def main(proj_data, proj_docs, md):
         sys.exit(1)
 
     # Define core macros:
-    ford.utils.register_macro("url = {0}".format(proj_data["project_url"]))
+    ford.utils.register_macro(f"url = {proj_data['project_url']}")
     ford.utils.register_macro(
-        "media = {0}".format(os.path.join(proj_data["project_url"], "media"))
+        f'media = {os.path.join(proj_data["project_url"], "media")}'
     )
     ford.utils.register_macro(
-        "page = {0}".format(os.path.join(proj_data["project_url"], "page"))
+        f'page = {os.path.join(proj_data["project_url"], "page")}'
     )
 
     # Register the user defined aliases:

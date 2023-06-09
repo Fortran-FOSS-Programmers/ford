@@ -44,7 +44,7 @@ class PageNode:
         parent: Optional[PageNode],
         encoding: str = "utf-8",
     ):
-        print("Reading page {}".format(os.path.relpath(path)))
+        print(f"Reading page {os.path.relpath(path)}")
         with open(path, "r", encoding=encoding) as page:
             text = md.reset().convert(page.read())
 

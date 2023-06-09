@@ -197,10 +197,8 @@ class FortranBase:
     def get_url(self):
         if hasattr(self, "external_url"):
             return self.external_url
-        outstr = "{0}/{1}/{2}.html"
-        loc = self.get_dir()
-        if loc:
-            return outstr.format(self.base_url, loc, quote(self.ident))
+        if loc := self.get_dir():
+            return f"{self.base_url}/{loc}/{self.ident}.html"
         if isinstance(
             self,
             (
@@ -211,8 +209,7 @@ class FortranBase:
                 FortranFinalProc,
             ),
         ):
-            parent_url = self.parent.get_url()
-            if parent_url:
+            if parent_url := self.parent.get_url():
                 return f"{parent_url}#{self.anchor}"
             return None
         return None
@@ -220,18 +217,11 @@ class FortranBase:
     def lines_description(self, total, total_all=0, obj=None):
         if not obj:
             obj = self.obj
-        description = "{:4.1f}% of total for {}.".format(
-            float(self.num_lines) / total * 100, self.pretty_obj[obj]
-        )
+        description = f"{float(self.num_lines) / total * 100:4.1f}% of total for {self.pretty_obj[obj]}."
         if total_all:
             description = (
-                "<p>"
-                + description
-                + "</p>Including implementation: {} statements, {:4.1f}% of total for {}.".format(
-                    self.num_lines_all,
-                    float(self.num_lines_all) / total_all * 100,
-                    self.pretty_obj[obj],
-                )
+                f"<p>{description}</p>Including implementation: {self.num_lines_all} statements, "
+                f"{float(self.num_lines_all) / total_all * 100:4.1f}% of total for {self.pretty_obj[obj]}."
             )
         return description
 
@@ -354,9 +344,7 @@ class FortranBase:
         if self.meta["summary"].strip() != self.doc.strip():
             self.meta[
                 "summary"
-            ] += '<a href="{}" class="pull-right"><emph>Read more&hellip;</emph></a>'.format(
-                self.get_url()
-            )
+            ] += f'<a href="{self.get_url()}" class="pull-right"><emph>Read more&hellip;</emph></a>'
 
         self._ensure_meta_key_set("graph", ford.utils.str_to_bool)
         self._ensure_meta_key_set("graph_maxdepth")
@@ -377,9 +365,7 @@ class FortranBase:
                     self.src = ""
                     if self.settings["warn"]:
                         print(
-                            "Warning: Could not extract source code for {} {} in file {}".format(
-                                self.obj, self.name, self.hierarchy[0].name
-                            )
+                            f"Warning: Could not extract source code for {self.obj} '{self.name}' in file '{self.filename}'"
                         )
 
         if self.obj == "proc":
@@ -663,7 +649,7 @@ class FortranContainer(FortranBase):
             while quote := QUOTES_RE.search(line[search_from:]):
                 self.strings.append(quote.group())
                 line = line[0:search_from] + QUOTES_RE.sub(
-                    '"{}"'.format(len(self.strings) - 1), line[search_from:], count=1
+                    f'"{len(self.strings) - 1}"', line[search_from:], count=1
                 )
                 search_from += QUOTES_RE.search(line[search_from:]).end(0)
 
@@ -2528,14 +2514,8 @@ class FortranSpoof:
         self.obj = obj
         if self.parent.settings["warn"]:
             print(
-                "Warning: {} {} in {} {} could not be matched to "
-                "corresponding item in code (file {}).".format(
-                    self.obj.upper(),
-                    self.name,
-                    self.parent.obj.upper(),
-                    self.parent.name,
-                    self.parent.hierarchy[0].name,
-                )
+                f"Warning: {self.obj} '{self.name}' in {self.parent.obj} '{self.parent.name}' could not be matched to "
+                f"corresponding item in code (file {self.filename})"
             )
 
     def __getitem__(self, key):
@@ -2837,7 +2817,7 @@ def parse_type(
         _EXTRA_TYPES_RE_CACHE[extra_vartypes] = var_type_re
 
     if not (match := var_type_re.match(string)):
-        raise ValueError("Invalid variable declaration: {}".format(string))
+        raise ValueError(f"Invalid variable declaration: {string}")
 
     vartype = match.group().lower()
     if DOUBLE_PREC_RE.match(vartype):
@@ -2861,9 +2841,7 @@ def parse_type(
             # This is a bare `character` declaration with no parameters
             return ParsedType(vartype, rest, strlen="1")
 
-        raise ValueError(
-            "Bad declaration of variable type {}: {}".format(vartype, string)
-        )
+        raise ValueError(f"Bad declaration of variable type '{vartype}': {string}")
 
     if match.group(1):
         star = False
@@ -3006,9 +2984,7 @@ class NameSelector:
         one.
         """
         if not isinstance(item, ford.sourceform.FortranBase):
-            raise Exception(
-                "{} is not of a type derived from FortranBase".format(str(item))
-            )
+            raise TypeError(f"'{item}' is not of a type derived from FortranBase")
 
         if item in self._items:
             return self._items[item]
