@@ -528,7 +528,7 @@ class FortranContainer(FortranBase):
     ASSOCIATE_RE = re.compile(r"^(\w+\s*:)?\s*associate\s*\((.+)\)\s*$", re.IGNORECASE)
     ENUM_RE = re.compile(r"^enum\s*,\s*bind\s*\(.*\)\s*$", re.IGNORECASE)
     MODPROC_RE = re.compile(
-        r"^(module\s+)?procedure\s*(?:::|\s)\s*(\w.*)$", re.IGNORECASE
+        r"^(module\s+)?procedure\s*(?:::|\s)\s*(?P<names>\w.*)$", re.IGNORECASE
     )
     MODULE_RE = re.compile(r"^module(?:\s+(\w+))?$", re.IGNORECASE)
     SUBMODULE_RE = re.compile(
@@ -750,7 +750,7 @@ class FortranContainer(FortranBase):
             ):
                 if hasattr(self, "modprocs"):
                     # Module procedure in an INTERFACE
-                    self.modprocs.extend(get_mod_procs(source, match, self))
+                    self.modprocs.extend(get_mod_procs(source, match["names"], self))
                 elif hasattr(self, "modprocedures"):
                     # Module procedure implementing an interface in a SUBMODULE
                     self.modprocedures.append(
@@ -1772,7 +1772,7 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
 
     def _initialize(self, line: re.Match) -> None:
         self.proctype = "Module Procedure"
-        self.name = line.group(2)
+        self.name = line["names"]
 
         self._common_initialize()
         self.mp = True
@@ -2912,28 +2912,23 @@ class CallChain:
         )
 
 
-def set_base_url(url):
+def set_base_url(url: str) -> None:
     FortranBase.base_url = url
 
 
-def get_mod_procs(source, line, parent):
+def get_mod_procs(
+    source: FortranReader, names: str, parent: FortranInterface
+) -> List[FortranModuleProcedure]:
+    """Get module procedures from an interface"""
     inherit_permission = parent.permission
     retlist = []
-    SPLIT_RE = re.compile(r"\s*,\s*", re.IGNORECASE)
-    splitlist = SPLIT_RE.split(line.group(2))
-    if splitlist and len(splitlist) > 0:
-        for item in splitlist:
-            retlist.append(FortranModuleProcedure(item, parent, inherit_permission))
-    else:
-        retlist.append(
-            FortranModuleProcedure(line.group(1), parent, inherit_permission)
-        )
+    for item in re.split(r"\s*,\s*", names):
+        retlist.append(FortranModuleProcedure(item, parent, inherit_permission))
 
     doc = []
-    docline = next(source)
-    while docline[0:2] == "!" + parent.settings["docmark"]:
+    docmark = f"!{parent.settings['docmark']}"
+    while (docline := next(source)).startswith(docmark):
         doc.append(docline[2:])
-        docline = next(source)
     source.pass_back(docline)
     retlist[-1].doc_list = doc
 
