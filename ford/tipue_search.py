@@ -39,11 +39,7 @@ import json
 from bs4 import BeautifulSoup, FeatureNotFound, SoupStrainer
 from codecs import open
 from typing import Dict, List
-
-try:
-    from urlparse import urljoin
-except ImportError:
-    from urllib.parse import urljoin
+from urllib.parse import urljoin
 
 
 class Tipue_Search_JSON_Generator:
