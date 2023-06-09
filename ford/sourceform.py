@@ -578,9 +578,8 @@ class FortranContainer(FortranBase):
     )
     ARITH_GOTO_RE = re.compile(r"go\s*to\s*\([0-9,\s]+\)", re.IGNORECASE)
     CALL_RE = re.compile(
-        r"""(?:^|[^a-zA-Z0-9_ ]\s*)
-        (?P<parent>(?:\s*\w+\s*(?:\(\))?\s*%\s*)+)? # Optional type component access
-        (?P<name>\w+\s*\(.*?\))                     # Required function name
+        r"""(?P<parent>(?:\s*\w+\s*(?:\(\))?\s*%\s*)+)? # Optional type component access
+        (?P<name>\w+\s*\(.*?\))                         # Required function name
         """,
         re.IGNORECASE | re.VERBOSE,
     )

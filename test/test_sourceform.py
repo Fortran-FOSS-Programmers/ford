@@ -349,6 +349,15 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
             """,
             ["p_baz", "p_buz"],
         ),
+        (
+            """
+            USE m_foo, ONLY: t_baz
+
+            TYPE(t_baz) :: var_baz
+            write(*,*) var_baz%p_baz()
+            """,
+            ["p_baz"],
+        ),
     ],
 )
 def test_type_chain_function_and_subroutine_calls(
