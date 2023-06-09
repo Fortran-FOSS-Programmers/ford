@@ -22,6 +22,8 @@
 #
 #
 
+from __future__ import annotations
+
 from collections import defaultdict
 from dataclasses import dataclass
 import re
@@ -37,7 +39,7 @@ from pygments import highlight
 from pygments.lexers import FortranLexer, FortranFixedLexer, guess_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
-import ford.reader
+from ford.reader import FortranReader
 import ford.utils
 from ford.intrinsics import INTRINSICS
 
@@ -92,20 +94,18 @@ class FortranBase:
     }
 
     def __init__(
-        self, source, first_line, parent=None, inherited_permission="public", strings=[]
+        self,
+        source: FortranReader,
+        first_line: re.Match,
+        parent: Optional[FortranContainer] = None,
+        inherited_permission: str = "public",
+        strings: Optional[List[str]] = None,
     ):
+        self.name = "unknown"
         self.visible = False
         self.permission = inherited_permission.lower()
-        self.strings = strings
-        self.parent = parent
-        if self.parent:
-            self.parobj = self.parent.obj
-            self.display = self.parent.display
-            self.settings = self.parent.settings
-        else:
-            self.parobj = None
-            self.display = None
-            self.settings = None
+        self.strings: List[str] = strings or []
+
         self.obj = type(self).__name__[7:].lower()
         if (
             self.obj == "subroutine"
@@ -113,7 +113,19 @@ class FortranBase:
             or self.obj == "submoduleprocedure"
         ):
             self.obj = "proc"
+
+        self.parent = parent
+        if self.parent:
+            self.parobj: Optional[str] = self.parent.obj
+            self.display: List[str] = self.parent.display
+            self.settings: Dict = self.parent.settings
+        else:
+            self.parobj = None
+            self.display = []
+            self.settings = {}
+
         self._initialize(first_line)
+
         del self.strings
         self.doc = []
         line = next(source)
@@ -127,6 +139,9 @@ class FortranBase:
             self.hierarchy.append(cur)
             cur = cur.parent
         self.hierarchy.reverse()
+
+    def _initialize(self, first_line: re.Match):
+        raise NotImplementedError()
 
     @property
     def filename(self) -> str:
@@ -956,7 +971,11 @@ class FortranContainer(FortranBase):
         if not isinstance(self, FortranSourceFile):
             raise Exception("File ended while still nested.")
 
-    def _add_procedure_call(self, name: str, parent: str):
+    def _add_procedure_call(
+        self: Union[FortranProgram, FortranProcedure, FortranSubmoduleProcedure],
+        name: str,
+        parent: str,
+    ):
         name = name.lower()
         if name in INTRINSICS or name in (call.name for call in self.calls):
             return
@@ -1365,20 +1384,27 @@ class FortranSourceFile(FortranContainer):
     contains lists of all of that file's contents
     """
 
-    def __init__(self, filepath, settings, preprocessor=None, fixed=False, **kwargs):
+    def __init__(
+        self,
+        filepath: str,
+        settings: Dict,
+        preprocessor=None,
+        fixed: bool = False,
+        **kwargs,
+    ):
         # Hack to prevent FortranBase.__str__ to generate an anchor link to the source file in HTML output.
         self.visible = kwargs.get("incl_src", True)
         self.path = filepath.strip()
         self.name = os.path.basename(self.path)
         self.settings = settings
         self.fixed = fixed
-        self.parent = None
-        self.modules = []
-        self.submodules = []
-        self.functions = []
-        self.subroutines = []
-        self.programs = []
-        self.blockdata = []
+        self.parent: Optional[FortranContainer] = None
+        self.modules: List[FortranModule] = []
+        self.submodules: List[FortranSubmodule] = []
+        self.functions: List[FortranFunction] = []
+        self.subroutines: List[FortranSubroutine] = []
+        self.programs: List[FortranProgram] = []
+        self.blockdata: List[FortranBlockData] = []
         self.doc = []
         self.hierarchy = []
         self.obj = "sourcefile"
@@ -1386,7 +1412,7 @@ class FortranSourceFile(FortranContainer):
         self.encoding = kwargs.get("encoding", True)
         self.permission = "public"
 
-        source = ford.reader.FortranReader(
+        source = FortranReader(
             self.path,
             settings["docmark"],
             settings["predocmark"],
@@ -1627,6 +1653,9 @@ class FortranProcedure(FortranCodeUnit):
             bind_C_text = ford.utils.get_parens(bind_C_text, -1)
 
         self.bindC = bind_C_text
+
+        if self.parent is None:
+            return
 
         # Now we have to replace any quoted text that has previously
         # been removed
