@@ -72,6 +72,17 @@ PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
 base_url = ""
 
 
+def read_docstring(source: FortranReader, docmark: str) -> List[str]:
+    """Read a contiguous docstring"""
+    docstring = []
+    docmark = f'!{docmark}'
+    length = len(docmark)
+    while (line := next(source)).startswith(docmark):
+        docstring.append(line[length:])
+    source.pass_back(line)
+    return docstring
+
+
 class FortranBase:
     """
     An object containing the data common to all of the classes used to represent
@@ -130,15 +141,9 @@ class FortranBase:
             self.settings = {}
 
         self._initialize(first_line)
-
         del self.strings
-        self.doc_list: List[str] = []
-        line = next(source)
-        while line[0:2] == "!" + self.settings["docmark"]:
-            self.doc_list.append(line[2:])
-            line = next(source)
-        source.pass_back(line)
 
+        self.doc_list = read_docstring(source, self.settings["docmark"])
         self.hierarchy = self._make_hierarchy()
 
     def _make_hierarchy(self) -> List[FortranContainer]:
@@ -2089,14 +2094,7 @@ class FortranFinalProc(FortranBase):
         self.parobj = self.parent.obj
         self.display = self.parent.display
         self.settings = self.parent.settings
-        self.doc_list = []
-        if source:
-            line = next(source)
-            while line[0:2] == "!" + self.settings["docmark"]:
-                self.doc_list.append(line[2:])
-                line = next(source)
-            source.pass_back(line)
-
+        self.doc_list = read_docstring(source, self.settings["docmark"]) if source else []
         self.hierarchy = self._make_hierarchy()
 
     def correlate(self, project):
@@ -2698,11 +2696,7 @@ def line_to_variables(source, line, inherit_permission, parent):
         declarestr = ATTRIBSPLIT2_RE.match(parsed_type.rest).group(2)
     declarations = ford.utils.paren_split(",", declarestr)
 
-    doc = []
-    docmark = f"!{parent.settings['docmark']}"
-    while (docline := next(source)).startswith(docmark):
-        doc.append(docline[2:])
-    source.pass_back(docline)
+    doc = read_docstring(source, parent.settings["docmark"])
 
     varlist = []
     for dec in declarations:
@@ -2917,13 +2911,7 @@ def get_mod_procs(
     for item in re.split(r"\s*,\s*", names):
         retlist.append(FortranModuleProcedure(item, parent, inherit_permission))
 
-    doc = []
-    docmark = f"!{parent.settings['docmark']}"
-    while (docline := next(source)).startswith(docmark):
-        doc.append(docline[2:])
-    source.pass_back(docline)
-    retlist[-1].doc_list = doc
-
+    retlist[-1].doc_list = read_docstring(source, parent.settings["docmark"])
     return retlist
 
 
