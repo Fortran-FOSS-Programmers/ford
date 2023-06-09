@@ -138,12 +138,18 @@ class FortranBase:
             self.doc_list.append(line[2:])
             line = next(source)
         source.pass_back(line)
-        self.hierarchy = []
-        cur = self.parent
-        while cur:
-            self.hierarchy.append(cur)
-            cur = cur.parent
-        self.hierarchy.reverse()
+
+        self.hierarchy = self._make_hierarchy()
+
+    def _make_hierarchy(self) -> List[FortranContainer]:
+        """Create list of ancestor entities"""
+        hierarchy = []
+        # This is a bit gross, but shuts mypy up
+        cur: Optional[FortranBase] = self
+        while cur := getattr(cur, "parent", None):
+            hierarchy.append(cur)
+        hierarchy.reverse()
+        return hierarchy
 
     def _initialize(self, line: re.Match) -> None:
         raise NotImplementedError()
@@ -2090,12 +2096,8 @@ class FortranFinalProc(FortranBase):
                 self.doc_list.append(line[2:])
                 line = next(source)
             source.pass_back(line)
-        self.hierarchy = []
-        cur = self.parent
-        while cur:
-            self.hierarchy.append(cur)
-            cur = cur.parent
-        self.hierarchy.reverse()
+
+        self.hierarchy = self._make_hierarchy()
 
     def correlate(self, project):
         self.all_procs = self.parent.all_procs
@@ -2165,12 +2167,7 @@ class FortranVariable(FortranBase):
             self.dimension = self.name[min(indexlist) :]
             self.name = self.name[0 : min(indexlist)]
 
-        self.hierarchy = []
-        cur = self.parent
-        while cur:
-            self.hierarchy.append(cur)
-            cur = cur.parent
-        self.hierarchy.reverse()
+        self.hierarchy = self._make_hierarchy()
 
     def correlate(self, project):
         if not self.proto:
@@ -2327,12 +2324,7 @@ class FortranModuleProcedure(FortranBase):
         self.name = name
         self.procedure = None
         self.doc_list = []
-        self.hierarchy = []
-        cur = self.parent
-        while cur:
-            self.hierarchy.append(cur)
-            cur = cur.parent
-        self.hierarchy.reverse()
+        self.hierarchy = self._make_hierarchy()
 
 
 class FortranBlockData(FortranContainer):
