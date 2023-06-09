@@ -1108,14 +1108,9 @@ class FortranCodeUnit(FortranContainer):
                         argname |= call.name == self.retvar.name.lower()
 
                 # get all the variables in the call's context
-                all_vars = {}
-                if hasattr(context, "all_vars"):
-                    all_vars = context.all_vars
+                all_vars = getattr(context, "all_vars", {})
                 if hasattr(context, "variables"):
-                    all_vars = {
-                        **all_vars,
-                        **{v.name.lower(): v for v in context.variables},
-                    }
+                    all_vars.update({v.name.lower(): v for v in context.variables})
 
                 # if call isn't to a variable (i.e. an array), and isn't a type, add it to the list
                 if (
