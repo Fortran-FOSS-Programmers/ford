@@ -59,6 +59,7 @@ PARA_CAPTURE_RE = re.compile(r"<p>.*?</p>", re.IGNORECASE | re.DOTALL)
 COMMA_RE = re.compile(r",(?!\s)")
 NBSP_RE = re.compile(r" (?= )|(?<= ) ")
 DIM_RE = re.compile(r"^\w+\s*(\(.*\))\s*$")
+PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
 
 
 base_url = ""
@@ -2861,15 +2862,13 @@ def parse_type(
 
     args = re.sub(r"\s", "", args)
     if vartype in ["type", "class", "procedure"]:
-        PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
-        try:
-            proto = list(PROTO_RE.match(args).groups())
-            if not proto[1]:
-                proto[1] = ""
-        except AttributeError:
-            raise Exception(
-                "Bad type, class, or procedure prototype specification: {}".format(args)
+        if not (proto_match := PROTO_RE.match(args)):
+            raise ValueError(
+                f"Bad type, class, or procedure prototype specification: {args}"
             )
+        proto = list(proto_match.groups())
+        if not proto[1]:
+            proto[1] = ""
         return ParsedType(vartype, rest, proto=proto)
 
     if vartype == "character":
