@@ -28,6 +28,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 import re
 import os.path
+import pathlib
 import copy
 import textwrap
 from typing import cast, List, Tuple, Optional, Union, Sequence, Dict, TYPE_CHECKING
@@ -1418,9 +1419,7 @@ class FortranSourceFile(FortranContainer):
         )
 
         super().__init__(source, "")
-        with open(self.path, "r", encoding=settings["encoding"]) as readobj:
-            self.raw_src = readobj.read()
-
+        self.raw_src = pathlib.Path(self.path).read_text(encoding=settings["encoding"])
         lexer = FortranFixedLexer() if self.fixed else FortranLexer()
         self.src = highlight(
             self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
@@ -2522,8 +2521,7 @@ class GenericSource(FortranBase):
         predocmark_alt = settings["predocmark_alt"]
         self.path = filename.strip()
         self.name = os.path.basename(self.path)
-        with open(filename, "r", encoding=settings["encoding"]) as r:
-            self.raw_src = r.read()
+        self.raw_src = pathlib.Path(self.path).read_text(encoding=settings["encoding"])
         # TODO: Get line numbers to display properly
         if self.lexer_str is None:
             lexer = guess_lexer_for_filename(self.name, self.raw_src)

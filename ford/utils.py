@@ -480,8 +480,7 @@ def external(project, make=False, path="."):
         local file system.
         """
 
-        with open(url / "modules.json", mode="r", encoding="utf-8") as extfile:
-            return json.loads(extfile.read())
+        return json.loads((url / "modules.json").read_text(encoding="utf-8"))
 
     def dict2obj(extDict, url, parent=None, remote: bool = False) -> FortranBase:
         """
@@ -532,8 +531,7 @@ def external(project, make=False, path="."):
     if make:
         # convert internal module object to a JSON database
         extModules = [obj2dict(module) for module in project.modules]
-        with open(os.path.join(path, "modules.json"), "w") as modFile:
-            modFile.write(json.dumps(extModules))
+        (pathlib.Path(path) / "modules.json").write_text(json.dumps(extModules))
     else:
         # get the external modules from the external URLs
         for urldef in project.external:

@@ -309,9 +309,12 @@ class BasePage:
                 f"    {e}"
             )
 
-    def writeout(self):
-        with open(self.outfile, "wb") as out:
-            out.write(self.html.encode("utf8"))
+    @property
+    def outfile(self) -> pathlib.Path:
+        raise NotImplementedError()
+
+    def writeout(self) -> None:
+        self.outfile.write_bytes(self.html.encode("utf8"))
 
     def render(self, data, proj, obj):
         """

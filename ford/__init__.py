@@ -378,7 +378,7 @@ def get_command_line_arguments() -> argparse.Namespace:
 def parse_arguments(
     command_line_args: dict,
     proj_docs: str,
-    directory: Union[os.PathLike, str] = os.getcwd(),
+    directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
 ):
     """Consolidates arguments from the command line and from the project
     file, and then normalises them how the rest of the code expects
