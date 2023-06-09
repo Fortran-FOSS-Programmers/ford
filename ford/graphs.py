@@ -415,8 +415,8 @@ class TypeNode(BaseNode):
         super().__init__(obj, gd)
         self.ancestor = None
         self.children = set()
-        self.comp_types = dict()
-        self.comp_of = dict()
+        self.comp_types = {}
+        self.comp_of = {}
         if self.fromstr:
             return
 

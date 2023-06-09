@@ -264,10 +264,7 @@ class FortranBase:
         Use ``default`` if ``key`` is not in ``self.settings``.
         """
         value = self.meta.get(key, self.settings.get(key, default))
-        if transform:
-            self.meta[key] = transform(value)
-        else:
-            self.meta[key] = value
+        self.meta[key] = transform(value) if transform else value
 
     def markdown(self, md: Markdown, project: Project):
         """
@@ -1001,7 +998,7 @@ class FortranCodeUnit(FortranContainer):
         self.enums: List[FortranEnum] = []
         self.functions: List[FortranFunction] = []
         self.interfaces: List[FortranInterface] = []
-        self.param_dict: Dict[str, str] = dict()
+        self.param_dict: Dict[str, str] = {}
         self.subroutines: List[FortranSubroutine] = []
         self.types: List[FortranType] = []
         self.uses: List[Tuple] = []
@@ -2329,7 +2326,7 @@ class FortranBlockData(FortranContainer):
         self.common = []
         self.visible = True
         self.attr_dict = defaultdict(list)
-        self.param_dict = dict()
+        self.param_dict = {}
 
     def correlate(self, project):
         # Add procedures, interfaces and types from parent to our lists
@@ -2890,10 +2887,10 @@ def get_mod_procs(
     source: FortranReader, names: str, parent: FortranInterface
 ) -> List[FortranModuleProcedure]:
     """Get module procedures from an interface"""
-    inherit_permission = parent.permission
-    retlist = []
-    for item in re.split(r"\s*,\s*", names):
-        retlist.append(FortranModuleProcedure(item, parent, inherit_permission))
+    retlist = [
+        FortranModuleProcedure(item, parent, parent.permission)
+        for item in re.split(r"\s*,\s*", names)
+    ]
 
     retlist[-1].doc_list = read_docstring(source, parent.settings["docmark"])
     return retlist

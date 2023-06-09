@@ -201,7 +201,7 @@ class Documentation:
                 desc="Creating search index",
             ):
                 self.tipue.create_node(p.html, p.loc, p.meta)
-            print("")
+            print()
 
     def writeout(self) -> None:
         out_dir: pathlib.Path = self.data["output_dir"]
