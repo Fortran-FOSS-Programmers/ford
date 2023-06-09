@@ -1000,8 +1000,7 @@ class FortranCodeUnit(FortranContainer):
 
     def correlate(self, project: Project) -> None:
         # Add procedures, interfaces and types from parent to our lists
-        if hasattr(self.parent, "all_procs"):
-            self.all_procs.update(self.parent.all_procs)
+        self.all_procs.update(getattr(self.parent, "all_procs", {}))
         self.all_absinterfaces = getattr(self.parent, "all_absinterfaces", {})
         for ai in self.absinterfaces:
             self.all_absinterfaces[ai.name.lower()] = ai
@@ -1012,17 +1011,18 @@ class FortranCodeUnit(FortranContainer):
         for var in self.variables:
             self.all_vars[var.name.lower()] = var
 
-        if type(getattr(self, "parent_submodule", "")) not in [str, type(None)]:
-            self.parent_submodule.descendants.append(self)
-            self.all_procs.update(self.parent_submodule.all_procs)
-            self.all_absinterfaces.update(self.parent_submodule.all_absinterfaces)
-            self.all_types.update(self.parent_submodule.all_types)
-        elif type(getattr(self, "ancestor_module", "")) not in [str, type(None)]:
-            self.ancestor_module.descendants.append(self)
-            self.all_procs.update(self.ancestor_module.all_procs)
-            self.all_absinterfaces.update(self.ancestor_module.all_absinterfaces)
-            self.all_types.update(self.ancestor_module.all_types)
-            self.all_vars.update(self.ancestor_module.pub_vars)
+        if isinstance(self, FortranSubmodule):
+            if isinstance(self.parent_submodule, FortranSubmodule):
+                self.parent_submodule.descendants.append(self)
+                self.all_procs.update(self.parent_submodule.all_procs)
+                self.all_absinterfaces.update(self.parent_submodule.all_absinterfaces)
+                self.all_types.update(self.parent_submodule.all_types)
+            elif isinstance(self.ancestor_module, FortranModule):
+                self.ancestor_module.descendants.append(self)
+                self.all_procs.update(self.ancestor_module.all_procs)
+                self.all_absinterfaces.update(self.ancestor_module.all_absinterfaces)
+                self.all_types.update(self.ancestor_module.all_types)
+                self.all_vars.update(self.ancestor_module.pub_vars)
 
         # Module procedures will be missing (some/all?) metadata, so
         # now we copy it from the interface
@@ -1091,7 +1091,7 @@ class FortranCodeUnit(FortranContainer):
             tmplst = []
             for call in self.calls:
                 # get the context of the call
-                context = self._find_call_context(call)
+                context = self._find_call_context(cast(CallChain, call))
 
                 # failed to find context, give up and add call's string name to the list
                 if context is None:
@@ -1138,10 +1138,14 @@ class FortranCodeUnit(FortranContainer):
 
             self.calls = tmplst
 
-        if self.obj == "submodule":
-            self.ancestry = []
+        if isinstance(self, FortranSubmodule):
+            self.ancestry: List[Union[str, FortranModule, FortranSubmodule]] = []
             item = self
             while item.parent_submodule:
+                if isinstance(item.parent_submodule, str):
+                    raise ValueError(
+                        f"Unknown parent submodule '{item.parent_submodule}' of submodule '{item}'"
+                    )
                 item = item.parent_submodule
                 self.ancestry.insert(0, item)
             self.ancestry.insert(0, item.ancestor_module)
@@ -1172,7 +1176,7 @@ class FortranCodeUnit(FortranContainer):
             self.modsubroutines = [sub for sub in self.subroutines if sub.module]
             self.subroutines = [sub for sub in self.subroutines if not sub.module]
 
-    def process_attribs(self):
+    def process_attribs(self) -> None:
         """Attach standalone attributes to the correct object, and compute the
         list of public objects
         """
@@ -1281,7 +1285,7 @@ class FortranCodeUnit(FortranContainer):
             obj.visible = True
             obj.prune()
 
-    def _find_call_context(self, call):
+    def _find_call_context(self, call: CallChain) -> Optional[FortranCodeUnit]:
         """
         Traverse the call chain of the call to discover the context the call is made on.
         This is done by looking at the first label in the call chain and matching it to
@@ -1520,8 +1524,10 @@ class FortranSubmodule(FortranModule):
     def _initialize(self, line: re.Match) -> None:
         FortranModule._initialize(self, line)
         self.name = line["name"]
-        self.parent_submodule = line["parent_submod"]
-        self.ancestor_module = line["ancestor_module"]
+        self.parent_submodule: Union[str, None, FortranSubmodule] = line[
+            "parent_submod"
+        ]
+        self.ancestor_module: Union[str, FortranModule] = line["ancestor_module"]
         self.modprocedures = []
         del self.public_list
         del self.private_list
