@@ -1090,17 +1090,8 @@ class FortranCodeUnit(FortranContainer):
         if hasattr(self, "calls"):
             tmplst = []
             for call in self.calls:
-                call: CallChain
-                call.name = call.name.lower()
-
-                if call.name == "c":
-                    pass
-
                 # get the context of the call
                 context = self._find_call_context(call)
-
-                if context is None:
-                    pass
 
                 # failed to find context, give up and add call's string name to the list
                 if context is None:
