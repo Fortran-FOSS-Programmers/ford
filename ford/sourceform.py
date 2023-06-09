@@ -58,7 +58,7 @@ ATTRIBSPLIT_RE = re.compile(r",\s*(\w.*?)::\s*(.*)\s*")
 ATTRIBSPLIT2_RE = re.compile(r"\s*(::)?\s*(.*)\s*")
 ASSIGN_RE = re.compile(r"(\w+\s*(?:\([^=]*\)))\s*=(?!>)(?:\s*([^\s]+))?")
 POINT_RE = re.compile(r"(\w+\s*(?:\([^=>]*\)))\s*=>(?:\s*([^\s]+))?")
-EXTENDS_RE = re.compile(r"extends\s*\(\s*([^()\s]+)\s*\)", re.IGNORECASE)
+EXTENDS_RE = re.compile(r"extends\s*\(\s*(?P<base>[^()\s]+)\s*\)", re.IGNORECASE)
 DOUBLE_PREC_RE = re.compile(r"double\s+precision", re.IGNORECASE)
 DOUBLE_CMPLX_RE = re.compile(r"double\s+complex", re.IGNORECASE)
 QUOTES_RE = re.compile(r"\"([^\"]|\"\")*\"|'([^']|'')*'", re.IGNORECASE)
@@ -1327,12 +1327,11 @@ class FortranCodeUnit(FortranContainer):
             and isinstance(self, FortranType)
             and hasattr(self, "extends")
         ):
-            extend = self
-            while getattr(extend, "extends", None) is not None:
-                if extend.extends.name.lower() == c:
-                    call_type = extend.extends
+            extend: Optional[FortranCodeUnit] = self
+            while extend := getattr(extend, "extends", None):
+                if extend.name.lower() == call.name:
+                    call_type = extend
                     break
-                extend = extend.extends
 
         # if still None, give up
         if call_type is None:
@@ -1352,12 +1351,11 @@ class FortranCodeUnit(FortranContainer):
 
             # not a variable, try call type is an extended type
             if new_call_type is None and isinstance(call_type, FortranType):
-                extend = call_type
-                while getattr(extend, "extends", None) is not None:
-                    if extend.extends.name.lower() == c:
-                        new_call_type = extend.extends
+                extend_type: Optional[FortranType] = call_type
+                while extend_type := getattr(extend_type, "extends", None):
+                    if extend_type.name.lower() == c:
+                        new_call_type = extend_type
                         break
-                    extend = extend.extends
 
             # not a subtype, give up
             if new_call_type is None:
@@ -1840,8 +1838,8 @@ class FortranType(FortranContainer):
             attriblist = self.SPLIT_RE.split(attribstr.strip())
             for attrib in attriblist:
                 attrib_lower = attrib.strip().lower()
-                if EXTENDS_RE.search(attrib):
-                    self.extends = EXTENDS_RE.search(attrib).group(1)
+                if extends := EXTENDS_RE.search(attrib):
+                    self.extends = extends["base"]
                 elif attrib_lower in ["public", "private"]:
                     self.permission = attrib_lower
                 elif attrib_lower == "external":
