@@ -366,10 +366,7 @@ class FortranBase:
         if self.obj in ["proc", "type", "program"]:
             self._ensure_meta_key_set("source", ford.utils.str_to_bool)
             if self.meta["source"]:
-                if self.obj == "proc":
-                    obj = self.proctype.lower()
-                else:
-                    obj = self.obj
+                obj = getattr(self, "proctype", self.obj).lower()
                 regex = re.compile(
                     self.SRC_CAPTURE_STR.format(obj, self.name),
                     re.IGNORECASE | re.DOTALL | re.MULTILINE,
