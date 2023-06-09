@@ -1012,12 +1012,11 @@ class FortranCodeUnit(FortranContainer):
         for var in self.variables:
             self.all_vars[var.name.lower()] = var
 
-        if type(getattr(self, "ancestor", "")) not in [str, type(None)]:
-            self.ancestor.descendants.append(self)
+        if type(getattr(self, "parent_submodule", "")) not in [str, type(None)]:
+            self.parent_submodule.descendants.append(self)
             self.all_procs.update(self.parent_submodule.all_procs)
             self.all_absinterfaces.update(self.parent_submodule.all_absinterfaces)
             self.all_types.update(self.parent_submodule.all_types)
-            self.all_vars.update(self.parent_submodule.pub_vars)
         elif type(getattr(self, "ancestor_module", "")) not in [str, type(None)]:
             self.ancestor_module.descendants.append(self)
             self.all_procs.update(self.ancestor_module.all_procs)
