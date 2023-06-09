@@ -6,6 +6,7 @@ from ford.sourceform import (
     ParsedType,
     line_to_variables,
 )
+from ford.fortran_project import find_used_modules
 from ford import DEFAULT_SETTINGS
 
 from copy import deepcopy
@@ -240,6 +241,9 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
     [
         (
             """
+            USE m_baz, ONLY: t_bar
+            USE m_foo, ONLY: t_baz
+
             TYPE(t_bar) :: v_bar
             TYPE(t_baz) :: var
             var = v_bar%p_foo()
@@ -248,22 +252,28 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
         ),
         (
             """
+            USE m_baz, ONLY: t_bar
+
             TYPE(t_bar) :: v_bar
             INTEGER :: var
-            var = v_bar%v_foo(0)
+            var = v_bar%v_foo(1)
             """,
             [],
         ),
         (
             """
+            USE m_baz, ONLY: t_bar
+
             TYPE(t_bar) :: v_bar
             INTEGER :: var
-            var = [v_bar%v_foo(0)]
+            var = [v_bar%v_foo(1)]
             """,
             [],
         ),
         (
             """
+            USE m_baz, ONLY: t_bar
+
             TYPE(t_bar) :: v_bar
             INTEGER, DIMENSION(:), ALLOCATABLE :: var
             var = v_bar%v_baz%p_baz()
@@ -272,6 +282,9 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
         ),
         (
             """
+            USE m_baz, ONLY: t_bar
+            USE m_foo, ONLY: t_baz
+
             TYPE(t_bar) :: v_bar
             TYPE(t_baz) :: var
             var = v_bar%t_foo%p_foo()
@@ -280,6 +293,9 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
         ),
         (
             """
+            USE m_baz, ONLY: t_bar
+            USE m_foo, ONLY: t_baz
+
             TYPE(t_bar) :: v_bar
             TYPE(t_baz) :: var(1)
             var = [v_bar%t_foo%p_foo()]
@@ -288,32 +304,50 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
         ),
         (
             """
-            TYPE(t_bar) :: v_bar
+            USE m_baz, ONLY: t_bar
+
+            TYPE(t_bar), DIMENSION(2) :: v_bar
             INTEGER :: var
-            var = v_bar%v_baz%v_faz(0)
+            var = v_bar(1)%v_baz%v_faz(1)
             """,
             [],
         ),
         (
             """
-            TYPE(t_bar) :: v_bar
-            call v_bar%renamed()
+            USE m_baz, ONLY: t_bar
+
+            TYPE(t_bar), DIMENSION(2) :: v_bar
+            call v_bar(1)%renamed()
             """,
             ["renamed"],
         ),
         (
             """
-            TYPE(t_bar) :: v_bar
-            call v_bar % p_bar ( )
+            USE m_baz, ONLY: t_bar
+
+            TYPE(t_bar), DIMENSION(2) :: v_bar
+            call v_bar ( 1 ) % p_bar
             """,
             ["p_bar"],
         ),
         (
             """
+            USE m_baz, ONLY: t_bar
+
             TYPE(t_bar) :: v_bar
             call v_bar % p_bar ( v_bar % v_baz % p_baz () )
             """,
             ["p_bar", "p_baz"],
+        ),
+        (
+            """
+            USE m_foo, ONLY: t_baz
+            USE m_baz, ONLY: p_buz
+
+            TYPE(t_baz) :: var_baz
+            call p_buz(var_baz%p_baz())
+            """,
+            ["p_baz", "p_buz"],
         ),
     ],
 )
@@ -329,12 +363,37 @@ def test_type_chain_function_and_subroutine_calls(
             PROCEDURE :: p_baz
         END TYPE t_baz
 
+        CONTAINS
+
+        FUNCTION p_baz(self) RESULT(ret_val)
+            CLASS(t_baz), INTENT(IN) :: self
+            INTEGER, DIMENSION(:), ALLOCATABLE :: ret_val
+        END FUNCTION p_baz
+
+    END MODULE m_foo
+
+    MODULE m_bar
         TYPE :: t_foo
             INTEGER, DIMENSION(:), ALLOCATABLE :: v_foo
         CONTAINS
             PROCEDURE :: p_foo
         END TYPE t_foo
 
+        CONTAINS
+
+        FUNCTION p_foo(self) RESULT(ret_val)
+            USE m_foo, ONLY: t_baz
+
+            CLASS(t_foo), INTENT(IN) :: self
+            TYPE(t_baz) :: ret_val
+        END FUNCTION p_foo
+
+    END MODULE m_bar
+
+    MODULE m_baz
+
+        USE m_foo, ONLY: t_baz
+        USE m_bar, ONLY: t_foo
         TYPE, EXTENDS(t_foo) :: t_bar
             TYPE(t_baz) :: v_baz
         CONTAINS
@@ -344,36 +403,45 @@ def test_type_chain_function_and_subroutine_calls(
 
         CONTAINS
 
-        FUNCTION p_baz(self) RESULT(ret_val)
-            CLASS(t_baz), INTENT(IN) :: self
-            INTEGER, DIMENSION(:), ALLOCATABLE :: ret_val
-        END FUNCTION p_baz
-
-        FUNCTION p_foo(self) RESULT(ret_val)
-            CLASS(t_foo), INTENT(IN) :: self
-            TYPE(t_baz) :: ret_val
-        END FUNCTION p_foo
-
-        SUBROUTINE p_bar()
+        SUBROUTINE p_bar(self)
+            CLASS(t_bar), INTENT(IN) :: self
         END SUBROUTINE p_bar
+
+        SUBROUTINE p_buz(var_int)
+            INTEGER, DIMENSION(2), INTENT(IN) :: var_int
+        END SUBROUTINE p_buz
+
+    END MODULE m_baz
+
+    MODULE m_main
+
+        CONTAINS
 
         SUBROUTINE main
             {call_segment}
         END SUBROUTINE main
 
-    END MODULE m_foo
+    END MODULE m_main
     """
 
     fortran_file = parse_fortran_file(data)
     fp = FakeProject()
-    module = fortran_file.modules[0]
-    module.correlate(fp)
-    subroutines = {sub.name: sub for sub in module.subroutines}
-    calls = subroutines["main"].calls
+    modules = {module.name: module for module in fortran_file.modules}
+    for module in modules.values():
+        find_used_modules(module, modules.values(), [], [])
+
+    # correlation order is important
+    modules["m_foo"].correlate(fp)
+    modules["m_bar"].correlate(fp)
+    modules["m_baz"].correlate(fp)
+    modules["m_main"].correlate(fp)
+
+    main_subroutines = {sub.name: sub for sub in modules["m_main"].subroutines}
+    calls = main_subroutines["main"].calls
 
     assert len(calls) == len(expected)
 
-    calls_sorted = sorted(calls, key=lambda x: x.name)
+    calls_sorted = sorted(calls, key=lambda x: getattr(x, "name", x))
     expected_sorted = sorted(expected)
     for call, expected_name in zip(calls_sorted, expected_sorted):
         assert isinstance(call, FortranBase)
