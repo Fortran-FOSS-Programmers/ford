@@ -943,7 +943,7 @@ class FakeVariable:
     kind: Optional[str] = None
     strlen: Optional[str] = None
     proto: Union[None, str, List[str]] = None
-    doc: List[str] = field(default_factory=list)
+    doc_list: List[str] = field(default_factory=list)
     points: bool = False
     initial: Optional[str] = None
 
@@ -1528,7 +1528,7 @@ def test_single_character_interface(parse_fortran_file):
     """
     fortran_file = parse_fortran_file(data)
     assert fortran_file.modules[0].interfaces[0].name == "b"
-    assert fortran_file.modules[0].interfaces[0].doc == [" some comment"]
+    assert fortran_file.modules[0].interfaces[0].doc_list == [" some comment"]
 
 
 def test_module_procedure_in_module(parse_fortran_file):
@@ -1628,11 +1628,11 @@ def test_block_data(parse_fortran_file):
     blockdata = fortran_file.blockdata[0]
 
     assert blockdata.name == "name"
-    assert blockdata.doc[0].strip() == "Block data docstring"
+    assert blockdata.doc_list[0].strip() == "Block data docstring"
     assert len(blockdata.common) == 1
-    assert blockdata.common[0].doc[0].strip() == "Common block docstring"
+    assert blockdata.common[0].doc_list[0].strip() == "Common block docstring"
     assert len(blockdata.variables) == 1
-    assert blockdata.variables[0].doc[0].strip() == "Variable docstring"
+    assert blockdata.variables[0].doc_list[0].strip() == "Variable docstring"
 
 
 def test_subroutine_empty_args(parse_fortran_file):

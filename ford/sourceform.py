@@ -30,7 +30,7 @@ import re
 import os.path
 import copy
 import textwrap
-from typing import List, Tuple, Optional, Union, Sequence, Dict
+from typing import List, Tuple, Optional, Union, Sequence, Dict, TYPE_CHECKING
 from itertools import chain
 from urllib.parse import quote
 
@@ -42,6 +42,11 @@ from pygments.formatters import HtmlFormatter
 from ford.reader import FortranReader
 import ford.utils
 from ford.intrinsics import INTRINSICS
+
+if TYPE_CHECKING:
+    from ford.fortran_project import Project
+    from markdown import Markdown
+
 
 VAR_TYPE_STRING = r"^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
 VARKIND_RE = re.compile(r"\((.*)\)|\*\s*(\d+|\(.*\))")
@@ -127,10 +132,10 @@ class FortranBase:
         self._initialize(first_line)
 
         del self.strings
-        self.doc = []
+        self.doc_list: List[str] = []
         line = next(source)
         while line[0:2] == "!" + self.settings["docmark"]:
-            self.doc.append(line[2:])
+            self.doc_list.append(line[2:])
             line = next(source)
         source.pass_back(line)
         self.hierarchy = []
@@ -261,17 +266,17 @@ class FortranBase:
         else:
             self.meta[key] = value
 
-    def markdown(self, md, project):
+    def markdown(self, md: Markdown, project: Project):
         """
         Process the documentation with Markdown to produce HTML.
         """
-        if len(self.doc) > 0:
+        if len(self.doc_list) > 0:
             # Remove any common leading whitespace from the docstring
             # so that the markdown conversion is a bit more robust
-            self.doc = textwrap.dedent("\n".join(self.doc)).splitlines()
+            doc = textwrap.dedent("\n".join(self.doc_list)).splitlines()
 
-            if len(self.doc) == 1 and ":" in self.doc[0]:
-                words = self.doc[0].split(":")[0].strip()
+            if len(doc) == 1 and ":" in doc[0]:
+                words = doc[0].split(":")[0].strip()
                 if words.lower() not in [
                     "author",
                     "date",
@@ -283,10 +288,9 @@ class FortranBase:
                     "display",
                     "graph",
                 ]:
-                    self.doc.insert(0, "")
-                self.doc.append("")
-            self.doc = "\n".join(self.doc)
-            self.doc = md.reset().convert(self.doc)
+                    doc.insert(0, "")
+                doc.append("")
+            self.doc = md.reset().convert("\n".join(doc))
             self.meta = md.Meta
         else:
             if (
@@ -296,9 +300,7 @@ class FortranBase:
             ):
                 # TODO: Add ability to print line number where this item is in file
                 print(
-                    "Warning: Undocumented {} {} in file {}".format(
-                        self.obj, self.name, self.hierarchy[0].name
-                    )
+                    f"Warning: Undocumented {self.obj} '{self.name}' in file '{self.filename}'"
                 )
             self.doc = ""
             self.meta = {}
@@ -306,9 +308,7 @@ class FortranBase:
         if self.parent:
             self.display = self.parent.display
 
-        # ~ print (self.meta)
         for key in self.meta:
-            # ~ print(key, self.meta[key])
             if key == "display":
                 tmp = [item.lower() for item in self.meta[key]]
                 if type(self) == FortranSourceFile:
@@ -392,7 +392,7 @@ class FortranBase:
             if isinstance(item, FortranBase):
                 item.markdown(md, project)
 
-    def sort_components(self):
+    def sort_components(self) -> None:
         """Sorts components using the method specified in the object
         meta/project settings
 
@@ -457,7 +457,7 @@ class FortranBase:
             entity = getattr(self, entities, [])
             entity.sort(key=sort_key)
 
-    def make_links(self, project):
+    def make_links(self, project: Project) -> None:
         """
         Process intra-site links to documentation of other parts of the program.
         """
@@ -654,7 +654,7 @@ class FortranContainer(FortranBase):
         associatelevel = 0
         for line in source:
             if line[0:2] == "!" + self.settings["docmark"]:
-                self.doc.append(line[2:])
+                self.doc_list.append(line[2:])
                 continue
             if line.strip() != "":
                 self.num_lines += 1
@@ -910,9 +910,9 @@ class FortranContainer(FortranBase):
                                 )
                             )
                         for i in range(len(split) // 2):
-                            self.common[-i - 1].doc = self.common[
+                            self.common[-i - 1].doc_list = self.common[
                                 -len(split) // 2 + 1
-                            ].doc
+                            ].doc_list
                     else:
                         self.common.append(FortranCommon(source, match, self, "public"))
                 else:
@@ -1405,7 +1405,7 @@ class FortranSourceFile(FortranContainer):
         self.subroutines: List[FortranSubroutine] = []
         self.programs: List[FortranProgram] = []
         self.blockdata: List[FortranBlockData] = []
-        self.doc = []
+        self.doc_list = []
         self.hierarchy = []
         self.obj = "sourcefile"
         self.display = settings["display"]
@@ -1920,8 +1920,6 @@ class FortranType(FortranContainer):
         self.num_lines_all = self.num_lines
 
         # Match variables as needed (recurse)
-        # ~ for i in range(len(self.variables)-1,-1,-1):
-        # ~ self.variables[i].correlate(project)
         for v in self.variables:
             v.correlate(project)
         # Get inherited public components
@@ -1933,7 +1931,7 @@ class FortranType(FortranContainer):
         self.local_variables = self.variables
         for invar in inherited:
             if not hasattr(invar, "doc"):
-                invar.doc = "Inherited from [[{0}]]".format(self.extends)
+                invar.doc = f"Inherited from [[{self.extends}]]"
                 invar.meta = {}
         self.variables = inherited + self.variables
 
@@ -2137,11 +2135,11 @@ class FortranFinalProc(FortranBase):
         self.parobj = self.parent.obj
         self.display = self.parent.display
         self.settings = self.parent.settings
-        self.doc = []
+        self.doc_list = []
         if source:
             line = next(source)
             while line[0:2] == "!" + self.settings["docmark"]:
-                self.doc.append(line[2:])
+                self.doc_list.append(line[2:])
                 line = next(source)
             source.pass_back(line)
         self.hierarchy = []
@@ -2195,7 +2193,7 @@ class FortranVariable(FortranBase):
         self.kind = kind
         self.strlen = strlen
         self.proto = copy.copy(proto)
-        self.doc = copy.copy(doc) if doc is not None else []
+        self.doc_list = copy.copy(doc) if doc is not None else []
         self.permission = permission
         self.points = points
         self.parameter = parameter
@@ -2380,7 +2378,7 @@ class FortranModuleProcedure(FortranBase):
         self.obj = "moduleprocedure"
         self.name = name
         self.procedure = None
-        self.doc = []
+        self.doc_list = []
         self.hierarchy = []
         cur = self.parent
         while cur:
@@ -2653,7 +2651,7 @@ class GenericSource(FortranBase):
             )
         else:
             doc_alt_re = None
-        self.doc = []
+        self.doc_list = []
         prevdoc = False
         docalt = False
         for line in open(filename, "r", encoding=settings["encoding"]):
@@ -2670,7 +2668,7 @@ class GenericSource(FortranBase):
                     doc = doc[len(comchar + docmark_alt) :].strip()
                 else:
                     doc = doc[len(comchar + predocmark_alt) :].strip()
-                self.doc.append(doc)
+                self.doc_list.append(doc)
                 continue
             match = doc_re.match(line)
             if match:
@@ -2682,7 +2680,7 @@ class GenericSource(FortranBase):
                     doc = doc[len(comchar + docmark) :].strip()
                 else:
                     doc = doc[len(comchar + predocmark) :].strip()
-                self.doc.append(doc)
+                self.doc_list.append(doc)
                 continue
             match = com_re.match(line)
             if match:
@@ -2690,16 +2688,16 @@ class GenericSource(FortranBase):
                     if match.start(4) == 0:
                         doc = match.group(4)
                         doc = doc[len(comchar) :].strip()
-                        self.doc.append(doc)
+                        self.doc_list.append(doc)
                     else:
                         docalt = False
                 elif prevdoc:
                     prevdoc = False
-                    self.doc.append("")
+                    self.doc_list.append("")
                 continue
             # if not including any comment...
             if prevdoc:
-                self.doc.append("")
+                self.doc_list.append("")
                 prevdoc = False
             docalt = False
 
@@ -2997,7 +2995,7 @@ def get_mod_procs(source, line, parent):
         doc.append(docline[2:])
         docline = next(source)
     source.pass_back(docline)
-    retlist[-1].doc = doc
+    retlist[-1].doc_list = doc
 
     return retlist
 
