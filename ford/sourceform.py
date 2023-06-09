@@ -340,14 +340,11 @@ class FortranBase:
             self.meta["summary"] = ford.utils.sub_macros(
                 ford.utils.sub_notes(self.meta["summary"])
             )
-        elif PARA_CAPTURE_RE.search(self.doc):
-            if self.get_url() is None:
-                # There is no stand-alone webpage for this item (e.g.,
-                # an internal routine in a routine, so make the whole
-                # doc blob appear, without the link to "more..."
-                self.meta["summary"] = self.doc
-            else:
-                self.meta["summary"] = PARA_CAPTURE_RE.search(self.doc).group()
+        elif paragraph := PARA_CAPTURE_RE.search(self.doc):
+            # If there is no stand-alone webpage for this item, e.g.
+            # an internal routine, make the whole doc blob appear,
+            # without the link to "more..."
+            self.meta["summary"] = paragraph.group() if self.get_url() else self.doc
         else:
             self.meta["summary"] = ""
         if self.meta["summary"].strip() != self.doc.strip():
