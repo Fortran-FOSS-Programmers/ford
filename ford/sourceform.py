@@ -30,7 +30,7 @@ import re
 import os.path
 import copy
 import textwrap
-from typing import List, Tuple, Optional, Union, Sequence, Dict, TYPE_CHECKING
+from typing import cast, List, Tuple, Optional, Union, Sequence, Dict, TYPE_CHECKING
 from itertools import chain
 from urllib.parse import quote
 
@@ -149,11 +149,15 @@ class FortranBase:
         raise NotImplementedError()
 
     @property
+    def source_file(self) -> FortranSourceFile:
+        """Source file containing this entity"""
+        # If `hierarchy` is empty, it's probably because it's a source file
+        return cast(FortranSourceFile, (self.hierarchy[0] if self.hierarchy else self))
+
+    @property
     def filename(self) -> str:
         """Name of the file containing this entity"""
-        # If `hierarchy` is empty, it's probably because it's a source
-        # file, so we can use its name directly
-        return self.hierarchy[0].name if self.hierarchy else self.name
+        return self.source_file.name
 
     def get_dir(self) -> Optional[str]:
         if isinstance(
@@ -370,7 +374,7 @@ class FortranBase:
                     self.SRC_CAPTURE_STR.format(obj, self.name),
                     re.IGNORECASE | re.DOTALL | re.MULTILINE,
                 )
-                if match := regex.search(self.hierarchy[0].raw_src):
+                if match := regex.search(self.source_file.raw_src):
                     self.src = highlight(match.group(), FortranLexer(), HtmlFormatter())
                 else:
                     self.src = ""

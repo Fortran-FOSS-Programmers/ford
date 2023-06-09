@@ -586,10 +586,9 @@ class FileNode(BaseNode):
             obj.blockdata,
         ):
             for dep in mod.deplist:
-                sourcefile = dep.hierarchy[0]
-                if sourcefile == obj:
+                if dep.source_file == obj:
                     continue
-                n = hist.get(sourcefile, gd.get_node(sourcefile, hist))
+                n = hist.get(dep.source_file, gd.get_node(dep.source_file, hist))
                 n.afferent.add(self)
                 self.efferent.add(n)
 
