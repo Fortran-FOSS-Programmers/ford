@@ -22,6 +22,7 @@
 #
 #
 
+from __future__ import annotations
 
 import re
 import os.path
@@ -42,9 +43,12 @@ from urllib.error import URLError
 from urllib.request import urlopen
 from urllib.parse import urljoin
 import pathlib
-from typing import Dict, Union
+from typing import Dict, Union, TYPE_CHECKING
 from io import StringIO
 import itertools
+
+if TYPE_CHECKING:
+    from ford.fortran_project import Project
 
 
 NOTE_TYPE = {
@@ -227,7 +231,7 @@ def quote_split(sep, string):
     return retlist
 
 
-def sub_links(string, project):
+def sub_links(string: str, project: Project) -> str:
     """
     Replace links to different parts of the program, formatted as
     [[name]] or [[name(object-type)]] with the appropriate URL. Can also
@@ -384,21 +388,19 @@ def register_macro(string):
     """
 
     if "=" not in string:
-        raise RuntimeError("Error, no alias name provided for {0}".format(string))
+        raise RuntimeError(f"Error, no alias name provided for {string}")
 
     chunks = string.split("=", 1)
     key = "|{0}|".format(chunks[0].strip())
     val = chunks[1].strip()
 
-    if key in _MACRO_DICT:
+    if key in _MACRO_DICT and val != _MACRO_DICT[key]:
         # The macro is already defined. Do not overwrite it!
         # Can be ignored if the definition is the same...
-        if val != _MACRO_DICT[key]:
-            raise RuntimeError(
-                'Could not register macro "{0}" as "{1}" because it is already defined as "{2}".'.format(
-                    key, val, _MACRO_DICT[key]
-                )
-            )
+        raise RuntimeError(
+            f'Could not register macro "{key}" as "{val}"'
+            f'because it is already defined as "{_MACRO_DICT[key]}"'
+        )
 
     # Everything OK, add the macro definition to the dict.
     _MACRO_DICT[key] = val
