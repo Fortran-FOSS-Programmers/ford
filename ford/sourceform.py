@@ -579,18 +579,16 @@ class FortranContainer(FortranBase):
     ARITH_GOTO_RE = re.compile(r"go\s*to\s*\([0-9,\s]+\)", re.IGNORECASE)
     CALL_RE = re.compile(
         r"""(?:^|[^a-zA-Z0-9_ ]\s*)
-        (?P<parent>(\s*\w+\s*%\s*)+)?  # Optional type component access
-        (?P<name>\w+)                  # Required function name
-        (?=\s*\(\s*(?:.*?)\s*\))       # Must be followed by argument list (not captured)
+        (?P<parent>(?:\s*\w+\s*(?:\(\))?\s*%\s*)+)? # Optional type component access
+        (?P<name>\w+\s*\(.*?\))                     # Required function name
         """,
         re.IGNORECASE | re.VERBOSE,
     )
     SUBCALL_RE = re.compile(
-        r"""^(?:if\s*\(.*\)\s*)?               # Optional 'if' statement
-        call\s+                                # Required keyword
-        (?P<parent>(\s*\w+\s*%\s*)+)?          # Optional type component access
-        (?P<name>\w+)                          # Required subroutine name
-        \s*(?:\(\s*(?P<arguments>.*?)\s*\))?$  # Optional arguments
+        r"""^(?:if\s*\(.*\)\s*)?    # Optional 'if' statement
+        call\s+                     # Required keyword
+        (?P<parent>.*%\s*)?         # Optional type component access
+        (?P<name>\w+\s*(?:\(\))?)   # Required subroutine name
         """,
         re.IGNORECASE | re.VERBOSE,
     )
@@ -927,36 +925,47 @@ class FortranContainer(FortranBase):
                 else:
                     self.print_error(line, "Unexpected USE statement")
 
-            elif match := self.SUBCALL_RE.match(line):
-                if not hasattr(self, "calls"):
-                    self.print_error(line, "Unexpected procedure call")
-                    continue
-
-                self._add_procedure_call(match["name"], match["parent"])
-                # We also need to find any function calls in the arguments
-                for arg_match in self.CALL_RE.finditer(match["arguments"] or ""):
-                    self._add_procedure_call(arg_match["name"], arg_match["parent"])
-
             elif self.ARITH_GOTO_RE.search(line):
                 # Arithmetic GOTOs look a little like function references: "goto
                 # (1, 2, 3) i". We don't do anything with these, but we do need
                 # to disambiguate them from function calls
                 continue
 
-            elif self.CALL_RE.search(line):
-                if not hasattr(self, "calls"):
+            elif self.CALL_RE.search(line) or self.SUBCALL_RE.search(line):
+                if not hasattr(self, "calls") and self.CALL_RE.search(line):
                     # Not raising an error here as too much possibility that something
                     # has been misidentified as a function call
                     continue
+                if not hasattr(self, "calls") and self.SUBCALL_RE.search(line):
+                    self.print_error(line, "Unexpected procedure call")
+                    continue
 
-                for match in self.CALL_RE.finditer(line):
+                parendepth = 0
+                _line = line
+                _lines = ford.utils.strip_paren(_line)
+
+                # Match subcall, if present
+                if match := self.SUBCALL_RE.match(_lines[0]):
                     self._add_procedure_call(match["name"], match["parent"])
+                    # No function calls on this parendepth (because theres a subcall)
+                    parendepth += 1
+                    _lines = ford.utils.strip_paren(_line, parendepth)
+
+                # Match calls, and nested calls
+
+                # Check every level of parendepth
+                while len(_lines) > 0:
+                    for subline in _lines:
+                        for match in self.CALL_RE.finditer(subline):
+                            self._add_procedure_call(match["name"], match["parent"])
+                    parendepth += 1
+                    _lines = ford.utils.strip_paren(_line, parendepth)
 
         if not isinstance(self, FortranSourceFile):
             raise Exception("File ended while still nested.")
 
     def _add_procedure_call(self, name: str, parent: str):
-        name = name.lower()
+        name = name.lower().replace(" ", "").replace("()", "")
         if name in INTRINSICS or name in (call.name for call in self.calls):
             return
 
@@ -2945,7 +2954,9 @@ class CallChain:
         # Remove whitespace and trailing accessor so we don't have to
         # worry about empty last item
         self.chain = (
-            parent.replace(" ", "").rstrip("%").split("%") if parent is not None else []
+            parent.replace(" ", "").replace("()", "").rstrip("%").split("%")
+            if parent is not None
+            else []
         )
 
 
