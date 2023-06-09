@@ -145,7 +145,7 @@ class FortranBase:
             cur = cur.parent
         self.hierarchy.reverse()
 
-    def _initialize(self, first_line: re.Match):
+    def _initialize(self, line: re.Match) -> None:
         raise NotImplementedError()
 
     @property
@@ -984,7 +984,21 @@ class FortranCodeUnit(FortranContainer):
     A class on which programs, modules, functions, and subroutines are based.
     """
 
-    def correlate(self, project):
+    def _common_initialize(self) -> None:
+        self.absinterfaces: List[FortranInterface] = []
+        self.attr_dict: Dict[str, List[str]] = defaultdict(list)
+        self.calls: List[Union[CallChain, FortranProcedure]] = []
+        self.common: List[FortranCommon] = []
+        self.enums: List[FortranEnum] = []
+        self.functions: List[FortranFunction] = []
+        self.interfaces: List[FortranInterface] = []
+        self.param_dict: Dict[str, str] = dict()
+        self.subroutines: List[FortranSubroutine] = []
+        self.types: List[FortranType] = []
+        self.uses: List[Tuple] = []
+        self.variables: List[FortranVariable] = []
+
+    def correlate(self, project: Project) -> None:
         # Add procedures, interfaces and types from parent to our lists
         if hasattr(self.parent, "all_procs"):
             self.all_procs.update(self.parent.all_procs)
@@ -1419,25 +1433,16 @@ class FortranModule(FortranCodeUnit):
     ONLY_RE = re.compile(r"^\s*,\s*only\s*:\s*(?=[^,])", re.IGNORECASE)
     RENAME_RE = re.compile(r"(\w+)\s*=>\s*(\w+)", re.IGNORECASE)
 
-    def _initialize(self, line):
+    def _initialize(self, line: re.Match) -> None:
         self.name = line.group(1)
-        self.uses = []
-        self.variables = []
-        self.enums = []
-        self.public_list = []
+        self._common_initialize()
+        del self.calls
+        self.descendants = []
+        self.modprocedures = []
         self.private_list = []
         self.protected_list = []
-        self.subroutines = []
-        self.functions = []
-        self.modprocedures = []
-        self.interfaces = []
-        self.absinterfaces = []
-        self.types = []
-        self.descendants = []
-        self.common = []
+        self.public_list = []
         self.visible = True
-        self.attr_dict = defaultdict(list)
-        self.param_dict = dict()
 
     def _cleanup(self):
         """Create list of all local procedures. Ones coming from other modules
@@ -1512,7 +1517,7 @@ class FortranModule(FortranCodeUnit):
 
 
 class FortranSubmodule(FortranModule):
-    def _initialize(self, line):
+    def _initialize(self, line: re.Match) -> None:
         FortranModule._initialize(self, line)
         self.name = line["name"]
         self.parent_submodule = line["parent_submod"]
@@ -1598,18 +1603,7 @@ class FortranProcedure(FortranCodeUnit):
             ]
 
         self._parse_bind_C(bindC)
-        self.variables: List[FortranVariable] = []
-        self.enums: List[FortranEnum] = []
-        self.uses = []
-        self.calls = []
-        self.subroutines: List[FortranSubroutine] = []
-        self.functions: List[FortranFunction] = []
-        self.interfaces: List[FortranInterface] = []
-        self.absinterfaces: List[FortranInterface] = []
-        self.types: List[FortranType] = []
-        self.common: List[FortranCommon] = []
-        self.attr_dict: Dict[str, List[str]] = defaultdict(list)
-        self.param_dict: Dict[str, str] = dict()
+        self._common_initialize()
 
         return attribstr
 
@@ -1723,7 +1717,7 @@ class FortranSubroutine(FortranProcedure):
     subroutine's contents.
     """
 
-    def _initialize(self, line: re.Match):
+    def _initialize(self, line: re.Match) -> None:
         self._procedure_initialize(**line.groupdict())
         self.proctype = "Subroutine"
 
@@ -1734,7 +1728,7 @@ class FortranFunction(FortranProcedure):
     contents.
     """
 
-    def _initialize(self, line: re.Match):
+    def _initialize(self, line: re.Match) -> None:
         attribstr = self._procedure_initialize(**line.groupdict())
         self.proctype = "Function"
         self.retvar = line["result"] or self.name
@@ -1777,22 +1771,15 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
 
     module = True
 
-    def _initialize(self, line):
+    def _initialize(self, line: re.Match) -> None:
         self.proctype = "Module Procedure"
         self.name = line.group(2)
-        self.variables = []
-        self.enums = []
-        self.uses = []
-        self.calls = []
-        self.subroutines = []
-        self.functions = []
-        self.interfaces = []
-        self.absinterfaces = []
-        self.types = []
-        self.attr_dict = defaultdict(list)
+
+        self._common_initialize()
         self.mp = True
-        self.param_dict = dict()
-        self.common = []
+        self.attribs = ""
+        self.args: List[str] = []
+        self.retvar = None
 
     def _cleanup(self):
         self.process_attribs()
@@ -1811,22 +1798,11 @@ class FortranProgram(FortranCodeUnit):
     An object representing the main Fortran program.
     """
 
-    def _initialize(self, line):
+    def _initialize(self, line: re.Match) -> None:
         self.name = line.group(1)
         if self.name is None:
             self.name = ""
-        self.variables = []
-        self.enums = []
-        self.subroutines = []
-        self.functions = []
-        self.interfaces = []
-        self.types = []
-        self.uses = []
-        self.calls = []
-        self.absinterfaces = []
-        self.attr_dict = defaultdict(list)
-        self.param_dict = dict()
-        self.common = []
+        self._common_initialize()
 
     def _cleanup(self):
         self.all_procs = {}
@@ -1849,7 +1825,7 @@ class FortranType(FortranContainer):
     type's inheritance.
     """
 
-    def _initialize(self, line):
+    def _initialize(self, line: re.Match) -> None:
         self.name = line.group(2)
         self.extends = None
         self.attributes = []
@@ -1984,7 +1960,7 @@ class FortranEnum(FortranContainer):
     enumerators as variables.
     """
 
-    def _initialize(self, line):
+    def _initialize(self, line: re.Match) -> None:
         self.variables = []
         self.name = ""
 
@@ -2027,7 +2003,7 @@ class FortranInterface(FortranContainer):
         True if this is an abstract interface
     """
 
-    def _initialize(self, line):
+    def _initialize(self, line: re.Match) -> None:
         self.proctype = "Interface"
         self.name = line.group(2)
         self.subroutines = []
@@ -2261,8 +2237,8 @@ class FortranBoundProcedure(FortranBase):
     An object representing a type-bound procedure, possibly overloaded.
     """
 
-    def _initialize(self, line: re.Match):
-        self.attribs = []
+    def _initialize(self, line: re.Match) -> None:
+        self.attribs: List[str] = []
         self.deferred = False
 
         for attribute in ford.utils.paren_split(",", line["attributes"] or ""):
@@ -2468,11 +2444,11 @@ class FortranCommon(FortranBase):
     An object representing a common block. This is a legacy feature.
     """
 
-    def _initialize(self, line):
+    def _initialize(self, line: re.Match) -> None:
         self.name = line.group(1)
         if not self.name:
             self.name = ""
-        self.other_uses = []
+        self.other_uses: List[FortranCommon] = []
         self.variables = [v.strip() for v in ford.utils.paren_split(",", line.group(2))]
         self.visible = True
 
