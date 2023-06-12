@@ -936,12 +936,14 @@ class FortranContainer(FortranBase):
                 # to disambiguate them from function calls
                 continue
 
-            elif self.CALL_RE.search(line) or self.SUBCALL_RE.search(line):
-                if not hasattr(self, "calls") and self.CALL_RE.search(line):
+            elif (call_match := self.CALL_RE.search(line)) or (
+                subcall_match := self.SUBCALL_RE.search(line)
+            ):
+                if not hasattr(self, "calls") and call_match:
                     # Not raising an error here as too much possibility that something
                     # has been misidentified as a function call
                     continue
-                if not hasattr(self, "calls") and self.SUBCALL_RE.search(line):
+                if not hasattr(self, "calls") and subcall_match:
                     self.print_error(line, "Unexpected procedure call")
                     continue
 
