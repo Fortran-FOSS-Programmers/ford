@@ -1018,6 +1018,20 @@ class FortranCodeUnit(FortranContainer):
         self.types: List[FortranType] = []
         self.uses: List[Tuple] = []
         self.variables: List[FortranVariable] = []
+        self.all_procs: Dict[str, Union[FortranProcedure, FortranInterface]] = {}
+
+    def _cleanup(self) -> None:
+        self.process_attribs()
+
+        self.all_procs = {p.name.lower(): p for p in self.routines}
+        for interface in self.interfaces:
+            if not interface.abstract:
+                self.all_procs[interface.name.lower()] = interface
+            if interface.generic:
+                for proc in interface.routines:
+                    self.all_procs[proc.name.lower()] = proc
+
+        self.variables = [v for v in self.variables if "external" not in v.attribs]
 
     def correlate(self, project: Project) -> None:
         # Add procedures, interfaces and types from parent to our lists
@@ -1459,23 +1473,12 @@ class FortranModule(FortranCodeUnit):
     def _cleanup(self):
         """Create list of all local procedures. Ones coming from other modules
         will be added later, during correlation."""
-        self.all_procs = {}
-        for p in self.routines:
-            self.all_procs[p.name.lower()] = p
+        super()._cleanup()
 
         for var in self.variables:
             # Count procedure pointers and dummy procedures
             if var.vartype == "procedure":
                 self.all_procs[var.name.lower()] = var
-
-        for interface in self.interfaces:
-            if not interface.abstract:
-                self.all_procs[interface.name.lower()] = interface
-            if interface.generic:
-                for proc in interface.iterator("subroutines", "functions"):
-                    self.all_procs[proc.name.lower()] = proc
-        self.process_attribs()
-        self.variables = [v for v in self.variables if "external" not in v.attribs]
 
         def should_be_public(item: FortranBase) -> bool:
             return item.permission in ["public", "protected"]
@@ -1540,19 +1543,6 @@ class FortranSubmodule(FortranModule):
         del self.public_list
         del self.private_list
         del self.protected_list
-
-    def _cleanup(self):
-        # Create list of all local procedures. Ones coming from other modules
-        # will be added later, during correlation.
-        self.process_attribs()
-        self.variables = [v for v in self.variables if "external" not in v.attribs]
-        self.all_procs = {p.name.lower(): p for p in self.routines}
-        for interface in self.interfaces:
-            if not interface.abstract:
-                self.all_procs[interface.name.lower()] = interface
-            if interface.generic:
-                for proc in interface.iterator("subroutines", "functions"):
-                    self.all_procs[proc.name.lower()] = proc
 
     def get_dir(self):
         return "module"
@@ -1684,14 +1674,7 @@ class FortranProcedure(FortranCodeUnit):
 
     def _cleanup(self):
         """Convert all child entities to object instances"""
-
-        self.all_procs = {p.name.lower(): p for p in self.routines}
-        for interface in self.interfaces:
-            if not interface.abstract:
-                self.all_procs[interface.name.lower()] = interface
-            if interface.generic:
-                for proc in interface.routines:
-                    self.all_procs[proc.name.lower()] = proc
+        super()._cleanup()
 
         for i, arg in enumerate(self.args):
             # Is there a variable declaration for this argument?
@@ -1720,9 +1703,6 @@ class FortranProcedure(FortranCodeUnit):
                 arg = FortranVariable(arg, implicit_type(arg), self, doc="")
 
             self.args[i] = arg
-
-        self.process_attribs()
-        self.variables = [v for v in self.variables if "external" not in v.attribs]
 
 
 class FortranSubroutine(FortranProcedure):
@@ -1793,17 +1773,6 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
         self.args: List[str] = []
         self.retvar = None
 
-    def _cleanup(self):
-        self.process_attribs()
-        self.all_procs = {p.name.lower(): p for p in self.routines}
-        for interface in self.interfaces:
-            if not interface.abstract:
-                self.all_procs[interface.name.lower()] = interface
-            if interface.generic:
-                for proc in interface.iterator("subroutines", "functions"):
-                    self.all_procs[proc.name.lower()] = proc
-        self.variables = [v for v in self.variables if "external" not in v.attribs]
-
 
 class FortranProgram(FortranCodeUnit):
     """
@@ -1815,19 +1784,6 @@ class FortranProgram(FortranCodeUnit):
         if self.name is None:
             self.name = ""
         self._common_initialize()
-
-    def _cleanup(self):
-        self.all_procs = {}
-        for p in self.routines:
-            self.all_procs[p.name.lower()] = p
-        for interface in self.interfaces:
-            if not interface.abstract:
-                self.all_procs[interface.name.lower()] = interface
-            if interface.generic:
-                for proc in interface.iterator("subroutines", "functions"):
-                    self.all_procs[proc.name.lower()] = proc
-        self.process_attribs()
-        self.variables = [v for v in self.variables if "external" not in v.attribs]
 
 
 class FortranType(FortranContainer):
