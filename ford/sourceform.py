@@ -1021,7 +1021,6 @@ class FortranCodeUnit(FortranContainer):
         self.all_procs: Dict[str, Union[FortranProcedure, FortranInterface]] = {}
         self.public_list: List[str] = []
 
-
     def _cleanup(self) -> None:
         self.process_attribs()
 
@@ -1066,13 +1065,7 @@ class FortranCodeUnit(FortranContainer):
         if isinstance(self, FortranModule):
             for proc in filter(lambda p: p.module, self.routines):
                 intr = self.all_procs.get(proc.name.lower(), None)
-                if (
-                    intr
-                    and intr.proctype.lower() == "interface"
-                    and not intr.generic
-                    and not intr.abstract
-                    and intr.procedure.module is True
-                ):
+                if isinstance(intr, FortranModuleProcedureInterface):
                     proc.module = intr
                     intr.procedure.module = proc
 
@@ -1762,9 +1755,10 @@ class FortranFunction(FortranProcedure):
 
 
 class FortranSubmoduleProcedure(FortranCodeUnit):
-    """
-    An object representing a the implementation of a Module Function or
-    Module Subroutine in a submodule.
+    """An object representing a the implementation of a Module
+    Function or Module Subroutine in a submodule. The interface is
+    represented separately by a `FortranModuleProcedureInterface`
+
     """
 
     module = True
@@ -2033,16 +2027,44 @@ class FortranInterface(FortranContainer):
         contents = []
         for proc in self.routines:
             proc.visible = False
-            item = copy.copy(self)
-            item.procedure = proc
-            item.procedure.parent = item
-            del item.functions
-            del item.modprocs
-            del item.subroutines
-            item.name = proc.name
-            item.permission = proc.permission
-            contents.append(item)
+            contents.append(FortranModuleProcedureInterface(proc, self, self.doc_list))
         self.contents = contents
+
+
+class FortranModuleProcedureInterface(FortranInterface):
+    """The interface part of a `FortranSubmoduleProcedure`
+
+    This should be created directly by a `FortranInterface`
+
+    Not to be confused with a `FortranModuleProcedure` which is merely
+    a reference to a module procedure, whereas a
+    `FortranModuleProcedureInterface` is a complete interface to a
+    module procedure
+
+    """
+
+    proctype = "Interface"
+    abstract = False
+    generic = False
+    obj = "interface"
+
+    def __init__(
+        self, procedure: FortranProcedure, parent: FortranInterface, doc_list: List[str]
+    ):
+        self.parent = parent.parent
+        self.parobj = self.parent.obj if self.parent else None
+        self.settings = parent.settings
+        self.visible = parent.visible
+        self.num_lines = parent.num_lines
+        self.doc_list = doc_list
+        self.variables = copy.copy(parent.variables)
+
+        self.procedure = procedure
+        self.name = procedure.name
+        self.permission = procedure.permission
+        self.procedure.parent = self
+
+        self.hierarchy = self._make_hierarchy()
 
 
 class FortranFinalProc(FortranBase):

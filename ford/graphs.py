@@ -53,6 +53,7 @@ from ford.sourceform import (
     FortranContainer,
     FortranInterface,
     FortranModule,
+    FortranModuleProcedureInterface,
     FortranProcedure,
     FortranProgram,
     FortranSourceFile,
@@ -519,11 +520,8 @@ class ProcNode(BaseNode):
                 n.interfaced_by.add(self)
                 self.interfaces.add(n)
 
-        if (
-            hasattr(obj, "procedure")
-            and obj.procedure.module
-            and obj.procedure.module is not True
-            and getattr(obj.procedure.module, "visible", True)
+        if isinstance(obj, FortranModuleProcedureInterface) and getattr(
+            obj.procedure.module, "visible", True
         ):
             n = gd.get_procedure_node(obj.procedure.module, hist)
             n.interfaced_by.add(self)
