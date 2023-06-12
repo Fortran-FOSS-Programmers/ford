@@ -1466,10 +1466,10 @@ class FortranModule(FortranCodeUnit):
         self.name = line.group(1)
         self._common_initialize()
         del self.calls
-        self.descendants = []
-        self.modprocedures = []
-        self.private_list = []
-        self.protected_list = []
+        self.descendants: List[FortranSubmodule] = []
+        self.modprocedures: List[FortranModuleProcedure] = []
+        self.private_list: List[str] = []
+        self.protected_list: List[str] = []
         self.visible = True
 
     def _cleanup(self):
@@ -1822,10 +1822,10 @@ class FortranType(FortranContainer):
         else:
             self.parameters = []
         self.sequence = False
-        self.variables = []
-        self.boundprocs = []
-        self.finalprocs = []
-        self.constructor = None
+        self.variables: List[FortranVariable] = []
+        self.boundprocs: List[FortranBoundProcedure] = []
+        self.finalprocs: List[FortranFinalProc] = []
+        self.constructor: Optional[FortranSubroutine] = None
 
     def _cleanup(self):
         # Match parameters with variables
@@ -1935,7 +1935,7 @@ class FortranEnum(FortranContainer):
     """
 
     def _initialize(self, line: re.Match) -> None:
-        self.variables = []
+        self.variables: List[FortranVariable] = []
         self.name = ""
 
     def _cleanup(self):
@@ -1981,10 +1981,10 @@ class FortranInterface(FortranContainer):
 
     def _initialize(self, line: re.Match) -> None:
         self.name = line.group(2)
-        self.subroutines = []
-        self.functions = []
-        self.modprocs = []
-        self.variables = []
+        self.subroutines: List[FortranSubroutine] = []
+        self.functions: List[FortranFunction] = []
+        self.modprocs: List[FortranModuleProcedure] = []
+        self.variables: List[FortranVariable] = []
         self.generic = bool(self.name)
         self.abstract = bool(line.group(1))
         if self.generic and self.abstract:
