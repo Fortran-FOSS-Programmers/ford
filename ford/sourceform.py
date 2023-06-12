@@ -1088,7 +1088,7 @@ class FortranCodeUnit(FortranContainer):
 
         # Add procedures and types from USED modules to our lists
         for mod, extra in self.uses:
-            if type(mod) is str:
+            if isinstance(mod, str):
                 continue
             procs, absints, types, variables = mod.get_used_entities(extra)
             if isinstance(self, FortranModule):
