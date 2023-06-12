@@ -1016,9 +1016,11 @@ class FortranCodeUnit(FortranContainer):
         self.param_dict: Dict[str, str] = {}
         self.subroutines: List[FortranSubroutine] = []
         self.types: List[FortranType] = []
-        self.uses: List[Tuple] = []
+        self.uses: List[List[Union[str, FortranModule]]] = []
         self.variables: List[FortranVariable] = []
         self.all_procs: Dict[str, Union[FortranProcedure, FortranInterface]] = {}
+        self.public_list: List[str] = []
+
 
     def _cleanup(self) -> None:
         self.process_attribs()
@@ -1096,7 +1098,7 @@ class FortranCodeUnit(FortranContainer):
             if type(mod) is str:
                 continue
             procs, absints, types, variables = mod.get_used_entities(extra)
-            if self.obj == "module":
+            if isinstance(self, FortranModule):
                 self.pub_procs.update(filter_public(procs))
                 self.pub_absints.update(filter_public(absints))
                 self.pub_types.update(filter_public(types))
@@ -1125,8 +1127,9 @@ class FortranCodeUnit(FortranContainer):
         if hasattr(self, "calls"):
             tmplst = []
             for call in self.calls:
+                call = cast(CallChain, call)
                 # get the context of the call
-                context = self._find_call_context(cast(CallChain, call))
+                context = self._find_call_context(call)
 
                 # failed to find context, give up and add call's string name to the list
                 if context is None:
@@ -1467,7 +1470,6 @@ class FortranModule(FortranCodeUnit):
         self.modprocedures = []
         self.private_list = []
         self.protected_list = []
-        self.public_list = []
         self.visible = True
 
     def _cleanup(self):
