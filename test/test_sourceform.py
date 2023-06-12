@@ -1813,3 +1813,39 @@ def test_generic_bound_procedure(parse_fortran_file):
     expected_names = sorted(["no_colon", "colon", "operator(+)"])
     bound_proc_names = sorted([proc.name for proc in fortran_type.boundprocs])
     assert bound_proc_names == expected_names
+
+
+def test_submodule_procedure_calls(parse_fortran_file):
+    """Check that calls inside submodule procedures are correctly correlated"""
+
+    data = """\
+    module foo_m
+      implicit none
+      interface
+        module function foo1(start, end) result(res)
+          integer, intent(in) :: start, end
+          integer :: res
+        end function
+      end interface
+    end module
+
+    submodule(foo_m) foo_s
+      implicit none
+    contains
+      integer function bar(start, end)
+        integer, intent(in) :: start, end
+        bar = end - start
+      end function
+
+      module procedure foo1
+        res = bar(start, end)
+      end procedure
+    end submodule
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_file.modules[0].correlate(FakeProject())
+    submodule = fortran_file.submodules[0]
+    submodule.correlate(FakeProject())
+
+    assert submodule.modprocedures[0].calls[0] == submodule.functions[0]

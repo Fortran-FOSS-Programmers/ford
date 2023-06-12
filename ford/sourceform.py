@@ -1123,8 +1123,8 @@ class FortranCodeUnit(FortranContainer):
                     for a in getattr(self, "args", []):
                         # Consider allowing procedures passed as arguments to be included in callgraphs
                         argname |= call.name == a.name.lower()
-                    if hasattr(self, "retvar"):
-                        argname |= call.name == self.retvar.name.lower()
+                    if retvar := getattr(self, "retvar", None):
+                        argname |= call.name == retvar.name.lower()
 
                 # get all the variables in the call's context
                 all_vars = getattr(context, "all_vars", {})
