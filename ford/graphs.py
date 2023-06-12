@@ -520,8 +520,10 @@ class ProcNode(BaseNode):
                 n.interfaced_by.add(self)
                 self.interfaces.add(n)
 
-        if isinstance(obj, FortranModuleProcedureInterface) and getattr(
-            obj.procedure.module, "visible", True
+        if (
+            isinstance(obj, FortranModuleProcedureInterface)
+            and isinstance(obj.procedure.module, (str, FortranProcedure))
+            and getattr(obj.procedure.module, "visible", True)
         ):
             n = gd.get_procedure_node(obj.procedure.module, hist)
             n.interfaced_by.add(self)

@@ -68,6 +68,14 @@ def make_project_graphs(tmp_path_factory, request):
         generic :: eight_nine => ei, ni
       end type alpha
 
+      interface
+        subroutine defined_elsewhere
+        end subroutine
+
+        module subroutine submod_proc
+        end subroutine
+      end interface
+
     contains
       subroutine one
       end subroutine one
@@ -105,6 +113,10 @@ def make_project_graphs(tmp_path_factory, request):
     end submodule c_submod
 
     submodule (c:c_submod) c_subsubmod
+    !! display: private
+    contains
+      module subroutine submod_proc
+      end subroutine
     end submodule c_subsubmod
 
     program foo
@@ -237,6 +249,9 @@ TYPE_GRAPH_KEY = ["Type"]
             {"proc_internals": False},
             ["callgraph"],
             [
+                "c::defined_elsewhere",
+                "c::submod_proc",
+                "c_subsubmod::submod_proc",
                 "c::one",
                 "foo::three",
                 "c::two",
@@ -264,6 +279,7 @@ TYPE_GRAPH_KEY = ["Type"]
                 "program~foo->none~eight_nine",
                 "none~eight_nine->proc~eight",
                 "none~eight_nine->proc~nine",
+                "interface~submod_proc->proc~submod_proc",
             ],
             PROC_GRAPH_KEY,
         ),
@@ -271,6 +287,9 @@ TYPE_GRAPH_KEY = ["Type"]
             {"proc_internals": True},
             ["callgraph"],
             [
+                "c::defined_elsewhere",
+                "c::submod_proc",
+                "c_subsubmod::submod_proc",
                 "c::one",
                 "foo::three",
                 "c::two",
@@ -303,6 +322,7 @@ TYPE_GRAPH_KEY = ["Type"]
                 "program~foo->none~eight_nine",
                 "none~eight_nine->proc~eight",
                 "none~eight_nine->proc~nine",
+                "interface~submod_proc->proc~submod_proc",
             ],
             PROC_GRAPH_KEY,
         ),
@@ -383,6 +403,15 @@ TYPE_GRAPH_KEY = ["Type"]
             ["external_mod", "foo::three"],
             ["proc~three->external_mod"],
             MOD_GRAPH_KEY,
+        ),
+        (
+            {"proc_internals": True},
+            ["procedures", "submod_proc", "callsgraph"],
+            ["c::submod_proc", "c_subsubmod::submod_proc"],
+            [
+                "interface~submod_proc->proc~submod_proc",
+            ],
+            PROC_GRAPH_KEY,
         ),
     ],
     indirect=["make_project_graphs"],
