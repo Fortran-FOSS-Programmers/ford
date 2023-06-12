@@ -132,39 +132,37 @@ def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
     raise RuntimeError(f"Couldn't parse parentheses: {line}")
 
 
-def strip_paren(line: str, retlevel: int = 0, retblevel: int = 0, index=-1) -> str:
+def strip_paren(line: str, retlevel: int = 0) -> list:
     """
-    Takes a string with parentheses and returns only the portion of the string
-    that is in the same level of nested parentheses as specified by retlevel.
-    If index is specified, then characters in the same level but not in the same
-    scope as the char at index are also stripped.
+    Takes a string with parentheses and removes any of the contents inside or outside
+    of the retlevel of parentheses. Additionally, whenever a scope of the retlevel is
+    left, the string is split.
+
+    e.g. strip_paren("foo(bar(quz) + faz) + baz(buz(cas))", 1) -> ["(bar() + faz)", "(buz())"]
     """
-    if not line:
-        return line
-    retstr = StringIO()
+    retstrs = []
+    curstr = StringIO()
     level = 0
-    blevel = 0
-    for i, char in enumerate(line):
+    for char in line:
         if char == "(":
+            if level == retlevel or level + 1 == retlevel:
+                curstr.write(char)
             level += 1
         elif char == ")":
+            if level == retlevel or level - 1 == retlevel:
+                curstr.write(char)
+            if level == retlevel:
+                # We are leaving a scope of the desired level,
+                # and should split to indicate as such.
+                retstrs.append(curstr.getvalue())
+                curstr = StringIO()
             level -= 1
-        elif char == "[":
-            blevel += 1
-        elif char == "]":
-            blevel -= 1
-        elif level == retlevel and blevel == retblevel:
-            retstr.write(char)
+        elif level == retlevel:
+            curstr.write(char)
 
-        if index >= 0 and char == ")" and level < retlevel:
-            # scope of index is yet to start, reset retstr
-            if i < index:
-                retstr = StringIO()
-            # scope of index is over, return retstr
-            else:
-                return retstr.getvalue()
-
-    return retstr.getvalue()
+    if curstr.getvalue() != "":
+        retstrs.append(curstr.getvalue())
+    return retstrs
 
 
 def paren_split(sep, string):
