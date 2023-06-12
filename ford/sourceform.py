@@ -1586,6 +1586,8 @@ def implicit_type(name: str) -> str:
 class FortranProcedure(FortranCodeUnit):
     """Base class for subroutines and functions for common functionality"""
 
+    proctype = "Unknown"
+
     def _procedure_initialize(
         self,
         name: str,
@@ -1711,9 +1713,10 @@ class FortranSubroutine(FortranProcedure):
     subroutine's contents.
     """
 
+    proctype = "Subroutine"
+
     def _initialize(self, line: re.Match) -> None:
         self._procedure_initialize(**line.groupdict())
-        self.proctype = "Subroutine"
 
 
 class FortranFunction(FortranProcedure):
@@ -1722,9 +1725,10 @@ class FortranFunction(FortranProcedure):
     contents.
     """
 
+    proctype = "Function"
+
     def _initialize(self, line: re.Match) -> None:
         attribstr = self._procedure_initialize(**line.groupdict())
-        self.proctype = "Function"
         self.retvar = line["result"] or self.name
 
         with suppress(ValueError):
@@ -1762,9 +1766,9 @@ class FortranSubmoduleProcedure(FortranCodeUnit):
     """
 
     module = True
+    proctype = "Module Procedure"
 
     def _initialize(self, line: re.Match) -> None:
-        self.proctype = "Module Procedure"
         self.name = line["names"]
 
         self._common_initialize()
@@ -1971,8 +1975,9 @@ class FortranInterface(FortranContainer):
         True if this is an abstract interface
     """
 
+    proctype = "Interface"
+
     def _initialize(self, line: re.Match) -> None:
-        self.proctype = "Interface"
         self.name = line.group(2)
         self.subroutines = []
         self.functions = []
@@ -2942,7 +2947,6 @@ class ExternalFunction(FortranFunction):
         self.external_url = url
         self.parent = parent
         self.obj = "proc"
-        self.proctype = "function"
 
 
 class ExternalSubroutine(FortranSubroutine):
@@ -2953,7 +2957,6 @@ class ExternalSubroutine(FortranSubroutine):
         self.external_url = url
         self.parent = parent
         self.obj = "proc"
-        self.proctype = "subroutine"
 
 
 class ExternalInterface(FortranInterface):
@@ -2964,7 +2967,6 @@ class ExternalInterface(FortranInterface):
         self.external_url = url
         self.parent = parent
         self.obj = "proc"
-        self.proctype = "interface"
 
 
 class ExternalBoundProcedure(FortranBoundProcedure):
