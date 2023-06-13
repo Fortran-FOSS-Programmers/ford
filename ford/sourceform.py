@@ -185,7 +185,7 @@ class FortranBase:
                     FortranType,
                     FortranInterface,
                     FortranProcedure,
-                    FortranSubmoduleProcedure,
+                    FortranModuleProcedureImplementation,
                 ),
             )
             and isinstance(
@@ -534,9 +534,10 @@ class FortranContainer(FortranBase):
     ASSOCIATE_RE = re.compile(r"^(\w+\s*:)?\s*associate\s*\((.+)\)\s*$", re.IGNORECASE)
     ENUM_RE = re.compile(r"^enum\s*,\s*bind\s*\(.*\)\s*$", re.IGNORECASE)
     MODPROC_RE = re.compile(
-        r"^(module\s+)?procedure\s*(?:::|\s)\s*(?P<names>\w.*)$", re.IGNORECASE
+        r"^(?P<module>module\s+)?procedure\s*(?:::|\s)\s*(?P<names>\w.*)$",
+        re.IGNORECASE,
     )
-    MODULE_RE = re.compile(r"^module(?:\s+(\w+))?$", re.IGNORECASE)
+    MODULE_RE = re.compile(r"^module(?:\s+(?P<name>\w+))?$", re.IGNORECASE)
     SUBMODULE_RE = re.compile(
         r"""^submodule\s*
         \(\s*(?P<ancestor_module>\w+)\s*         # Non-optional ancestor module
@@ -749,15 +750,17 @@ class FortranContainer(FortranBase):
                     return
 
             elif (match := self.MODPROC_RE.match(line)) and (
-                match.group(1) or isinstance(self, FortranInterface)
+                match["module"] or isinstance(self, FortranInterface)
             ):
-                if hasattr(self, "modprocs"):
+                if isinstance(self, FortranInterface):
                     # Module procedure in an INTERFACE
                     self.modprocs.extend(get_mod_procs(source, match["names"], self))
-                elif hasattr(self, "modprocedures"):
+                elif isinstance(self, FortranModule):
                     # Module procedure implementing an interface in a SUBMODULE
                     self.modprocedures.append(
-                        FortranSubmoduleProcedure(source, match, self, self.permission)
+                        FortranModuleProcedureImplementation(
+                            source, match, self, self.permission
+                        )
                     )
                     self.num_lines += self.modprocedures[-1].num_lines - 1
                 else:
@@ -1069,7 +1072,7 @@ class FortranCodeUnit(FortranContainer):
                     proc.module = intr
                     intr.procedure.module = proc
 
-                    if isinstance(proc, FortranSubmoduleProcedure):
+                    if isinstance(proc, FortranModuleProcedureImplementation):
                         proc.attribs = intr.procedure.attribs
                         proc.args = intr.procedure.args
                         if hasattr(intr.procedure, "retvar"):
@@ -1284,7 +1287,7 @@ class FortranCodeUnit(FortranContainer):
         self.interfaces = self.filter_display(self.interfaces)
         self.absinterfaces = self.filter_display(self.absinterfaces)
         self.variables = self.filter_display(self.variables)
-        if self.obj == "submodule":
+        if isinstance(self, FortranSubmodule):
             self.modprocedures = self.filter_display(self.modprocedures)
             self.modsubroutines = self.filter_display(self.modsubroutines)
             self.modfunctions = self.filter_display(self.modfunctions)
@@ -1456,11 +1459,11 @@ class FortranModule(FortranCodeUnit):
     RENAME_RE = re.compile(r"(\w+)\s*=>\s*(\w+)", re.IGNORECASE)
 
     def _initialize(self, line: re.Match) -> None:
-        self.name = line.group(1)
+        self.name = line["name"]
         self._common_initialize()
         del self.calls
         self.descendants: List[FortranSubmodule] = []
-        self.modprocedures: List[FortranModuleProcedure] = []
+        self.modprocedures: List[FortranModuleProcedureImplementation] = []
         self.private_list: List[str] = []
         self.protected_list: List[str] = []
         self.visible = True
@@ -1528,13 +1531,11 @@ class FortranModule(FortranCodeUnit):
 
 class FortranSubmodule(FortranModule):
     def _initialize(self, line: re.Match) -> None:
-        FortranModule._initialize(self, line)
-        self.name = line["name"]
+        super()._initialize(line)
         self.parent_submodule: Union[str, None, FortranSubmodule] = line[
             "parent_submod"
         ]
         self.ancestor_module: Union[str, FortranModule] = line["ancestor_module"]
-        self.modprocedures = []
         del self.public_list
         del self.private_list
         del self.protected_list
@@ -1754,7 +1755,7 @@ class FortranFunction(FortranProcedure):
         super()._cleanup()
 
 
-class FortranSubmoduleProcedure(FortranCodeUnit):
+class FortranModuleProcedureImplementation(FortranCodeUnit):
     """An object representing a the implementation of a Module
     Function or Module Subroutine in a submodule. The interface is
     represented separately by a `FortranModuleProcedureInterface`
@@ -1977,7 +1978,7 @@ class FortranInterface(FortranContainer):
         self.name = line.group(2)
         self.subroutines: List[FortranSubroutine] = []
         self.functions: List[FortranFunction] = []
-        self.modprocs: List[FortranModuleProcedure] = []
+        self.modprocs: List[FortranModuleProcedureReference] = []
         self.variables: List[FortranVariable] = []
         self.generic = bool(self.name)
         self.abstract = bool(line.group(1))
@@ -2036,8 +2037,8 @@ class FortranModuleProcedureInterface(FortranInterface):
 
     This should be created directly by a `FortranInterface`
 
-    Not to be confused with a `FortranModuleProcedure` which is merely
-    a reference to a module procedure, whereas a
+    Not to be confused with a `FortranModuleProcedureReference` which is merely
+    a reference to a module procedure defined elsewhere, whereas a
     `FortranModuleProcedureInterface` is a complete interface to a
     module procedure
 
@@ -2283,12 +2284,25 @@ class FortranBoundProcedure(FortranBase):
         return f"FortranBoundProcedure('{self.name}', permission='{self.permission}')"
 
 
-class FortranModuleProcedure(FortranBase):
+class FortranModuleProcedureReference(FortranBase):
+    """Reference to a module procedure whose interface and
+    implementation are both defined elsewhere
+
+    For example, this class represents the reference to ``fft_1d`` in
+    a generic interface:
+
+        interface fft
+            module procedure fft_1d
+            module procedure fft_2d
+        end interface fft
+
+    while ``fft_1d`` itself may be represented by either a
+    `FortranSubroutine` or `FortranFunction`, or by the combination of
+    `FortranModuleProcedureInterface` and `FortranModuleProcedureImplementation`
+
     """
-    An object representing a module procedure in an interface. Not to be
-    confused with type of module procedure which is the implementation of
-    a module function or module subroutine in a submodule.
-    """
+
+    obj = "moduleprocedure"
 
     def __init__(self, name, parent=None, inherited_permission=None):
         if inherited_permission is not None:
@@ -2302,7 +2316,6 @@ class FortranModuleProcedure(FortranBase):
         else:
             self.parobj = None
             self.settings = None
-        self.obj = "moduleprocedure"
         self.name = name
         self.procedure = None
         self.doc_list = []
@@ -2624,7 +2637,7 @@ _can_have_contains = (
     FortranProcedure,
     FortranType,
     FortranSubmodule,
-    FortranSubmoduleProcedure,
+    FortranModuleProcedureImplementation,
 )
 
 
@@ -2887,10 +2900,10 @@ def set_base_url(url: str) -> None:
 
 def get_mod_procs(
     source: FortranReader, names: str, parent: FortranInterface
-) -> List[FortranModuleProcedure]:
+) -> List[FortranModuleProcedureReference]:
     """Get module procedures from an interface"""
     retlist = [
-        FortranModuleProcedure(item, parent, parent.permission)
+        FortranModuleProcedureReference(item, parent, parent.permission)
         for item in re.split(r"\s*,\s*", names)
     ]
 

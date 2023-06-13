@@ -58,7 +58,7 @@ from ford.sourceform import (
     FortranProgram,
     FortranSourceFile,
     FortranSubmodule,
-    FortranSubmoduleProcedure,
+    FortranModuleProcedureImplementation,
     FortranBoundProcedure,
     FortranType,
 )
@@ -102,7 +102,7 @@ def is_proc(obj):
         (
             FortranProcedure,
             FortranInterface,
-            FortranSubmoduleProcedure,
+            FortranModuleProcedureImplementation,
             FortranBoundProcedure,
         ),
     )
