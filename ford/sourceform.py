@@ -1157,6 +1157,11 @@ class FortranCodeUnit(FortranContainer):
                         tmplst.append(context.all_procs.get(call.name, call.name))
                     # if the call is made from a type, then it must be a bound procedure
                     else:
+                        if not isinstance(context, FortranType):
+                            raise ValueError(
+                                f"Unexpected context ({context.obj} '{context.name}') of procedure call '{call.name}'"
+                            )
+
                         for bound in context.boundprocs:
                             if call.name == bound.name.lower():
                                 tmplst.append(bound)
@@ -1770,7 +1775,7 @@ class FortranModuleProcedureImplementation(FortranCodeUnit):
 
         self._common_initialize()
         self.mp = True
-        self.attribs = ""
+        self.attribs: List[str] = []
         self.args: List[str] = []
         self.retvar = None
 
