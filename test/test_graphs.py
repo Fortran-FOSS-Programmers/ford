@@ -406,7 +406,14 @@ TYPE_GRAPH_KEY = ["Type"]
         ),
         (
             {"proc_internals": True},
-            ["procedures", "submod_proc", "callsgraph"],
+            [
+                "procedures",
+                # This is awful, but both the interface and the
+                # implementation have the same name, so we need to
+                # further disambiguate them
+                {"name": "submod_proc", "proctype": "Interface"},
+                "callsgraph",
+            ],
             ["c::submod_proc", "c_subsubmod::submod_proc"],
             [
                 "interface~submod_proc->proc~submod_proc",
@@ -432,11 +439,15 @@ def test_graphs(
     if len(graph_name) == 1:
         graph = getattr(graphs, graph_name[0])
     else:
-        collection, obj_name, name = graph_name
-        for graph in getattr(graphs, collection):
-            if graph.name == obj_name:
+        collection, properties, name = graph_name
+
+        if isinstance(properties, str):
+            properties = {"name": properties}
+
+        for g in sorted(getattr(graphs, collection)):
+            if properties == {attr: getattr(g, attr, None) for attr in properties}:
                 break
-        graph = getattr(graph, name)
+        graph = getattr(g, name)
 
     soup = BeautifulSoup(str(graph), features="html.parser")
     # Get nodes and edges just in the graph, and not in the legend
