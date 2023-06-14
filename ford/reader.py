@@ -271,7 +271,7 @@ class FortranReader:
                 self.docbuffer.append(tmp)
                 if len(line[0 : match.start(4)].strip()) > 0:
                     raise ValueError(
-                        f"Alternate documentation lines can not be inline: {f}"
+                        f"Alternate documentation lines can not be inline: {line}"
                     )
 
             # Capture any documentation comments
