@@ -1020,7 +1020,7 @@ class FakeVariable:
     kind: Optional[str] = None
     strlen: Optional[str] = None
     proto: Union[None, str, List[str]] = None
-    doc: List[str] = field(default_factory=list)
+    doc_list: List[str] = field(default_factory=list)
     points: bool = False
     initial: Optional[str] = None
 
@@ -1605,7 +1605,7 @@ def test_single_character_interface(parse_fortran_file):
     """
     fortran_file = parse_fortran_file(data)
     assert fortran_file.modules[0].interfaces[0].name == "b"
-    assert fortran_file.modules[0].interfaces[0].doc == [" some comment"]
+    assert fortran_file.modules[0].interfaces[0].doc_list == [" some comment"]
 
 
 def test_module_procedure_in_module(parse_fortran_file):
@@ -1705,11 +1705,11 @@ def test_block_data(parse_fortran_file):
     blockdata = fortran_file.blockdata[0]
 
     assert blockdata.name == "name"
-    assert blockdata.doc[0].strip() == "Block data docstring"
+    assert blockdata.doc_list[0].strip() == "Block data docstring"
     assert len(blockdata.common) == 1
-    assert blockdata.common[0].doc[0].strip() == "Common block docstring"
+    assert blockdata.common[0].doc_list[0].strip() == "Common block docstring"
     assert len(blockdata.variables) == 1
-    assert blockdata.variables[0].doc[0].strip() == "Variable docstring"
+    assert blockdata.variables[0].doc_list[0].strip() == "Variable docstring"
 
 
 def test_subroutine_empty_args(parse_fortran_file):
@@ -1813,3 +1813,39 @@ def test_generic_bound_procedure(parse_fortran_file):
     expected_names = sorted(["no_colon", "colon", "operator(+)"])
     bound_proc_names = sorted([proc.name for proc in fortran_type.boundprocs])
     assert bound_proc_names == expected_names
+
+
+def test_submodule_procedure_calls(parse_fortran_file):
+    """Check that calls inside submodule procedures are correctly correlated"""
+
+    data = """\
+    module foo_m
+      implicit none
+      interface
+        module function foo1(start, end) result(res)
+          integer, intent(in) :: start, end
+          integer :: res
+        end function
+      end interface
+    end module
+
+    submodule(foo_m) foo_s
+      implicit none
+    contains
+      integer function bar(start, end)
+        integer, intent(in) :: start, end
+        bar = end - start
+      end function
+
+      module procedure foo1
+        res = bar(start, end)
+      end procedure
+    end submodule
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fortran_file.modules[0].correlate(FakeProject())
+    submodule = fortran_file.submodules[0]
+    submodule.correlate(FakeProject())
+
+    assert submodule.modprocedures[0].calls[0] == submodule.functions[0]

@@ -5,6 +5,7 @@ import ford.sourceform
 
 from copy import deepcopy
 from textwrap import dedent
+from typing import Dict
 
 import markdown
 import pytest
@@ -27,7 +28,7 @@ def create_project(settings: dict):
     return project
 
 
-project_graphs = {}
+project_graphs: Dict[str, GraphManager] = {}
 
 
 @pytest.fixture(scope="module")
@@ -68,6 +69,14 @@ def make_project_graphs(tmp_path_factory, request):
         generic :: eight_nine => ei, ni
       end type alpha
 
+      interface
+        subroutine defined_elsewhere
+        end subroutine
+
+        module subroutine submod_proc
+        end subroutine
+      end interface
+
     contains
       subroutine one
       end subroutine one
@@ -105,6 +114,10 @@ def make_project_graphs(tmp_path_factory, request):
     end submodule c_submod
 
     submodule (c:c_submod) c_subsubmod
+    !! display: private
+    contains
+      module subroutine submod_proc
+      end subroutine
     end submodule c_subsubmod
 
     program foo
@@ -131,15 +144,10 @@ def make_project_graphs(tmp_path_factory, request):
     end program foo
     """
     # check if we've already created the graphs for this test
-    if (
-        "proc_internals_"
-        + str(getattr(request, "param", {}).get("proc_internals", False))
-        in project_graphs
-    ):
-        yield project_graphs[
-            "proc_internals_"
-            + str(getattr(request, "param", {}).get("proc_internals", False))
-        ]
+    request_params = getattr(request, "param", {})
+    proc_internals = request_params.get("proc_internals", False)
+    if f"proc_internals_{proc_internals}" in project_graphs:
+        yield project_graphs[f"proc_internals_{proc_internals}"]
         return
 
     src_dir = tmp_path_factory.getbasetemp() / "graphs" / "src"
@@ -151,7 +159,7 @@ def make_project_graphs(tmp_path_factory, request):
     settings = deepcopy(DEFAULT_SETTINGS)
     settings["src_dir"] = [src_dir]
     settings["graph"] = True
-    if "proc_internals" in getattr(request, "param", {}):
+    if proc_internals:
         settings["proc_internals"] = request.param["proc_internals"]
 
     project = create_project(settings)
@@ -176,10 +184,7 @@ def make_project_graphs(tmp_path_factory, request):
     graphs.output_graphs(0)
 
     # save graphs for future use
-    project_graphs[
-        "proc_internals_"
-        + str(getattr(request, "param", {}).get("proc_internals", False))
-    ] = graphs
+    project_graphs[f"proc_internals_{proc_internals}"] = graphs
 
     yield graphs
     # reset namelist so it doesn't affect future generated graphs
@@ -237,6 +242,9 @@ TYPE_GRAPH_KEY = ["Type"]
             {"proc_internals": False},
             ["callgraph"],
             [
+                "c::defined_elsewhere",
+                "c::submod_proc",
+                "c_subsubmod::submod_proc",
                 "c::one",
                 "foo::three",
                 "c::two",
@@ -264,6 +272,7 @@ TYPE_GRAPH_KEY = ["Type"]
                 "program~foo->none~eight_nine",
                 "none~eight_nine->proc~eight",
                 "none~eight_nine->proc~nine",
+                "interface~submod_proc->proc~submod_proc",
             ],
             PROC_GRAPH_KEY,
         ),
@@ -271,6 +280,9 @@ TYPE_GRAPH_KEY = ["Type"]
             {"proc_internals": True},
             ["callgraph"],
             [
+                "c::defined_elsewhere",
+                "c::submod_proc",
+                "c_subsubmod::submod_proc",
                 "c::one",
                 "foo::three",
                 "c::two",
@@ -303,6 +315,7 @@ TYPE_GRAPH_KEY = ["Type"]
                 "program~foo->none~eight_nine",
                 "none~eight_nine->proc~eight",
                 "none~eight_nine->proc~nine",
+                "interface~submod_proc->proc~submod_proc",
             ],
             PROC_GRAPH_KEY,
         ),
@@ -384,6 +397,22 @@ TYPE_GRAPH_KEY = ["Type"]
             ["proc~three->external_mod"],
             MOD_GRAPH_KEY,
         ),
+        (
+            {"proc_internals": True},
+            [
+                "procedures",
+                # This is awful, but both the interface and the
+                # implementation have the same name, so we need to
+                # further disambiguate them
+                {"name": "submod_proc", "proctype": "Interface"},
+                "callsgraph",
+            ],
+            ["c::submod_proc", "c_subsubmod::submod_proc"],
+            [
+                "interface~submod_proc->proc~submod_proc",
+            ],
+            PROC_GRAPH_KEY,
+        ),
     ],
     indirect=["make_project_graphs"],
 )
@@ -403,11 +432,15 @@ def test_graphs(
     if len(graph_name) == 1:
         graph = getattr(graphs, graph_name[0])
     else:
-        collection, obj_name, name = graph_name
-        for graph in getattr(graphs, collection):
-            if graph.name == obj_name:
+        collection, properties, name = graph_name
+
+        if isinstance(properties, str):
+            properties = {"name": properties}
+
+        for g in sorted(getattr(graphs, collection)):
+            if properties == {attr: getattr(g, attr, None) for attr in properties}:
                 break
-        graph = getattr(graph, name)
+        graph = getattr(g, name)
 
     soup = BeautifulSoup(str(graph), features="html.parser")
     # Get nodes and edges just in the graph, and not in the legend

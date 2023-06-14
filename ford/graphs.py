@@ -53,11 +53,12 @@ from ford.sourceform import (
     FortranContainer,
     FortranInterface,
     FortranModule,
+    FortranModuleProcedureInterface,
     FortranProcedure,
     FortranProgram,
     FortranSourceFile,
     FortranSubmodule,
-    FortranSubmoduleProcedure,
+    FortranModuleProcedureImplementation,
     FortranBoundProcedure,
     FortranType,
 )
@@ -101,7 +102,7 @@ def is_proc(obj):
         (
             FortranProcedure,
             FortranInterface,
-            FortranSubmoduleProcedure,
+            FortranModuleProcedureImplementation,
             FortranBoundProcedure,
         ),
     )
@@ -415,8 +416,8 @@ class TypeNode(BaseNode):
         super().__init__(obj, gd)
         self.ancestor = None
         self.children = set()
-        self.comp_types = dict()
-        self.comp_of = dict()
+        self.comp_types = {}
+        self.comp_of = {}
         if self.fromstr:
             return
 
@@ -520,9 +521,8 @@ class ProcNode(BaseNode):
                 self.interfaces.add(n)
 
         if (
-            hasattr(obj, "procedure")
-            and obj.procedure.module
-            and obj.procedure.module is not True
+            isinstance(obj, FortranModuleProcedureInterface)
+            and isinstance(obj.procedure.module, (str, FortranProcedure))
             and getattr(obj.procedure.module, "visible", True)
         ):
             n = gd.get_procedure_node(obj.procedure.module, hist)
@@ -586,10 +586,9 @@ class FileNode(BaseNode):
             obj.blockdata,
         ):
             for dep in mod.deplist:
-                sourcefile = dep.hierarchy[0]
-                if sourcefile == obj:
+                if dep.source_file == obj:
                     continue
-                n = hist.get(sourcefile, gd.get_node(sourcefile, hist))
+                n = hist.get(dep.source_file, gd.get_node(dep.source_file, hist))
                 n.afferent.add(self)
                 self.efferent.add(n)
 

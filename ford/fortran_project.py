@@ -50,7 +50,7 @@ INTRINSIC_MODS = {
 }
 
 
-class Project(object):
+class Project:
     """
     An object which collects and contains all of the information about the
     project which is to be documented.
@@ -381,7 +381,7 @@ def find_used_modules(
                 break
 
     # Find the ancestor of this submodule (if entity is one)
-    if getattr(entity, "parent_submodule", None):
+    if hasattr(entity, "parent_submodule") and entity.parent_submodule:
         parent_submodule_name = entity.parent_submodule.lower()
         for submod in submodules:
             if parent_submodule_name == submod.name.lower():

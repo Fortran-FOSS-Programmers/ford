@@ -28,12 +28,11 @@ from io import StringIO
 import itertools
 import sys
 import argparse
-import markdown
 import os
 import pathlib
 import subprocess
 from datetime import date, datetime
-from typing import Union
+from typing import Any, Dict, Union
 from textwrap import dedent
 
 import ford.fortran_project
@@ -41,14 +40,14 @@ import ford.sourceform
 import ford.output
 import ford.utils
 from ford.pagetree import get_page_tree
-from ford.md_environ import EnvironExtension
+from ford._markdown import MetaMarkdown
 
 from importlib.metadata import version, PackageNotFoundError
 
 try:
     __version__ = version(__name__)
 except PackageNotFoundError:
-    from setuptools_scm import get_version
+    from setuptools_scm import get_version  # type: ignore[import]
 
     __version__ = get_version(root="..", relative_to=__file__)
 
@@ -120,7 +119,7 @@ LICENSES = {
 }
 
 
-DEFAULT_SETTINGS = {
+DEFAULT_SETTINGS: Dict[str, Any] = {
     "alias": [],
     "author": None,
     "author_description": None,
@@ -378,7 +377,7 @@ def get_command_line_arguments() -> argparse.Namespace:
 def parse_arguments(
     command_line_args: dict,
     proj_docs: str,
-    directory: Union[os.PathLike, str] = os.getcwd(),
+    directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
 ):
     """Consolidates arguments from the command line and from the project
     file, and then normalises them how the rest of the code expects
@@ -387,36 +386,20 @@ def parse_arguments(
     try:
         import multiprocessing
 
-        ncpus = "{0}".format(multiprocessing.cpu_count())
+        ncpus = str(multiprocessing.cpu_count())
     except (ImportError, NotImplementedError):
         ncpus = "0"
 
     DEFAULT_SETTINGS["parallel"] = ncpus
 
-    # Set up Markdown reader
-    md_ext = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-        "mdx_math",
-        EnvironExtension(),
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html", extension_configs={}
-    )
-
+    # Initial set up of Markdown reader
+    md = MetaMarkdown()
     md.convert(proj_docs)
+
     # Remake the Markdown object with settings parsed from the project_file
-    if "md_base_dir" in md.Meta:
-        md_base = md.Meta["md_base_dir"][0]
-    else:
-        md_base = directory
-    md_ext.append("markdown_include.include")
-    if "md_extensions" in md.Meta:
-        md_ext.extend(md.Meta["md_extensions"])
-    md = markdown.Markdown(
-        extensions=md_ext,
-        output_format="html",
+    md_base = md.Meta["md_base_dir"][0] if "md_base_dir" in md.Meta else directory
+    md = MetaMarkdown(
+        extensions=["markdown_include.include"] + md.Meta.get("md_extensions", []),
         extension_configs={"markdown_include.include": {"base_path": md_base}},
     )
 
@@ -446,7 +429,7 @@ def parse_arguments(
     base_dir = pathlib.Path(directory).absolute()
     proj_data["base_dir"] = base_dir
 
-    for var in [
+    for var in (
         "page_dir",
         "output_dir",
         "graph_dir",
@@ -456,7 +439,7 @@ def parse_arguments(
         "src_dir",
         "exclude_dir",
         "include",
-    ]:
+    ):
         if proj_data[var] is None:
             continue
         if isinstance(proj_data[var], list):
@@ -505,16 +488,14 @@ def parse_arguments(
 
     # Add gitter sidecar if specified in metadata
     if proj_data["gitter_sidecar"] is not None:
-        proj_docs += """
+        proj_docs += f"""
         <script>
             ((window.gitter = {{}}).chat = {{}}).options = {{
-            room: '{}'
+            room: '{proj_data["gitter_sidecar"].strip()}'
             }};
         </script>
         <script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
-        """.format(
-            proj_data["gitter_sidecar"].strip()
-        )
+        """
     # Handle preprocessor:
     if proj_data["preprocess"]:
         proj_data["preprocessor"] = proj_data["preprocessor"].split()
@@ -542,18 +523,14 @@ def parse_arguments(
         proj_data["license"] = LICENSES[proj_data["license"].lower()]
     except KeyError:
         print(
-            'Notice: license "{}" is not a recognized value, using the value as a custom license value.'.format(
-                proj_data["license"]
-            )
+            f'Notice: license "{proj_data["license"]}" is not a recognized value, using the value as a custom license value.'
         )
     # Get the correct license for doc license(website or doc) or use value as a custom license value.
     try:
         proj_data["doc_license"] = LICENSES[proj_data["doc_license"].lower()]
     except KeyError:
         print(
-            'Notice: doc_license "{}" is not a recognized value, using the value as a custom license value.'.format(
-                proj_data["doc_license"]
-            )
+            f'Notice: doc_license "{proj_data["doc_license"]}" is not a recognized value, using the value as a custom license value.'
         )
 
     # Return project data, docs, and the Markdown reader
@@ -576,12 +553,12 @@ def main(proj_data, proj_docs, md):
         sys.exit(1)
 
     # Define core macros:
-    ford.utils.register_macro("url = {0}".format(proj_data["project_url"]))
+    ford.utils.register_macro(f"url = {proj_data['project_url']}")
     ford.utils.register_macro(
-        "media = {0}".format(os.path.join(proj_data["project_url"], "media"))
+        f'media = {os.path.join(proj_data["project_url"], "media")}'
     )
     ford.utils.register_macro(
-        "page = {0}".format(os.path.join(proj_data["project_url"], "page"))
+        f'page = {os.path.join(proj_data["project_url"], "page")}'
     )
 
     # Register the user defined aliases:

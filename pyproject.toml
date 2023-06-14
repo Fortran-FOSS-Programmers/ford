@@ -83,3 +83,7 @@ write_to = "ford/_version.py"
 [tool.pytest.ini_options]
 addopts = "-m 'not slow'"
 markers = ["slow"]
+
+[tool.ruff]
+line-length = 88
+ignore = ["E501"]

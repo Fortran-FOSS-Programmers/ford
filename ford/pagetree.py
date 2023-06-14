@@ -44,9 +44,8 @@ class PageNode:
         parent: Optional[PageNode],
         encoding: str = "utf-8",
     ):
-        print("Reading page {}".format(os.path.relpath(path)))
-        with open(path, "r", encoding=encoding) as page:
-            text = md.reset().convert(page.read())
+        print(f"Reading page {os.path.relpath(path)}")
+        text = md.reset().convert(Path(path).read_text(encoding=encoding))
 
         if "title" not in md.Meta:
             raise ValueError(f"Page '{path}' has no title metadata")
@@ -79,7 +78,7 @@ class PageNode:
         else:
             self.hierarchy = []
             self.topdir = path.parent
-            self.location = Path("")
+            self.location = Path()
             self.topnode = self
 
     @property

@@ -74,7 +74,7 @@ env.filters["meta"] = meta
 USER_WRITABLE_ONLY = 0o755
 
 
-class Documentation(object):
+class Documentation:
     """
     Represents and handles the creation of the documentation files from
     a project.
@@ -201,9 +201,9 @@ class Documentation(object):
                 desc="Creating search index",
             ):
                 self.tipue.create_node(p.html, p.loc, p.meta)
-            print("")
+            print()
 
-    def writeout(self):
+    def writeout(self) -> None:
         out_dir: pathlib.Path = self.data["output_dir"]
         print(f"Writing documentation to '{out_dir}'...")
         # Remove any existing file/directory. This avoids errors coming from
@@ -309,9 +309,12 @@ class BasePage:
                 f"    {e}"
             )
 
-    def writeout(self):
-        with open(self.outfile, "wb") as out:
-            out.write(self.html.encode("utf8"))
+    @property
+    def outfile(self) -> pathlib.Path:
+        raise NotImplementedError()
+
+    def writeout(self) -> None:
+        self.outfile.write_bytes(self.html.encode("utf8"))
 
     def render(self, data, proj, obj):
         """

@@ -18,4 +18,4 @@ jobs:
         pip install pytest-xdist fypp
     - name: Test known repos
       run: |
-        pytest -n auto -m slow
+        pytest -n auto -m slow -vv
