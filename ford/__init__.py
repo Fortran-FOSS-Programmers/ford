@@ -28,12 +28,11 @@ from io import StringIO
 import itertools
 import sys
 import argparse
-import markdown
 import os
 import pathlib
 import subprocess
 from datetime import date, datetime
-from typing import List, Union
+from typing import Any, Dict, Union
 from textwrap import dedent
 
 import ford.fortran_project
@@ -41,7 +40,7 @@ import ford.sourceform
 import ford.output
 import ford.utils
 from ford.pagetree import get_page_tree
-from ford.md_environ import EnvironExtension
+from ford._markdown import MetaMarkdown
 
 from importlib.metadata import version, PackageNotFoundError
 
@@ -120,7 +119,7 @@ LICENSES = {
 }
 
 
-DEFAULT_SETTINGS = {
+DEFAULT_SETTINGS: Dict[str, Any] = {
     "alias": [],
     "author": None,
     "author_description": None,
@@ -393,30 +392,14 @@ def parse_arguments(
 
     DEFAULT_SETTINGS["parallel"] = ncpus
 
-    # Set up Markdown reader
-    md_ext: List[Union[str, markdown.Extension]] = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-        "mdx_math",
-        EnvironExtension(),
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html", extension_configs={}
-    )
-
+    # Initial set up of Markdown reader
+    md = MetaMarkdown()
     md.convert(proj_docs)
+
     # Remake the Markdown object with settings parsed from the project_file
-    if "md_base_dir" in md.Meta:
-        md_base = md.Meta["md_base_dir"][0]
-    else:
-        md_base = directory
-    md_ext.append("markdown_include.include")
-    if "md_extensions" in md.Meta:
-        md_ext.extend(md.Meta["md_extensions"])
-    md = markdown.Markdown(
-        extensions=md_ext,
-        output_format="html",
+    md_base = md.Meta["md_base_dir"][0] if "md_base_dir" in md.Meta else directory
+    md = MetaMarkdown(
+        extensions=["markdown_include.include"] + md.Meta.get("md_extensions", []),
         extension_configs={"markdown_include.include": {"base_path": md_base}},
     )
 

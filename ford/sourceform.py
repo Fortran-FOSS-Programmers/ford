@@ -44,10 +44,10 @@ from pygments.formatters import HtmlFormatter
 from ford.reader import FortranReader
 import ford.utils
 from ford.intrinsics import INTRINSICS
+from ford._markdown import MetaMarkdown
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
-    from markdown import Markdown
 
 
 VAR_TYPE_STRING = r"^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
@@ -266,7 +266,7 @@ class FortranBase:
         value = self.meta.get(key, self.settings.get(key, default))
         self.meta[key] = transform(value) if transform else value
 
-    def markdown(self, md: Markdown, project: Project):
+    def markdown(self, md: MetaMarkdown, project: Project):
         """
         Process the documentation with Markdown to produce HTML.
         """
