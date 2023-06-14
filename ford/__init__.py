@@ -47,7 +47,7 @@ from importlib.metadata import version, PackageNotFoundError
 try:
     __version__ = version(__name__)
 except PackageNotFoundError:
-    from setuptools_scm import get_version
+    from setuptools_scm import get_version  # type: ignore[import]
 
     __version__ = get_version(root="..", relative_to=__file__)
 
