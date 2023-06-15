@@ -12,6 +12,7 @@ from ford import DEFAULT_SETTINGS
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Union, List, Optional
+from itertools import chain
 
 import markdown
 import pytest
@@ -457,6 +458,59 @@ def test_type_chain_function_and_subroutine_calls(
 
         assert call.name == expected_name
 
+def test_call_in_module_procedure(
+    parse_fortran_file
+):
+    data = f"""\
+    module foo
+      type :: nuz
+      contains
+        procedure :: cor
+      end type nuz
+      interface
+        module subroutine bar()
+        end subroutine bar
+      end interface
+    contains
+      function cor(this_) result (ret_val)
+        class (nuz), intent(in) :: this_
+        real :: ret_val
+      end function cor
+    end module foo
+
+    submodule(foo) baz
+    contains
+      module procedure bar
+        type (nuz) :: var
+        real :: val
+        val = var%cor()
+      end procedure bar
+    end submodule baz
+    """
+    expected = ["cor"]
+
+    fortran_file = parse_fortran_file(data, display = ["public", "protected", "private"])
+    fp = FakeProject()
+    modules = {module.name: module for module in chain(fortran_file.modules, fortran_file.submodules)}
+    for module in modules.values():
+        find_used_modules(module, modules.values(), [], [])
+
+    # correlation order is important
+    modules["foo"].correlate(fp)
+    modules["baz"].correlate(fp)
+    
+
+    main_subroutines = {sub.name: sub for sub in modules["baz"].modprocedures}
+    calls = main_subroutines["bar"].calls
+
+    assert len(calls) == len(expected)
+
+    calls_sorted = sorted(calls, key=lambda x: getattr(x, "name", x))
+    expected_sorted = sorted(expected)
+    for call, expected_name in zip(calls_sorted, expected_sorted):
+        assert isinstance(call, FortranBase)
+
+        assert call.name == expected_name
 
 def test_component_access(parse_fortran_file):
     data = """\
