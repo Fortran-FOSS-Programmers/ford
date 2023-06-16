@@ -539,6 +539,29 @@ def test_display_private_derived_types(copy_fortran_file):
     assert type_names == {"no_attrs", "public_attr", "private_attr"}
 
 
+def test_display_private_module_procedure(copy_fortran_file):
+    data = """\
+      module foo
+        interface
+          module subroutine bar()
+          end subroutine bar
+        end interface
+      end module foo
+
+      submodule (foo) baz
+      contains
+        module procedure bar
+        end procedure
+      end submodule baz
+      """
+
+    settings = copy_fortran_file(data)
+    settings["display"] = ["public", "protected", "private"]
+
+    project = create_project(settings)
+    assert project.submodprocedures[0].name == "bar"
+
+
 def test_interface_type_name(copy_fortran_file):
     """Check for shared prototype list"""
     data = """\

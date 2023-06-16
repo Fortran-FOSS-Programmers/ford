@@ -125,7 +125,7 @@ class FortranBase:
         self.strings: List[str] = strings or []
 
         self.obj = type(self).__name__[7:].lower()
-        if self.obj in ["subroutine", "function", "submoduleprocedure"]:
+        if self.obj in ["subroutine", "function", "moduleprocedureimplementation"]:
             self.obj = "proc"
 
         self.parent = parent
@@ -976,7 +976,7 @@ class FortranContainer(FortranBase):
 
     def _add_procedure_call(self, name: str, parent: str) -> None:
         """Helper to register procedure calls. For FortranProgram,
-        FortranProcedure, and FortranSubmoduleProcedure
+        FortranProcedure, and FortranModuleProcedureImplementation
         """
         # Not raising an error here as too much possibility that something
         # has been misidentified as a function call
@@ -1345,25 +1345,13 @@ class FortranCodeUnit(FortranContainer):
         vars = getattr(self, "all_vars", {})
         if hasattr(self, "args"):
             vars = {**vars, **{a.name.lower(): a for a in self.args}}
-        if hasattr(self, "retvar"):
-            vars = {**vars, **{self.retvar.name.lower(): self.retvar}}
+        if retvar := getattr(self, "retvar", None):
+            vars = {**vars, **{retvar.name.lower(): retvar}}
         if hasattr(self, "all_types") and call.chain[0] in vars:
             call_type_str = strip_type(vars[call.chain[0]].full_type)
             call_type = self.all_types.get(call_type_str, None)
 
-        # if None, not a variable, try call type is an extended type
-        if (
-            call_type is None
-            and isinstance(self, FortranType)
-            and hasattr(self, "extends")
-        ):
-            extend: Optional[FortranCodeUnit] = self
-            while extend := getattr(extend, "extends", None):
-                if extend.name.lower() == call.name:
-                    call_type = extend
-                    break
-
-        # if still None, give up
+        # if None, give up
         if call_type is None:
             return None
 
@@ -2038,7 +2026,7 @@ class FortranInterface(FortranContainer):
 
 
 class FortranModuleProcedureInterface(FortranInterface):
-    """The interface part of a `FortranSubmoduleProcedure`
+    """The interface part of a `FortranModuleProcedureImplementation`
 
     This should be created directly by a `FortranInterface`
 
