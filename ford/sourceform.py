@@ -1083,6 +1083,19 @@ class FortranCodeUnit(FortranContainer):
                         if hasattr(intr.procedure, "retvar"):
                             proc.retvar = intr.procedure.retvar
                         proc.proctype = intr.procedure.proctype
+                # Some module procs are from procedures implemented withen a generic interface
+                elif getattr(getattr(intr, "parent", None), "generic", False):
+                    baseproc = intr
+
+                    proc.module = baseproc
+                    baseproc.module = proc
+
+                    if isinstance(proc, FortranModuleProcedureImplementation):
+                        proc.attribs = baseproc.attribs
+                        proc.args = baseproc.args
+                        if hasattr(baseproc, "retvar"):
+                            proc.retvar = baseproc.retvar
+                        proc.proctype = baseproc.proctype
 
         def should_be_public(name: str) -> bool:
             """Is name public?"""

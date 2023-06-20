@@ -1,6 +1,7 @@
 from ford.fortran_project import Project
 from ford import DEFAULT_SETTINGS
 from ford.utils import normalise_path
+from ford.sourceform import FortranVariable
 
 from copy import deepcopy
 from itertools import chain
@@ -676,6 +677,36 @@ def test_imported_abstract_interface_type_name(copy_fortran_file):
     project = create_project(settings)
     proto_names = [var.proto[0].name for var in project.modules[1].variables]
     assert proto_names == ["hello", "hello", "goodbye", "goodbye"]
+
+
+def test_generic_interface_inherited_attrs(copy_fortran_file):
+    data = """\
+    module module1
+      implicit none
+      interface routine
+        module subroutine routine_1(var)
+          integer, dimension(:) :: var
+        end subroutine routine_1
+      end interface
+      public :: routine
+    end module module1
+
+    submodule(module1) module2
+      implicit none
+    contains
+      module procedure routine_1
+      end procedure
+    end submodule module2
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+
+    module_implementation = project.modules[0].all_procs["routine_1"].module
+    # Check that the module implementation has been linked
+    assert not isinstance(module_implementation, bool)
+    # Check that mod proc has the inherited arg
+    assert isinstance(module_implementation.args[0], FortranVariable)
 
 
 def test_display_internal_procedures(copy_fortran_file):
