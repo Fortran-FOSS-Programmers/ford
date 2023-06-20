@@ -421,6 +421,38 @@ def test_module_use_everything_reexport(copy_fortran_file):
     }
 
 
+def test_use_within_interface(copy_fortran_file):
+    data = """\
+    module module1
+      implicit none
+      private
+      interface
+        subroutine routine_1()
+          use module2, only: routine_2
+        end subroutine routine_1
+      end interface
+      public :: routine
+    end module module1
+
+    module module2
+      implicit none
+      private
+      public :: routine_2
+    contains
+      subroutine routine_2(i)
+        integer,intent(in) :: i
+        write(*,*) i
+      end subroutine routine_2
+    end module module2
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+    assert set(
+        project.modules[0].all_procs["routine_1"].procedure.all_procs.keys()
+    ) == {"routine_1", "routine_2"}
+
+
 def test_member_in_other_module(copy_fortran_file):
     data = """\
     module module1
