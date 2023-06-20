@@ -1049,6 +1049,11 @@ class FortranCodeUnit(FortranContainer):
         self.all_vars = getattr(self.parent, "all_vars", {})
         for var in self.variables:
             self.all_vars[var.name.lower()] = var
+        # Add parent args/retval to all_vars if present
+        for var in getattr(self.parent, "args", []):
+            self.all_vars[var.name.lower()] = var
+        if retvar := getattr(self.parent, "retvar", None):
+            self.all_vars[retvar.name.lower()] = retvar
 
         if isinstance(self, FortranSubmodule):
             if isinstance(self.parent_submodule, FortranSubmodule):
@@ -1061,7 +1066,7 @@ class FortranCodeUnit(FortranContainer):
                 self.all_procs.update(self.ancestor_module.all_procs)
                 self.all_absinterfaces.update(self.ancestor_module.all_absinterfaces)
                 self.all_types.update(self.ancestor_module.all_types)
-                self.all_vars.update(self.ancestor_module.pub_vars)
+                self.all_vars.update(self.ancestor_module.all_vars)
 
         # Module procedures will be missing (some/all?) metadata, so
         # now we copy it from the interface
@@ -1348,8 +1353,9 @@ class FortranCodeUnit(FortranContainer):
         if retvar := getattr(self, "retvar", None):
             vars = {**vars, **{retvar.name.lower(): retvar}}
         if hasattr(self, "all_types") and call.chain[0] in vars:
-            call_type_str = strip_type(vars[call.chain[0]].full_type)
-            call_type = self.all_types.get(call_type_str, None)
+            var = vars[call.chain[0]]
+            call_type_str = strip_type(var.full_type)
+            call_type = var.parent.all_types.get(call_type_str, None)
 
         # if None, give up
         if call_type is None:

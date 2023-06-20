@@ -458,9 +458,8 @@ def test_type_chain_function_and_subroutine_calls(
 
         assert call.name == expected_name
 
-def test_call_in_module_procedure(
-    parse_fortran_file
-):
+
+def test_call_in_module_procedure(parse_fortran_file):
     data = f"""\
     module foo
       type :: nuz
@@ -489,16 +488,18 @@ def test_call_in_module_procedure(
     """
     expected = ["cor"]
 
-    fortran_file = parse_fortran_file(data, display = ["public", "protected", "private"])
+    fortran_file = parse_fortran_file(data, display=["public", "protected", "private"])
     fp = FakeProject()
-    modules = {module.name: module for module in chain(fortran_file.modules, fortran_file.submodules)}
+    modules = {
+        module.name: module
+        for module in chain(fortran_file.modules, fortran_file.submodules)
+    }
     for module in modules.values():
         find_used_modules(module, modules.values(), [], [])
 
     # correlation order is important
     modules["foo"].correlate(fp)
     modules["baz"].correlate(fp)
-    
 
     main_subroutines = {sub.name: sub for sub in modules["baz"].modprocedures}
     calls = main_subroutines["bar"].calls
@@ -511,6 +512,99 @@ def test_call_in_module_procedure(
         assert isinstance(call, FortranBase)
 
         assert call.name == expected_name
+
+
+def test_submodule_private_var_call(parse_fortran_file):
+    data = f"""\
+    module foo
+      type :: nuz
+        integer :: var
+      end type nuz
+
+      type(nuz), dimension(2), private :: pri_var
+
+      interface
+        module subroutine bar()
+        end subroutine bar
+      end interface
+    end module foo
+
+    submodule(foo) baz
+    contains
+      module procedure bar
+        integer :: val
+        val = pri_var(1)%var
+      end procedure bar
+    end submodule baz
+    """
+    expected = []
+
+    fortran_file = parse_fortran_file(data)
+    fp = FakeProject()
+    modules = {
+        module.name: module
+        for module in chain(fortran_file.modules, fortran_file.submodules)
+    }
+    for module in modules.values():
+        find_used_modules(module, modules.values(), [], [])
+
+    # correlation order is important
+    modules["foo"].correlate(fp)
+    modules["baz"].correlate(fp)
+
+    main_subroutines = {sub.name: sub for sub in modules["baz"].modprocedures}
+    calls = main_subroutines["bar"].calls
+
+    assert len(calls) == len(expected)
+
+    calls_sorted = sorted(calls, key=lambda x: getattr(x, "name", x))
+    expected_sorted = sorted(expected)
+    for call, expected_name in zip(calls_sorted, expected_sorted):
+        assert isinstance(call, FortranBase)
+
+        assert call.name == expected_name
+
+
+def test_internal_proc_arg_var_call(parse_fortran_file):
+    data = f"""\
+    module foo
+      type :: nuz
+        integer :: var
+      end type nuz
+      type(nuz), dimension(2), private :: pri_var
+    contains
+      subroutine bar(nuz_var)
+        class(nuz), dimension(2) :: nuz_var
+      contains
+        subroutine baz
+          integer :: val
+          val = nuz_var(1)%var
+        end subroutine baz
+      end subroutine bar
+    end module foo
+    """
+    expected = []
+
+    fortran_file = parse_fortran_file(data)
+    fp = FakeProject()
+    modules = {module.name: module for module in fortran_file.modules}
+    for module in modules.values():
+        find_used_modules(module, modules.values(), [], [])
+
+    # correlation order is important
+    modules["foo"].correlate(fp)
+
+    calls = modules["foo"].subroutines[0].subroutines[0].calls
+
+    assert len(calls) == len(expected)
+
+    calls_sorted = sorted(calls, key=lambda x: getattr(x, "name", x))
+    expected_sorted = sorted(expected)
+    for call, expected_name in zip(calls_sorted, expected_sorted):
+        assert isinstance(call, FortranBase)
+
+        assert call.name == expected_name
+
 
 def test_component_access(parse_fortran_file):
     data = """\
