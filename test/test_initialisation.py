@@ -1,5 +1,6 @@
 import ford
 from textwrap import dedent
+from pathlib import Path
 import sys
 import pytest
 
@@ -50,10 +51,10 @@ def test_path_normalisation():
              src2
     """
     data, _, _ = ford.parse_arguments({}, dedent(settings), "/prefix/path")
-    assert str(data["page_dir"]) == "/prefix/path/my_pages"
+    assert str(data["page_dir"]) == str(Path("/prefix/path/my_pages"))
     assert [str(p) for p in data["src_dir"]] == [
-        "/prefix/path/src1",
-        "/prefix/path/src2",
+        str(Path("/prefix/path/src1")),
+        str(Path("/prefix/path/src2")),
     ]
 
 
