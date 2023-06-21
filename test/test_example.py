@@ -6,6 +6,7 @@ import re
 from urllib.parse import urlparse
 
 import ford
+from ford.graphs import graphviz_installed
 
 from bs4 import BeautifulSoup
 import pytest
@@ -231,6 +232,7 @@ def test_types_finaliser(example_project):
     assert "More documentation" in finaliser_section.ul.text
 
 
+@pytest.mark.skipif(not graphviz_installed, reason="Requires graphviz")
 def test_graph_submodule(example_project):
     path, _ = example_project
     index = read_html(path / "module/test_submodule.html")
