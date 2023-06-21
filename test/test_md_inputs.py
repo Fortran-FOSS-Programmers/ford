@@ -2,7 +2,7 @@ import pathlib
 import os.path
 import re
 import sys
-from typing import List
+from typing import List, Optional
 
 import ford
 import ford.fortran_project
@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 DEFAULT_SRC = "src"
 
 
-def run_ford(monkeypatch, md_file: pathlib.Path, extra_args: list = None):
+def run_ford(monkeypatch, md_file: pathlib.Path, extra_args: Optional[list] = None):
     """Modify command line args with argv"""
     with monkeypatch.context() as m:
         command = ["ford", str(md_file)]
