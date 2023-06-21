@@ -1071,31 +1071,25 @@ class FortranCodeUnit(FortranContainer):
         # Module procedures will be missing (some/all?) metadata, so
         # now we copy it from the interface
         if isinstance(self, FortranModule):
+            def assign_implementation_attributes(proc, base):
+                if isinstance(proc, FortranModuleProcedureImplementation):
+                    proc.attribs = base.attribs
+                    proc.args = base.args
+                    if hasattr(base, "retvar"):
+                        proc.retvar = base.retvar
+                    proc.proctype = base.proctype
+
             for proc in filter(lambda p: p.module, self.routines):
                 intr = self.all_procs.get(proc.name.lower(), None)
                 if isinstance(intr, FortranModuleProcedureInterface):
                     proc.module = intr
                     intr.procedure.module = proc
-
-                    if isinstance(proc, FortranModuleProcedureImplementation):
-                        proc.attribs = intr.procedure.attribs
-                        proc.args = intr.procedure.args
-                        if hasattr(intr.procedure, "retvar"):
-                            proc.retvar = intr.procedure.retvar
-                        proc.proctype = intr.procedure.proctype
+                    assign_implementation_attributes(proc, intr.procedure)
                 # Some module procs are from procedures implemented withen a generic interface
                 elif getattr(getattr(intr, "parent", None), "generic", False):
-                    baseproc = intr
-
-                    proc.module = baseproc
-                    baseproc.module = proc
-
-                    if isinstance(proc, FortranModuleProcedureImplementation):
-                        proc.attribs = baseproc.attribs
-                        proc.args = baseproc.args
-                        if hasattr(baseproc, "retvar"):
-                            proc.retvar = baseproc.retvar
-                        proc.proctype = baseproc.proctype
+                    proc.module = intr
+                    intr.module = proc
+                    assign_implementation_attributes(proc, intr)
 
         def should_be_public(name: str) -> bool:
             """Is name public?"""

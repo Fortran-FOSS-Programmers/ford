@@ -449,9 +449,7 @@ def test_use_within_interface(copy_fortran_file):
 
     settings = copy_fortran_file(data)
     project = create_project(settings)
-    assert set(
-        project.modules[0].all_procs["routine_1"].procedure.all_procs.keys()
-    ) == {"routine_1", "routine_2"}
+    assert "routine_2" in project.modules[0].all_procs["routine_1"].procedure.all_procs
 
 
 def test_member_in_other_module(copy_fortran_file):

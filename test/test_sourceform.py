@@ -537,7 +537,6 @@ def test_submodule_private_var_call(parse_fortran_file):
       end procedure bar
     end submodule baz
     """
-    expected = []
 
     fortran_file = parse_fortran_file(data)
     fp = FakeProject()
@@ -555,14 +554,7 @@ def test_submodule_private_var_call(parse_fortran_file):
     main_subroutines = {sub.name: sub for sub in modules["baz"].modprocedures}
     calls = main_subroutines["bar"].calls
 
-    assert len(calls) == len(expected)
-
-    calls_sorted = sorted(calls, key=lambda x: getattr(x, "name", x))
-    expected_sorted = sorted(expected)
-    for call, expected_name in zip(calls_sorted, expected_sorted):
-        assert isinstance(call, FortranBase)
-
-        assert call.name == expected_name
+    assert calls == []
 
 
 def test_internal_proc_arg_var_call(parse_fortran_file):
@@ -583,7 +575,6 @@ def test_internal_proc_arg_var_call(parse_fortran_file):
       end subroutine bar
     end module foo
     """
-    expected = []
 
     fortran_file = parse_fortran_file(data)
     fp = FakeProject()
@@ -596,14 +587,7 @@ def test_internal_proc_arg_var_call(parse_fortran_file):
 
     calls = modules["foo"].subroutines[0].subroutines[0].calls
 
-    assert len(calls) == len(expected)
-
-    calls_sorted = sorted(calls, key=lambda x: getattr(x, "name", x))
-    expected_sorted = sorted(expected)
-    for call, expected_name in zip(calls_sorted, expected_sorted):
-        assert isinstance(call, FortranBase)
-
-        assert call.name == expected_name
+    assert calls == []
 
 
 def test_component_access(parse_fortran_file):
