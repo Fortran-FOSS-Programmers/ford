@@ -6,7 +6,7 @@
 
 When documenting your source files you can provide metadata at the top
 of an item’s documentation. Metadata is specified in the same way as in
-the [[project file|Project File Options]]. There can not be any other
+the :ref:`sec-project-options`. There can not be any other
 documentation before it; not even a blank line of documentation. This
 will work::
 
