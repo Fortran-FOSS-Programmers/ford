@@ -126,8 +126,8 @@ in your documentation and
 `Meta-Data <https://pythonhosted.org/Markdown/extensions/meta_data.html>`__.
 The latter is used internally as a way for the user to provide extra
 information to and/or customize the behaviour of FORD (see
-[[Documentation Meta-Data]]). Information on providing meta-data and
-what types of data FORD will look for can be found in the next section.
+:ref:`_sec-doc-metadata`). Information on providing metadata and what
+types of data FORD will look for can be found in the next section.
 
 LaTeX Support
 -------------

@@ -1,3 +1,5 @@
+.. _sec-doc-metadata:
+
 ========================
  Documentation Metadata
 ========================
@@ -27,7 +29,14 @@ but this won’t::
 
 The meta-data will be displayed for procedures, derived types, files,
 programs, modules, type-bound procedures, and interfaces. It may be
-displayed in more cases in future. Recognized types of meta-data are:
+displayed in more cases in future.
+
+Metadata keys are letters, numbers, underscores, and dashes followed
+by a colon. Please also note that anything that *looks* like metadata
+will be parsed as such and so won't appear in the rendered
+documentation.
+
+Recognized types of metadata are:
 
 .. _metadata-author:
 
