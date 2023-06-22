@@ -7,6 +7,10 @@ import pytest
 from conftest import gfortran_is_not_installed
 
 
+class FakeFile:
+    name = "test file"
+
+
 def test_quiet_false():
     """This checks that bool options like 'quiet' are parsed correctly in input md file"""
 
@@ -113,15 +117,17 @@ def test_no_preprocessor():
 
 
 def test_bad_preprocessor():
-    class FakeFile:
-        name = "test file"
-
     with pytest.raises(SystemExit):
         ford.parse_arguments({"project_file": FakeFile()}, "preprocessor: false")
 
 
+@pytest.mark.skipif(
+    sys.platform.startswith("win"), reason="FIXME: Need portable do-nothing command"
+)
 def test_maybe_ok_preprocessor():
-    data, _, _ = ford.parse_arguments({}, "preprocessor: true")
+    data, _, _ = ford.parse_arguments(
+        {"project_file": FakeFile()}, "preprocessor: true"
+    )
 
     if data["preprocess"] is True:
         assert isinstance(data["preprocessor"], list)
