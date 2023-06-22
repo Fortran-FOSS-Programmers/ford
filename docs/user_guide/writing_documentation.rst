@@ -172,7 +172,7 @@ syntax ``{!file-name.md!}`` in any of your documentation will be
 replaced by the contents of file-name.md. This will be the first thing
 done when processing Markdown, and thus all Markdown syntax within
 file-name.md will be processed correctly. You can nest these include
-statments as many times as you like. All file paths are evaluated
+statements as many times as you like. All file paths are evaluated
 relative to the directory containing the project file, unless set to
 do otherwise.
 
