@@ -4,8 +4,8 @@
  Documentation Metadata
 ========================
 
-When documenting your source files you can provide meta-data at the top
-of an item’s documentation. Meta-data is specified in the same way as in
+When documenting your source files you can provide metadata at the top
+of an item’s documentation. Metadata is specified in the same way as in
 the [[project file|Project File Options]]. There can not be any other
 documentation before it; not even a blank line of documentation. This
 will work::
@@ -27,7 +27,7 @@ but this won’t::
      !!
      !! This data-type represents a cat.
 
-The meta-data will be displayed for procedures, derived types, files,
+The metadata will be displayed for procedures, derived types, files,
 programs, modules, type-bound procedures, and interfaces. It may be
 displayed in more cases in future.
 

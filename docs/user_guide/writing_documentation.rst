@@ -74,7 +74,7 @@ in the opinion of this author, especially with regards to the list of
 arguments. Since version 1.0.0 it is now possible to place
 documentation before the code which it is documenting. To do so, use
 the ``predocmark``, which is set to ``>`` by default (it may be
-changed in the specify in the meta-data of your `project file
+changed in the specify in the metadata of your `project file
 <sec-project-options>`).  In the first line of your preceding
 documentation, use ``!>`` rather than the usual ``!!``. This can be
 used on all lines of the preceding documentation if desired, but this
@@ -87,7 +87,7 @@ documentation comment. Any immediately following lines containing only a
 comment will then be included in the block of documentation, without
 needing the “docmark”. The same effect can be achieved for preceding
 documentation by using the ``predocmark_alt``, set to ``|`` by default.
-Both of these may be changed in the project file meta-data.
+Both of these may be changed in the project file metadata.
 
 Legacy fixed-form FORTRAN code is now supported, using the `fixed2free
 <https://github.com/ylikx/fortran-legacy-tools/tree/master/fixed2free>`__
