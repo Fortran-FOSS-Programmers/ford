@@ -100,10 +100,8 @@ support legacy code.
 
 By default, FORD will preprocess any files with extensions ``.F90``,
 ``.F95``, ``.F03``, ``.F08``, ``.F15``, ``.F``, or ``.FOR`` prior to
-parsing them for documentation. This behaviour can `be
-disabled <option-preprocess>`
-or `different
-extensions <option-fpp_extensions>`
+parsing them for documentation. This behaviour can `be disabled
+<option-preprocess>` or `different extensions <option-fpp_extensions>`
 can be specified, if desired. Note that any syntax-highlighted source
 code which is displayed in the output will be shown in its
 non-preprocessed form. The default preprocessor is CPP in legacy mode
@@ -114,20 +112,19 @@ Markdown
 --------
 
 All documentation, both that provided within the source files and that
-given in the project file, should be written in
-`Markdown <http://daringfireball.net/projects/markdown/syntax>`__. In
+given in the project file, should be written in `Markdown`_. In
 addition to the standard Markdown syntax, you can use all of the
-features in Python’s `Markdown
-Extra <https://pythonhosted.org/Markdown/extensions/extra.html>`__.
-Other Markdown extensions automatically loaded are
-`CodeHilite <https://pythonhosted.org/Markdown/extensions/code_hilite.html>`__
-which will provide syntax highlighting for any code fragments you place
-in your documentation and
-`Meta-Data <https://pythonhosted.org/Markdown/extensions/meta_data.html>`__.
-The latter is used internally as a way for the user to provide extra
-information to and/or customize the behaviour of FORD (see
-:ref:`_sec-doc-metadata`). Information on providing metadata and what
-types of data FORD will look for can be found in the next section.
+features in Python’s `Markdown Extra`_. Other Markdown extensions
+automatically loaded are `CodeHilite`_, which provides syntax
+highlighting for code fragments in your documentation, and
+`Meta-Data`_, which is used as a way to provide extra information
+and/or customize behaviour. See :ref:`sec-doc-metadata` for the syntax
+and what metadata you can set.
+
+.. _Markdown: http://daringfireball.net/projects/markdown/syntax
+.. _Markdown Extra: https://pythonhosted.org/Markdown/extensions/extra.html
+.. _CodeHilite: https://pythonhosted.org/Markdown/extensions/code_hilite.html
+.. _Meta-Data: https://pythonhosted.org/Markdown/extensions/meta_data.html
 
 LaTeX Support
 -------------
