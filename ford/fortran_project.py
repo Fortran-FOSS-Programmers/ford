@@ -204,7 +204,11 @@ class Project:
 
         def get_deps(item):
             uselist = [m[0] for m in item.uses]
-            for procedure in item.routines:
+            interfaceprocs = []
+            for intr in getattr(item, "interfaces", []):
+                if hasattr(intr, "procedure"):
+                    interfaceprocs.append(intr.procedure)
+            for procedure in chain(item.routines, interfaceprocs):
                 uselist.extend(get_deps(procedure))
             return uselist
 
@@ -398,3 +402,13 @@ def find_used_modules(
     # Find the modules that this entity's procedures use
     for procedure in entity.routines:
         find_used_modules(procedure, modules, submodules, external_modules)
+
+    # Find the modules that this entity's interfaces' procedures use
+    for interface in getattr(entity, "interfaces", []):
+        if hasattr(interface, "procedure"):
+            find_used_modules(
+                interface.procedure, modules, submodules, external_modules
+            )
+        else:
+            for procedure in interface.routines:
+                find_used_modules(procedure, modules, submodules, external_modules)

@@ -1049,6 +1049,11 @@ class FortranCodeUnit(FortranContainer):
         self.all_vars = getattr(self.parent, "all_vars", {})
         for var in self.variables:
             self.all_vars[var.name.lower()] = var
+        # Add parent args/retval to all_vars if present
+        for var in getattr(self.parent, "args", []):
+            self.all_vars[var.name.lower()] = var
+        if retvar := getattr(self.parent, "retvar", None):
+            self.all_vars[retvar.name.lower()] = retvar
 
         if isinstance(self, FortranSubmodule):
             if isinstance(self.parent_submodule, FortranSubmodule):
@@ -1061,23 +1066,30 @@ class FortranCodeUnit(FortranContainer):
                 self.all_procs.update(self.ancestor_module.all_procs)
                 self.all_absinterfaces.update(self.ancestor_module.all_absinterfaces)
                 self.all_types.update(self.ancestor_module.all_types)
-                self.all_vars.update(self.ancestor_module.pub_vars)
+                self.all_vars.update(self.ancestor_module.all_vars)
 
         # Module procedures will be missing (some/all?) metadata, so
         # now we copy it from the interface
         if isinstance(self, FortranModule):
+            def assign_implementation_attributes(proc, base):
+                if isinstance(proc, FortranModuleProcedureImplementation):
+                    proc.attribs = base.attribs
+                    proc.args = base.args
+                    if hasattr(base, "retvar"):
+                        proc.retvar = base.retvar
+                    proc.proctype = base.proctype
+
             for proc in filter(lambda p: p.module, self.routines):
                 intr = self.all_procs.get(proc.name.lower(), None)
                 if isinstance(intr, FortranModuleProcedureInterface):
                     proc.module = intr
                     intr.procedure.module = proc
-
-                    if isinstance(proc, FortranModuleProcedureImplementation):
-                        proc.attribs = intr.procedure.attribs
-                        proc.args = intr.procedure.args
-                        if hasattr(intr.procedure, "retvar"):
-                            proc.retvar = intr.procedure.retvar
-                        proc.proctype = intr.procedure.proctype
+                    assign_implementation_attributes(proc, intr.procedure)
+                # Some module procs are from procedures implemented withen a generic interface
+                elif getattr(getattr(intr, "parent", None), "generic", False):
+                    proc.module = intr
+                    intr.module = proc
+                    assign_implementation_attributes(proc, intr)
 
         def should_be_public(name: str) -> bool:
             """Is name public?"""
@@ -1348,8 +1360,9 @@ class FortranCodeUnit(FortranContainer):
         if retvar := getattr(self, "retvar", None):
             vars = {**vars, **{retvar.name.lower(): retvar}}
         if hasattr(self, "all_types") and call.chain[0] in vars:
-            call_type_str = strip_type(vars[call.chain[0]].full_type)
-            call_type = self.all_types.get(call_type_str, None)
+            var = vars[call.chain[0]]
+            call_type_str = strip_type(var.full_type)
+            call_type = var.parent.all_types.get(call_type_str, None)
 
         # if None, give up
         if call_type is None:
