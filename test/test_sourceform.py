@@ -234,7 +234,7 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
     program = fortran_file.programs[0]
     assert len(program.calls) == 2
     expected_calls = {"bar", "foo"}
-    assert set([call.name for call in program.calls]) == expected_calls
+    assert set(call[-1] for call in program.calls) == expected_calls
 
 
 @pytest.mark.parametrize(

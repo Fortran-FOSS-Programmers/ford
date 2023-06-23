@@ -585,17 +585,11 @@ class FortranContainer(FortranBase):
     )
     ARITH_GOTO_RE = re.compile(r"go\s*to\s*\([0-9,\s]+\)", re.IGNORECASE)
     CALL_RE = re.compile(
-        r"""(?P<parent>(?:\s*\w+\s*(?:\(\))?\s*%\s*)+)? # Optional type component access
-        (?P<name>\w+\s*\(.*?\))                         # Required function name
-        """,
+        r"(?:\s*\w+\s*(?:\(\))?\s*%\s*)*\w+\s*\(.*?\)",
         re.IGNORECASE | re.VERBOSE,
     )
     SUBCALL_RE = re.compile(
-        r"""^(?:if\s*\(.*\)\s*)?    # Optional 'if' statement
-        call\s+                     # Required keyword
-        (?P<parent>.*%\s*)?         # Optional type component access
-        (?P<name>\w+\s*(?:\(\))?)   # Required subroutine name
-        """,
+        r"(?<=\bcall\s)\s*(?:\s*\w+\s*(?:\(\))?\s*%\s*)*\w+",
         re.IGNORECASE | re.VERBOSE,
     )
     FORMAT_RE = re.compile(r"^[0-9]+\s+format\s+\(.*\)", re.IGNORECASE)
@@ -955,8 +949,8 @@ class FortranContainer(FortranBase):
                 _lines = ford.utils.strip_paren(_line)
 
                 # Match subcall, if present
-                if match := self.SUBCALL_RE.match(_lines[0]):
-                    self._add_procedure_call(match["name"], match["parent"])
+                if match := self.SUBCALL_RE.search(_lines[0]):
+                    self._add_procedure_call(match.group())
                     # No function calls on this parendepth (because theres a subcall)
                     parendepth += 1
                     _lines = ford.utils.strip_paren(_line, parendepth)
@@ -967,14 +961,14 @@ class FortranContainer(FortranBase):
                 while len(_lines) > 0:
                     for subline in _lines:
                         for match in self.CALL_RE.finditer(subline):
-                            self._add_procedure_call(match["name"], match["parent"])
+                            self._add_procedure_call(match.group())
                     parendepth += 1
                     _lines = ford.utils.strip_paren(_line, parendepth)
 
         if not isinstance(self, FortranSourceFile):
             raise Exception("File ended while still nested.")
 
-    def _add_procedure_call(self, name: str, parent: str) -> None:
+    def _add_procedure_call(self, chain_str: str) -> None:
         """Helper to register procedure calls. For FortranProgram,
         FortranProcedure, and FortranModuleProcedureImplementation
         """
@@ -983,11 +977,12 @@ class FortranContainer(FortranBase):
         if not hasattr(self, "calls"):
             return
 
-        name = name.lower().replace(" ", "").replace("()", "")
-        if name in INTRINSICS or name in (call.name for call in self.calls):
-            return
+        call_chain = re.sub("\(\)|\s","",chain_str).lower().split('%')
 
-        self.calls.append(CallChain(name, parent))
+        if call_chain[-1] in INTRINSICS or call_chain[-1] in (call[-1] for call in self.calls):
+            return
+        
+        self.calls.append(call_chain)
 
     def _cleanup(self):
         raise NotImplementedError()
@@ -1011,7 +1006,7 @@ class FortranCodeUnit(FortranContainer):
     def _common_initialize(self) -> None:
         self.absinterfaces: List[FortranInterface] = []
         self.attr_dict: Dict[str, List[str]] = defaultdict(list)
-        self.calls: List[Union[CallChain, FortranProcedure]] = []
+        self.calls: List[Union[List[str], FortranProcedure]] = []
         self.common: List[FortranCommon] = []
         self.enums: List[FortranEnum] = []
         self.functions: List[FortranFunction] = []
@@ -1135,53 +1130,18 @@ class FortranCodeUnit(FortranContainer):
         if hasattr(self, "calls"):
             tmplst = []
             for call in self.calls:
-                call = cast(CallChain, call)
-                # get the context of the call
-                context = self._find_call_context(call)
+                # get the item of the call
+                item = self._find_chain_item(call)
 
-                # failed to find context, give up and add call's string name to the list
-                if context is None:
-                    tmplst.append(call.name)
+                # failed to find item, give up and add call's string name to the list
+                if item is None:
+                    tmplst.append(call[-1])
                     continue
 
-                argname = False
-                # arguments and returns are only possible labels if the call is made within self's context
-                if context == self:
-                    for a in getattr(self, "args", []):
-                        # Consider allowing procedures passed as arguments to be included in callgraphs
-                        argname |= call.name == a.name.lower()
-                    if retvar := getattr(self, "retvar", None):
-                        argname |= call.name == retvar.name.lower()
-
-                # get all the variables in the call's context
-                all_vars = getattr(context, "all_vars", {})
-                if hasattr(context, "variables"):
-                    all_vars.update({v.name.lower(): v for v in context.variables})
-
-                # if call isn't to a variable (i.e. an array), and isn't a type, add it to the list
-                if (
-                    not argname
-                    and call.name not in getattr(context, "all_types", {})
-                    and call.name not in all_vars
-                ):
-                    if call.chain == []:
-                        # if can't find the call in context, add it as a string
-                        tmplst.append(context.all_procs.get(call.name, call.name))
-                    # if the call is made from a type, then it must be a bound procedure
-                    else:
-                        if not isinstance(context, FortranType):
-                            raise ValueError(
-                                f"Unexpected context ({context.obj} '{context.name}') of procedure call '{call.name}'"
-                            )
-
-                        for bound in context.boundprocs:
-                            if call.name == bound.name.lower():
-                                tmplst.append(bound)
-                                break
-                        else:
-                            # failed to find the call in context, add it as a string
-                            tmplst.append(call.name)
-
+                # only add items that can call other items. For example, a variable
+                # might get picked up as a 'call' but it cannot call anything, so we don't add it
+                if hasattr(item, "calls") or isinstance(item, FortranBoundProcedure): 
+                    tmplst.append(item)
             self.calls = tmplst
 
         if isinstance(self, FortranSubmodule):
@@ -1327,12 +1287,12 @@ class FortranCodeUnit(FortranContainer):
             obj.visible = True
             obj.prune()
 
-    def _find_call_context(self, call: CallChain) -> Optional[FortranCodeUnit]:
+    def _find_chain_item(self, call_chain: List[str]) -> Optional[FortranBase]:
         """
-        Traverse the call chain of the call to discover the context the call is made on.
+        Traverse the call_chain to discover the item at the end of the chain.
         This is done by looking at the first label in the call chain and matching it to
-        a variable or function in the current scope. Then, traverse to the context of the
-        variable or function return and repeat until the call chain is exhausted.
+        a variable, function ext. in the current scope. Then, switch to the context of 
+        said item return and repeat until the call chain is exhausted.
 
         If the traversal fails to find a label in a context,
         the function gives up and returns None
@@ -1346,55 +1306,51 @@ class FortranCodeUnit(FortranContainer):
             r = re.match(r"^(type|class)\((.*?)(?:\(.*\))?\)$", s, re.IGNORECASE)
             return r.group(2).lower() if r else s.lower()
 
-        # context is self if call is not a chain
-        if len(call.chain) == 0:
-            return self
+        context = self
+        for i, call in enumerate(call_chain):
+            # collect all labels that could potentially be in a call_chain
+            labels = {}
+            # procs
+            labels.update(getattr(context, "all_procs", {}))
+            # boundprocs
+            labels.update({bp.name.lower(): bp for bp in getattr(context, "boundprocs", [])})
+            # types
+            labels.update(getattr(context, "all_types", {}))
+            # extended type
+            extend_type = context
+            while extend_type := getattr(extend_type, "extends", None):
+                labels[extend_type.name.lower()] = extend_type
+            # vars
+            labels.update(getattr(context, "all_vars", {}))
+            # local vars
+            labels.update({a.name.lower(): a for a in getattr(context, "args", [])})
+            if retvar := getattr(context, "retvar", None):
+                labels[retvar.name.lower()] = retvar
+            labels.update({v.name.lower(): v for v in getattr(context, "variables", [])})
+            
+            # collect the context from the return of the item matching the call name
+            item = labels.get(call, None)
+            # last item shouldn't be a context
+            if i == len(call_chain) - 1:
+                return item
 
-        call.chain[0] = call.chain[0].lower()
-
-        call_type = None
-        # try call type is a variable
-        vars = getattr(self, "all_vars", {})
-        if hasattr(self, "args"):
-            vars = {**vars, **{a.name.lower(): a for a in self.args}}
-        if retvar := getattr(self, "retvar", None):
-            vars = {**vars, **{retvar.name.lower(): retvar}}
-        if hasattr(self, "all_types") and call.chain[0] in vars:
-            var = vars[call.chain[0]]
-            call_type_str = strip_type(var.full_type)
-            call_type = var.parent.all_types.get(call_type_str, None)
-
-        # if None, give up
-        if call_type is None:
-            return None
-
-        # traverse the call chain
-        for c in [c.lower() for c in call.chain[1:]]:
-            new_call_type = None
-            # try call type is a variable
-            if hasattr(call_type, "variables"):
-                new_call_type_str = None
-                for v in call_type.variables:
-                    if v.name.lower() == c:
-                        new_call_type_str = strip_type(v.full_type)
-                        break
-                new_call_type = call_type.all_types.get(new_call_type_str, None)
-
-            # not a variable, try call type is an extended type
-            if new_call_type is None and isinstance(call_type, FortranType):
-                extend_type: Optional[FortranType] = call_type
-                while extend_type := getattr(extend_type, "extends", None):
-                    if extend_type.name.lower() == c:
-                        new_call_type = extend_type
-                        break
-
-            # not a subtype, give up
-            if new_call_type is None:
+            if item is None:
+                # failed to find context
                 return None
-
-            call_type = new_call_type
-
-        return call_type
+            elif hasattr(item, "retvar"):
+                type_str = strip_type(item.retvar.full_type)
+                context = item.all_types.get(type_str, None)
+            elif isinstance(item, FortranType):
+                context = item
+            elif isinstance(item, FortranVariable):
+                type_str = strip_type(item.full_type)
+                context = item.parent.all_types.get(type_str, None)
+            else:
+                return None
+            
+            if context is None:
+                # failed to find context
+                return None
 
 
 class FortranSourceFile(FortranContainer):
@@ -2870,34 +2826,6 @@ def parse_type(
     kind = KIND_RE.match(args)
     kind = kind.group(1) if kind else args
     return ParsedType(vartype, rest, kind=kind)
-
-
-@dataclass
-class CallChain:
-    """
-    Representation of a procedure call, including any parent type components
-
-    Example
-    -------
-
-    >>> match = FortranContainer.SUBCALL_RE.match("v_bar%v_baz%p_baz()")
-    >>> CallChain(match["name"], match["parent"])
-
-    CallChain(name="p_baz", chain=["v_bar", "v_baz"])
-    """
-
-    name: str
-    chain: List[str]
-
-    def __init__(self, name: str, parent: str):
-        self.name = name.lower()
-        # Remove whitespace and trailing accessor so we don't have to
-        # worry about empty last item
-        self.chain = (
-            parent.replace(" ", "").replace("()", "").rstrip("%").split("%")
-            if parent is not None
-            else []
-        )
 
 
 def set_base_url(url: str) -> None:
