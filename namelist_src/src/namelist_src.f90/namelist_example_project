@@ -1,0 +1,35 @@
+from ford.fortran_project import Project
+from ford import DEFAULT_SETTINGS
+from ford.utils import normalise_path
+from copy import deepcopy 
+import markdown 
+import pytest 
+from bs4 import BeautifulSoup
+from itertools import chain 
+import pathlib 
+
+
+
+def create_project(settings: dict):
+    md_ext = [
+        "markdown.extensions.meta",
+        "markdown.extensions.codehilite",
+        "markdown.extensions.extra",
+    ]
+    md = markdown.Markdown(
+        extensions=md_ext, output_format="html5", extension_configs={}
+    )
+
+    project = Project(settings)
+    project.markdown(md, "..")
+    project.correlate()
+    return project
+    
+    
+settings = deepcopy(DEFAULT_SETTINGS)
+settings["src_dir"] = [pathlib.Path("namelist_src")]
+project = create_project(settings)
+
+print(project)
+print(type(project))
+print(dir(project))
