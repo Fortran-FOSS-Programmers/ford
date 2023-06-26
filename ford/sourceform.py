@@ -85,6 +85,59 @@ def read_docstring(source: FortranReader, docmark: str) -> List[str]:
     return docstring
 
 
+class Associations:
+    """
+    A class for storing associations. Associations are added and removed in batches, akin
+    to how they are added, and fall out of scope in Fortran ASSOCIATE blocks.
+    """
+
+    def __init__(self):
+        self._dict: Dict[str, List[List[str]]] = {}
+        self._batches: List[Dict[str, List[str]]] = []
+
+    def add_batch(self, associations: List[str]):
+        """
+        adds a batch of associations to the associations dictionary
+        """
+        self._batches.append({})
+        for item in associations:
+            # parse the association
+            item = item.split("=>")
+            item[0] = item[0].strip().lower()
+            self._batches[-1][item[0]] = (
+                item[1].lower().replace("()", "").replace(" ", "").split("%")
+            )
+            # apply associations to this association if they exist
+            if self._batches[-1][item[0]][0] in self:
+                self._batches[-1][item[0]][0:1] = self[self._batches[-1][item[0]][0]]
+        # add the batch to the dictionary
+        for k, v in self._batches[-1].items():
+            if k not in self._dict:
+                self._dict[k] = []
+            self._dict[k].append(v)
+
+    def remove_last_batch(self):
+        """
+        removes the last batch of associations added from the associations dictionary
+        """
+        if not self._batches:
+            raise IndexError("No batches to remove")
+        last_batch = self._batches.pop()
+        for k in last_batch:
+            self._dict[k].pop()
+            if not self._dict[k]:
+                del self._dict[k]
+
+    def __getitem__(self, key: str) -> List[str]:
+        if key in self._dict and self._dict[key]:
+            return self._dict[key][-1]
+        else:
+            raise KeyError(key)
+
+    def __contains__(self, key):
+        return key in self._dict and bool(self._dict[key])
+
+
 class FortranBase:
     """
     An object containing the data common to all of the classes used to represent
@@ -633,7 +686,8 @@ class FortranContainer(FortranBase):
         )
 
         blocklevel = 0
-        associatelevel = 0
+        associations = Associations()
+
         for line in source:
             if line[0:2] == "!" + self.settings["docmark"]:
                 self.doc_list.append(line[2:])
@@ -738,7 +792,7 @@ class FortranContainer(FortranBase):
                 if endtype and endtype.lower() == "block":
                     blocklevel -= 1
                 elif endtype and endtype.lower() == "associate":
-                    associatelevel -= 1
+                    associations.remove_last_batch()
                 else:
                     self._cleanup()
                     return
@@ -769,7 +823,15 @@ class FortranContainer(FortranBase):
             elif self.BLOCK_RE.match(line):
                 blocklevel += 1
             elif self.ASSOCIATE_RE.match(line):
-                associatelevel += 1
+                # Associations 'call' the rhs of the => operator
+                self._add_procedure_calls(line, associations)
+
+                # Register the associations
+                assoc_str = ford.utils.strip_paren(
+                    self.ASSOCIATE_RE.match(line).group(2), 0
+                )[0].split(",")
+                associations.add_batch(assoc_str)
+
             elif match := self.MODULE_RE.match(line):
                 if hasattr(self, "modules"):
                     self.modules.append(FortranModule(source, match, self))
@@ -944,45 +1006,53 @@ class FortranContainer(FortranBase):
                     self.print_error(line, "Unexpected procedure call")
                     continue
 
-                parendepth = 0
-                _line = line
-                _lines = ford.utils.strip_paren(_line)
-
-                # Match subcall, if present
-                if match := self.SUBCALL_RE.search(_lines[0]):
-                    self._add_procedure_call(match.group())
-                    # No function calls on this parendepth (because theres a subcall)
-                    parendepth += 1
-                    _lines = ford.utils.strip_paren(_line, parendepth)
-
-                # Match calls, and nested calls
-
-                # Check every level of parendepth
-                while len(_lines) > 0:
-                    for subline in _lines:
-                        for match in self.CALL_RE.finditer(subline):
-                            self._add_procedure_call(match.group())
-                    parendepth += 1
-                    _lines = ford.utils.strip_paren(_line, parendepth)
+                self._add_procedure_calls(line, associations)
 
         if not isinstance(self, FortranSourceFile):
             raise Exception("File ended while still nested.")
 
-    def _add_procedure_call(self, chain_str: str) -> None:
+    def _add_procedure_calls(
+        self, line: str, associations: Associations = Associations()
+    ) -> None:
         """Helper to register procedure calls. For FortranProgram,
         FortranProcedure, and FortranModuleProcedureImplementation
         """
-        # Not raising an error here as too much possibility that something
-        # has been misidentified as a function call
-        if not hasattr(self, "calls"):
-            return
 
-        call_chain = re.sub("\(\)|\s","",chain_str).lower().split('%')
+        call_chains = []
 
-        if call_chain[-1] in INTRINSICS or call_chain[-1] in (call[-1] for call in self.calls):
-            return
-        
-        self.calls.append(call_chain)
+        parendepth = 0
+        _lines = ford.utils.strip_paren(line)
+
+        # Match subcall, if present
+        if match := self.SUBCALL_RE.search(_lines[0]):
+            call_chains.append(match.group())
+            # No function calls on this parendepth (because theres a subcall)
+            parendepth += 1
+            _lines = ford.utils.strip_paren(line, parendepth)
+
+        # Match calls, and nested calls
+
+        # Check every level of parendepth
+        while len(_lines) > 0:
+            for subline in _lines:
+                for match in self.CALL_RE.finditer(subline):
+                    call_chains.append(match.group())
+            parendepth += 1
+            _lines = ford.utils.strip_paren(line, parendepth)
+
+        # Add call chains to self.calls
+        for chain_str in call_chains:
+            call_chain = re.sub("\(\)|\s", "", chain_str).lower().split("%")
+
+            if call_chain[0] in associations:
+                call_chain[0:1] = associations[call_chain[0]]
+
+            if call_chain[-1] in INTRINSICS or call_chain[-1] in (
+                call[-1] for call in self.calls
+            ):
+                continue
+
+            self.calls.append(call_chain)
 
     def _cleanup(self):
         raise NotImplementedError()
@@ -1066,6 +1136,7 @@ class FortranCodeUnit(FortranContainer):
         # Module procedures will be missing (some/all?) metadata, so
         # now we copy it from the interface
         if isinstance(self, FortranModule):
+
             def assign_implementation_attributes(proc, base):
                 if isinstance(proc, FortranModuleProcedureImplementation):
                     proc.attribs = base.attribs
@@ -1140,7 +1211,7 @@ class FortranCodeUnit(FortranContainer):
 
                 # only add items that can call other items. For example, a variable
                 # might get picked up as a 'call' but it cannot call anything, so we don't add it
-                if hasattr(item, "calls") or isinstance(item, FortranBoundProcedure): 
+                if hasattr(item, "calls") or isinstance(item, FortranBoundProcedure):
                     tmplst.append(item)
             self.calls = tmplst
 
@@ -1291,7 +1362,7 @@ class FortranCodeUnit(FortranContainer):
         """
         Traverse the call_chain to discover the item at the end of the chain.
         This is done by looking at the first label in the call chain and matching it to
-        a variable, function ext. in the current scope. Then, switch to the context of 
+        a variable, function ext. in the current scope. Then, switch to the context of
         said item return and repeat until the call chain is exhausted.
 
         If the traversal fails to find a label in a context,
@@ -1313,7 +1384,9 @@ class FortranCodeUnit(FortranContainer):
             # procs
             labels.update(getattr(context, "all_procs", {}))
             # boundprocs
-            labels.update({bp.name.lower(): bp for bp in getattr(context, "boundprocs", [])})
+            labels.update(
+                {bp.name.lower(): bp for bp in getattr(context, "boundprocs", [])}
+            )
             # types
             labels.update(getattr(context, "all_types", {}))
             # extended type
@@ -1326,8 +1399,10 @@ class FortranCodeUnit(FortranContainer):
             labels.update({a.name.lower(): a for a in getattr(context, "args", [])})
             if retvar := getattr(context, "retvar", None):
                 labels[retvar.name.lower()] = retvar
-            labels.update({v.name.lower(): v for v in getattr(context, "variables", [])})
-            
+            labels.update(
+                {v.name.lower(): v for v in getattr(context, "variables", [])}
+            )
+
             # collect the context from the return of the item matching the call name
             item = labels.get(call, None)
             # last item shouldn't be a context
@@ -1347,7 +1422,7 @@ class FortranCodeUnit(FortranContainer):
                 context = item.parent.all_types.get(type_str, None)
             else:
                 return None
-            
+
             if context is None:
                 # failed to find context
                 return None

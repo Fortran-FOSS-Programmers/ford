@@ -359,6 +359,104 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
             """,
             ["p_baz"],
         ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            ASSOCIATE (tmp => v_bar)
+                CALL tmp%p_bar()
+            END ASSOCIATE
+            """,
+            ["p_bar"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            INTEGER, DIMENSION(2) :: var
+            ASSOCIATE (tmp => v_bar%v_baz)
+                var = tmp%p_baz()
+            END ASSOCIATE
+            """,
+            ["p_baz"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            INTEGER :: var
+            ASSOCIATE (tmp => v_bar%v_baz)
+                ASSOCIATE (tmp2 => tmp%p_baz())
+                END ASSOCIATE
+            END ASSOCIATE
+            """,
+            ["p_baz"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            INTEGER, DIMENSION(1) :: var_arr
+            ASSOCIATE (tmp => v_bar%v_baz)
+                ASSOCIATE (tmp => tmp%v_faz)
+                    var_arr = tmp
+                END ASSOCIATE
+                var_arr = tmp%p_baz()
+            END ASSOCIATE
+            """,
+            ["p_baz"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            INTEGER :: var = 10
+            ASSOCIATE (tmp => var)
+                var = tmp
+            END ASSOCIATE
+            """,
+            [],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            ASSOCIATE (tmp => v_bar%p_foo())
+                PRINT *, tmp
+            END ASSOCIATE
+            """,
+            ["p_foo"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            INTEGER, DIMENSION(2) :: var_arr
+            ASSOCIATE (tmp => v_bar, arr => var_arr)
+                CALL tmp%p_bar()
+                arr = tmp%v_baz%p_baz()
+            END ASSOCIATE
+            """,
+            ["p_bar", "p_baz"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            INTEGER, DIMENSION(2) :: var_arr
+            ASSOCIATE (tmp => v_bar)
+                ASSOCIATE (tmp2 => tmp%v_baz%p_baz())
+                END ASSOCIATE
+            END ASSOCIATE
+            """,
+            ["p_baz"],
+        ),
+        (
+            """
+            ASSOCIATE (tmp => p_faz(p_fuz(1)))
+            END ASSOCIATE
+            """,
+            ["p_faz", "p_fuz"],
+        ),
     ],
 )
 def test_type_chain_function_and_subroutine_calls(
@@ -426,7 +524,17 @@ def test_type_chain_function_and_subroutine_calls(
     MODULE m_main
 
         CONTAINS
+        
+        FUNCTION p_faz(arg) RESULT(ret_val)
+            INTEGER, INTENT(IN) :: arg
+            INTEGER :: ret_val
+        END FUNCTION p_faz
 
+        FUNCTION p_fuz(arg) RESULT(ret_val)
+            INTEGER, INTENT(IN) :: arg
+            INTEGER :: ret_val
+        END FUNCTION p_fuz
+        
         SUBROUTINE main
             {call_segment}
         END SUBROUTINE main
