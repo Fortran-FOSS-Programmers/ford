@@ -1071,6 +1071,7 @@ class FortranCodeUnit(FortranContainer):
         # Module procedures will be missing (some/all?) metadata, so
         # now we copy it from the interface
         if isinstance(self, FortranModule):
+
             def assign_implementation_attributes(proc, base):
                 if isinstance(proc, FortranModuleProcedureImplementation):
                     proc.attribs = base.attribs
