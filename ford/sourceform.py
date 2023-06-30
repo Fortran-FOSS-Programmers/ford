@@ -92,50 +92,46 @@ class Associations:
     """
 
     def __init__(self):
-        self._dict: Dict[str, List[List[str]]] = {}
+        # a list of dictionaries representing the associations in each batch, in order of
+        # when the batch was added
         self._batches: List[Dict[str, List[str]]] = []
 
     def add_batch(self, associations: List[str]):
         """
         adds a batch of associations to the associations dictionary
         """
-        self._batches.append({})
+        current_batch = {}
         for item in associations:
             # parse the association
-            item = item.split("=>")
-            item[0] = item[0].strip().lower()
-            self._batches[-1][item[0]] = (
-                item[1].lower().replace("()", "").replace(" ", "").split("%")
+            new, old = item.split("=>")
+            new = new.strip().lower()
+            current_batch[new] = (
+                old.lower().replace("()", "").replace(" ", "").split("%")
             )
             # apply associations to this association if they exist
-            if self._batches[-1][item[0]][0] in self:
-                self._batches[-1][item[0]][0:1] = self[self._batches[-1][item[0]][0]]
-        # add the batch to the dictionary
-        for k, v in self._batches[-1].items():
-            if k not in self._dict:
-                self._dict[k] = []
-            self._dict[k].append(v)
+            if current_batch[new][0] in self:
+                current_batch[new][0:1] = self[current_batch[new][0]]
+        self._batches.append(current_batch)
 
     def remove_last_batch(self):
         """
-        removes the last batch of associations added from the associations dictionary
+        removes the last batch of associations
         """
         if not self._batches:
             raise IndexError("No batches to remove")
-        last_batch = self._batches.pop()
-        for k in last_batch:
-            self._dict[k].pop()
-            if not self._dict[k]:
-                del self._dict[k]
+        self._batches.pop()
 
     def __getitem__(self, key: str) -> List[str]:
-        if key in self._dict and self._dict[key]:
-            return self._dict[key][-1]
-        else:
-            raise KeyError(key)
+        for batch in reversed(self._batches):
+            if key in batch:
+                return batch[key]
+        raise KeyError(key)
 
     def __contains__(self, key):
-        return key in self._dict and bool(self._dict[key])
+        for batch in reversed(self._batches):
+            if key in batch:
+                return True
+        return False
 
 
 class FortranBase:
@@ -584,7 +580,13 @@ class FortranContainer(FortranBase):
     )
     BLOCK_RE = re.compile(r"^(\w+\s*:)?\s*block\s*$", re.IGNORECASE)
     BLOCK_DATA_RE = re.compile(r"^block\s*data\s*(\w+)?\s*$", re.IGNORECASE)
-    ASSOCIATE_RE = re.compile(r"^(\w+\s*:)?\s*associate\s*\((.+)\)\s*$", re.IGNORECASE)
+    ASSOCIATE_RE = re.compile(
+        r"""^(\w+\s*:)?         # Optional label
+        \s*associate\s*\(       # Required associate statement
+        (?P<associations>.+)    # Associations
+        \)\s*$""",
+        re.IGNORECASE | re.VERBOSE,
+    )
     ENUM_RE = re.compile(r"^enum\s*,\s*bind\s*\(.*\)\s*$", re.IGNORECASE)
     MODPROC_RE = re.compile(
         r"^(?P<module>module\s+)?procedure\s*(?:::|\s)\s*(?P<names>\w.*)$",
@@ -638,11 +640,22 @@ class FortranContainer(FortranBase):
     )
     ARITH_GOTO_RE = re.compile(r"go\s*to\s*\([0-9,\s]+\)", re.IGNORECASE)
     CALL_RE = re.compile(
-        r"(?:\s*\w+\s*(?:\(\))?\s*%\s*)*\w+\s*\(.*?\)",
+        r"""(?P<call_chain>
+                (?:(?:\s*\w+\s*(?:\(\))?\s*%\s*)+)? # Optional type component access
+                (?:\w+\s*\(.*?\))                   # Required function name
+            )
+        """,
         re.IGNORECASE | re.VERBOSE,
     )
     SUBCALL_RE = re.compile(
-        r"(?<=\bcall\s)\s*(?:\s*\w+\s*(?:\(\))?\s*%\s*)*\w+",
+        r"""
+        ^(?:if\s*\(.*\)\s*)?    # Optional 'if' statement
+        call\s+                 # Required keyword
+        (?P<call_chain>
+            (?:.*%\s*)?         # Optional type component access
+            (?:\w+\s*(?:\(\))?) # Required subroutine name
+        )
+        """,
         re.IGNORECASE | re.VERBOSE,
     )
     FORMAT_RE = re.compile(r"^[0-9]+\s+format\s+\(.*\)", re.IGNORECASE)
@@ -822,15 +835,15 @@ class FortranContainer(FortranBase):
                     self.print_error(line, "Unexpected BLOCK DATA")
             elif self.BLOCK_RE.match(line):
                 blocklevel += 1
-            elif self.ASSOCIATE_RE.match(line):
+            elif match := self.ASSOCIATE_RE.match(line):
                 # Associations 'call' the rhs of the => operator
                 self._add_procedure_calls(line, associations)
 
                 # Register the associations
-                assoc_str = ford.utils.strip_paren(
-                    self.ASSOCIATE_RE.match(line).group(2), 0
-                )[0].split(",")
-                associations.add_batch(assoc_str)
+                assoc_batch = ford.utils.strip_paren(match["associations"])[0].split(
+                    ","
+                )
+                associations.add_batch(assoc_batch)
 
             elif match := self.MODULE_RE.match(line):
                 if hasattr(self, "modules"):
@@ -1018,6 +1031,9 @@ class FortranContainer(FortranBase):
         FortranProcedure, and FortranModuleProcedureImplementation
         """
 
+        if not hasattr(self, "calls"):
+            raise Exception(f"Cannot add procedure calls to {self.__class__.__name__}")
+
         call_chains = []
 
         parendepth = 0
@@ -1025,7 +1041,7 @@ class FortranContainer(FortranBase):
 
         # Match subcall, if present
         if match := self.SUBCALL_RE.search(_lines[0]):
-            call_chains.append(match.group())
+            call_chains.append(match["call_chain"])
             # No function calls on this parendepth (because theres a subcall)
             parendepth += 1
             _lines = ford.utils.strip_paren(line, parendepth)
@@ -1036,7 +1052,7 @@ class FortranContainer(FortranBase):
         while len(_lines) > 0:
             for subline in _lines:
                 for match in self.CALL_RE.finditer(subline):
-                    call_chains.append(match.group())
+                    call_chains.append(match["call_chain"])
             parendepth += 1
             _lines = ford.utils.strip_paren(line, parendepth)
 
@@ -1209,9 +1225,8 @@ class FortranCodeUnit(FortranContainer):
                     tmplst.append(call[-1])
                     continue
 
-                # only add items that can call other items. For example, a variable
-                # might get picked up as a 'call' but it cannot call anything, so we don't add it
-                if hasattr(item, "calls") or isinstance(item, FortranBoundProcedure):
+                # Don't register variables or type contructors, which sometimes get picked up as calls
+                if not isinstance(item, (FortranVariable, FortranType)):
                     tmplst.append(item)
             self.calls = tmplst
 
@@ -1362,7 +1377,7 @@ class FortranCodeUnit(FortranContainer):
         """
         Traverse the call_chain to discover the item at the end of the chain.
         This is done by looking at the first label in the call chain and matching it to
-        a variable, function ext. in the current scope. Then, switch to the context of
+        an arg, variable, function, or type in the current scope. Then, switch to the context of
         said item return and repeat until the call chain is exhausted.
 
         If the traversal fails to find a label in a context,
@@ -1377,8 +1392,10 @@ class FortranCodeUnit(FortranContainer):
             r = re.match(r"^(type|class)\((.*?)(?:\(.*\))?\)$", s, re.IGNORECASE)
             return r.group(2).lower() if r else s.lower()
 
-        context = self
-        for i, call in enumerate(call_chain):
+        def get_label_item(context, label):
+            """
+            Return the item at label in the context, or None if it doesn't exist
+            """
             # collect all labels that could potentially be in a call_chain
             labels = {}
             # procs
@@ -1403,15 +1420,15 @@ class FortranCodeUnit(FortranContainer):
                 {v.name.lower(): v for v in getattr(context, "variables", [])}
             )
 
-            # collect the context from the return of the item matching the call name
-            item = labels.get(call, None)
-            # last item shouldn't be a context
-            if i == len(call_chain) - 1:
-                return item
+            return labels.get(label, None)
 
+        context = self
+        for call in call_chain[:-1]:
+            item = get_label_item(context, call)
+
+            # Find the context returned by the item
             if item is None:
-                # failed to find context
-                return None
+                context = None
             elif hasattr(item, "retvar"):
                 type_str = strip_type(item.retvar.full_type)
                 context = item.all_types.get(type_str, None)
@@ -1421,11 +1438,14 @@ class FortranCodeUnit(FortranContainer):
                 type_str = strip_type(item.full_type)
                 context = item.parent.all_types.get(type_str, None)
             else:
-                return None
+                context = None
 
             if context is None:
                 # failed to find context
                 return None
+
+        # return the item for the last label in the chain
+        return get_label_item(context, call_chain[-1])
 
 
 class FortranSourceFile(FortranContainer):
