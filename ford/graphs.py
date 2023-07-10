@@ -121,7 +121,8 @@ def is_blockdata(obj):
     return isinstance(obj, FortranBlockData)
 
 
-NodeCollection = Dict[FortranContainer, "BaseNode"]
+FortranEntity = Union[FortranContainer, FortranBoundProcedure]
+NodeCollection = Dict[FortranEntity, "BaseNode"]
 
 
 class GraphData:
@@ -153,7 +154,7 @@ class GraphData:
         self.show_proc_parent = show_proc_parent
 
     def _get_collection_and_node_type(
-        self, obj: FortranContainer
+        self, obj: FortranEntity
     ) -> Tuple[NodeCollection, Type["BaseNode"]]:
         """Helper function for `register` and `get_node`: get the
         appropriate container for ``obj``, and the corresponding node
@@ -181,7 +182,7 @@ class GraphData:
         )
 
     def register(
-        self, obj: FortranContainer, hist: Optional[NodeCollection] = None
+        self, obj: FortranEntity, hist: Optional[NodeCollection] = None
     ) -> None:
         """Create and store the graph node for ``obj``, if it hasn't
         already been registered
@@ -201,7 +202,7 @@ class GraphData:
             collection[obj] = NodeType(obj, self, hist)
 
     def get_node(
-        self, obj: FortranContainer, hist: Optional[NodeCollection] = None
+        self, obj: FortranEntity, hist: Optional[NodeCollection] = None
     ) -> BaseNode:
         """Returns the node corresponding to ``obj``. If does not
         already exist then it will create it.
@@ -312,7 +313,7 @@ class BaseNode:
 
     def __init__(
         self,
-        obj: Union[FortranContainer, str],
+        obj: Union[FortranEntity, str],
         graph_data: GraphData,
         hist: Optional[NodeCollection] = None,
     ):
