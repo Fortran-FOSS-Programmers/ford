@@ -66,8 +66,11 @@ def make_project_graphs(tmp_path_factory, request):
         procedure :: six
         procedure :: ei => eight
         procedure :: ni => nine
+        procedure :: ten
         generic :: eight_nine => ei, ni
       end type alpha
+
+      private :: ten
 
       interface
         subroutine defined_elsewhere
@@ -108,6 +111,9 @@ def make_project_graphs(tmp_path_factory, request):
         class(alpha) :: this
         integer :: x
       end subroutine nine
+      subroutine ten(this)
+        class(alpha) :: this
+      end subroutine then
     end module c
 
     submodule (c) c_submod
@@ -129,6 +135,7 @@ def make_project_graphs(tmp_path_factory, request):
       x = y%six()
       call y%ei(1.0)
       call y%eight_nine(1.0)
+      call y%ten()
     contains
       subroutine three
         use external_mod
@@ -257,6 +264,7 @@ TYPE_GRAPH_KEY = ["Type"]
                 "c::alpha%eight",
                 "c::alpha%nine",
                 "c::alpha%eight_nine",
+                "c::alpha%ten",
             ],
             [
                 "proc~three->proc~one",
@@ -273,6 +281,7 @@ TYPE_GRAPH_KEY = ["Type"]
                 "none~eight_nine->proc~eight",
                 "none~eight_nine->proc~nine",
                 "interface~submod_proc->proc~submod_proc",
+                "program~foo->none~ten",
             ],
             PROC_GRAPH_KEY,
         ),
@@ -297,6 +306,7 @@ TYPE_GRAPH_KEY = ["Type"]
                 "c::alpha%eight",
                 "c::alpha%nine",
                 "c::alpha%eight_nine",
+                "c::alpha%ten",
             ],
             [
                 "proc~three->proc~one",
@@ -316,6 +326,7 @@ TYPE_GRAPH_KEY = ["Type"]
                 "none~eight_nine->proc~eight",
                 "none~eight_nine->proc~nine",
                 "interface~submod_proc->proc~submod_proc",
+                "program~foo->none~ten",
             ],
             PROC_GRAPH_KEY,
         ),
