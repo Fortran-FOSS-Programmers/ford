@@ -41,6 +41,7 @@ from tqdm.contrib.concurrent import process_map
 import ford.utils
 
 from ford.sourceform import (
+    ExternalBoundProcedure,
     ExternalFunction,
     ExternalInterface,
     ExternalModule,
@@ -322,6 +323,7 @@ class BaseNode:
                 ExternalModule,
                 ExternalSubmodule,
                 ExternalType,
+                ExternalBoundProcedure,
                 ExternalSubroutine,
                 ExternalFunction,
                 ExternalInterface,
@@ -634,6 +636,7 @@ if graphviz_installed:
     _subroutine = gd.get_node(ExternalSubroutine("Subroutine"))
     _function = gd.get_node(ExternalFunction("Function"))
     _interface = gd.get_node(ExternalInterface("Interface"))
+    _boundproc = gd.get_node(ExternalBoundProcedure("Type Bound Procedure"))
     _unknown_proc = ExternalSubroutine("Unknown Procedure Type")
     _unknown_proc.proctype = "Unknown"
     _unknown = gd.get_node(_unknown_proc)
@@ -663,7 +666,9 @@ if graphviz_installed:
 
     mod_svg = _make_legend([_module, _submodule, _subroutine, _function, _program])
     type_svg = _make_legend([_type])
-    call_svg = _make_legend([_subroutine, _function, _interface, _unknown, _program])
+    call_svg = _make_legend(
+        [_subroutine, _function, _interface, _boundproc, _unknown, _program]
+    )
     file_svg = _make_legend([_sourcefile])
 else:
     mod_svg = ""

@@ -203,6 +203,7 @@ PROC_GRAPH_KEY = [
     "Subroutine",
     "Function",
     "Interface",
+    "Type Bound Procedure",
     "Unknown Procedure Type",
     "Program",
 ]
