@@ -19,13 +19,14 @@ License: [BSD](https://opensource.org/licenses/bsd-license.php)
 
 """
 
-from markdown.extensions import Extension
-from markdown.blockprocessors import BlockProcessor
-from markdown.preprocessors import Preprocessor
-import xml.etree.ElementTree as etree
 import re
+import xml.etree.ElementTree as etree
 from dataclasses import dataclass
-from typing import List, Optional, ClassVar
+from typing import ClassVar, List
+
+from markdown.blockprocessors import BlockProcessor
+from markdown.extensions import Extension
+from markdown.preprocessors import Preprocessor
 
 ADMONITION_TYPE = {
     "note": "info",
@@ -62,7 +63,7 @@ class AdmonitionProcessor(BlockProcessor):
         super().__init__(parser)
 
         self.current_sibling = None
-        self.content_indention = 0
+        self.content_indent = 0
 
     def parse_content(self, parent, block):
         """Get sibling admonition.
@@ -124,8 +125,7 @@ class AdmonitionProcessor(BlockProcessor):
     def test(self, parent, block):
         if self.RE.search(block):
             return True
-        else:
-            return self.parse_content(parent, block)[0] is not None
+        return self.parse_content(parent, block)[0] is not None
 
     def run(self, parent, blocks):
         block = blocks.pop(0)
@@ -229,25 +229,23 @@ class AdmonitionPreprocessor(Preprocessor):
 
         type: str
         start_idx: int
-        end_idx: Optional[int] = None
+        end_idx: int = -1
 
     def run(self, lines: List[str]) -> List[str]:
-        self.lines = lines
-        self._find_admonitions()
-        self._process_admonitions()
-        return self.lines
+        admonitions = self._find_admonitions(lines)
+        return self._process_admonitions(admonitions, lines)
 
-    def _find_admonitions(self):
+    def _find_admonitions(self, lines: List[str]) -> List[Admonition]:
         """Scans the lines to search for admonitions."""
-        self.admonitions = []
+        admonitions = []
         current_admonition = None
 
-        for idx, line in enumerate(self.lines):
+        for idx, line in enumerate(lines):
             if match := self.ADMONITION_RE.search(line):
                 if current_admonition:
-                    if not current_admonition.end_idx:
+                    if current_admonition.end_idx == -1:
                         current_admonition.end_idx = idx
-                    self.admonitions.append(current_admonition)
+                    admonitions.append(current_admonition)
                 current_admonition = self.Admonition(type=match["type"], start_idx=idx)
 
             if end := self.END_RE.search(line):
@@ -256,13 +254,13 @@ class AdmonitionPreprocessor(Preprocessor):
                         # TODO: error: type of start and end marker dont' match
                         pass
                     current_admonition.end_idx = idx
-                    self.admonitions.append(current_admonition)
+                    admonitions.append(current_admonition)
                     current_admonition = None
                 else:
                     # TODO: error: end marker found without start marker
                     pass
 
-            elif line == "" and current_admonition and not current_admonition.end_idx:
+            elif line == "" and current_admonition and current_admonition.end_idx == -1:
                 # empty line encountered while in an admonition. We set end_line but don't
                 # move it to the list yet since an end marker (@end...) may follow
                 # later.
@@ -270,38 +268,47 @@ class AdmonitionPreprocessor(Preprocessor):
 
         if current_admonition:
             # We reached the last line and the last admonition wasn't moved to the list yet.
-            if not current_admonition.end_idx:
+            if current_admonition.end_idx == -1:
                 current_admonition.end_idx = idx
-            self.admonitions.append(current_admonition)
+            admonitions.append(current_admonition)
 
-    def _process_admonitions(self):
+        return admonitions
+
+    def _process_admonitions(
+        self, admonitions: List[Admonition], lines: List[str]
+    ) -> List[str]:
         """Processes the admonitions to convert the lines to the markdown syntax."""
 
         # We handle the admonitions in the reverse order since
         # we may be deleting lines.
-        for admonition in self.admonitions[::-1]:
+        for admonition in admonitions[::-1]:
             # last line--deal with possible text before or after end marker
             idx = admonition.end_idx
-            if end := self.END_RE.search(self.lines[idx]):
+            if end := self.END_RE.search(lines[idx]):
                 # Shove anything after the @end onto the next line
                 if end["posttxt"]:
-                    self.lines.insert(idx + 1, end["posttxt"])
+                    lines.insert(idx + 1, end["posttxt"])
 
                 # Remove the @end and possibly the line too if it ends up blank
-                self.lines[idx] = self.END_RE.sub("", self.lines[idx])
-                if self.lines[idx].strip() == "":
-                    del self.lines[idx]
+                lines[idx] = self.END_RE.sub("", lines[idx])
+                if lines[idx].strip() == "":
+                    del lines[idx]
                 else:
                     # New ending is now next line
                     admonition.end_idx += 1
 
             # Indent any intermediate lines
             for idx in range(admonition.start_idx + 1, admonition.end_idx):
-                if self.lines[idx] != "":
-                    self.lines[idx] = self.INDENT + self.lines[idx]
+                if lines[idx] != "":
+                    lines[idx] = self.INDENT + lines[idx]
 
             idx = admonition.start_idx
-            match = self.ADMONITION_RE.search(self.lines[idx])
-            self.lines[idx] = f"{match['indent']}!!! {admonition.type.capitalize()}"
+            if (match := self.ADMONITION_RE.search(lines[idx])) is None:
+                # Somethine has gone seriously wrong
+                raise RuntimeError(f"Missing start of @note: {lines[idx]}")
+
+            lines[idx] = f"{match['indent']}!!! {admonition.type.capitalize()}"
             if posttxt := match["posttxt"]:
-                self.lines.insert(idx + 1, self.INDENT + match["indent"] + posttxt)
+                lines.insert(idx + 1, self.INDENT + match["indent"] + posttxt)
+
+        return lines
