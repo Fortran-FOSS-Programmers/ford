@@ -11,7 +11,9 @@ for documentation.
 
 Original code Copyright [Tiago Serafim](https://www.tiagoserafim.com/).
 
-All changes Copyright The Python Markdown Project
+Initial changes Copyright The Python Markdown Project
+
+Further changes Copyright 2022-2023 Maarten Braakhekke, Peter Hill
 
 License: [BSD](https://opensource.org/licenses/bsd-license.php)
 
