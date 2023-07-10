@@ -282,3 +282,8 @@ table.graph {
 td, th {
     padding-right: 10px;
 }
+
+.nav>li>a {
+    padding-left: 10px;
+    padding-right: 10px;
+}

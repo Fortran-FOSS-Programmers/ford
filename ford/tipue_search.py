@@ -38,19 +38,15 @@ import pathlib
 import json
 from bs4 import BeautifulSoup, FeatureNotFound, SoupStrainer
 from codecs import open
-
-try:
-    from urlparse import urljoin
-except ImportError:
-    from urllib.parse import urljoin
+from typing import Dict, List
+from urllib.parse import urljoin
 
 
-class Tipue_Search_JSON_Generator(object):
+class Tipue_Search_JSON_Generator:
     def __init__(self, output_path: os.PathLike, project_url: str):
-
         self.output_path = pathlib.Path(output_path)
         self.siteurl = project_url
-        self.json_nodes = []
+        self.json_nodes: List[Dict] = []
         self.only_text = SoupStrainer("div", id="text")
         self.only_title = SoupStrainer("title")
 
@@ -75,7 +71,7 @@ class Tipue_Search_JSON_Generator(object):
 
         # What happens if there is not a title.
         if soup_title.title is not None:
-            page_title = "{0}".format(soup_title.title.string)
+            page_title = str(soup_title.title.string)
         else:
             page_title = ""
 
@@ -94,7 +90,7 @@ class Tipue_Search_JSON_Generator(object):
             "title": page_title,
             "text": page_text,
             "tags": page_category,
-            "loc": page_url,
+            "loc": str(page_url),
         }
 
         self.json_nodes.append(node)

@@ -22,15 +22,33 @@
 #
 #
 
+from __future__ import annotations
 
 import re
 import os.path
 import json
-import ford.sourceform
-from urllib.request import urlopen, URLError
+from ford.sourceform import (
+    FortranBase,
+    FortranType,
+    ExternalModule,
+    ExternalFunction,
+    ExternalSubroutine,
+    ExternalInterface,
+    ExternalType,
+    ExternalVariable,
+    ExternalBoundProcedure,
+)
+
+from urllib.error import URLError
+from urllib.request import urlopen
 from urllib.parse import urljoin
 import pathlib
-from typing import Union
+from typing import Dict, Union, TYPE_CHECKING
+from io import StringIO
+import itertools
+
+if TYPE_CHECKING:
+    from ford.fortran_project import Project
 
 
 NOTE_TYPE = {
@@ -58,7 +76,7 @@ LINK_RE = re.compile(r"\[\[(\w+(?:\.\w+)?)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)
 # Dictionary for all macro definitions to be used in the documentation.
 # Each key of the form |name| will be replaced by the value found in the
 # dictionary in sub_macros.
-_MACRO_DICT = {}
+_MACRO_DICT: Dict[str, str] = {}
 
 
 def sub_notes(docs):
@@ -69,12 +87,8 @@ def sub_notes(docs):
 
     def substitute(match):
         ret = (
-            '</p><div class="alert alert-{}" role="alert"><h4>{}</h4>'
-            "<p>{}</p></div>".format(
-                NOTE_TYPE[match.group(1).lower()],
-                match.group(1).capitalize(),
-                match.group(2),
-            )
+            f'</p><div class="alert alert-{NOTE_TYPE[match.group(1).lower()]}" role="alert">'
+            f"<h4>{match.group(1).capitalize()}</h4><p>{match.group(2)}</p></div>"
         )
         if len(match.groups()) >= 4 and not match.group(4):
             ret += "\n<p>"
@@ -85,13 +99,13 @@ def sub_notes(docs):
     return docs
 
 
-def get_parens(line, retlevel=0, retblevel=0):
+def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
     """
-    By default akes a string starting with an open parenthesis and returns the portion
+    By default takes a string starting with an open parenthesis and returns the portion
     of the string going to the corresponding close parenthesis. If retlevel != 0 then
     will return when that level (for parentheses) is reached. Same for retblevel.
     """
-    if len(line) == 0:
+    if not line:
         return line
     parenstr = ""
     level = 0
@@ -106,7 +120,7 @@ def get_parens(line, retlevel=0, retblevel=0):
         elif char == "]":
             blevel -= 1
         elif (
-            (char.isalpha() or char == "_" or char == ":" or char == "," or char == " ")
+            (char.isalpha() or char in ("_", ":", ",", " "))
             and level == retlevel
             and blevel == retblevel
         ):
@@ -115,7 +129,40 @@ def get_parens(line, retlevel=0, retblevel=0):
 
     if level == retlevel and blevel == retblevel:
         return parenstr
-    raise RuntimeError("Couldn't parse parentheses: {}".format(line))
+    raise RuntimeError(f"Couldn't parse parentheses: {line}")
+
+
+def strip_paren(line: str, retlevel: int = 0) -> list:
+    """
+    Takes a string with parentheses and removes any of the contents inside or outside
+    of the retlevel of parentheses. Additionally, whenever a scope of the retlevel is
+    left, the string is split.
+
+    e.g. strip_paren("foo(bar(quz) + faz) + baz(buz(cas))", 1) -> ["(bar() + faz)", "(buz())"]
+    """
+    retstrs = []
+    curstr = StringIO()
+    level = 0
+    for char in line:
+        if char == "(":
+            if level == retlevel or level + 1 == retlevel:
+                curstr.write(char)
+            level += 1
+        elif char == ")":
+            if level == retlevel or level - 1 == retlevel:
+                curstr.write(char)
+            if level == retlevel:
+                # We are leaving a scope of the desired level,
+                # and should split to indicate as such.
+                retstrs.append(curstr.getvalue())
+                curstr = StringIO()
+            level -= 1
+        elif level == retlevel:
+            curstr.write(char)
+
+    if curstr.getvalue() != "":
+        retstrs.append(curstr.getvalue())
+    return retstrs
 
 
 def paren_split(sep, string):
@@ -178,7 +225,7 @@ def quote_split(sep, string):
     return retlist
 
 
-def sub_links(string, project):
+def sub_links(string: str, project: Project) -> str:
     """
     Replace links to different parts of the program, formatted as
     [[name]] or [[name(object-type)]] with the appropriate URL. Can also
@@ -239,8 +286,7 @@ def sub_links(string, project):
             else:
                 print(
                     ERR.format(
-                        match.group(),
-                        'Unrecognized classification "{}".'.format(match.group(2)),
+                        match.group(), f'Unrecognized classification "{match.group(2)}"'
                     )
                 )
                 return match.group()
@@ -253,7 +299,7 @@ def sub_links(string, project):
                 item = obj
                 break
         else:
-            print(ERR.format(match.group(), '"{}" not found.'.format(match.group(1))))
+            print(ERR.format(match.group(), f'"{match.group(1)}" not found.'))
             url = ""
             name = match.group(1)
 
@@ -282,9 +328,7 @@ def sub_links(string, project):
                         print(
                             ERR.format(
                                 match.group(),
-                                '"{}" can not be contained in "{}"'.format(
-                                    match.group(4), item.obj
-                                ),
+                                f'"{match.group(4)}" can not be contained in "{item.obj}"',
                             )
                         )
                         return match.group()
@@ -292,14 +336,14 @@ def sub_links(string, project):
                     print(
                         ERR.format(
                             match.group(),
-                            'Unrecognized classification "{}".'.format(match.group(2)),
+                            f'Unrecognized classification "{match.group(2)}".',
                         )
                     )
                     return match.group()
 
             for obj in searchlist:
                 if match.group(3).lower() == obj.name.lower():
-                    url = url + "#" + obj.anchor
+                    url = str(url) + "#" + obj.anchor
                     name = obj.name
                     item = obj
                     break
@@ -307,16 +351,13 @@ def sub_links(string, project):
                 print(
                     ERR.format(
                         match.group(),
-                        '"{0}" not found in "{1}", linking to page for "{1}" instead.'.format(
-                            match.group(3), name
-                        ),
+                        f'"{match.group(3)}" not found in "{name}", linking to page for "{name}" instead.',
                     )
                 )
 
         if found:
-            return '<a href="{}">{}</a>'.format(url, name)
-        else:
-            return "<a>{}</a>".format(name)
+            return f'<a href="{url}">{name}</a>'
+        return f"<a>{name}</a>"
 
     # Get information from links (need to build an RE)
     string = LINK_RE.sub(convert_link, string)
@@ -324,31 +365,30 @@ def sub_links(string, project):
 
 
 def register_macro(string):
-    """
-    Register a new macro definition of the form 'key = value'.
-    In the documentation |key| can then be used to represent value.
-    If key is already defined in the list of macros an RuntimeError
+    """Register a new macro definition of the form ``key = value``.
+    In the documentation ``|key|`` can then be used to represent value.
+    If key is already defined in the list of macros an `RuntimeError`
     will be raised.
-    The function returns a tuple of the form (value, key), where
-    key is None if no key definition is found in the string.
+
+    The function returns a tuple of the form ``(value, key)``, where
+    key is ``None`` if no key definition is found in the string.
+
     """
 
     if "=" not in string:
-        raise RuntimeError("Error, no alias name provided for {0}".format(string))
+        raise RuntimeError(f"Error, no alias name provided for {string}")
 
     chunks = string.split("=", 1)
-    key = "|{0}|".format(chunks[0].strip())
+    key = f"|{chunks[0].strip()}|"
     val = chunks[1].strip()
 
-    if key in _MACRO_DICT:
+    if key in _MACRO_DICT and val != _MACRO_DICT[key]:
         # The macro is already defined. Do not overwrite it!
         # Can be ignored if the definition is the same...
-        if val != _MACRO_DICT[key]:
-            raise RuntimeError(
-                'Could not register macro "{0}" as "{1}" because it is already defined as "{2}".'.format(
-                    key, val, _MACRO_DICT[key]
-                )
-            )
+        raise RuntimeError(
+            f'Could not register macro "{key}" as "{val}"'
+            f'because it is already defined as "{_MACRO_DICT[key]}"'
+        )
 
     # Everything OK, add the macro definition to the dict.
     _MACRO_DICT[key] = val
@@ -370,14 +410,6 @@ def external(project, make=False, path="."):
     """
     Reads and writes the information needed for processing external modules.
     """
-    from ford.sourceform import (
-        ExternalModule,
-        ExternalFunction,
-        ExternalSubroutine,
-        ExternalInterface,
-        ExternalType,
-        ExternalVariable,
-    )
 
     # attributes of a module object needed for further processing
     ATTRIBUTES = [
@@ -391,6 +423,10 @@ def external(project, make=False, path="."):
         "absinterfaces",
         "types",
         "variables",
+        "boundprocs",
+        "vartype",
+        "permission",
+        "generic",
     ]
 
     # Mapping between entity name and its type
@@ -401,12 +437,15 @@ def external(project, make=False, path="."):
         "variable": ExternalVariable,
         "function": ExternalFunction,
         "subroutine": ExternalSubroutine,
+        "boundprocedure": ExternalBoundProcedure,
     }
 
     def obj2dict(intObj):
         """
         Converts an object to a dictionary.
         """
+        if hasattr(intObj, "external_url"):
+            return None
         extDict = {
             "name": intObj.name,
             "external_url": intObj.get_url(),
@@ -415,7 +454,7 @@ def external(project, make=False, path="."):
         if hasattr(intObj, "proctype"):
             extDict["proctype"] = intObj.proctype
         if hasattr(intObj, "extends"):
-            if isinstance(intObj.extends, ford.sourceform.FortranType):
+            if isinstance(intObj.extends, FortranType):
                 extDict["extends"] = obj2dict(intObj.extends)
             else:
                 extDict["extends"] = intObj.extends
@@ -425,26 +464,23 @@ def external(project, make=False, path="."):
 
             attribute = getattr(intObj, attrib)
 
-            if isinstance(attribute, str):
-                extDict[attrib] = attribute
-            elif isinstance(attribute, list):
+            if isinstance(attribute, list):
                 extDict[attrib] = [obj2dict(item) for item in attribute]
             elif isinstance(attribute, dict):
                 extDict[attrib] = {key: obj2dict(val) for key, val in attribute.items()}
+            else:
+                extDict[attrib] = str(attribute)
         return extDict
 
     def modules_from_local(url: pathlib.Path):
         """
         Get module information from an external project but on the
         local file system.
-        Uses the io module to work in both, Python 2 and 3.
         """
-        from io import open
 
-        with open(url / "modules.json", mode="r", encoding="utf-8") as extfile:
-            return json.loads(extfile.read())
+        return json.loads((url / "modules.json").read_text(encoding="utf-8"))
 
-    def dict2obj(extDict, url, parent=None, remote: bool = False) -> None:
+    def dict2obj(extDict, url, parent=None, remote: bool = False) -> FortranBase:
         """
         Converts a dictionary to an object and immediately adds it to the project
         """
@@ -461,7 +497,7 @@ def external(project, make=False, path="."):
         # Look up what type of entity this is
         obj_type = extDict.get("proctype", extDict["obj"]).lower()
         # Construct the entity
-        extObj: FortranBase = ENTITIES[obj_type](name, external_url, parent)
+        extObj = ENTITIES[obj_type](name, external_url, parent)
         # Now add it to the correct project list
         project_list = getattr(project, extObj._project_list)
         project_list.append(extObj)
@@ -474,23 +510,26 @@ def external(project, make=False, path="."):
         for key in ATTRIBUTES:
             if key not in extDict:
                 continue
-            if isinstance(extDict[key], str):
-                setattr(extObj, key, extDict[key])
-            elif isinstance(extDict[key], list):
-                tmpLs = [dict2obj(item, url, extObj, remote) for item in extDict[key]]
+            if isinstance(extDict[key], list):
+                tmpLs = [
+                    dict2obj(item, url, extObj, remote) for item in extDict[key] if item
+                ]
                 setattr(extObj, key, tmpLs)
             elif isinstance(extDict[key], dict):
                 tmpDict = {
                     key2: dict2obj(item, url, extObj, remote)
                     for key2, item in extDict[key].items()
+                    if item
                 }
                 setattr(extObj, key, tmpDict)
+            else:
+                setattr(extObj, key, extDict[key])
+        return extObj
 
     if make:
         # convert internal module object to a JSON database
         extModules = [obj2dict(module) for module in project.modules]
-        with open(os.path.join(path, "modules.json"), "w") as modFile:
-            modFile.write(json.dumps(extModules))
+        (pathlib.Path(path) / "modules.json").write_text(json.dumps(extModules))
     else:
         # get the external modules from the external URLs
         for urldef in project.external:
@@ -511,7 +550,7 @@ def external(project, make=False, path="."):
                     extModules = modules_from_local(url)
             except (URLError, json.JSONDecodeError) as error:
                 extModules = []
-                print("Could not open external URL '{}', reason: {}".format(url, error))
+                print(f"Could not open external URL '{url}', reason: {error}")
             # convert modules defined in the JSON database to module objects
             for extModule in extModules:
                 dict2obj(extModule, url, remote=remote)
@@ -535,3 +574,13 @@ def normalise_path(
 ) -> pathlib.Path:
     """Tidy up path, making it absolute, relative to base_dir"""
     return (base_dir / os.path.expandvars(path)).absolute()
+
+
+def traverse(root, attrs) -> list:
+    """Traverse a tree of objects, returning a list of all objects found
+    within the attributes attrs"""
+    nodes = []
+    for obj in itertools.chain(*[getattr(root, attr, []) for attr in attrs]):
+        nodes.append(obj)
+        nodes.extend(traverse(obj, attrs))
+    return nodes

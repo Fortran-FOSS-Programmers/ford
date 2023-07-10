@@ -13,22 +13,22 @@ fpp_extensions: fpp
 preprocess: true
 macro: HAS_DECREMENT
 predocmark: >
-media_dir: ./media
 docmark_alt: #
 predocmark_alt: <
 display: public
          protected
-         private
 source: false
 graph: true
 search: true
 extra_mods: json_module: http://jacobwilliams.github.io/json-fortran/
             futility: http://cmacmackin.github.io
+            iso_fortran_env: "https://gcc.gnu.org/onlinedocs/gfortran/ISO_005fFORTRAN_005fENV.html"
 license: by-nc
 extra_filetypes: sh #
 max_frontpage_items: 4
 exclude: excluded_file.f90
 exclude_dir: src/excluded_directory
+page_dir: pages
 ---
 
 Hi, my name is ${USER}.

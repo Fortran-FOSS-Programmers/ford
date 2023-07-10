@@ -4,11 +4,11 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-   {% if summary %}
-   <meta name="description" content="{{ summary|striptags }}">
+    {% if summary %}
+      <meta name="description" content="{{ summary|striptags }}">
     {% else %}
-    <meta name="description" content="Documentation for {{ project }}">
-   {% endif %}
+      <meta name="description" content="Documentation for {{ project }}">
+    {% endif %}
     <meta name="author" content="{{ author }}" >
     <link rel="icon" href="{{ project_url }}/favicon.png">
 
@@ -19,20 +19,20 @@
     <link href="{{ project_url }}/css/font-awesome.min.css" rel="stylesheet">
     <link href="{{ project_url }}/css/local.css" rel="stylesheet">
     {% if search|lower == 'true' %}
-    <link  href="{{ project_url }}/tipuesearch/tipuesearch.css" rel="stylesheet">
+      <link  href="{{ project_url }}/tipuesearch/tipuesearch.css" rel="stylesheet">
     {% endif %}
     {% if css %}
-    <link href="{{ project_url }}/css/user.css" rel="stylesheet">
+      <link href="{{ project_url }}/css/user.css" rel="stylesheet">
     {% endif %}
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-    
-    <script src="{{ project_url }}/js/jquery-2.1.3.min.js"></script>
-    <script src="{{ project_url }}/js/svg-pan-zoom.min.js"></script>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+         <script src="{{ project_url }}/js/jquery-2.1.3.min.js"></script>
+         <script src="{{ project_url }}/js/svg-pan-zoom.min.js"></script>
 
   </head>
 
@@ -52,155 +52,182 @@
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
-        {% if pages %}
-            <li>{{ pages }}</li>
-      {% endif %}
+            {% if pages %}
+              <li>{{ pages }}</li>
+            {% endif %}
             <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
               <a href="#" class="dropdown-toggle"
-              data-toggle="dropdown" role="button"
-              aria-haspopup="true"
-     aria-expanded="false">Contents <span class="caret"></span></a>
-        <ul class="dropdown-menu">
-          {% if incl_src %}
-              {% if project.files|length + project.extra_files|length > 1 %}
-            <li><a href="{{ project_url }}/lists/files.html">Source Files</a></li>
-        {% else %}
-            <li><a href="{{project.files[0].get_url()}}">Source File</a></li>
-        {% endif %}
-        {% endif %}
-        {% if project.modules|length > 0 %}
-            <li><a href="{{ project_url }}/lists/modules.html">Modules</a></li>
-        {% endif %}
-            {% if project.blockdata|length > 1 %}
-    <li><a href="{{ project_url }}/lists/blockdata.html">Block Data Units</a></li>
-    {% elif project.blockdata|length == 1 %}
-    <li><a href="{{ project.blockdata[0].get_url() }}">Block Data</a></li>
-    {% endif %}
-                                {% if project.procedures|length > 0 %}
-            <li><a href="{{ project_url }}/lists/procedures.html">Procedures</a></li>
-        {% endif %}
-        {% if project.absinterfaces|length > 0 %}
-            <li><a href="{{ project_url }}/lists/absint.html">Abstract Interfaces</a></li>
-        {% endif %}       {% if project.types|length > 0 %}
-            <li><a href="{{ project_url }}/lists/types.html">Derived Types</a></li>
-        {% endif %}
-        {% if project.programs|length > 1 %}
-            <li><a href="{{ project_url }}/lists/programs.html">Programs</a></li>
-        {% elif project.programs|length == 1 %}
-            <li><a href="{{ project.programs[0].get_url() }}">Program</a></li>
-        {% endif %}       
-        {% if privacy_policy_url %}
-            <li><a href="{{ privacy_policy_url }}">Privacy Policy</a></li>
-        {% endif %}
-        {% if terms_of_service_url %}
-            <li><a href="{{ terms_of_service_url }}">Terms Of Service</a></li>
-        {% endif %}
-            </ul>
-        
+                 data-toggle="dropdown" role="button"
+                 aria-haspopup="true"
+                 aria-expanded="false">
+                 Contents <span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu">
+                {% if incl_src %}
+                  {% if (project.files|length + project.extra_files|length) is more_than_one %}
+                    <li><a href="{{ project_url }}/lists/files.html">Source Files</a></li>
+                  {% else %}
+                    <li><a href="{{project.files[0].get_url()}}">Source File</a></li>
+                  {% endif %}
+                {% endif %}
+                {% if project.modules %}
+                  <li><a href="{{ project_url }}/lists/modules.html">Modules</a></li>
+                {% endif %}
+                {% if project.blockdata|length is more_than_one %}
+                  <li><a href="{{ project_url }}/lists/blockdata.html">Block Data</a></li>
+                {% elif project.blockdata|length == 1 %}
+                  <li><a href="{{ project.blockdata[0].get_url() }}">Block Data</a></li>
+                {% endif %}
+                {% if project.procedures %}
+                  <li><a href="{{ project_url }}/lists/procedures.html">Procedures</a></li>
+                {% endif %}
+                {% if project.absinterfaces %}
+                  <li><a href="{{ project_url }}/lists/absint.html">Abstract Interfaces</a></li>
+                {% endif %}
+                {% if project.types %}
+                  <li><a href="{{ project_url }}/lists/types.html">Derived Types</a></li>
+                {% endif %}
+                {% if project.programs|length is more_than_one %}
+                  <li><a href="{{ project_url }}/lists/programs.html">Programs</a></li>
+                {% elif project.programs|length == 1 %}
+                  <li><a href="{{ project.programs[0].get_url() }}">Program</a></li>
+                {% endif %}
+                {% if privacy_policy_url %}
+                  <li><a href="{{ privacy_policy_url }}">Privacy Policy</a></li>
+                {% endif %}
+                {% if terms_of_service_url %}
+                  <li><a href="{{ terms_of_service_url }}">Terms Of Service</a></li>
+                {% endif %}
+              </ul>
             </li>
-{% if incl_src %}
-{% if project.files|length + project.extra_files|length > 1 %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/files.html">Source Files</a></li>
-{% else %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{project.files[0].get_url()}}">Source File</a></li>
-{% endif %}
-{% endif %}
-{% if project.modules|length > 0 %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/modules.html">Modules</a></li>
-{% endif %}
-{% if project.blockdata|length > 1 %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/blockdata.html">Block Data Units</a></li>
-{% elif project.blockdata|length == 1 %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{ project.blockdata[0].get_url() }}">Block Data</a></li>
-{% endif %}
-{% if project.procedures|length > 0 %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/procedures.html">Procedures</a></li>
-{% endif %}
-{% if project.absinterfaces|length > 0 %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/absint.html">Abstract Interfaces</a></li>
-{% endif %}                             {% if project.types|length > 0 %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/types.html">Derived Types</a></li>
-{% endif %}
-{% if project.programs|length > 1 %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{ project_url }}/lists/programs.html">Programs</a></li>
-{% elif project.programs|length == 1 %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{ project.programs[0].get_url() }}">Program</a></li>
-{% endif %}
-{% if privacy_policy_url %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{ privacy_policy_url }}">Privacy Policy</a></li>
-{% endif %}
-{% if terms_of_service_url %}
-<li class="visible-xs hidden-sm visible-lg"><a href="{{ terms_of_service_url }}">Terms Of Service</a></li>
-{% endif %}
+            {% if incl_src %}
+              {% if project.files|length + project.extra_files|length is more_than_one %}
+                <li class="visible-xs hidden-sm visible-lg">
+                  <a href="{{ project_url }}/lists/files.html">Source Files</a>
+                </li>
+              {% else %}
+                <li class="visible-xs hidden-sm visible-lg">
+                  <a href="{{project.files[0].get_url()}}">Source File</a>
+                </li>
+              {% endif %}
+            {% endif %}
+            {% if project.modules %}
+              <li class="visible-xs hidden-sm visible-lg">
+                <a href="{{ project_url }}/lists/modules.html">Modules</a>
+              </li>
+            {% endif %}
+            {% if project.blockdata|length is more_than_one %}
+              <li class="visible-xs hidden-sm visible-lg">
+                <a href="{{ project_url }}/lists/blockdata.html">Block Data</a>
+              </li>
+            {% elif project.blockdata|length == 1 %}
+              <li class="visible-xs hidden-sm visible-lg">
+                <a href="{{ project.blockdata[0].get_url() }}">Block Data</a>
+              </li>
+            {% endif %}
+            {% if project.procedures %}
+              <li class="visible-xs hidden-sm visible-lg">
+                <a href="{{ project_url }}/lists/procedures.html">Procedures</a>
+              </li>
+            {% endif %}
+            {% if project.absinterfaces %}
+              <li class="visible-xs hidden-sm visible-lg">
+                <a href="{{ project_url }}/lists/absint.html">Abstract Interfaces</a>
+              </li>
+            {% endif %}
+            {% if project.types %}
+              <li class="visible-xs hidden-sm visible-lg">
+                <a href="{{ project_url }}/lists/types.html">Derived Types</a>
+              </li>
+            {% endif %}
+            {% if project.programs|length is more_than_one %}
+              <li class="visible-xs hidden-sm visible-lg">
+                <a href="{{ project_url }}/lists/programs.html">Programs</a>
+              </li>
+            {% elif project.programs|length == 1 %}
+              <li class="visible-xs hidden-sm visible-lg">
+                <a href="{{ project.programs[0].get_url() }}">Program</a>
+              </li>
+            {% endif %}
+            {% if privacy_policy_url %}
+              <li class="visible-xs hidden-sm visible-lg">
+                <a href="{{ privacy_policy_url }}">Privacy Policy</a>
+              </li>
+            {% endif %}
+            {% if terms_of_service_url %}
+              <li class="visible-xs hidden-sm visible-lg">
+                <a href="{{ terms_of_service_url }}">Terms Of Service</a>
+              </li>
+            {% endif %}
           </ul>
-        {% if search|lower == 'true' %}
-        <form action="{{ project_url }}/search.html" class="navbar-form navbar-right" role="search">
-        <div class="form-group">
-          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
-        </div>
-<!--
-        <button type="submit" class="btn btn-default">Submit</button>
--->
-        </form>
-        {% endif %}
+          {% if search|lower == 'true' %}
+            <form action="{{ project_url }}/search.html" class="navbar-form navbar-right" role="search">
+              <div class="form-group">
+                <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+              </div>
+              <!--
+                  <button type="submit" class="btn btn-default">Submit</button>
+                  -->
+            </form>
+          {% endif %}
         </div><!--/.nav-collapse -->
       </div>
     </nav>
 
     <div class="container">
-    {% block body %}
-    {% endblock body %}
-    <hr>    
+      {% block body %}
+      {% endblock body %}
+      <hr>
     </div> <!-- /container -->
     <footer>
       <div class="container">
-      <div class="row">
-        <div class="col-xs-6 col-md-6"><p>{{ project }} was developed by {{ author }}<br>&copy; {{ year }} {{ license }}
-                                          {% if revision %}<br /><small>{{ revision }}</small>{% endif %}</p>
+        <div class="row">
+          <div class="col-xs-6 col-md-6"><p>{{ project }} was developed by {{ author }}<br>&copy; {{ year }} {{ license }}
+              {% if revision %}<br /><small>{{ revision }}</small>{% endif %}</p>
+          </div>
+          <div class="col-xs-6 col-md-6">
+            <p class="text-right">
+              Documentation generated by
+              <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+              {% if print_creation_date|lower == 'true' %} on {{ creation_date }} {% endif %}
+              {% if doc_license %}<br>&copy; {{ doc_license }} {% endif %}
+            </p>
+          </div>
         </div>
-        <div class="col-xs-6 col-md-6">
-          <p class="text-right">
-            Documentation generated by 
-            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
-            {% if print_creation_date|lower == 'true' %} on {{ creation_date }} {% endif %}
-            {% if doc_license|length > 0 %}<br>&copy; {{ doc_license }} {% endif %}
-          </p>
-        </div>
-      </div>
-      <br>
-      </div> <!-- /container -->    
+        <br>
+      </div> <!-- /container -->
     </footer>
 
     <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-<!--
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
--->
-    <script src="{{ project_url }}/js/bootstrap.min.js"></script>
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="{{ project_url }}/js/ie10-viewport-bug-workaround.js"></script>
+         ================================================== -->
+         <!-- Placed at the end of the document so the pages load faster -->
+    <!--
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        -->
+        <script src="{{ project_url }}/js/bootstrap.min.js"></script>
+        <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+        <script src="{{ project_url }}/js/ie10-viewport-bug-workaround.js"></script>
 
-    <!-- MathJax JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script type="text/x-mathjax-config">
-      MathJax.Hub.Config({
-        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
-        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
-        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
-      });
-    </script>
-    {% if mathjax_config %}
-    <script src="{{ project_url }}/js/MathJax-config/{{ path.basename(mathjax_config) }}"></script>
-    {% endif %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-    {% if search|lower == 'true' %}
-    <script src="{{ project_url }}/tipuesearch/tipuesearch_content.js"></script>
-    <script src="{{ project_url }}/tipuesearch/tipuesearch_set.js"></script>
-    <script src="{{ project_url }}/tipuesearch/tipuesearch.js"></script>
-    {% endif %}
-    
+        <!-- MathJax JavaScript
+             ================================================== -->
+             <!-- Placed at the end of the document so the pages load faster -->
+        <script type="text/x-mathjax-config">
+          MathJax.Hub.Config({
+          TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+          jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+          extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+          });
+        </script>
+        {% if mathjax_config %}
+          <script src="{{ project_url }}/js/MathJax-config/{{ path.basename(mathjax_config) }}"></script>
+        {% endif %}
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        {% if search|lower == 'true' %}
+          <script src="{{ project_url }}/tipuesearch/tipuesearch_content.js"></script>
+          <script src="{{ project_url }}/tipuesearch/tipuesearch_set.js"></script>
+          <script src="{{ project_url }}/tipuesearch/tipuesearch.js"></script>
+        {% endif %}
+
   </body>
 </html>

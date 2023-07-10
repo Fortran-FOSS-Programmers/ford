@@ -10,7 +10,7 @@ All Procedures &ndash; {{ project }}
 			 <thead><tr><th>Procedure</th><th>Location</th><th>Procedure Type</th><th>Description</th></tr></thead>
 			 <tbody>
 			 {% for proc in project.procedures|sort(attribute='name') %}
-			   <tr><td>{{ proc }}</td><td>{{ proc.parent }}</td><td>{{ proc.proctype }}</td><td>{{ proc.meta['summary'] }}</td></tr>
+			   <tr><td>{{ proc }}</td><td>{{ proc.parent }}</td><td>{{ proc.proctype }}</td><td>{{ proc | meta('summary') }}</td></tr>
 			 {% endfor %}
 			 </tbody></table>
              {{ project.callgraph }}

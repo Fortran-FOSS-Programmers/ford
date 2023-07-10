@@ -10,6 +10,9 @@ import re
 
 import ford.reader as reader
 from ford.reader import _contains_unterminated_string
+import pytest
+
+from conftest import gfortran_is_not_installed
 
 RE_WHITE = re.compile(r"\s+")
 
@@ -163,3 +166,54 @@ def test_multiline_string(copy_fortran_file):
         )
     )
     assert lines == expected
+
+
+@pytest.mark.skipif(
+    gfortran_is_not_installed(), reason="Requires gfortran to be installed"
+)
+def test_preprocessor(copy_fortran_file):
+    """Check some basic preprocessing is applied"""
+
+    data = """\
+    subroutine SUB_NAME()
+    end sub_name SUB_NAME
+    """
+
+    filename = copy_fortran_file(data, ".F90")
+
+    lines = "\n".join(
+        list(
+            reader.FortranReader(
+                str(filename),
+                preprocessor=["cpp", "-traditional-cpp", "-E"],
+                macros=["SUB_NAME=foo"],
+            )
+        )
+    )
+    assert "foo" in lines
+
+
+@pytest.mark.skipif(
+    gfortran_is_not_installed(), reason="Requires gfortran to be installed"
+)
+def test_preprocessor_warning(copy_fortran_file):
+    """Check preprocessing is still done even if there are warnings"""
+
+    data = """\
+    #warning something
+    subroutine SUB_NAME()
+    end sub_name SUB_NAME
+    """
+
+    filename = copy_fortran_file(data, ".F90")
+
+    lines = "\n".join(
+        list(
+            reader.FortranReader(
+                str(filename),
+                preprocessor=["cpp", "-traditional-cpp", "-E"],
+                macros=["SUB_NAME=foo"],
+            )
+        )
+    )
+    assert "foo" in lines

@@ -3,150 +3,142 @@
 {% block body %}
   {% import 'macros.html' as macros %}
   <div class="row">
-    <h1>{{ module.name }} 
-    <small>{% if module.obj == 'submodule' %}Submodule{% else %}Module{% endif %}</small>
-    {% if module.meta['deprecated'] and module.meta['deprecated'].lower() == 'true' %}
-   <span class="label label-danger depwarn">Deprecated</span>
-    {% endif %}
+    <h1>{{ module.name }}
+      <small>{% if module.obj == 'submodule' %}Submodule{% else %}Module{% endif %}</small>
+      {{ macros.deprecated(module) }}
     </h1>
-    {{ macros.info_bar(module.name,module.meta,incl_src,project_url,module.hierarchy,module.lines_description(project.mod_lines)) }}
+    {{ macros.info_bar(module, incl_src, project_url, module.lines_description(project.mod_lines)) }}
   </div>
-  
+
   <div class="row">
     <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
-    {{ macros.sidebar(project,module) }}
+      {{ macros.sidebar(project,module) }}
     </div>
-    
+
     <div class="col-md-9" id='text'>
-    {{ module.doc }}
-      {% if module.uses|length > 0 or (module.ancestry and
-      module.ancestry|length > 0) or module.usedbygraph or (module.descendants
-      and module.descendants|length > 0) %}<br>{% endif %}
-    {{ macros.use_list(module) }}
-    {{ macros.usedby_list(module) }}
-    <br>
+      {{ module.doc }}
+      {% if module.uses or module.ancestry or module.usedbygraph or module.descendants %}<br>{% endif %}
+      {{ macros.use_list(module) }}
+      {{ macros.usedby_list(module) }}
+      <br>
 
-    <section class="visible-xs visible-sm hidden-md">
-      {{ macros.content_list(module,1) }}
-    </section>
-    <br class="visible-xs visible-sm hidden-md">
+      <section class="visible-xs visible-sm hidden-md">
+        {{ macros.content_list(module,1) }}
+      </section>
+      <br class="visible-xs visible-sm hidden-md">
 
-    {% if module.common|length > 0 %}
-    <section>
-      <h2>Common Blocks</h2>
-      {% for com in module.common %}
-      {{ macros.common_block(com) }}
-      {% endfor %}
-    </section>
-    <br>
-    <script>
-    $(function () {
-    $('[data-toggle="popover"]').popover()
-    })
-    </script>
-    {% endif %}
-
-    {% if module.variables|length > 0 %}
-    <section>
-    <h2>Variables</h2>
-    {{ macros.var_list(module.variables,permission=True) }}
-    </section>
-    <br>
-    {% endif %}
-    
-    {% if module.enums|length > 0 %}
-    <section>
-    <h2>Enumerations</h2>
-    {% for enum in module.enums %}
-      {{ macros.enum_entry(enum) }}
-    {% endfor %}
-    </section>
-    <br>
-    {% endif %}
-    
-    {% if module.interfaces|length > 0 %}
-    <section>
-   <h2>Interfaces</h2>
-   {% for intr in module.interfaces %}
-     {{ macros.interface(intr) }}
-    {% endfor %}
-    </section>
-  <br>
-    {% endif %}
-
-    {% if module.absinterfaces|length > 0 %}
-    <section>
-     <h2>Abstract Interfaces</h2>
-   {% for intr in module.absinterfaces %}
-     {{ macros.absinterface(intr) }}
-    {% endfor %}
-    </section>
-  <br>
-    {% endif %}
-    
-    {% if module.types|length > 0 %}
-    <section>
-     <h2>Derived Types</h2>
-   {% for type in module.types %}
-     {{ macros.type_summary(type) }}
-     {% endfor %}
-    </section>
-  <br>
-    {% endif %}
-    
-    {% if module.functions|length > 0 %} 
-    <section>
-    <h2>Functions</h2>
-    {% for proc in module.functions %}
-    {{ macros.proc_entry(proc) }}
-    {% endfor %}
-    </section>
-    <br>
-    {% endif %}
-
-    {% if module.subroutines|length > 0 %}
-    <section>
-    <h2>Subroutines</h2>
-    {% for proc in module.subroutines %}
-    {{ macros.proc_entry(proc) }}
-    {% endfor %}
-    </section>    
-    <br>
-    {% endif %}
-    
-    {% if  module.obj == 'submodule' %}
-    
-        {% if module.modfunctions|length > 0 %} 
+      {% if module.common %}
         <section>
-        <h2>Module Functions</h2>
-        {% for proc in module.modfunctions %}
-        {{ macros.proc_entry(proc) }}
-        {% endfor %}
+          <h2>Common Blocks</h2>
+          {% for com in module.common %}
+            {{ macros.common_block(com) }}
+          {% endfor %}
         </section>
         <br>
-        {% endif %}
+        <script>
+          $(function () {
+          $('[data-toggle="popover"]').popover()
+          })
+        </script>
+      {% endif %}
 
-        {% if module.modsubroutines|length > 0 %}
+      {% if module.variables %}
         <section>
-        <h2>Module Subroutines</h2>
-        {% for proc in module.modsubroutines %}
-        {{ macros.proc_entry(proc) }}
-        {% endfor %}
+          <h2>Variables</h2>
+          {{ macros.variable_list(module.variables, permission=True) }}
         </section>
         <br>
-        {% endif %}
+      {% endif %}
 
-        {% if module.modprocedures|length > 0 %}
+      {% if module.enums %}
         <section>
-        <h2>Module Procedures</h2>
-        {% for proc in module.modprocedures %}
-        {{ macros.proc_entry(proc) }}
-        {% endfor %}
-        </section>    
-        {% endif %}
-    
-    {% endif %}
+          <h2>Enumerations</h2>
+          {% for enum in module.enums %}
+            {{ macros.enum_entry(enum) }}
+          {% endfor %}
+        </section>
+        <br>
+      {% endif %}
+
+      {% if module.interfaces %}
+        <section>
+          <h2>Interfaces</h2>
+          {% for intr in module.interfaces %}
+            {{ macros.interface(intr) }}
+          {% endfor %}
+        </section>
+        <br>
+      {% endif %}
+
+      {% if module.absinterfaces %}
+        <section>
+          <h2>Abstract Interfaces</h2>
+          {% for intr in module.absinterfaces %}
+            {{ macros.absinterface(intr) }}
+          {% endfor %}
+        </section>
+        <br>
+      {% endif %}
+
+      {% if module.types %}
+        <section>
+          <h2>Derived Types</h2>
+          {% for type in module.types %}
+            {{ macros.type_summary(type) }}
+          {% endfor %}
+        </section>
+        <br>
+      {% endif %}
+
+      {% if module.functions %}
+        <section>
+          <h2>Functions</h2>
+          {% for proc in module.functions %}
+            {{ macros.proc_entry(proc) }}
+          {% endfor %}
+        </section>
+        <br>
+      {% endif %}
+
+      {% if module.subroutines %}
+        <section>
+          <h2>Subroutines</h2>
+          {% for proc in module.subroutines %}
+            {{ macros.proc_entry(proc) }}
+          {% endfor %}
+        </section>
+        <br>
+      {% endif %}
+
+      {% if module.modfunctions %}
+        <section>
+          <h2>Module Functions</h2>
+          {% for proc in module.modfunctions %}
+            {{ macros.proc_entry(proc) }}
+          {% endfor %}
+        </section>
+        <br>
+      {% endif %}
+
+      {% if module.modsubroutines %}
+        <section>
+          <h2>Module Subroutines</h2>
+          {% for proc in module.modsubroutines %}
+            {{ macros.proc_entry(proc) }}
+          {% endfor %}
+        </section>
+        <br>
+      {% endif %}
+
+      {% if module.modprocedures %}
+        <section>
+          <h2>Module Procedures</h2>
+          {% for proc in module.modprocedures %}
+            {{ macros.proc_entry(proc) }}
+          {% endfor %}
+        </section>
+      {% endif %}
     </div>
   </div>
 
-  {% endblock body %}
+{% endblock body %}

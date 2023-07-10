@@ -1,12 +1,10 @@
 # FORD
 [![Latest Version](https://img.shields.io/pypi/v/ford.svg)](https://pypi.python.org/pypi/FORD)
 [![Latest homebrew version](https://img.shields.io/homebrew/v/ford.svg?maxAge=2592000)](http://braumeister.org/formula/ford)
+[![Latest spack version](https://img.shields.io/spack/v/py-ford)](https://spack.readthedocs.io/en/latest/package_list.html#py-ford)
+[![PyPI Total Downloads](https://static.pepy.tech/badge/ford)](https://pepy.tech/project/ford)
 [![GitHub license](https://img.shields.io/badge/license-GPL_v3-blue.svg)](./LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1422473.svg)](https://doi.org/10.5281/zenodo.1422473)
-
-<!-- [![GitHub tag](https://img.shields.io/github/release/cmacmackin/ford.svg)](https://github.com/cmacmackin/ford/releases/latest)
-     This last badge has not been rendering due to issues over at shields.io so I'm commenting it out for now
-     -->
 
 This is an automatic documentation generator for modern Fortran programs.
 FORD stands for FORtran Documenter. As you may know, "to ford" refers to
@@ -54,20 +52,13 @@ Current features include:
   and syntax highlighted code.
 
 ## Installation
-The simplest way to install FORD is using [pip](https://pip.pypa.io/en/latest/).
-This can be done with the commands:
 
-    sudo apt-get install python-pip python-dev build-essential #For Debian-based Linux, if pip not already installed
-    sudo pip install ford
+The simplest way to install FORD is using [pip](https://pip.pypa.io/en/latest/):
 
-Pip will automatically handle all dependencies for you. If
-you do not have administrative rights on the computer where you want to produce
-documentation, pip will allow you to install FORD and its dependencies in a
-[virtualenv](https://virtualenv.pypa.io/en/latest/) located somewhere in
-your home directory.
+    pip install ford
 
-If you prefer, you can install all of those dependencies manually and clone
-FORD from Github. Then place FORD somewhere in your PYTHONPATH.
+Pip will automatically handle all dependencies for you. By default this will
+place `ford` in `~/.local/bin` -- you might need to add this to your `PATH`.
 
 Alternatively, FORD is available through the [Homebrew](https://brew.sh) package
 manager for Mac OS X. To update Homebrew and install FORD, run these commands in
@@ -79,8 +70,14 @@ a terminal:
 If you would like to install the latest development (master) branch from github,
 simply add the `--HEAD` flag: `brew install --HEAD FORD`
 
+FORD is also available through the
+[spack](https://spack.readthedocs.io/en/latest/) package manager by running the
+following command:
+
+    spack install py-ford
+
 ## Documentation
-More complete documentation can be found in the [project wiki](https://github.com/Fortran-FOSS-Programmers/ford/wiki).
+More complete documentation can be found in the [docs](https://forddocs.readthedocs.io).
 
 ## License
 This program is free software: you can redistribute it and/or modify
@@ -98,24 +95,3 @@ along with this program.  If not, see the [GNU website](https://www.gnu.org/lice
 
 Documents produced by FORD are derivative works derived from the input used in their production;
 they are not affected by this license.
-<!--
-## Approach
-The basic algorithm for generating the documentation is as follows:
-
-- Get instructions from user. These are to be passes as command-line arguments
-  and meta-data within the project file.
-- Parse each file which is to be documented.
-   - Create a file object. This will contain any documentation meant for the
-     file as a whole and a list of any file contents.
-   - Create module, subroutine, function, and/or program objects for each of
-     these structures within the file. Each of these objects will also store
-	 comments, contents, and parameters.
-   - Continue to recurse into these structures, adding interface, type,
-     variable, subroutine and function objects as necessary.
-- Perform further analysis on the parsed code, correlating anything defined
-  in one place but used in another. This will be used to generate hyperlinks
-  when producing the documentation.
-- Convert comments into HTML. Assume that they have been written in Markdown.
-  Also make sure to process LaTeX (not yet implemented).
-- Produce the documentation. This will be done using Jinja2 templates.
--->

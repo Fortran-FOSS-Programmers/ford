@@ -28,30 +28,26 @@ from io import StringIO
 import itertools
 import sys
 import argparse
-import markdown
 import os
 import pathlib
 import subprocess
 from datetime import date, datetime
-from typing import Union
+from typing import Any, Dict, Union
 from textwrap import dedent
 
 import ford.fortran_project
 import ford.sourceform
 import ford.output
 import ford.utils
-import ford.pagetree
-from ford.md_environ import EnvironExtension
-from ford.md_extensions import AdmonitionExtension
+from ford.pagetree import get_page_tree
+from ford._markdown import MetaMarkdown
 
-try:
-    from importlib.metadata import version, PackageNotFoundError
-except ModuleNotFoundError:
-    from importlib_metadata import version, PackageNotFoundError
+from importlib.metadata import version, PackageNotFoundError
+
 try:
     __version__ = version(__name__)
 except PackageNotFoundError:
-    from setuptools_scm import get_version
+    from setuptools_scm import get_version  # type: ignore[import]
 
     __version__ = get_version(root="..", relative_to=__file__)
 
@@ -123,7 +119,7 @@ LICENSES = {
 }
 
 
-DEFAULT_SETTINGS = {
+DEFAULT_SETTINGS: Dict[str, Any] = {
     "alias": [],
     "author": None,
     "author_description": None,
@@ -193,6 +189,7 @@ DEFAULT_SETTINGS = {
     "quiet": False,
     "revision": None,
     "search": True,
+    "show_proc_parent": False,
     "sort": "src",
     "source": False,
     "src_dir": ["./src"],
@@ -242,55 +239,58 @@ def get_command_line_arguments() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(
         "ford",
-        description="Document a program or library written in modern Fortran. Any command-line options over-ride those specified in the project file.",
+        description="Document a program or library written in modern Fortran. "
+        "Any command-line options over-ride those specified in the project file.",
     )
     parser.add_argument(
         "project_file",
         help="file containing the description and settings for the project",
-        type=argparse.FileType("r"),
+        type=argparse.FileType("r", encoding="UTF-8"),
     )
     parser.add_argument(
         "-d",
         "--src_dir",
         action="append",
-        help="directories containing all source files for the project",
+        help="directories containing all source files for the project (default: ``./src``)",
     )
     parser.add_argument(
         "-p",
         "--page_dir",
-        help="directory containing the optional page tree describing the project",
+        help="directory containing static pages (default: None)",
     )
     parser.add_argument(
-        "-o", "--output_dir", help="directory in which to place output files"
+        "-o",
+        "--output_dir",
+        help="directory in which to place output files (default: ``./doc``)",
     )
     parser.add_argument("-s", "--css", help="custom style-sheet for the output")
     parser.add_argument(
         "-r",
         "--revision",
         dest="revision",
-        help="Source code revision the project to document",
+        help="source code version number or revision of the project to document",
     )
     parser.add_argument(
         "--exclude",
         action="append",
-        help="any files which should not be included in the documentation",
+        help="list of files which should not be included in the documentation",
     )
     parser.add_argument(
         "--exclude_dir",
         action="append",
-        help="any directories whose contents should not be included in the documentation",
+        help="list of directories whose contents should not be included in the documentation",
     )
     parser.add_argument(
         "-e",
         "--extensions",
         action="append",
-        help="extensions which should be scanned for documentation (default: f90, f95, f03, f08)",
+        help="extensions which should be scanned for documentation (default: ``f90, f95, f03, f08``)",
     )
     parser.add_argument(
         "-m",
         "--macro",
         action="append",
-        help="preprocessor macro (and, optionally, its value) to be applied to files in need of preprocessing.",
+        help="preprocessor macros (optionally with values) to be applied to preprocessed files",
     )
     parser.add_argument(
         "-w",
@@ -306,7 +306,15 @@ def get_command_line_arguments() -> argparse.Namespace:
         dest="force",
         action="store_true",
         default=None,
-        help="continue to read file if fatal errors",
+        help="try to continue to read files even if there are fatal errors",
+    )
+    parser.add_argument(
+        "-g",
+        "--graph",
+        dest="graph",
+        action="store_true",
+        default=None,
+        help="generate graphs for documentation output",
     )
     parser.add_argument(
         "--no-search",
@@ -321,13 +329,13 @@ def get_command_line_arguments() -> argparse.Namespace:
         dest="quiet",
         action="store_true",
         default=None,
-        help="do not print any description of progress",
+        help="suppress normal output",
     )
     parser.add_argument(
         "-V",
         "--version",
         action="version",
-        version="%(prog)s version {}".format(__version__),
+        version=f"%(prog)s version {__version__}",
     )
     parser.add_argument(
         "--debug",
@@ -340,20 +348,21 @@ def get_command_line_arguments() -> argparse.Namespace:
         "-I",
         "--include",
         action="append",
-        help="any directories which should be searched for include files",
+        help="list of directories to be searched for ``include`` files",
     )
     parser.add_argument(
         "--externalize",
         action="store_const",
         const="true",
-        help="Provide information about Fortran objects in a json database for other FORD projects to refer to.",
+        help="provide information about Fortran objects in a json database for "
+        "other FORD projects to refer to.",
     )
     parser.add_argument(
         "-L",
         "--external_links",
         dest="external",
         action="append",
-        help="""External projects to link to.
+        help="""external projects to link to.
         If an entity is not found in the sources, FORD will try to look it up in
         those external projects. If those have documentation generated by FORD with
         the externalize option, a link will be placed into the documentation wherever
@@ -368,7 +377,7 @@ def get_command_line_arguments() -> argparse.Namespace:
 def parse_arguments(
     command_line_args: dict,
     proj_docs: str,
-    directory: Union[os.PathLike, str] = os.getcwd(),
+    directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
 ):
     """Consolidates arguments from the command line and from the project
     file, and then normalises them how the rest of the code expects
@@ -377,37 +386,20 @@ def parse_arguments(
     try:
         import multiprocessing
 
-        ncpus = "{0}".format(multiprocessing.cpu_count())
+        ncpus = str(multiprocessing.cpu_count())
     except (ImportError, NotImplementedError):
         ncpus = "0"
 
     DEFAULT_SETTINGS["parallel"] = ncpus
 
-    # Set up Markdown reader
-    md_ext = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-        "mdx_math",
-        EnvironExtension(),
-        AdmonitionExtension(),
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html5", extension_configs={}
-    )
-
+    # Initial set up of Markdown reader
+    md = MetaMarkdown()
     md.convert(proj_docs)
+
     # Remake the Markdown object with settings parsed from the project_file
-    if "md_base_dir" in md.Meta:
-        md_base = md.Meta["md_base_dir"][0]
-    else:
-        md_base = directory
-    md_ext.append("markdown_include.include")
-    if "md_extensions" in md.Meta:
-        md_ext.extend(md.Meta["md_extensions"])
-    md = markdown.Markdown(
-        extensions=md_ext,
-        output_format="html5",
+    md_base = md.Meta["md_base_dir"][0] if "md_base_dir" in md.Meta else directory
+    md = MetaMarkdown(
+        extensions=["markdown_include.include"] + md.Meta.get("md_extensions", []),
         extension_configs={"markdown_include.include": {"base_path": md_base}},
     )
 
@@ -437,7 +429,7 @@ def parse_arguments(
     base_dir = pathlib.Path(directory).absolute()
     proj_data["base_dir"] = base_dir
 
-    for var in [
+    for var in (
         "page_dir",
         "output_dir",
         "graph_dir",
@@ -447,7 +439,7 @@ def parse_arguments(
         "src_dir",
         "exclude_dir",
         "include",
-    ]:
+    ):
         if proj_data[var] is None:
             continue
         if isinstance(proj_data[var], list):
@@ -496,16 +488,14 @@ def parse_arguments(
 
     # Add gitter sidecar if specified in metadata
     if proj_data["gitter_sidecar"] is not None:
-        proj_docs += """
+        proj_docs += f"""
         <script>
             ((window.gitter = {{}}).chat = {{}}).options = {{
-            room: '{}'
+            room: '{proj_data["gitter_sidecar"].strip()}'
             }};
         </script>
         <script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
-        """.format(
-            proj_data["gitter_sidecar"].strip()
-        )
+        """
     # Handle preprocessor:
     if proj_data["preprocess"]:
         proj_data["preprocessor"] = proj_data["preprocessor"].split()
@@ -533,18 +523,14 @@ def parse_arguments(
         proj_data["license"] = LICENSES[proj_data["license"].lower()]
     except KeyError:
         print(
-            'Notice: license "{}" is not a recognized value, using the value as a custom license value.'.format(
-                proj_data["license"]
-            )
+            f'Notice: license "{proj_data["license"]}" is not a recognized value, using the value as a custom license value.'
         )
     # Get the correct license for doc license(website or doc) or use value as a custom license value.
     try:
         proj_data["doc_license"] = LICENSES[proj_data["doc_license"].lower()]
     except KeyError:
         print(
-            'Notice: doc_license "{}" is not a recognized value, using the value as a custom license value.'.format(
-                proj_data["doc_license"]
-            )
+            f'Notice: doc_license "{proj_data["doc_license"]}" is not a recognized value, using the value as a custom license value.'
         )
 
     # Return project data, docs, and the Markdown reader
@@ -567,12 +553,12 @@ def main(proj_data, proj_docs, md):
         sys.exit(1)
 
     # Define core macros:
-    ford.utils.register_macro("url = {0}".format(proj_data["project_url"]))
+    ford.utils.register_macro(f"url = {proj_data['project_url']}")
     ford.utils.register_macro(
-        "media = {0}".format(os.path.join(proj_data["project_url"], "media"))
+        f'media = {os.path.join(proj_data["project_url"], "media")}'
     )
     ford.utils.register_macro(
-        "page = {0}".format(os.path.join(proj_data["project_url"], "page"))
+        f'page = {os.path.join(proj_data["project_url"], "page")}'
     )
 
     # Register the user defined aliases:
@@ -607,8 +593,11 @@ def main(proj_data, proj_docs, md):
     )
     # Process any pages
     if proj_data["page_dir"] is not None:
-        page_tree = ford.pagetree.get_page_tree(
-            os.path.normpath(proj_data["page_dir"]), proj_data["copy_subdir"], md
+        page_tree = get_page_tree(
+            pathlib.Path(proj_data["page_dir"]),
+            proj_data["copy_subdir"],
+            md,
+            encoding=proj_data["encoding"],
         )
         print()
     else:
@@ -627,7 +616,6 @@ def main(proj_data, proj_docs, md):
         # for external modules
         ford.utils.external(project, make=True, path=proj_data["output_dir"])
 
-    print("")
     return 0
 
 

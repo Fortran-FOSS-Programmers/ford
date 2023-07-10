@@ -1,12 +1,89 @@
 [build-system]
 requires = [
-    "setuptools >= 48",
-    "setuptools_scm[toml] >= 4, <6",
+    "setuptools >= 65",
+    "setuptools_scm[toml] >= 6.2",
     "setuptools_scm_git_archive",
     "wheel >= 0.29.0",
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "FORD"
+description = "FORD (FORtran Documenter) is an automatic documentation generator for modern Fortran programs."
+readme = "README.md"
+authors = [
+        {name = "Chris MacMackin", email = "cmacmackin@gmail.com"},
+        {name = "Peter Hill", email = "peter.hill@york.ac.uk"}
+]
+license = {text = "GPLv3"}
+keywords = ["Markdown", "Fortran", "documentation", "comments"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Text Processing :: Markup :: HTML",
+    "Topic :: Documentation",
+    "Topic :: Utilities",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = ">=3.8"
+dependencies = [
+   "markdown ~= 3.4.0",
+   "markdown-include ~= 0.7.0",
+   "python-markdown-math ~= 0.8",
+   "toposort ~= 1.7.0",
+   "jinja2 >= 2.1",
+   "pygments ~= 2.12",
+   "beautifulsoup4 >=4.5.1",
+   "graphviz ~= 0.20.0",
+   "tqdm ~= 4.64.0",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+docs = [
+     "sphinx >= 5.3",
+     "sphinx_autodoc_typehints >= 1.19",
+     "sphinx-book-theme >= 0.4.0rc1",
+     "sphinx-argparse-cli >= 1.10.0",
+]
+tests = ["pytest >= 3.3.0"]
+
+[project.urls]
+Source = "https://github.com/Fortran-FOSS-Programmers/ford"
+Tracker = "https://github.com/Fortran-FOSS-Programmers/ford/issues"
+Documentation = "https://forddocs.readthedocs.io/en/latest/"
+
+[project.scripts]
+ford = "ford:run"
+
+[tool.setuptools]
+packages = [
+    "ford",
+    "ford.css",
+    "ford.fonts",
+    "ford.js",
+    "ford.templates",
+    "ford.tipuesearch",
+    "ford.tipuesearch.img",
+]
+
+[tool.setuptools.package-data]
+ford = ["config.json", "favicon.png"]
+
 [tool.setuptools_scm]
 write_to = "ford/_version.py"
-git_describe_command = "git describe --dirty --tags --long --match v* --first-parent"
+
+[tool.pytest.ini_options]
+addopts = "-m 'not slow'"
+markers = ["slow"]
+
+[tool.ruff]
+line-length = 88
+ignore = ["E501"]
