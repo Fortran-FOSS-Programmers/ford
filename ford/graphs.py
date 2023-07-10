@@ -351,7 +351,7 @@ class BaseNode:
             self.ident = f"{d}~{obj.ident}"
             self.name = obj.name
             if m := EM_RE.search(self.name):
-                self.name = "<<i>" + m.group(1).strip() + "</i>>"
+                self.name = f"<<i>{m.group(1).strip()}</i>>"
             self.url = obj.get_url()
 
         self.attribs["label"] = self.name
