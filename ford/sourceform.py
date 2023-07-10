@@ -1937,7 +1937,9 @@ class FortranType(FortranContainer):
         # Match up generic type-bound procedures to their particular bindings
         for proc in self.boundprocs:
             for bp in inherited_generic:
-                if bp.name.lower() == proc.name.lower() and hasattr(bp, "bindings"):
+                if bp.name.lower() == proc.name.lower() and isinstance(
+                    bp, FortranBoundProcedure
+                ):
                     proc.bindings = bp.bindings + proc.bindings
                     break
             if proc.generic:
@@ -2299,7 +2301,7 @@ class FortranBoundProcedure(FortranBase):
         self.proto = line["prototype"]
         if self.proto:
             self.proto = self.proto[1:-1].strip()
-        self.bindings = []
+        self.bindings: List[Union[str, FortranProcedure, FortranBoundProcedure]] = []
         if len(split) > 1:
             binds = self.SPLIT_RE.split(split[1])
             for bind in binds:
@@ -3043,6 +3045,7 @@ class ExternalBoundProcedure(FortranBoundProcedure):
         self.external_url = url
         self.parent = parent
         self.obj = "proc"
+        self.bindings = []
 
 
 class ExternalType(FortranType):

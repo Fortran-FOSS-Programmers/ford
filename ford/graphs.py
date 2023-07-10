@@ -255,7 +255,11 @@ class GraphData:
         return cast(TypeNode, self.get_node(type_, hist))
 
 
-def get_call_nodes(calls, visited=None, result=None):
+def get_call_nodes(
+    calls: List[Union[str, FortranEntity]],
+    visited: Optional[Set[Union[str, FortranEntity]]] = None,
+    result: Optional[Set[Union[str, FortranEntity]]] = None,
+) -> Set[Union[str, FortranEntity]]:
     """
     takes a list of calls, and returns a set of all the calls that should
     be nodes in the graph
