@@ -69,7 +69,7 @@ COMMA_RE = re.compile(r",(?!\s)")
 NBSP_RE = re.compile(r" (?= )|(?<= ) ")
 DIM_RE = re.compile(r"^\w+\s*(\(.*\))\s*$")
 PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
-
+CALL_AND_WHITESPACE_RE = re.compile(r"\(\)|\s")
 
 base_url = ""
 
@@ -1058,7 +1058,7 @@ class FortranContainer(FortranBase):
 
         # Add call chains to self.calls
         for chain_str in call_chains:
-            call_chain = re.sub("\(\)|\s", "", chain_str).lower().split("%")
+            call_chain = CALL_AND_WHITESPACE_RE.sub("", chain_str).lower().split("%")
 
             if call_chain[0] in associations:
                 call_chain[0:1] = associations[call_chain[0]]
