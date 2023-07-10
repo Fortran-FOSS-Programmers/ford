@@ -2,7 +2,7 @@ from markdown import Markdown, Extension
 from typing import Any, Dict, List, Union, Optional
 
 from ford.md_environ import EnvironExtension
-from ford.md_extensions import AdmonitionExtension
+from ford.md_admonition import AdmonitionExtension
 
 
 class MetaMarkdown(Markdown):
