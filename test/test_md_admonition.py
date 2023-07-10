@@ -11,6 +11,10 @@ def convert(text: str) -> str:
     return md.convert(dedent(text))
 
 
+def not_title(tag):
+    return tag.name == "p" and not tag.has_attr("class")
+
+
 def test_basic():
     converted = convert(
         """
@@ -21,9 +25,8 @@ def test_basic():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
     assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Note"
-    assert soup.div.p.text == "note text"
+    assert soup.find(class_="h4").text == "Note"
+    assert soup.div.find(not_title).text == "note text"
 
 
 def test_uppercase():
@@ -36,9 +39,8 @@ def test_uppercase():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
     assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Note"
-    assert soup.div.p.text == "note text"
+    assert soup.find(class_="h4").text == "Note"
+    assert soup.div.find(not_title).text == "note text"
 
 
 def test_endnote():
@@ -51,9 +53,8 @@ def test_endnote():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
     assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Note"
-    assert soup.div.p.text == "note text"
+    assert soup.find(class_="h4").text == "Note"
+    assert soup.div.find(not_title).text == "note text"
 
 
 def test_paragraph():
@@ -67,9 +68,8 @@ def test_paragraph():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
     assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Note"
-    assert soup.div.p.text == "note text\nsome following text"
+    assert soup.find(class_="h4").text == "Note"
+    assert soup.div.find(not_title).text == "note text\nsome following text"
 
 
 def test_explicit_end():
@@ -87,8 +87,7 @@ def test_explicit_end():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
     assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Note"
+    assert soup.find(class_="h4").text == "Note"
     assert soup.div.text.strip() == "Note\nnote text\nsome blank lines\nbefore the end"
 
 
@@ -102,9 +101,8 @@ def test_warning():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
     assert sorted(soup.div["class"]) == ["alert", "alert-warning"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Warning"
-    assert soup.div.p.text == "note text"
+    assert soup.find(class_="h4").text == "Warning"
+    assert soup.div.find(not_title).text == "note text"
 
 
 def test_in_list():
@@ -121,9 +119,8 @@ def test_in_list():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
     assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Note"
-    assert soup.div.p.text == "note text"
+    assert soup.find(class_="h4").text == "Note"
+    assert soup.div.find(not_title).text == "note text"
 
 
 def test_in_list_with_paragraph():
@@ -143,9 +140,8 @@ def test_in_list_with_paragraph():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
     assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Note"
-    assert soup.div.p.text == "note text\nwith a paragraph"
+    assert soup.find(class_="h4").text == "Note"
+    assert soup.div.find(not_title).text == "note text\nwith a paragraph"
 
 
 def test_in_list_with_paragraph_and_end():
@@ -166,9 +162,8 @@ def test_in_list_with_paragraph_and_end():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
     assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Note"
-    all_text = "\n".join(p.text for p in soup.div.find_all("p"))
+    assert soup.find(class_="h4").text == "Note"
+    all_text = "\n".join(p.text for p in soup.div.find_all(not_title))
     assert all_text == "note text\nwith a paragraph\nand another one"
 
 
@@ -191,8 +186,7 @@ def test_in_list_with_list():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
     assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Note"
+    assert soup.find(class_="h4").text == "Note"
     list_text = " ".join(li.text for li in soup.div.ol.find_all("li"))
     assert list_text == "first second"
 
@@ -217,14 +211,13 @@ def test_in_list_with_nested_warning():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
     assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Note"
+    assert soup.find(class_="h4").text == "Note"
 
     nested_box = soup.div.div.extract()
-    assert nested_box.h4.text == "Warning"
-    assert nested_box.p.text == "nested warning"
+    assert nested_box.find(class_="h4").text == "Warning"
+    assert nested_box.find(not_title).text == "nested warning"
 
-    all_text = "\n".join(p.text for p in soup.div.find_all("p"))
+    all_text = "\n".join(p.text for p in soup.div.find_all(not_title))
     assert all_text == "note text\nwith a paragraph\nunnested paragraph"
 
 
@@ -240,10 +233,37 @@ def test_midparagraph():
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 3
     assert sorted(soup.div["class"]) == ["alert", "alert-danger"]
-    assert soup.div["role"] == "alert"
-    assert soup.h4.text == "Bug"
-    all_text = "\n".join(p.text for p in soup.div.find_all("p"))
+    assert soup.find(class_="h4").text == "Bug"
+    all_text = "\n".join(p.text for p in soup.div.find_all(not_title))
     assert all_text == "start text\nend text"
 
     soup.div.extract()
     assert soup.text.strip() == "post text"
+
+
+def test_title():
+    converted = convert(
+        """
+        @note "title" text
+        """
+    )
+
+    soup = BeautifulSoup(converted, features="html.parser")
+    assert len(soup) == 1
+    assert sorted(soup.div["class"]) == ["alert", "alert-info"]
+    assert soup.find(class_="h4").text == "title"
+    assert soup.div.find(not_title).text == "text"
+
+
+def test_css_and_title():
+    converted = convert(
+        """
+        @note some css "title" text
+        """
+    )
+
+    soup = BeautifulSoup(converted, features="html.parser")
+    assert len(soup) == 1
+    assert sorted(soup.div["class"]) == sorted(["alert", "alert-info", "some", "css"])
+    assert soup.find(class_="h4").text == "title"
+    assert soup.div.find(not_title).text == "text"
