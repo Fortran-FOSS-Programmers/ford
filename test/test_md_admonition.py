@@ -28,6 +28,21 @@ def test_basic():
     assert soup.div.p.text == "note text"
 
 
+def test_uppercase():
+    converted = convert(
+        """
+        @NOTE note text
+        """
+    )
+
+    soup = BeautifulSoup(converted, features="html.parser")
+    assert len(soup) == 1
+    assert sorted(soup.div["class"]) == ["alert", "alert-info"]
+    assert soup.div["role"] == "alert"
+    assert soup.h4.text == "Note"
+    assert soup.div.p.text == "note text"
+
+
 def test_paragraph():
     converted = convert(
         """
