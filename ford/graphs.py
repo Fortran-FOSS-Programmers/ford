@@ -282,7 +282,7 @@ def get_call_nodes(calls, visited=None, result=None):
             isinstance(call, FortranBoundProcedure)
             and len(call.bindings) == 1
             and not isinstance(call.bindings[0], FortranBoundProcedure)
-            and call.bindings[0].visible
+            and (call.deferred or getattr(call.bindings[0], "visible", False))
         )
 
         if getattr(call, "visible", True) and not is_simple_binding:
