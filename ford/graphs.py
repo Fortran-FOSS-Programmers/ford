@@ -909,9 +909,11 @@ class FortranGraph:
                   );
                 </script>"""
 
+        graph_help_name = f"{self.__class__.__name__}-help-text"
+
         legend_graph = f"""\
-        <div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div>
-          <div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog">
+        <div><a type="button" class="graph-help" data-toggle="modal" href="#{graph_help_name}">Help</a></div>
+          <div class="modal fade" id="{graph_help_name}" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-lg" role="document">
               <div class="modal-content">
                 <div class="modal-header">
