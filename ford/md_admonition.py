@@ -48,9 +48,10 @@ class AdmonitionExtension(Extension):
 
 
 class AdmonitionProcessor(BlockProcessor):
-
     CLASSNAME = "alert"
-    RE = re.compile(r'(?:^|\n)!!! ?([\w\-]+(?: +[\w\-]+)*)(?: +"(.*?)")? *(?:\n|$)')
+    RE = re.compile(
+        r"""(?:^|\n)!!! ?(?P<klass>[\w\-]+(?: +[\w\-]+)*)(?: +"(?P<title>.*?)")? *(?:\n|$)"""
+    )
     RE_SPACES = re.compile("  +")
 
     def __init__(self, parser):
@@ -128,24 +129,21 @@ class AdmonitionProcessor(BlockProcessor):
 
     def run(self, parent, blocks):
         block = blocks.pop(0)
-        m = self.RE.search(block)
 
-        if m:
-            if m.start() > 0:
-                self.parser.parseBlocks(parent, [block[: m.start()]])
-            block = block[m.end() :]  # removes the first line
-            block, theRest = self.detab(block)
-        else:
-            sibling, block, theRest = self.parse_content(parent, block)
+        if match := self.RE.search(block):
+            if match.start() > 0:
+                self.parser.parseBlocks(parent, [block[: match.start()]])
+            block = block[match.end() :]  # removes the first line
+            block, rest = self.detab(block)
 
-        if m:
-            klass, title = self.get_class_and_title(m)
+            klass, title = self.get_class_and_title(match)
             div = etree.SubElement(parent, "div")
-            div.set("class", "alert alert-{}".format(ADMONITION_TYPE[klass]))
-            div.set("role", "{}".format("alert"))
+            div.set("class", f"alert alert-{ADMONITION_TYPE[klass]}")
+            div.set("role", "alert")
             header = etree.SubElement(div, "h4")
             header.text = klass.capitalize()
         else:
+            sibling, block, rest = self.parse_content(parent, block)
             # Sibling is a list item, but we need to wrap it's content should be wrapped in <p>
             if sibling.tag in ("li", "dd") and sibling.text:
                 text = sibling.text
@@ -157,15 +155,15 @@ class AdmonitionProcessor(BlockProcessor):
 
         self.parser.parseChunk(div, block)
 
-        if theRest:
+        if rest:
             # This block contained unindented line(s) after the first indented
             # line. Insert these lines as the first block of the master blocks
             # list for future processing.
-            blocks.insert(0, theRest)
+            blocks.insert(0, rest)
 
-    def get_class_and_title(self, match):
-        klass, title = match.group(1).lower(), match.group(2)
-        klass = self.RE_SPACES.sub(" ", klass)
+    def get_class_and_title(self, match: re.Match):
+        klass = self.RE_SPACES.sub(" ", match["klass"].lower())
+        title = match["title"]
         if title is None:
             # no title was provided, use the capitalized classname as title
             # e.g.: `!!! note` will render
@@ -184,15 +182,15 @@ class AdmonitionPreprocessor(Preprocessor):
     This preprocessor converts the FORD syntax for admonitions to
     the markdown admonition syntax.
 
-    A FORD admonition starts with `@<type>`, where `<type>` is one of:
-    `note`, `warning`, `todo`, `bug`, or `history`.
+    A FORD admonition starts with ``@<type>``, where ``<type>`` is one of:
+    ``note``, ``warning``, ``todo``, ``bug``, or ``history``.
     An admonition ends at (in this order of preference):
-        1. `@end<type>`, where <type>` must match the start marker
+        1. ``@end<type>``, where ``<type>`` must match the start marker
         2. an empty line
-        3. a new note (`@<type>`)
+        3. a new note (``@<type>``)
         4. the end of the documentation lines
 
-    The admonitions are converted to the markdown syntax, i.e. `!!! Note`,
+    The admonitions are converted to the markdown syntax, i.e. ``!!! Note``,
     followed by an indented block. Possible end markers are removed, as well
     as empty lines if they mark the end of an admonition.
 
@@ -202,10 +200,12 @@ class AdmonitionPreprocessor(Preprocessor):
 
     INDENT_SIZE: ClassVar[int] = 4
     ADMONITION_RE: ClassVar[re.Pattern] = re.compile(
-        r"(?P<pretxt>.*)\s*@(?P<end>end)?(?P<type>{})\s*(?P<posttxt>.*)".format(
-            "|".join(ADMONITION_TYPE.keys())
-        ),
-        re.IGNORECASE,
+        rf"""(?P<pretxt>.*)\s*
+        @(?P<end>end)?
+        (?P<type>{"|".join(ADMONITION_TYPE.keys())})\s*
+        (?P<posttxt>.*)
+        """,
+        re.IGNORECASE | re.VERBOSE,
     )
     admonitions: List["Admonition"] = []
 
@@ -238,25 +238,24 @@ class AdmonitionPreprocessor(Preprocessor):
         for idx, line in enumerate(self.lines):
             match = self.ADMONITION_RE.search(line)
 
-            if match and not match.group("end"):
+            if match and not match["end"]:
                 if current_admonition:
                     if not current_admonition.end_idx:
                         current_admonition.end_idx = idx
                     self.admonitions.append(current_admonition)
-                current_admonition = self.Admonition(
-                    type=match.group("type"),
-                    start_idx=idx,
-                )
+                current_admonition = self.Admonition(type=match["type"], start_idx=idx)
 
-            elif match and match.group("end"):
+            elif match and match["end"]:
                 if current_admonition:
-                    if match.group("type").lower() != current_admonition.type.lower():
-                        pass  # error: type of start and end marker dont' match
+                    if match["type"].lower() != current_admonition.type.lower():
+                        # TODO: error: type of start and end marker dont' match
+                        pass
                     current_admonition.end_idx = idx
                     self.admonitions.append(current_admonition)
                     current_admonition = None
                 else:
-                    pass  # error: end marker found without start marker
+                    # TODO: error: end marker found without start marker
+                    pass
 
             elif line == "" and current_admonition and not current_admonition.end_idx:
                 # empty line encountered while in an admonition. We set end_line but don't
@@ -273,35 +272,33 @@ class AdmonitionPreprocessor(Preprocessor):
     def _process_admonitions(self):
         """Processes the admonitions to convert the lines to the markdown syntax."""
 
+        indent = " " * self.INDENT_SIZE
+
         # We handle the admonitions in the reverse order since
         # we may be deleting lines.
         for admonition in self.admonitions[::-1]:
-
             # last line--deal with possible text before or after end marker
             idx = admonition.end_idx
-            m = self.ADMONITION_RE.search(self.lines[idx])
-            if m:
-                if m.group("posttxt"):
-                    self.lines.insert(idx + 1, m.group("posttxt"))
+            if match := self.ADMONITION_RE.search(self.lines[idx]):
+                if match["posttxt"]:
+                    self.lines.insert(idx + 1, match["posttxt"])
                 del self.lines[idx]
-                if m.group("pretxt"):
-                    self.lines.insert(idx, " " * self.INDENT_SIZE + m.group("pretxt"))
+                if match["pretxt"]:
+                    self.lines.insert(idx, indent + match["pretxt"])
+
             if self.lines[idx] == "":
                 del self.lines[idx]
 
             # intermediate lines
             for idx in range(admonition.start_idx + 1, admonition.end_idx):
                 if self.lines[idx] != "":
-                    self.lines[idx] = " " * self.INDENT_SIZE + self.lines[idx]
+                    self.lines[idx] = indent + self.lines[idx]
 
             # first line--deal with possible text before or after end marker
             idx = admonition.start_idx
-            m = self.ADMONITION_RE.search(self.lines[idx])
-            self.lines[idx] = "!!! " + admonition.type.capitalize()
-            if m.group("posttxt"):
-                self.lines.insert(
-                    idx + 1,
-                    " " * self.INDENT_SIZE + m.group("posttxt"),
-                )
-            if m.group("pretxt"):
-                self.lines.insert(idx, m.group("pretxt"))
+            match = self.ADMONITION_RE.search(self.lines[idx])
+            self.lines[idx] = f"!!! {admonition.type.capitalize()}"
+            if match["posttxt"]:
+                self.lines.insert(idx + 1, indent + match["posttxt"])
+            if match["pretxt"]:
+                self.lines.insert(idx, match["pretxt"])
