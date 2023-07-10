@@ -140,8 +140,10 @@ class AdmonitionProcessor(BlockProcessor):
             div = etree.SubElement(parent, "div")
             div.set("class", f"alert alert-{ADMONITION_TYPE[klass]}")
             div.set("role", "alert")
-            header = etree.SubElement(div, "h4")
-            header.text = klass.capitalize()
+            if title:
+                header = etree.SubElement(div, "h4")
+                header.text = title
+                header.set("class", "alert-title")
         else:
             sibling, block, rest = self.parse_content(parent, block)
             # Sibling is a list item, but we need to wrap it's content should be wrapped in <p>
