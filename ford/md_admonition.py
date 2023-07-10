@@ -95,7 +95,6 @@ class AdmonitionProcessor(BlockProcessor):
                     and last_child
                     and last_child.tag in ("ul", "ol", "dl")
                 ):
-
                     # The expectation is that we'll find an <li> or <dt>.
                     # We should get its last child as well.
                     sibling = self.lastChild(last_child)
@@ -121,7 +120,6 @@ class AdmonitionProcessor(BlockProcessor):
         return sibling, block, the_rest
 
     def test(self, parent, block):
-
         if self.RE.search(block):
             return True
         else:
@@ -199,8 +197,9 @@ class AdmonitionPreprocessor(Preprocessor):
     """
 
     INDENT_SIZE: ClassVar[int] = 4
+    INDENT: ClassVar[str] = " " * INDENT_SIZE
     ADMONITION_RE: ClassVar[re.Pattern] = re.compile(
-        rf"""(?P<pretxt>.*)\s*
+        rf"""(?P<indent>\s*)
         @(?P<end>end)?
         (?P<type>{"|".join(ADMONITION_TYPE.keys())})\s*
         (?P<posttxt>.*)
@@ -272,8 +271,6 @@ class AdmonitionPreprocessor(Preprocessor):
     def _process_admonitions(self):
         """Processes the admonitions to convert the lines to the markdown syntax."""
 
-        indent = " " * self.INDENT_SIZE
-
         # We handle the admonitions in the reverse order since
         # we may be deleting lines.
         for admonition in self.admonitions[::-1]:
@@ -283,22 +280,18 @@ class AdmonitionPreprocessor(Preprocessor):
                 if match["posttxt"]:
                     self.lines.insert(idx + 1, match["posttxt"])
                 del self.lines[idx]
-                if match["pretxt"]:
-                    self.lines.insert(idx, indent + match["pretxt"])
 
-            if self.lines[idx] == "":
-                del self.lines[idx]
+            match = self.ADMONITION_RE.search(self.lines[admonition.start_idx])
 
             # intermediate lines
             for idx in range(admonition.start_idx + 1, admonition.end_idx):
                 if self.lines[idx] != "":
-                    self.lines[idx] = indent + self.lines[idx]
+                    self.lines[idx] = self.INDENT + self.lines[idx]
 
             # first line--deal with possible text before or after end marker
             idx = admonition.start_idx
-            match = self.ADMONITION_RE.search(self.lines[idx])
-            self.lines[idx] = f"!!! {admonition.type.capitalize()}"
+            self.lines[idx] = f"{match['indent']}!!! {admonition.type.capitalize()}"
             if match["posttxt"]:
-                self.lines.insert(idx + 1, indent + match["posttxt"])
-            if match["pretxt"]:
-                self.lines.insert(idx, match["pretxt"])
+                self.lines.insert(
+                    idx + 1, self.INDENT + match["indent"] + match["posttxt"]
+                )
