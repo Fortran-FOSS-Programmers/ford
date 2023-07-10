@@ -202,10 +202,14 @@ class AdmonitionPreprocessor(Preprocessor):
     INDENT: ClassVar[str] = " " * INDENT_SIZE
     ADMONITION_RE: ClassVar[re.Pattern] = re.compile(
         rf"""(?P<indent>\s*)
-        @(?P<end>end)?
-        (?P<type>{"|".join(ADMONITION_TYPE.keys())})\s*
+        @(?P<type>{"|".join(ADMONITION_TYPE.keys())})\s*
         (?P<posttxt>.*)
         """,
+        re.IGNORECASE | re.VERBOSE,
+    )
+    END_RE: ClassVar[re.Pattern] = re.compile(
+        rf"""\s*@end(?P<type>{"|".join(ADMONITION_TYPE.keys())})
+        \s*(?P<posttxt>.*)?""",
         re.IGNORECASE | re.VERBOSE,
     )
     admonitions: List["Admonition"] = []
@@ -237,18 +241,16 @@ class AdmonitionPreprocessor(Preprocessor):
         current_admonition = None
 
         for idx, line in enumerate(self.lines):
-            match = self.ADMONITION_RE.search(line)
-
-            if match and not match["end"]:
+            if match := self.ADMONITION_RE.search(line):
                 if current_admonition:
                     if not current_admonition.end_idx:
                         current_admonition.end_idx = idx
                     self.admonitions.append(current_admonition)
                 current_admonition = self.Admonition(type=match["type"], start_idx=idx)
 
-            elif match and match["end"]:
+            if end := self.END_RE.search(line):
                 if current_admonition:
-                    if match["type"].lower() != current_admonition.type.lower():
+                    if end["type"].lower() != current_admonition.type.lower():
                         # TODO: error: type of start and end marker dont' match
                         pass
                     current_admonition.end_idx = idx
@@ -278,22 +280,26 @@ class AdmonitionPreprocessor(Preprocessor):
         for admonition in self.admonitions[::-1]:
             # last line--deal with possible text before or after end marker
             idx = admonition.end_idx
-            if match := self.ADMONITION_RE.search(self.lines[idx]):
-                if match["posttxt"]:
-                    self.lines.insert(idx + 1, match["posttxt"])
-                del self.lines[idx]
+            if end := self.END_RE.search(self.lines[idx]):
+                # Shove anything after the @end onto the next line
+                if end["posttxt"]:
+                    self.lines.insert(idx + 1, end["posttxt"])
 
-            match = self.ADMONITION_RE.search(self.lines[admonition.start_idx])
+                # Remove the @end and possibly the line too if it ends up blank
+                self.lines[idx] = self.END_RE.sub("", self.lines[idx])
+                if self.lines[idx].strip() == "":
+                    del self.lines[idx]
+                else:
+                    # New ending is now next line
+                    admonition.end_idx += 1
 
-            # intermediate lines
+            # Indent any intermediate lines
             for idx in range(admonition.start_idx + 1, admonition.end_idx):
                 if self.lines[idx] != "":
                     self.lines[idx] = self.INDENT + self.lines[idx]
 
-            # first line--deal with possible text before or after end marker
             idx = admonition.start_idx
+            match = self.ADMONITION_RE.search(self.lines[idx])
             self.lines[idx] = f"{match['indent']}!!! {admonition.type.capitalize()}"
-            if match["posttxt"]:
-                self.lines.insert(
-                    idx + 1, self.INDENT + match["indent"] + match["posttxt"]
-                )
+            if posttxt := match["posttxt"]:
+                self.lines.insert(idx + 1, self.INDENT + match["indent"] + posttxt)

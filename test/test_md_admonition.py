@@ -1,11 +1,9 @@
-import os
 import markdown
 from textwrap import dedent
 
 from ford.md_admonition import AdmonitionExtension
 
 from bs4 import BeautifulSoup
-import pytest
 
 
 def convert(text: str) -> str:
@@ -32,6 +30,21 @@ def test_uppercase():
     converted = convert(
         """
         @NOTE note text
+        """
+    )
+
+    soup = BeautifulSoup(converted, features="html.parser")
+    assert len(soup) == 1
+    assert sorted(soup.div["class"]) == ["alert", "alert-info"]
+    assert soup.div["role"] == "alert"
+    assert soup.h4.text == "Note"
+    assert soup.div.p.text == "note text"
+
+
+def test_endnote():
+    converted = convert(
+        """
+        @note note text @endnote
         """
     )
 
@@ -213,3 +226,24 @@ def test_in_list_with_nested_warning():
 
     all_text = "\n".join(p.text for p in soup.div.find_all("p"))
     assert all_text == "note text\nwith a paragraph\nunnested paragraph"
+
+
+def test_midparagraph():
+    converted = convert(
+        """
+        @Bug start text
+
+        end text @endbug post text
+        """
+    )
+
+    soup = BeautifulSoup(converted, features="html.parser")
+    assert len(soup) == 3
+    assert sorted(soup.div["class"]) == ["alert", "alert-danger"]
+    assert soup.div["role"] == "alert"
+    assert soup.h4.text == "Bug"
+    all_text = "\n".join(p.text for p in soup.div.find_all("p"))
+    assert all_text == "start text\nend text"
+
+    soup.div.extract()
+    assert soup.text.strip() == "post text"
