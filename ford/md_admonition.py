@@ -22,6 +22,7 @@ License: [BSD](https://opensource.org/licenses/bsd-license.php)
 import re
 from dataclasses import dataclass
 from typing import ClassVar, List
+from textwrap import indent
 
 from markdown.extensions import Extension
 from markdown.preprocessors import Preprocessor
@@ -47,6 +48,32 @@ class AdmonitionExtension(Extension):
         md.parser.blockprocessors.register(
             FordAdmonitionProcessor(md.parser), "admonition", 105
         )
+
+
+class FordMarkdownError(RuntimeError):
+    """Format an error when processing markdown, giving some context"""
+
+    def __init__(
+        self,
+        message: str,
+        line_number: int,
+        lines: List[str],
+        start: int,
+        end: int,
+        context: int = 4,
+    ):
+        line_start = line_number - context
+        line_end = line_number + context
+        line_context = lines[line_start:line_end]
+        num_len = len(f"{line_end}")
+        text_with_line_numbers = [
+            f"{line_start + n + 1:{num_len}d}: {line}"
+            for n, line in enumerate(line_context)
+        ]
+        marker = f"{' ' * (num_len + 2 + start)}{'^' * (end - start)}"
+        text_with_line_numbers.insert(context + 1, marker)
+        text = indent("\n".join(text_with_line_numbers), "    ")
+        super().__init__(f"{message}:\n\n{text}")
 
 
 class FordAdmonitionProcessor(AdmonitionProcessor):
@@ -139,18 +166,32 @@ class AdmonitionPreprocessor(Preprocessor):
                 current_admonition = self.Admonition(type=match["type"], start_idx=idx)
 
             if end := self.END_RE.search(line):
-                if current_admonition:
-                    if end["type"].lower() != current_admonition.type.lower():
-                        # TODO: error: type of start and end marker dont' match
-                        pass
-                    current_admonition.end_idx = idx
-                    admonitions.append(current_admonition)
-                    current_admonition = None
-                else:
-                    # TODO: error: end marker found without start marker
-                    pass
+                if not current_admonition:
+                    raise FordMarkdownError(
+                        "Note end marker found without start marker",
+                        idx,
+                        lines,
+                        end.start(),
+                        end.end(),
+                    )
 
-            elif line == "" and current_admonition and current_admonition.end_idx == -1:
+                if end["type"].lower() != current_admonition.type.lower():
+                    raise FordMarkdownError(
+                        "Type of start and end marker don't match",
+                        idx,
+                        lines,
+                        end.start(),
+                        end.end(),
+                    )
+
+                current_admonition.end_idx = idx
+                admonitions.append(current_admonition)
+                current_admonition = None
+
+            if current_admonition is None:
+                continue
+
+            if line == "" and current_admonition.end_idx == -1:
                 # empty line encountered while in an admonition. We set end_line but don't
                 # move it to the list yet since an end marker (@end...) may follow
                 # later.
@@ -194,8 +235,8 @@ class AdmonitionPreprocessor(Preprocessor):
 
             idx = admonition.start_idx
             if (match := self.ADMONITION_RE.search(lines[idx])) is None:
-                # Somethine has gone seriously wrong
-                raise RuntimeError(f"Missing start of @note: {lines[idx]}")
+                # Something has gone seriously wrong!
+                raise FordMarkdownError("Missing start of @note", idx, lines, 0, -1)
 
             extra = match["extra"] or ""
             lines[idx] = f"{match['indent']}@note {admonition.type.capitalize()}{extra}"

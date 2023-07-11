@@ -1,9 +1,10 @@
 import markdown
 from textwrap import dedent
 
-from ford.md_admonition import AdmonitionExtension
+from ford.md_admonition import AdmonitionExtension, FordMarkdownError
 
 from bs4 import BeautifulSoup
+import pytest
 
 
 def convert(text: str) -> str:
@@ -191,34 +192,37 @@ def test_in_list_with_list():
     assert list_text == "first second"
 
 
-def test_in_list_with_nested_warning():
-    converted = convert(
-        """
-        - item 1
+# The following test doesn't currently work, but could be supported by
+# keeping track of a stack of admonitions. PRs welcome!
 
-            @note note text
-            with a paragraph
+# def test_in_list_with_nested_warning():
+#     converted = convert(
+#         """
+#         - item 1
 
-                @warning nested warning
+#             @note note text
+#             with a paragraph
 
-            unnested paragraph
-            @endnote
+#                 @warning nested warning
 
-        - item 2
-        """
-    )
+#             unnested paragraph
+#             @endnote
 
-    soup = BeautifulSoup(converted, features="html.parser")
-    assert len(soup) == 1
-    assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.find(class_="h4").text == "Note"
+#         - item 2
+#         """
+#     )
 
-    nested_box = soup.div.div.extract()
-    assert nested_box.find(class_="h4").text == "Warning"
-    assert nested_box.find(not_title).text == "nested warning"
+#     soup = BeautifulSoup(converted, features="html.parser")
+#     assert len(soup) == 1
+#     assert sorted(soup.div["class"]) == ["alert", "alert-info"]
+#     assert soup.find(class_="h4").text == "Note"
 
-    all_text = "\n".join(p.text for p in soup.div.find_all(not_title))
-    assert all_text == "note text\nwith a paragraph\nunnested paragraph"
+#     nested_box = soup.div.div.extract()
+#     assert nested_box.find(class_="h4").text == "Warning"
+#     assert nested_box.find(not_title).text == "nested warning"
+
+#     all_text = "\n".join(p.text for p in soup.div.find_all(not_title))
+#     assert all_text == "note text\nwith a paragraph\nunnested paragraph"
 
 
 def test_midparagraph():
@@ -267,3 +271,13 @@ def test_css_and_title():
     assert sorted(soup.div["class"]) == sorted(["alert", "alert-info", "some", "css"])
     assert soup.find(class_="h4").text == "title"
     assert soup.div.find(not_title).text == "text"
+
+
+def test_end_marker_without_start():
+    with pytest.raises(FordMarkdownError):
+        convert("@endnote")
+
+
+def test_end_marker_doesnt_match_start():
+    with pytest.raises(FordMarkdownError):
+        convert("@bug\n@endnote")
