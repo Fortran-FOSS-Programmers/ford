@@ -140,25 +140,74 @@ back to number equations as you would in a LaTeX document. For more
 details on that feature, see the `MathJax Documentation
 <http://docs.mathjax.org/en/latest/input/tex/eqnumbers.html>`__.
 
-Special Environments
---------------------
+.. _sec-note-boxes:
 
-Much like in Doxygen, you can use a ``@note`` environment to place the
-succeeding documentation into a special boxed paragraph. This syntax may
-be used at any location in the documentation comment and it will include
-as the note’s contents anything until the first use of ``@endnote``
-(provided there are no new ``@note`` or other environments, described
-below, started before then). If no such ``@endnote`` tag can be found
-then the note’s contents will include until the end of the paragraph
-where the environment was activated. Other environments which behave the
-same way are ``@warning``, ``@todo``, and ``@bug``.
+Notes and Warning Boxes
+-----------------------
 
-Note that these designations are case-insensitive (which, as Fortran
-programmers, we’re all used to). If these environments are used within
-the first paragraph of something’s documentation and you do not manually
-specify a summary, then the environment will be included in the summary
-of your documentation. If you do not want it included, just place the
-environment in a new paragraph of its own.
+If you want to call particular attention to a piece of information,
+you can use the ``@note`` markup to place it in a highlighted box:
+
+.. code:: markdown
+
+    @note
+    You can include any notes (or bugs, warnings, or todos) like so.
+    @endnote
+
+becomes:
+
+.. figure:: note_box.png
+   :alt: An example of a @note box
+
+   An example of a ``@note`` box
+
+This syntax may be used at almost any location in the documentation
+comment and it will include as the note’s contents anything until the
+first use of ``@endnote`` (provided there are no new ``@note`` or
+other boxes, described below, started before then). If no such
+``@endnote`` tag can be found then the note’s contents will include
+until the end of the paragraph where the environment was activated.
+
+There are some variations on ``@note`` boxes, which are coloured
+differently:
+
+- ``@note``
+- ``@warning``
+- ``@todo``
+- ``@bug``
+- ``@history``
+
+You can give them a custom title by putting it in quotes immediately
+after the tag:
+
+.. code:: markdown
+
+    @note "Custom title"
+    Note text
+    @endnote
+
+These boxes all use the CSS class ``alert``, as well as
+``alert-<name>`` (for example, ``alert-note``), so you can customise
+them if you wish. You can even add your own CSS classes, although you
+must also give a title in that case:
+
+.. code:: markdown
+
+    @note highlight blink "Title"
+    Note text
+    @endnote
+
+Note that these tags are case-insensitive (which, as Fortran
+programmers, we’re all used to). If a note is used within the first
+paragraph of something’s documentation and you do not manually specify
+a summary, then the note will be included in the summary of your
+documentation. If you do not want it included, just place the note in
+a new paragraph of its own.
+
+Notes can include other markdown, such as lists or code blocks, and
+can be used in other places such as lists -- although you need to be
+careful about indentation in such cases.
+
 
 “Include” Capabilities
 ----------------------

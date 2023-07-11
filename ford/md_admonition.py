@@ -1,21 +1,18 @@
 """
-Admonition extension for Python-Markdown
-========================================
+Admonition Preprocessor
+=======================
 
-Adds rST-style admonitions. Inspired by [rST][] feature with the same name.
+Markdown preprocessor for dealing with FORD style admonitions. See
+:ref:`sec-note-boxes` for details on using these in Ford docs.
 
-[rST]: http://docutils.sourceforge.net/docs/ref/rst/directives.html#specific-admonitions  # noqa
+A preprocessor, :py:class:`AdmonitionPreprocessor`, converts Ford style
+``@note`` into something that the existing `markdown admonition
+extension`_ can handle. This is mostly a matter of making sure the
+note body is indented correctly. The conversion to HTML is done with a
+customised processor, :py:class:`FordAdmonitionProcessor`
 
-See <https://Python-Markdown.github.io/extensions/admonition>
-for documentation.
-
-Original code Copyright [Tiago Serafim](https://www.tiagoserafim.com/).
-
-Initial changes Copyright The Python Markdown Project
-
-Further changes Copyright 2022-2023 Maarten Braakhekke, Peter Hill
-
-License: [BSD](https://opensource.org/licenses/bsd-license.php)
+.. _markdown admonition extension:
+   https://python-markdown.github.io/extensions/admonition/
 
 """
 
@@ -77,6 +74,14 @@ class FordMarkdownError(RuntimeError):
 
 
 class FordAdmonitionProcessor(AdmonitionProcessor):
+    """Customised version of the `Python markdown`_ extension.
+
+    Uses our CSS class names for each specific note type.
+
+    .. _Python markdown:
+       https://python-markdown.github.io/extensions/admonition/
+    """
+
     CLASSNAME = "alert"
     CLASSNAME_TITLE = "alert-title h4"
     RE = re.compile(
@@ -84,6 +89,12 @@ class FordAdmonitionProcessor(AdmonitionProcessor):
     )
 
     def get_class_and_title(self, match):
+        """Get the CSS class and title for this admonition
+
+        Title defaults to the note class, while the CSS class is looked up
+        in the list of note types (`ADMONITION_TYPE`)
+
+        """
         css, title = super().get_class_and_title(match)
         if len(css_bits := css.split()) > 1:
             klass = css_bits[0]
@@ -103,17 +114,15 @@ class AdmonitionPreprocessor(Preprocessor):
     A FORD admonition starts with ``@<type>``, where ``<type>`` is one of:
     ``note``, ``warning``, ``todo``, ``bug``, or ``history``.
     An admonition ends at (in this order of preference):
-        1. ``@end<type>``, where ``<type>`` must match the start marker
-        2. an empty line
-        3. a new note (``@<type>``)
-        4. the end of the documentation lines
+
+    1. ``@end<type>``, where ``<type>`` must match the start marker
+    2. an empty line
+    3. a new note (``@<type>``)
+    4. the end of the documentation lines
 
     The admonitions are converted to the markdown syntax, i.e. ``@note Note``,
     followed by an indented block. Possible end markers are removed, as well
     as empty lines if they mark the end of an admonition.
-
-    Todo:
-        - Error handling
     """
 
     INDENT_SIZE: ClassVar[int] = 4
@@ -135,17 +144,13 @@ class AdmonitionPreprocessor(Preprocessor):
 
     @dataclass
     class Admonition:
-        """A single admonition block in the text.
+        """A single admonition block in the text."""
 
-        Attributes:
-            type: admonition type (note, bug, etc.)
-            start_idx: line index of start marker
-            end_idx: end line index, one of: @end..., empty line,
-                start marker of next  admonition, last line of text.
-        """
-
+        #: Admonition type (note, bug, and so on)
         type: str
+        #: Line index of start marker
         start_idx: int
+        #: Line index where admonition ends
         end_idx: int = -1
 
     def run(self, lines: List[str]) -> List[str]:
