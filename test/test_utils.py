@@ -1,6 +1,7 @@
 import pytest
 
 import ford
+from ford.utils import meta_preprocessor
 
 
 def test_sub_macro(restore_macros):
@@ -54,3 +55,15 @@ def test_str_to_bool_already_bool():
 )
 def test_strip_paren(string, level, expected):
     assert ford.utils.strip_paren(string, retlevel=level) == expected
+
+from collections import defaultdict
+def test_meta_preprocessor():
+
+    text = """key1: value1
+    key2: value2
+    key3: value3
+
+    no more metadata""".splitlines()
+
+    assert meta_preprocessor(text) == (defaultdict(list, {'key1': ['value1', 'key2: value2', 'key3: value3']}),
+ ['    no more metadata'])
