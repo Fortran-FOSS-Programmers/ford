@@ -290,8 +290,8 @@ class FortranBase:
                 ]:
                     doc.insert(0, "")
                 doc.append("")
-            self.doc = md.reset().convert("\n".join(doc))
-            self.meta = md.Meta
+            self.meta, doclist = ford.utils.meta_preprocessor(doc)
+            self.doc = md.reset().convert("\n".join(doclist))
         else:
             if (
                 self.settings["warn"]
