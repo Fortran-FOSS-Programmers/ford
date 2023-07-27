@@ -1201,6 +1201,7 @@ class FortranCodeUnit(FortranContainer):
             "variables",
             "common",
             "modprocedures",
+            "namelists"
         ):
             entity.correlate(project)
         if hasattr(self, "args") and not getattr(self, "mp", False):
@@ -1794,10 +1795,15 @@ class FortranNamelist(FortranBase):
     namelist's contents
     """
     proctype = "Namelist"
-    def _initialize(self, line: re.Match) -> None:
-        self.variables = line["vars"].split(",")
-        self.variables = [i.lstrip() for i in self.variables]
+    def _initialize(self, line: re.Match) -> None: 
+        self.variables = [variable.strip() for variable in line["vars"].split(",")]
         
+    def correlate(self, project):
+        for i,variable in enumerate(self.variables):
+            self.all_vars = self.parent.all_vars
+            if variable.lower() in self.all_vars:
+                self.variables[i] = self.all_vars[variable.lower()]
+            
 class FortranType(FortranContainer):
     """
     An object representing a Fortran derived type and holding all of said type's
