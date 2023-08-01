@@ -1797,7 +1797,7 @@ class FortranNamelist(FortranBase):
     proctype = "Namelist"
     def _initialize(self, line: re.Match) -> None: 
         self.variables = [variable.strip() for variable in line["vars"].split(",")]
-        
+        self.name = line["name"]
     def correlate(self, project):
         for i,variable in enumerate(self.variables):
             self.all_vars = self.parent.all_vars

@@ -1903,7 +1903,7 @@ def test_submodule_procedure_calls(parse_fortran_file):
     submodule.correlate(FakeProject())
 
     assert submodule.modprocedures[0].calls[0] == submodule.functions[0]
-#write test to find created object know its going to have a varaibles list with 4 strings varA-D
+
 def test_Name_List(parse_fortran_file):
   data = """\
     !! docstring for mod_a
@@ -1954,8 +1954,7 @@ def test_Name_List(parse_fortran_file):
   expected_names = sorted(["var_a", "var_b", "var_c", "var_d"])
   output_names = sorted(namelists.variables)
   assert output_names == expected_names
-  #correlate test: to go in def test_Name_List_Correlate 
-  #
+
 def test_Name_List_Correlate(parse_fortran_file):
   data = """\
     !! docstring for prog
@@ -1990,5 +1989,6 @@ def test_Name_List_Correlate(parse_fortran_file):
   expected_names = sorted(["var_a", "var_b", "var_c", "var_d"])
   output_names = sorted([variables.name for variables in namelists.variables])
   assert output_names == expected_names
-  #Find the list of variables they should be objects. use debugger to check this 
+  assert namelists.name == "namelist_a"
+   
   
