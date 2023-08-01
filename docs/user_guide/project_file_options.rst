@@ -5,12 +5,12 @@
 ======================
 
 You can specify various options and information for your project in the
-meta-data of your project file. Quoting from the `Markdown
+metadata of your project file. Quoting from the `Markdown
 Meta-Data <https://python-markdown.github.io/extensions/meta_data/>`__
-page (and not intending to give an example of the meta-data fields
+page (and not intending to give an example of the metadata fields
 supported by FORD):
 
-Meta-data consists of a series of keywords and values defined at the
+Metadata consists of a series of keywords and values defined at the
 beginning of a markdown document like this:
 
 .. code:: text
@@ -35,8 +35,8 @@ an additional line of the value for the previous keyword. A keyword
 may have as many lines as desired (note that these **must** be
 spaces and not tabs).
 
-The first blank line ends all meta-data for the document. Therefore,
-the first line of a document must not be blank. All meta-data is
+The first blank line ends all metadata for the document. Therefore,
+the first line of a document must not be blank. All metadata is
 stripped from the document prior to any further processing by
 Markdown.
 
@@ -51,7 +51,7 @@ the project file.
 *N.B.!*: Markdown comments must not appear within the meta data section!
 Typical markdown commenting strategies may be used within the markdown
 body of the project file, BUT NOT WITHIN THE META-DATA SECTION! After
-declaring meta-data HTML block comments of the form
+declaring metadata HTML block comments of the form
 
 .. code:: html
 
@@ -67,7 +67,7 @@ or markdown phony link comments may be used:
 
    [comment 1 goes here, this will declare a phony link target. Just make sure not to reference the null anchor]:#
 
-The options which can be specified in the meta-data are listed below.
+The options which can be specified in the metadata are listed below.
 Defaults are included in the description, if they exist.
 
 Project Information
