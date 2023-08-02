@@ -1865,14 +1865,20 @@ class FortranNamelist(FortranBase):
     proctype = "Namelist"
 
     def _initialize(self, line: re.Match) -> None:
-        self.variables = [variable.strip() for variable in line["vars"].split(",")]
+        self.variables = [
+            variable.strip().lower() for variable in line["vars"].split(",")
+        ]
         self.name = line["name"]
 
     def correlate(self, project):
-        for i, variable in enumerate(self.variables):
-            self.all_vars = self.parent.all_vars
-            if variable.lower() in self.all_vars:
-                self.variables[i] = self.all_vars[variable.lower()]
+        all_vars: Dict[str, FortranVariable] = {}
+        all_vars.update(self.parent.all_vars)
+        if isinstance(self.parent, FortranProcedure):
+            all_vars.update({arg.name: arg for arg in self.parent.args})
+
+        self.variables = [
+            all_vars.get(variable, variable) for variable in self.variables
+        ]
 
 
 class FortranType(FortranContainer):
