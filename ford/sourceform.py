@@ -382,13 +382,11 @@ class FortranBase:
         if hasattr(self, "num_lines"):
             self.meta["num_lines"] = self.num_lines
 
-        self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc))
+        self.doc = ford.utils.sub_macros(self.doc)
 
         if self.meta.get("summary", None) is not None:
             self.meta["summary"] = md.convert(self.meta["summary"])
-            self.meta["summary"] = ford.utils.sub_macros(
-                ford.utils.sub_notes(self.meta["summary"])
-            )
+            self.meta["summary"] = ford.utils.sub_macros(self.meta["summary"])
         elif paragraph := PARA_CAPTURE_RE.search(self.doc):
             # If there is no stand-alone webpage for this item, e.g.
             # an internal routine, make the whole doc blob appear,
