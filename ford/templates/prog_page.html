@@ -119,6 +119,15 @@
     </section>    
     {% endif %}
     
+    {% if program.namelists %}
+      <section>
+        <h2>Namelists</h2>
+        {% for namelist in program.namelists %}
+          {{ macros.namelist_entry(namelist) }}
+        {% endfor %}
+      </section>
+    {% endif %}
+
     {% if program.src %}
     <section>
     <h2 id="src">Source Code</h2>

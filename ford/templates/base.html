@@ -87,6 +87,9 @@
                 {% if project.types %}
                   <li><a href="{{ project_url }}/lists/types.html">Derived Types</a></li>
                 {% endif %}
+                {% if project.namelists %}
+                  <li><a href="{{ project_url }}/lists/namelists.html">Namelists</a></li>
+                {% endif %}
                 {% if project.programs|length is more_than_one %}
                   <li><a href="{{ project_url }}/lists/programs.html">Programs</a></li>
                 {% elif project.programs|length == 1 %}
@@ -138,6 +141,11 @@
             {% if project.types %}
               <li class="visible-xs hidden-sm visible-lg">
                 <a href="{{ project_url }}/lists/types.html">Derived Types</a>
+              </li>
+            {% endif %}
+            {% if project.namelists %}
+              <li class="visible-xs hidden-sm visible-lg">
+                <a href="{{ project_url }}/lists/namelists.html">Namelists</a>
               </li>
             {% endif %}
             {% if project.programs|length is more_than_one %}

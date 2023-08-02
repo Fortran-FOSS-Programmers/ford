@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}
+All namelists &ndash; {{ project }}
+{% endblock %}
+
+{% block body %}
+  <div class="row">
+    <div class="col-lg-12" id='text'>
+      <h1>Namelists</h1>
+      <table class="table table-striped nostretch">
+        <thead><tr><th>Namelist</th><th>Location</th><th>Description</th></tr></thead>
+        <tbody>
+          {% for namelist in project.namelists | sort(attribute="name") %}
+            <tr><td>{{ namelist }}</td><td>{{ namelist.parent }}</td><td>{{ namelist | meta('summary') }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock body %}

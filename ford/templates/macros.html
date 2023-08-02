@@ -24,11 +24,13 @@
             <li id="meta-category"><i class="fa fa-folder-open"></i> {{ entity | meta('category') }}</li>
           {% endif %}
 
-          <li id="statements"><i class="fa fa-list-ol"></i>
-            <a data-toggle="tooltip"
-               data-placement="bottom" data-html="true"
-               title="{{ line_info }}">{{ entity | meta('num_lines') }} statements</a>
-          </li>
+          {% if line_info %}
+            <li id="statements"><i class="fa fa-list-ol"></i>
+              <a data-toggle="tooltip"
+                 data-placement="bottom" data-html="true"
+                 title="{{ line_info }}">{{ entity | meta('num_lines') }} statements</a>
+            </li>
+          {% endif %}
 
           {% if incl_src %}
             <li id="source-file">
@@ -103,6 +105,7 @@
   {{ panel_contents("Finalization Procedures", self.finalprocs, "fins", panelnum, self.get_url()) }}
   {{ panel_contents("Type-Bound Procedures", self.boundprocs, "boundprocs", panelnum, self.get_url()) }}
   {{ panel_contents("Module Procedures", self.modprocs, "modprocs", panelnum, self.get_url()) }}
+  {{ panel_contents("Namelists", self.namelists, "namelists", panelnum, self.get_url()) }}
   {% if self.src %}
     <div class="panel panel-primary">
       <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
@@ -128,6 +131,7 @@
          "modprocedures",
          "modprocs",
          "modules",
+         "namelists",
          "programs",
          "submodules",
          "subroutines",
@@ -617,6 +621,41 @@
     <div class="panel-heading codesum"><span class="anchor" id="{{ proc.anchor }}"></span><h3>{{ proc_line(proc) }}</h3></div>
     <div class="panel-body">
       {{ proc_summary(proc,False) }}
+    </div>
+  </div>
+{% endmacro %}
+
+{# Summarise a namelist #}
+{% macro namelist_entry(namelist) %}
+  <div class="panel panel-default">
+    <div class="panel-heading codesum">
+      <span class="anchor" id="{{ namelist.anchor }}"></span>
+      <h3>Namelist {{ namelist }}</h3>
+    </div>
+    <div class="panel-body">
+      {{ namelist | meta("summary") }}
+      <br class="visible-xs visible-sm hidden-md">
+      <section>
+        <h2>Variables</h2>
+        <table class="table table-striped">
+          <thead><tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Default</th>
+              <th>Description</th>
+          </tr></thead>
+          <tbody>
+            {% for variable in namelist.variables | sort(attribute="name") %}
+              <tr id="{{ namelist.name }}-{{ variable.name }}">
+                <td><strong>{{ variable.name }}</strong></td>
+                <td>{{ variable.full_type }}</td>
+                <td>{{ variable.initial | e }}</td>
+                <td>{{ variable | meta("summary") }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
     </div>
   </div>
 {% endmacro %}

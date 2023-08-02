@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ namelist.name }} %ndash; {{ project }}
+{% endblock title %}
+
+{% block body %}
+  {% import "macros.html" as macros %}
+  <div class="row">
+    <h1>{{ namelist.name }}</h1>
+    {{ macros.info_bar(namelist, incl_src, project_url, None) }}
+  </div>
+
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      {{ macros.sidebar(project, namelist) }}
+    </div>
+
+    <div class="col-md-9" id='text'>
+      {{ namelist.doc }}
+
+      <section class="visible-xs visible-sm hidden-md">
+        {{ macros.content_list(namelist, 1) }}
+      </section>
+      <br class="visible-xs visible-sm hidden-md">
+
+      <section>
+        <h2>Variables</h2>
+        <table class="table table-striped">
+          <thead><tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Default</th>
+              <th>Description</th>
+          </tr></thead>
+          <tbody>
+            {% for variable in namelist.variables | sort(attribute="name") %}
+              <tr id="{{ variable.anchor }}">
+                <td><a href="#{{ variable.anchor }}">{{ variable.name }}</a></td>
+                <td>{{ variable.full_type }}</td>
+                <td>{{ variable.initial | e }}</td>
+                <td>{{ variable.doc }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+      <br>
+    </div>
+  </div>
+{% endblock body %}

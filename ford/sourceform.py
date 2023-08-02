@@ -226,6 +226,7 @@ class FortranBase:
                 FortranModule,
                 GenericSource,
                 FortranBlockData,
+                FortranNamelist,
             ),
         ) or (
             isinstance(
@@ -1862,13 +1863,12 @@ class FortranNamelist(FortranBase):
     namelist's contents
     """
 
-    proctype = "Namelist"
-
     def _initialize(self, line: re.Match) -> None:
         self.variables = [
             variable.strip().lower() for variable in line["vars"].split(",")
         ]
         self.name = line["name"]
+        self.visible = True
 
     def correlate(self, project):
         all_vars: Dict[str, FortranVariable] = {}

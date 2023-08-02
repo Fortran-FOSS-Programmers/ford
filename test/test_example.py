@@ -69,6 +69,7 @@ def test_nav_bar(example_index):
         "Programs",
         "Abstract Interfaces",
         "Contents",
+        "Namelists",
     }
     assert expected_pages == link_names
 

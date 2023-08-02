@@ -157,6 +157,15 @@
     {% endfor %}
     </section>    
     {% endif %}
+
+    {% if procedure.namelists %}
+      <section>
+        <h2>Namelists</h2>
+        {% for namelist in procedure.namelists %}
+          {{ macros.namelist_entry(namelist) }}
+        {% endfor %}
+      </section>
+    {% endif %}
     
     {% if procedure.src %}
     <section>
