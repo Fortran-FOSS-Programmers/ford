@@ -543,6 +543,7 @@ class FortranBase:
                 "interfaces",
                 "modprocedures",
                 "modules",
+                "namelists",
                 "programs",
                 "submodules",
                 "subroutines",
