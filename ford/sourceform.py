@@ -664,8 +664,10 @@ class FortranContainer(FortranBase):
         r"^(integer|real|double\s*precision|character|complex|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|"
         r"procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
     )
-    NAMELIST_RE = re.compile(r"namelist\s*/(?P<name>\w+)/\s*(?P<vars>(?:\w+,?\s*)+)", re.IGNORECASE)
-       
+    NAMELIST_RE = re.compile(
+        r"namelist\s*/(?P<name>\w+)/\s*(?P<vars>(?:\w+,?\s*)+)", re.IGNORECASE
+    )
+
     def __init__(
         self, source, first_line, parent=None, inherited_permission="public", strings=[]
     ):
@@ -883,7 +885,7 @@ class FortranContainer(FortranBase):
                     self.num_lines += self.subroutines[-1].num_lines - 1
                 else:
                     self.print_error(line, "Unexpected SUBROUTINE")
-                    
+
             elif match := self.NAMELIST_RE.match(line):
                 if hasattr(self, "namelists"):
                     self.namelists.append(
@@ -891,7 +893,7 @@ class FortranContainer(FortranBase):
                     )
                 else:
                     self.print_error(line, "Unexpected NAMELIST")
-                         
+
             elif match := self.FUNCTION_RE.match(line):
                 if isinstance(self, FortranCodeUnit) and not incontains:
                     self.print_error(line, "Unexpected FUNCTION")
@@ -1114,7 +1116,7 @@ class FortranCodeUnit(FortranContainer):
         self.all_procs: Dict[str, Union[FortranProcedure, FortranInterface]] = {}
         self.public_list: List[str] = []
         self.namelists: List[FortranNamelist] = []
-        
+
     def _cleanup(self) -> None:
         self.process_attribs()
         self.all_procs = {p.name.lower(): p for p in self.routines}
@@ -1259,7 +1261,7 @@ class FortranCodeUnit(FortranContainer):
             "variables",
             "common",
             "modprocedures",
-            "namelists"
+            "namelists",
         ):
             entity.correlate(project)
         if hasattr(self, "args") and not getattr(self, "mp", False):
@@ -1780,7 +1782,7 @@ class FortranSubroutine(FortranProcedure):
     def _initialize(self, line: re.Match) -> None:
         self._procedure_initialize(**line.groupdict())
 
-    
+
 class FortranFunction(FortranProcedure):
     """
     An object representing a Fortran function and holding all of said function's
@@ -1855,19 +1857,23 @@ class FortranProgram(FortranCodeUnit):
 
 class FortranNamelist(FortranBase):
     """
-    An object representing a Fortran namelist and holding all of said 
+    An object representing a Fortran namelist and holding all of said
     namelist's contents
     """
+
     proctype = "Namelist"
-    def _initialize(self, line: re.Match) -> None: 
+
+    def _initialize(self, line: re.Match) -> None:
         self.variables = [variable.strip() for variable in line["vars"].split(",")]
         self.name = line["name"]
+
     def correlate(self, project):
-        for i,variable in enumerate(self.variables):
+        for i, variable in enumerate(self.variables):
             self.all_vars = self.parent.all_vars
             if variable.lower() in self.all_vars:
                 self.variables[i] = self.all_vars[variable.lower()]
-            
+
+
 class FortranType(FortranContainer):
     """
     An object representing a Fortran derived type and holding all of said type's
@@ -2573,7 +2579,8 @@ class FortranSpoof:
 
     def __str__(self):
         return self.name
-    
+
+
 class GenericSource(FortranBase):
     """
     Represent a non-Fortran source file. The contents of the file will

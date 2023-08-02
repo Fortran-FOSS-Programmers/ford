@@ -1098,7 +1098,8 @@ def test_submodule_procedure_issue_446(copy_fortran_file):
     submodproc = module.descendants[0].modprocedures[0]
 
     assert interface.procedure.module == submodproc
-    
+
+
 def test_find_namelists(copy_fortran_file):
     data = """\
     !! docstring for prog
@@ -1129,5 +1130,5 @@ def test_find_namelists(copy_fortran_file):
     """
     settings = copy_fortran_file(data)
     project = create_project(settings)
-    assert len(project.namelists) == 1 
+    assert len(project.namelists) == 1
     assert project.namelists[0].name == "namelist_a"

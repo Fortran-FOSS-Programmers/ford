@@ -121,11 +121,11 @@ class Project:
 
                         print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
                         continue
-                    
+
                     def namelist_check(entity):
                         if hasattr(entity, "namelists"):
                             self.namelists.extend(getattr(entity, "namelists"))
-                            pass
+
                     for module in self.files[-1].modules:
                         self.modules.append(module)
                         for routine in module.routines:
