@@ -2093,88 +2093,50 @@ def test_submodule_procedure_calls(parse_fortran_file):
 
 def test_namelist(parse_fortran_file):
     data = """\
-    !! docstring for mod_a
     module mod_a
-      implicit none
-      !! docstring for var_a
       integer :: var_a
     end module mod_a
-    !! docstring for mod_b
     module mod_b
       use mod_a
-      implicit none
-      !! docstring for var_b
       integer :: var_b
     end module mod_b
-    !! docstring for prog
+
     program prog
-      implicit none
-      !! docstring for var_c
       integer :: var_c
-      character(len=*), parameter :: namelist_string = "&
-            & &namelist_a &
-            &   var_a = 1 &
-            &   var_b = 1 &
-            &   var_c = 1 &
-            &   var_d = 1 &
-            & /"
-      call sub(namelist_string)
     contains
-      !! docstring for sub
-      subroutine sub(string)
+      subroutine sub()
         use mod_b
-        !! docstring var_d
         integer :: var_d
-        character(len=*), intent(in) :: string
         namelist /namelist_a/ var_a, var_b, var_c, var_d
-        read(string, nml=namelist_a)
-        write(*, *) "Read in:"
-        write(*, nml=namelist_a)
+        !! namelist docstring
       end subroutine sub
     end program prog
     """
     fortran_file = parse_fortran_file(data)
     assert len(fortran_file.modules) == 2
     assert len(fortran_file.submodules) == 0
-    namelists = fortran_file.programs[0].subroutines[0].namelists[0]
-    assert len(namelists.variables) == 4
+    namelist = fortran_file.programs[0].subroutines[0].namelists[0]
+    assert len(namelist.variables) == 4
     expected_names = sorted(["var_a", "var_b", "var_c", "var_d"])
-    output_names = sorted(namelists.variables)
+    output_names = sorted(namelist.variables)
     assert output_names == expected_names
 
 
 def test_namelist_correlate(parse_fortran_file):
     data = """\
-    !! docstring for prog
     program prog
-      implicit none
-      !! docstring for var_c
       integer :: var_c
-      character(len=*), parameter :: namelist_string = "&
-            & &namelist_a &
-            &   var_a = 1 &
-            &   var_b = 1 &
-            &   var_c = 1 &
-            &   var_d = 1 &
-            & /"
-      call sub(namelist_string)
     contains
-      !! docstring for sub
-      subroutine sub(string)
-        !! docstring var_d
+      subroutine sub()
         integer :: var_d, var_a, var_b
-        character(len=*), intent(in) :: string
         namelist /namelist_a/ var_a, var_b, var_c, var_d
-        read(string, nml=namelist_a)
-        write(*, *) "Read in:"
-        write(*, nml=namelist_a)
       end subroutine sub
     end program prog
     """
     fortran_file = parse_fortran_file(data)
     fortran_file.programs[0].correlate(FakeProject())
-    namelists = fortran_file.programs[0].subroutines[0].namelists[0]
+    namelist = fortran_file.programs[0].subroutines[0].namelists[0]
     expected_names = sorted(["var_a", "var_b", "var_c", "var_d"])
-    output_names = sorted([variables.name for variables in namelists.variables])
+    output_names = sorted([variables.name for variables in namelist.variables])
     assert output_names == expected_names
-    assert namelists.name == "namelist_a"
+    assert namelist.name == "namelist_a"
