@@ -123,8 +123,7 @@ class Project:
                         continue
 
                     def namelist_check(entity):
-                        if hasattr(entity, "namelists"):
-                            self.namelists.extend(getattr(entity, "namelists"))
+                        self.namelists.extend(getattr(entity, "namelists", []))
 
                     for module in self.files[-1].modules:
                         self.modules.append(module)
