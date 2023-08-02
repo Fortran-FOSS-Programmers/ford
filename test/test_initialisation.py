@@ -1,9 +1,14 @@
 import ford
 from textwrap import dedent
+from pathlib import Path
 import sys
 import pytest
 
 from conftest import gfortran_is_not_installed
+
+
+class FakeFile:
+    name = "test file"
 
 
 def test_quiet_false():
@@ -50,10 +55,10 @@ def test_path_normalisation():
              src2
     """
     data, _, _ = ford.parse_arguments({}, dedent(settings), "/prefix/path")
-    assert str(data["page_dir"]) == "/prefix/path/my_pages"
+    assert str(data["page_dir"]) == str(Path("/prefix/path/my_pages"))
     assert [str(p) for p in data["src_dir"]] == [
-        "/prefix/path/src1",
-        "/prefix/path/src2",
+        str(Path("/prefix/path/src1")),
+        str(Path("/prefix/path/src2")),
     ]
 
 
@@ -112,15 +117,17 @@ def test_no_preprocessor():
 
 
 def test_bad_preprocessor():
-    class FakeFile:
-        name = "test file"
-
     with pytest.raises(SystemExit):
         ford.parse_arguments({"project_file": FakeFile()}, "preprocessor: false")
 
 
+@pytest.mark.skipif(
+    sys.platform.startswith("win"), reason="FIXME: Need portable do-nothing command"
+)
 def test_maybe_ok_preprocessor():
-    data, _, _ = ford.parse_arguments({}, "preprocessor: true")
+    data, _, _ = ford.parse_arguments(
+        {"project_file": FakeFile()}, "preprocessor: true"
+    )
 
     if data["preprocess"] is True:
         assert isinstance(data["preprocessor"], list)
