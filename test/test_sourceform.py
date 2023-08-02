@@ -2121,6 +2121,8 @@ def test_namelist(parse_fortran_file):
     output_names = sorted(namelist.variables)
     assert output_names == expected_names
 
+    assert namelist.doc_list == [" namelist docstring"]
+
 
 def test_namelist_correlate(parse_fortran_file):
     data = """\
