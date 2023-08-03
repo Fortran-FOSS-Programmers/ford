@@ -180,135 +180,27 @@ def sub_links(string: str, project: Project) -> str:
     [[parent-name:name]]. The object type can be placed in parentheses
     for either or both of these parts.
     """
-    LINK_TYPES = {
-        "module": "modules",
-        "extmodule": "extModules",
-        "type": "types",
-        "exttype": "extTypes",
-        "procedure": "procedures",
-        "extprocedure": "extProcedures",
-        "subroutine": "procedures",
-        "extsubroutine": "extProcedures",
-        "function": "procedures",
-        "extfunction": "extProcedures",
-        "proc": "procedures",
-        "extproc": "extProcedures",
-        "file": "allfiles",
-        "interface": "absinterfaces",
-        "extinterface": "extInterfaces",
-        "absinterface": "absinterfaces",
-        "extabsinterface": "extInterfaces",
-        "program": "programs",
-        "block": "blockdata",
-        "namelist": "namelists",
-    }
-
-    SUBLINK_TYPES = {
-        "variable": "variables",
-        "type": "types",
-        "constructor": "constructor",
-        "interface": "interfaces",
-        "absinterface": "absinterfaces",
-        "subroutine": "subroutines",
-        "function": "functions",
-        "final": "finalprocs",
-        "bound": "boundprocs",
-        "modproc": "modprocs",
-        "common": "common",
-    }
 
     def convert_link(match):
-        ERR = "Warning: Could not substitute link {}. {}"
-        url = ""
-        name = ""
-        found = False
-        searchlist = []
-        item = None
-        # [name,obj,subname,subobj]
-        if not match["entity"]:
-            for key, val in LINK_TYPES.items():
-                searchlist.extend(getattr(project, val))
-        else:
-            if match["entity"].lower() in LINK_TYPES:
-                searchlist.extend(getattr(project, LINK_TYPES[match["entity"].lower()]))
-            else:
-                print(
-                    ERR.format(
-                        match.group(),
-                        f'Unrecognized classification "{match["entity"]}"',
-                    )
-                )
-                return match.group()
+        item = project.find(**match.groupdict())
 
-        for obj in searchlist:
-            if match["name"].lower() == obj.name.lower():
-                url = obj.get_url()
-                name = obj.name
-                found = True
-                item = obj
-                break
-        else:
-            print(ERR.format(match.group(), f'"{match["name"]}" not found.'))
-            url = ""
-            name = match["name"]
+        # Could resolve full parent::child, so just try to find parent instead
+        if match["child_name"] and item is None:
+            parent_name = match["name"]
+            print(
+                f"Warning: Could not substitute link {match.group()}. "
+                f'"{match["child_name"]}" not found in "{parent_name}", linking to page for "{parent_name}" instead'
+            )
+            item = project.find(match["name"], match["entity"])
 
-        if found and match["child_name"]:
-            searchlist = []
-            if not match["child_entity"]:
-                for key, val in SUBLINK_TYPES.items():
-                    if val == "constructor":
-                        if getattr(item, "constructor", False):
-                            searchlist.append(item.constructor)
-                        else:
-                            continue
-                    else:
-                        searchlist.extend(getattr(item, val, []))
-            else:
-                if match["child_entity"].lower() in SUBLINK_TYPES:
-                    if hasattr(item, SUBLINK_TYPES[match["child_entity"].lower()]):
-                        if match["child_entity"].lower() == "constructor":
-                            if item.constructor:
-                                searchlist.append(item.constructor)
-                        else:
-                            searchlist.extend(
-                                getattr(
-                                    item, SUBLINK_TYPES[match["child_entity"].lower()]
-                                )
-                            )
-                    else:
-                        print(
-                            ERR.format(
-                                match.group(),
-                                f'"{match["child_entity"]}" can not be contained in "{item.obj}"',
-                            )
-                        )
-                        return match.group()
-                else:
-                    print(
-                        ERR.format(
-                            match.group(),
-                            f'Unrecognized classification "{match["entity"]}".',
-                        )
-                    )
-                    return match.group()
+        # Nothing found, so give a blank link
+        if item is None:
+            print(
+                f"Warning: Could not substitute link {match.group()}. '{match['name']}' not found"
+            )
+            return f"<a>{match['name']}</a>"
 
-            for obj in searchlist:
-                if match["child_name"].lower() == obj.name.lower():
-                    url = str(url) + "#" + obj.anchor
-                    name = obj.name
-                    item = obj
-                    break
-            else:
-                print(
-                    ERR.format(
-                        match.group(),
-                        f'"{match["child_name"]}" not found in "{name}", linking to page for "{name}" instead.',
-                    )
-                )
-
-        if found:
-            return f'<a href="{url}">{name}</a>'
-        return f"<a>{name}</a>"
+        return f'<a href="{item.get_url()}">{item.name}</a>'
 
     # Get information from links (need to build an RE)
     string = LINK_RE.sub(convert_link, string)

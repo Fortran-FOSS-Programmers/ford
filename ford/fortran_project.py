@@ -25,12 +25,13 @@
 import os
 import toposort
 from itertools import chain
-from typing import List, Union, Dict
+from typing import Iterable, List, Optional, Union, Dict
 
 from ford.external_project import load_external_modules
 import ford.utils
 import ford.sourceform
 from ford.sourceform import (
+    FortranBase,
     FortranCodeUnit,
     FortranModule,
     FortranSubmodule,
@@ -61,6 +62,51 @@ INTRINSIC_MODS = {
     "mpi": '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node410.htm">mpi</a>',
     "mpi_f08": '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node409.htm">mpi_f08</a>',
 }
+
+
+LINK_TYPES = {
+    "module": "modules",
+    "extmodule": "extModules",
+    "type": "types",
+    "exttype": "extTypes",
+    "procedure": "procedures",
+    "extprocedure": "extProcedures",
+    "subroutine": "procedures",
+    "extsubroutine": "extProcedures",
+    "function": "procedures",
+    "extfunction": "extProcedures",
+    "proc": "procedures",
+    "extproc": "extProcedures",
+    "file": "allfiles",
+    "interface": "absinterfaces",
+    "extinterface": "extInterfaces",
+    "absinterface": "absinterfaces",
+    "extabsinterface": "extInterfaces",
+    "program": "programs",
+    "block": "blockdata",
+    "namelist": "namelists",
+}
+
+SUBLINK_TYPES = {
+    "variable": "variables",
+    "type": "types",
+    "constructor": "constructor",
+    "interface": "interfaces",
+    "absinterface": "absinterfaces",
+    "subroutine": "subroutines",
+    "function": "functions",
+    "final": "finalprocs",
+    "bound": "boundprocs",
+    "modproc": "modprocs",
+    "common": "common",
+}
+
+
+def _find_in_list(collection: Iterable, name: str) -> Optional[FortranBase]:
+    for item in collection:
+        if name == item.name.lower():
+            return item
+    return None
 
 
 class Project:
@@ -383,6 +429,64 @@ class Project:
                 dir_list.append(abs_entry)
                 dir_list += self.recursive_dir_list(abs_entry, skip)
         return dir_list
+
+    def find(
+        self,
+        name: str,
+        entity: Optional[str] = None,
+        child_name: Optional[str] = None,
+        child_entity: Optional[str] = None,
+    ) -> Optional[FortranBase]:
+        """Find an entity somewhere in the project
+
+        Parameters
+        ----------
+        name : str
+            Name of entity to look up
+        entity : Optional[str]
+            The class of entity (module, program, and so on)
+        child_name : Optional[str]
+            Name of a child of ``name`` to look up
+        child_entity : Optional[str]
+            The class of ``child_name``
+
+        Returns
+        -------
+        Optional[FortranBase]
+            Returns `None` if ``name`` not found
+
+        """
+
+        item = None
+
+        if entity is not None:
+            try:
+                collection = getattr(self, LINK_TYPES[entity])
+            except KeyError:
+                raise ValueError(f"Unknown class of entity {entity!r}")
+        else:
+            collection = chain(
+                *(getattr(self, collection) for collection in LINK_TYPES.values())
+            )
+
+        item = _find_in_list(collection, name)
+
+        if child_name is None or item is None:
+            return item
+
+        if child_entity is not None:
+            try:
+                child_collection_name = SUBLINK_TYPES[child_entity]
+            except KeyError:
+                raise ValueError(f"Unknown class of entity {child_entity!r}")
+            if not hasattr(item, child_collection_name):
+                raise ValueError(f"{item.obj!r} cannot have child {child_entity!r}")
+            # Ensure this is a list, as constructors are single items
+            child_collection = list(getattr(item, child_collection_name))
+        else:
+            child_collection = item.children
+
+        return _find_in_list(child_collection, child_name)
 
 
 def find_used_modules(
