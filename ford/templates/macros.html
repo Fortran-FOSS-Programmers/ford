@@ -24,11 +24,13 @@
             <li id="meta-category"><i class="fa fa-folder-open"></i> {{ entity | meta('category') }}</li>
           {% endif %}
 
-          <li id="statements"><i class="fa fa-list-ol"></i>
-            <a data-toggle="tooltip"
-               data-placement="bottom" data-html="true"
-               title="{{ line_info }}">{{ entity | meta('num_lines') }} statements</a>
-          </li>
+          {% if line_info %}
+            <li id="statements"><i class="fa fa-list-ol"></i>
+              <a data-toggle="tooltip"
+                 data-placement="bottom" data-html="true"
+                 title="{{ line_info }}">{{ entity | meta('num_lines') }} statements</a>
+            </li>
+          {% endif %}
 
           {% if incl_src %}
             <li id="source-file">
@@ -71,8 +73,14 @@
       <div id="{{ anchor }}-{{ panelnum }}" class="panel-collapse collapse">
         <div class="list-group">
           {% for item in collection %}
-            {% set name = item.name if item.name else "<em>unnamed</em>" %}
-            {% set anchor_url = collection_url + "#" + item.anchor if collection_url else item.get_url() %}
+            {% if item is string %}
+              {% set name = item %}
+              {% set anchor = item %}
+            {% else %}
+              {% set name = item.name if item.name else "<em>unnamed</em>" %}
+              {% set anchor = item.anchor %}
+            {% endif %}
+            {% set anchor_url = "{}#{}".format(collection_url, anchor) if collection_url else item.get_url() %}
             <a class="list-group-item" href="{{ anchor_url }}">{{ name }}</a>
           {% endfor %}
         </div>
@@ -103,6 +111,7 @@
   {{ panel_contents("Finalization Procedures", self.finalprocs, "fins", panelnum, self.get_url()) }}
   {{ panel_contents("Type-Bound Procedures", self.boundprocs, "boundprocs", panelnum, self.get_url()) }}
   {{ panel_contents("Module Procedures", self.modprocs, "modprocs", panelnum, self.get_url()) }}
+  {{ panel_contents("Namelists", self.namelists, "namelists", panelnum, self.get_url()) }}
   {% if self.src %}
     <div class="panel panel-primary">
       <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
@@ -128,6 +137,7 @@
          "modprocedures",
          "modprocs",
          "modules",
+         "namelists",
          "programs",
          "submodules",
          "subroutines",
@@ -621,6 +631,59 @@
   </div>
 {% endmacro %}
 
+{# The full panel for a single namelist on another entitys page #}
+{% macro namelist_panel(namelist) %}
+  <div class="panel panel-default">
+    <div class="panel-heading codesum">
+      <span class="anchor" id="{{ namelist.anchor }}"></span>
+      <h3>Namelist {{ namelist }}</h3>
+    </div>
+    <div class="panel-body">
+      {{ namelist_summary(namelist, False) }}
+    </div>
+  </div>
+{% endmacro %}
+
+{# Variable table for a single namelist #}
+{% macro namelist_summary(namelist, full_docstring) %}
+  {{ docstring(namelist, full_docstring) }}
+  <br class="visible-xs visible-sm hidden-md">
+  <section>
+    <h2>Variables</h2>
+    <table class="table table-striped" id="{{ namelist.anchor }}">
+      <thead><tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>Description</th>
+      </tr></thead>
+      <tbody>
+        {% for variable in namelist.variables %}
+          {{ namelist_row(variable, full_docstring) }}
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endmacro %}
+
+{# A single row of the namelist variable table #}
+{% macro namelist_row(variable, full_docstring) %}
+  {% if variable is string %}
+    <tr id="{{ variable }}">
+      <td><a href="#{{ variable }}">{{ variable }}</a></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  {% else %}
+    <tr id="{{ variable.anchor }}">
+      <td><a href="#{{ variable.anchor }}">{{ variable.name }}</a></td>
+      <td>{{ variable.full_type }}</td>
+      <td>{{ variable.initial | e }}</td>
+      <td>{{ docstring(variable, full_docstring) }}</td>
+    </tr>
+  {% endif %}
+{% endmacro %}
 
 {% macro use_list(obj) %}
   {% if obj.uses or obj.ancestry %}

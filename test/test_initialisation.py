@@ -23,9 +23,13 @@ def test_quiet_false():
 def test_quiet_command_line():
     """Check that setting --quiet on the command line overrides project file"""
 
-    data, _, _ = ford.parse_arguments({"quiet": True, "preprocess": False}, "quiet: false")
+    data, _, _ = ford.parse_arguments(
+        {"quiet": True, "preprocess": False}, "quiet: false"
+    )
     assert data["quiet"] is True
-    data, _, _ = ford.parse_arguments({"quiet": False,"preprocess": False}, "quiet: true")
+    data, _, _ = ford.parse_arguments(
+        {"quiet": False, "preprocess": False}, "quiet: true"
+    )
     assert data["quiet"] is False
 
 
@@ -54,7 +58,9 @@ def test_path_normalisation():
     src_dir: src1
              src2
     """
-    data, _, _ = ford.parse_arguments({"preprocess": False}, dedent(settings), "/prefix/path")
+    data, _, _ = ford.parse_arguments(
+        {"preprocess": False}, dedent(settings), "/prefix/path"
+    )
     assert str(data["page_dir"]) == str(Path("/prefix/path/my_pages").absolute())
     assert [str(p) for p in data["src_dir"]] == [
         str(Path("/prefix/path/src1").absolute()),
@@ -67,18 +73,24 @@ def test_source_not_subdir_output():
 
     # This should be fine
     data, _, _ = ford.parse_arguments(
-        {"src_dir": ["/1/2/3", "4/5"], "output_dir": "/3/4", "preprocess": False}, "", "/prefix"
+        {"src_dir": ["/1/2/3", "4/5"], "output_dir": "/3/4", "preprocess": False},
+        "",
+        "/prefix",
     )
 
     # This shouldn't be
     with pytest.raises(ValueError):
         data, _, _ = ford.parse_arguments(
-            {"src_dir": ["4/5", "/1/2/3"], "output_dir": "/1/2", "preprocess": False}, "", "/prefix"
+            {"src_dir": ["4/5", "/1/2/3"], "output_dir": "/1/2", "preprocess": False},
+            "",
+            "/prefix",
         )
     # src_dir == output_dir
     with pytest.raises(ValueError):
         data, _, _ = ford.parse_arguments(
-            {"src_dir": ["/1/2/"], "output_dir": "/1/2","preprocess": False}, "", "/prefix"
+            {"src_dir": ["/1/2/"], "output_dir": "/1/2", "preprocess": False},
+            "",
+            "/prefix",
         )
 
 

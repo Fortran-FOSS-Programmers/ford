@@ -117,6 +117,7 @@ class Documentation:
                 (project.submodules, ModulePage),
                 (project.programs, ProgPage),
                 (project.blockdata, BlockPage),
+                (project.namelists, NamelistPage),
             ]
             if data["incl_src"]:
                 entity_list_page_map.append((project.allfiles, FilePage))
@@ -140,6 +141,8 @@ class Documentation:
                 self.lists.append(AbsIntList(self.data, project))
             if len(project.blockdata) > 1:
                 self.lists.append(BlockList(self.data, project))
+            if project.namelists:
+                self.lists.append(NamelistList(self.data, project))
 
             # Create static pages
             self.pagetree = [
@@ -228,6 +231,7 @@ class Documentation:
             "program",
             "src",
             "blockdata",
+            "namelist",
         ]:
             (out_dir / directory).mkdir(USER_WRITABLE_ONLY)
 
@@ -408,6 +412,11 @@ class BlockList(ListPage):
     list_page = "block_list.html"
 
 
+class NamelistList(ListPage):
+    out_page = "namelists.html"
+    list_page = "namelist_list.html"
+
+
 class DocPage(BasePage):
     """
     Abstract class to be inherited by all pages for items in the code.
@@ -489,6 +498,11 @@ class GenericInterfacePage(DocPage):
 class InterfacePage(DocPage):
     page_path = "nongenint_page.html"
     payload_key = "interface"
+
+
+class NamelistPage(DocPage):
+    page_path = "namelist_page.html"
+    payload_key = "namelist"
 
 
 def ProcPage(data, proj, obj):
