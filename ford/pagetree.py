@@ -27,7 +27,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import List, Optional
-
+import textwrap
+from ford.utils import meta_preprocessor
 
 class PageNode:
     """
@@ -45,18 +46,19 @@ class PageNode:
         encoding: str = "utf-8",
     ):
         print(f"Reading page {os.path.relpath(path)}")
-        text = md.reset().convert(Path(path).read_text(encoding=encoding))
+        text = textwrap.dedent(Path(path).read_text(encoding=encoding)).splitlines()
+        self.meta, doclist = meta_preprocessor(text)
 
-        if "title" not in md.Meta:
+        if "title" not in self.meta:
             raise ValueError(f"Page '{path}' has no title metadata")
 
-        self.title = "\n".join(md.Meta["title"])
-        self.author = "\n".join(md.Meta.get("author", []))
-        self.date = "\n".join(md.Meta.get("date", []))
+        self.title = "\n".join(self.meta["title"])
+        self.author = "\n".join(self.meta.get("author", []))
+        self.date = "\n".join(self.meta.get("date", []))
 
         # index.md is the main page, it should not be added by the user in the subpage lists.
         self.ordered_subpages = [
-            x for x in md.Meta.get("ordered_subpage", []) if x != "index.md"
+            x for x in self.meta.get("ordered_subpage", []) if x != "index.md"
         ]
 
         # set list of directory names that are to be copied along without
@@ -64,9 +66,9 @@ class PageNode:
         #   first priority is the copy_dir option in the *.md file
         #   if this option is not set in the file fall back to the global
         #   project settings
-        self.copy_subdir = md.Meta.get("copy_subdir", proj_copy_subdir)
+        self.copy_subdir = self.meta.get("copy_subdir", proj_copy_subdir)
         self.parent = parent
-        self.contents = text
+        self.contents = md.reset().convert("\n".join(doclist))
         self.subpages: List[PageNode] = []
         self.files: List[os.PathLike] = []
         self.filename = Path(path.stem)
