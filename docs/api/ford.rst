@@ -16,6 +16,7 @@ Submodules
    ford.fortran_project
    ford.graphs
    ford.intrinsics
+   ford.md_admonition
    ford.md_environ
    ford.md_striped_table
    ford.output

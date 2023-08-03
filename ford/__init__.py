@@ -578,19 +578,15 @@ def main(proj_data, proj_docs, md):
     if proj_data["summary"] is not None:
         proj_data["summary"] = md.convert(proj_data["summary"])
         proj_data["summary"] = ford.utils.sub_links(
-            ford.utils.sub_macros(ford.utils.sub_notes(proj_data["summary"])), project
+            ford.utils.sub_macros(proj_data["summary"]), project
         )
     if proj_data["author_description"] is not None:
         proj_data["author_description"] = md.convert(proj_data["author_description"])
         proj_data["author_description"] = ford.utils.sub_links(
-            ford.utils.sub_macros(
-                ford.utils.sub_notes(proj_data["author_description"])
-            ),
+            ford.utils.sub_macros(proj_data["author_description"]),
             project,
         )
-    proj_docs_ = ford.utils.sub_links(
-        ford.utils.sub_macros(ford.utils.sub_notes(proj_docs)), project
-    )
+    proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(proj_docs), project)
     # Process any pages
     if proj_data["page_dir"] is not None:
         page_tree = get_page_tree(

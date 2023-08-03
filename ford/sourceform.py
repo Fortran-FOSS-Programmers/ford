@@ -69,7 +69,7 @@ COMMA_RE = re.compile(r",(?!\s)")
 NBSP_RE = re.compile(r" (?= )|(?<= ) ")
 DIM_RE = re.compile(r"^\w+\s*(\(.*\))\s*$")
 PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
-
+CALL_AND_WHITESPACE_RE = re.compile(r"\(\)|\s")
 
 base_url = ""
 
@@ -383,13 +383,11 @@ class FortranBase:
         if hasattr(self, "num_lines"):
             self.meta["num_lines"] = self.num_lines
 
-        self.doc = ford.utils.sub_macros(ford.utils.sub_notes(self.doc))
+        self.doc = ford.utils.sub_macros(self.doc)
 
         if self.meta.get("summary", None) is not None:
             self.meta["summary"] = md.convert(self.meta["summary"])
-            self.meta["summary"] = ford.utils.sub_macros(
-                ford.utils.sub_notes(self.meta["summary"])
-            )
+            self.meta["summary"] = ford.utils.sub_macros(self.meta["summary"])
         elif paragraph := PARA_CAPTURE_RE.search(self.doc):
             # If there is no stand-alone webpage for this item, e.g.
             # an internal routine, make the whole doc blob appear,
@@ -1071,7 +1069,7 @@ class FortranContainer(FortranBase):
 
         # Add call chains to self.calls
         for chain_str in call_chains:
-            call_chain = re.sub("\(\)|\s", "", chain_str).lower().split("%")
+            call_chain = CALL_AND_WHITESPACE_RE.sub("", chain_str).lower().split("%")
 
             if call_chain[0] in associations:
                 call_chain[0:1] = associations[call_chain[0]]
@@ -1974,7 +1972,9 @@ class FortranType(FortranContainer):
         # Match up generic type-bound procedures to their particular bindings
         for proc in self.boundprocs:
             for bp in inherited_generic:
-                if bp.name.lower() == proc.name.lower() and hasattr(bp, "bindings"):
+                if bp.name.lower() == proc.name.lower() and isinstance(
+                    bp, FortranBoundProcedure
+                ):
                     proc.bindings = bp.bindings + proc.bindings
                     break
             if proc.generic:
@@ -2336,7 +2336,7 @@ class FortranBoundProcedure(FortranBase):
         self.proto = line["prototype"]
         if self.proto:
             self.proto = self.proto[1:-1].strip()
-        self.bindings = []
+        self.bindings: List[Union[str, FortranProcedure, FortranBoundProcedure]] = []
         if len(split) > 1:
             binds = self.SPLIT_RE.split(split[1])
             for bind in binds:
@@ -3080,6 +3080,7 @@ class ExternalBoundProcedure(FortranBoundProcedure):
         self.external_url = url
         self.parent = parent
         self.obj = "proc"
+        self.bindings = []
 
 
 class ExternalType(FortranType):

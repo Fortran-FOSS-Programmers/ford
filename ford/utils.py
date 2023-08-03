@@ -50,26 +50,6 @@ import itertools
 if TYPE_CHECKING:
     from ford.fortran_project import Project
 
-
-NOTE_TYPE = {
-    "note": "info",
-    "warning": "warning",
-    "todo": "success",
-    "bug": "danger",
-    "history": "history",
-}
-NOTE_RE = [
-    re.compile(
-        r"@({})\s*(((?!@({})).)*?)@end\1\s*(</p>)?".format(
-            note, "|".join(NOTE_TYPE.keys())
-        ),
-        re.IGNORECASE | re.DOTALL,
-    )
-    for note in NOTE_TYPE
-] + [
-    re.compile(r"@({})\s*(.*?)\s*</p>".format(note), re.IGNORECASE | re.DOTALL)
-    for note in NOTE_TYPE
-]
 LINK_RE = re.compile(r"\[\[(\w+(?:\.\w+)?)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)?\]\]")
 
 
@@ -77,26 +57,6 @@ LINK_RE = re.compile(r"\[\[(\w+(?:\.\w+)?)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)
 # Each key of the form |name| will be replaced by the value found in the
 # dictionary in sub_macros.
 _MACRO_DICT: Dict[str, str] = {}
-
-
-def sub_notes(docs):
-    """
-    Substitutes the special controls for notes, warnings, todos, and bugs with
-    the corresponding div.
-    """
-
-    def substitute(match):
-        ret = (
-            f'</p><div class="alert alert-{NOTE_TYPE[match.group(1).lower()]}" role="alert">'
-            f"<h4>{match.group(1).capitalize()}</h4><p>{match.group(2)}</p></div>"
-        )
-        if len(match.groups()) >= 4 and not match.group(4):
-            ret += "\n<p>"
-        return ret
-
-    for regex in NOTE_RE:
-        docs = regex.sub(substitute, docs)
-    return docs
 
 
 def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
