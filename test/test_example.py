@@ -470,3 +470,25 @@ def test_static_pages(example_project):
         for link in ("index", "subpage2", "subpage1", "subpage3")
     ]
     assert subpage_paths == expected_subpage_paths, "ordered_subpages"
+
+
+def test_namelist_lists(example_project):
+    path, _ = example_project
+    namelist_lists = read_html(path / "lists/namelists.html")
+
+    table = namelist_lists.table
+    assert table.a.text == "example_namelist"
+    assert table.a["href"] == "../namelist/example_namelist.html"
+
+
+def test_namelist_page(example_project):
+    path, _ = example_project
+    namelist_page = read_html(path / "namelist/example_namelist.html")
+
+    table = namelist_page.table
+    # First row is header, skip it
+    rows = table.find_all("tr")[1:]
+    variables = sorted([row.td.text for row in rows])
+    expected_variables = sorted(["input", "module_level_variable", "local_variable"])
+
+    assert variables == expected_variables
