@@ -17,34 +17,11 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      {{ namelist.doc }}
-
       <section class="visible-xs visible-sm hidden-md">
         {{ macros.content_list(namelist, 1) }}
       </section>
-      <br class="visible-xs visible-sm hidden-md">
 
-      <section>
-        <h2>Variables</h2>
-        <table class="table table-striped">
-          <thead><tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Default</th>
-              <th>Description</th>
-          </tr></thead>
-          <tbody>
-            {% for variable in namelist.variables | sort(attribute="name") %}
-              <tr id="{{ variable.anchor }}">
-                <td><a href="#{{ variable.anchor }}">{{ variable.name }}</a></td>
-                <td>{{ variable.full_type }}</td>
-                <td>{{ variable.initial | e }}</td>
-                <td>{{ variable.doc }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </section>
+      {{ macros.namelist_summary(namelist, True) }}
       <br>
     </div>
   </div>

@@ -625,7 +625,7 @@
   </div>
 {% endmacro %}
 
-{# Summarise a namelist #}
+{# The full panel for a single namelist on another entitys page #}
 {% macro namelist_entry(namelist) %}
   <div class="panel panel-default">
     <div class="panel-heading codesum">
@@ -633,33 +633,37 @@
       <h3>Namelist {{ namelist }}</h3>
     </div>
     <div class="panel-body">
-      {{ namelist | meta("summary") }}
-      <br class="visible-xs visible-sm hidden-md">
-      <section>
-        <h2>Variables</h2>
-        <table class="table table-striped">
-          <thead><tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Default</th>
-              <th>Description</th>
-          </tr></thead>
-          <tbody>
-            {% for variable in namelist.variables | sort(attribute="name") %}
-              <tr id="{{ namelist.name }}-{{ variable.name }}">
-                <td><strong>{{ variable.name }}</strong></td>
-                <td>{{ variable.full_type }}</td>
-                <td>{{ variable.initial | e }}</td>
-                <td>{{ variable | meta("summary") }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </section>
+      {{ namelist_summary(namelist, False) }}
     </div>
   </div>
 {% endmacro %}
 
+{# Variable table for a single namelist #}
+{% macro namelist_summary(namelist, full_docstring) %}
+  {{ docstring(namelist, full_docstring) }}
+  <br class="visible-xs visible-sm hidden-md">
+  <section>
+    <h2>Variables</h2>
+    <table class="table table-striped" id="{{ namelist.anchor }}">
+      <thead><tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Default</th>
+          <th>Description</th>
+      </tr></thead>
+      <tbody>
+        {% for variable in namelist.variables %}
+          <tr id="{{ variable.anchor }}">
+            <td><a href="#{{ variable.anchor }}">{{ variable.name }}</a></td>
+            <td>{{ variable.full_type }}</td>
+            <td>{{ variable.initial | e }}</td>
+            <td>{{ docstring(variable, full_docstring) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endmacro %}
 
 {% macro use_list(obj) %}
   {% if obj.uses or obj.ancestry %}
