@@ -118,15 +118,13 @@ class Project:
                     else:
                         preprocessor = None
                     try:
-                        self.files.append(
-                            ford.sourceform.FortranSourceFile(
-                                str(filename),
-                                settings,
-                                preprocessor,
-                                extension in self.fixed_extensions,
-                                incl_src=html_incl_src,
-                                encoding=self.encoding,
-                            )
+                        new_file = ford.sourceform.FortranSourceFile(
+                            str(filename),
+                            settings,
+                            preprocessor,
+                            extension in self.fixed_extensions,
+                            incl_src=html_incl_src,
+                            encoding=self.encoding,
                         )
                     except Exception as e:
                         if not settings.dbg:
@@ -138,30 +136,37 @@ class Project:
                     def namelist_check(entity):
                         self.namelists.extend(getattr(entity, "namelists", []))
 
-                    for module in self.files[-1].modules:
+                    for module in new_file.modules:
                         self.modules.append(module)
                         for routine in module.routines:
                             namelist_check(routine)
-                    for submod in self.files[-1].submodules:
+
+                    for submod in new_file.submodules:
                         self.submodules.append(submod)
                         for routine in submod.routines:
                             namelist_check(routine)
-                    for function in self.files[-1].functions:
+
+                    for function in new_file.functions:
                         function.visible = True
                         self.procedures.append(function)
                         namelist_check(function)
-                    for subroutine in self.files[-1].subroutines:
+
+                    for subroutine in new_file.subroutines:
                         subroutine.visible = True
                         self.procedures.append(subroutine)
                         namelist_check(subroutine)
-                    for program in self.files[-1].programs:
+
+                    for program in new_file.programs:
                         program.visible = True
                         self.programs.append(program)
                         namelist_check(program)
                         for routine in program.routines:
                             namelist_check(routine)
-                    for block in self.files[-1].blockdata:
+
+                    for block in new_file.blockdata:
                         self.blockdata.append(block)
+
+                    self.files.append(new_file)
                 elif extension in self.extra_filetypes:
                     print(f"Reading file {relative_path}")
                     try:
