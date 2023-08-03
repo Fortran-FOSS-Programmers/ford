@@ -55,10 +55,10 @@ def test_path_normalisation():
              src2
     """
     data, _, _ = ford.parse_arguments({"preprocess": False}, dedent(settings), "/prefix/path")
-    assert str(data["page_dir"]) == str(Path("/prefix/path/my_pages"))
+    assert str(data["page_dir"]) == str(Path("/prefix/path/my_pages").absolute())
     assert [str(p) for p in data["src_dir"]] == [
-        str(Path("/prefix/path/src1")),
-        str(Path("/prefix/path/src2")),
+        str(Path("/prefix/path/src1").absolute()),
+        str(Path("/prefix/path/src2").absolute()),
     ]
 
 
