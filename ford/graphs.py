@@ -41,6 +41,7 @@ from tqdm.contrib.concurrent import process_map
 import ford.utils
 
 from ford.sourceform import (
+    ExternalBoundProcedure,
     ExternalFunction,
     ExternalInterface,
     ExternalModule,
@@ -120,7 +121,8 @@ def is_blockdata(obj):
     return isinstance(obj, FortranBlockData)
 
 
-NodeCollection = Dict[FortranContainer, "BaseNode"]
+FortranEntity = Union[FortranContainer, FortranBoundProcedure]
+NodeCollection = Dict[FortranEntity, "BaseNode"]
 
 
 class GraphData:
@@ -152,7 +154,7 @@ class GraphData:
         self.show_proc_parent = show_proc_parent
 
     def _get_collection_and_node_type(
-        self, obj: FortranContainer
+        self, obj: FortranEntity
     ) -> Tuple[NodeCollection, Type["BaseNode"]]:
         """Helper function for `register` and `get_node`: get the
         appropriate container for ``obj``, and the corresponding node
@@ -180,7 +182,7 @@ class GraphData:
         )
 
     def register(
-        self, obj: FortranContainer, hist: Optional[NodeCollection] = None
+        self, obj: FortranEntity, hist: Optional[NodeCollection] = None
     ) -> None:
         """Create and store the graph node for ``obj``, if it hasn't
         already been registered
@@ -200,7 +202,7 @@ class GraphData:
             collection[obj] = NodeType(obj, self, hist)
 
     def get_node(
-        self, obj: FortranContainer, hist: Optional[NodeCollection] = None
+        self, obj: FortranEntity, hist: Optional[NodeCollection] = None
     ) -> BaseNode:
         """Returns the node corresponding to ``obj``. If does not
         already exist then it will create it.
@@ -253,13 +255,17 @@ class GraphData:
         return cast(TypeNode, self.get_node(type_, hist))
 
 
-def get_call_nodes(calls, visited=None, result=None):
+def get_call_nodes(
+    calls: List[Union[str, FortranEntity]],
+    visited: Optional[Set[Union[str, FortranEntity]]] = None,
+    result: Optional[Set[Union[str, FortranEntity]]] = None,
+) -> Set[Union[str, FortranEntity]]:
     """
     takes a list of calls, and returns a set of all the calls that should
     be nodes in the graph
 
     not all calls are a node, some are not visible, and some are simple
-    procedure bindings (bindings that bind one procedure to one label)
+    procedure bindings (bindings that bind one visible procedure to one label)
 
     these should be skipped, and show a call to their descendant instead
     """
@@ -280,6 +286,7 @@ def get_call_nodes(calls, visited=None, result=None):
             isinstance(call, FortranBoundProcedure)
             and len(call.bindings) == 1
             and not isinstance(call.bindings[0], FortranBoundProcedure)
+            and (call.deferred or getattr(call.bindings[0], "visible", False))
         )
 
         if getattr(call, "visible", True) and not is_simple_binding:
@@ -310,7 +317,7 @@ class BaseNode:
 
     def __init__(
         self,
-        obj: Union[FortranContainer, str],
+        obj: Union[FortranEntity, str],
         graph_data: GraphData,
         hist: Optional[NodeCollection] = None,
     ):
@@ -321,6 +328,7 @@ class BaseNode:
                 ExternalModule,
                 ExternalSubmodule,
                 ExternalType,
+                ExternalBoundProcedure,
                 ExternalSubroutine,
                 ExternalFunction,
                 ExternalInterface,
@@ -347,7 +355,7 @@ class BaseNode:
             self.ident = f"{d}~{obj.ident}"
             self.name = obj.name
             if m := EM_RE.search(self.name):
-                self.name = "<<i>" + m.group(1).strip() + "</i>>"
+                self.name = f"<<i>{m.group(1).strip()}</i>>"
             self.url = obj.get_url()
 
         self.attribs["label"] = self.name
@@ -633,6 +641,7 @@ if graphviz_installed:
     _subroutine = gd.get_node(ExternalSubroutine("Subroutine"))
     _function = gd.get_node(ExternalFunction("Function"))
     _interface = gd.get_node(ExternalInterface("Interface"))
+    _boundproc = gd.get_node(ExternalBoundProcedure("Type Bound Procedure"))
     _unknown_proc = ExternalSubroutine("Unknown Procedure Type")
     _unknown_proc.proctype = "Unknown"
     _unknown = gd.get_node(_unknown_proc)
@@ -662,7 +671,9 @@ if graphviz_installed:
 
     mod_svg = _make_legend([_module, _submodule, _subroutine, _function, _program])
     type_svg = _make_legend([_type])
-    call_svg = _make_legend([_subroutine, _function, _interface, _unknown, _program])
+    call_svg = _make_legend(
+        [_subroutine, _function, _interface, _boundproc, _unknown, _program]
+    )
     file_svg = _make_legend([_sourcefile])
 else:
     mod_svg = ""
@@ -908,9 +919,11 @@ class FortranGraph:
                   );
                 </script>"""
 
+        graph_help_name = f"{self.__class__.__name__}-help-text"
+
         legend_graph = f"""\
-        <div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div>
-          <div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog">
+        <div><a type="button" class="graph-help" data-toggle="modal" href="#{graph_help_name}">Help</a></div>
+          <div class="modal fade" id="{graph_help_name}" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-lg" role="document">
               <div class="modal-content">
                 <div class="modal-header">

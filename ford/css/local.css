@@ -126,7 +126,12 @@ body {
       margin-right: 5px;
       margin-top: 5px;
     }
-    
+
+    .alert-title {
+      margin-top: 0;
+      color: inherit;
+    }
+
     div.toc {
       font-size: 14.73px;
       padding-left: 0px;

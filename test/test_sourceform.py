@@ -12,6 +12,7 @@ from ford import DEFAULT_SETTINGS
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Union, List, Optional
+from itertools import chain
 
 import markdown
 import pytest
@@ -233,7 +234,7 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
     program = fortran_file.programs[0]
     assert len(program.calls) == 2
     expected_calls = {"bar", "foo"}
-    assert set([call.name for call in program.calls]) == expected_calls
+    assert set(call[-1] for call in program.calls) == expected_calls
 
 
 @pytest.mark.parametrize(
@@ -358,6 +359,104 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
             """,
             ["p_baz"],
         ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            ASSOCIATE (tmp => v_bar)
+                CALL tmp%p_bar()
+            END ASSOCIATE
+            """,
+            ["p_bar"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            INTEGER, DIMENSION(2) :: var
+            ASSOCIATE (tmp => v_bar%v_baz)
+                var = tmp%p_baz()
+            END ASSOCIATE
+            """,
+            ["p_baz"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            INTEGER :: var
+            ASSOCIATE (tmp => v_bar%v_baz)
+                ASSOCIATE (tmp2 => tmp%p_baz())
+                END ASSOCIATE
+            END ASSOCIATE
+            """,
+            ["p_baz"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            INTEGER, DIMENSION(1) :: var_arr
+            ASSOCIATE (tmp => v_bar%v_baz)
+                ASSOCIATE (tmp => tmp%v_faz)
+                    var_arr = tmp
+                END ASSOCIATE
+                var_arr = tmp%p_baz()
+            END ASSOCIATE
+            """,
+            ["p_baz"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            INTEGER :: var = 10
+            ASSOCIATE (tmp => var)
+                var = tmp
+            END ASSOCIATE
+            """,
+            [],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            ASSOCIATE (tmp => v_bar%p_foo())
+                PRINT *, tmp
+            END ASSOCIATE
+            """,
+            ["p_foo"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            INTEGER, DIMENSION(2) :: var_arr
+            ASSOCIATE (tmp => v_bar, arr => var_arr)
+                CALL tmp%p_bar()
+                arr = tmp%v_baz%p_baz()
+            END ASSOCIATE
+            """,
+            ["p_bar", "p_baz"],
+        ),
+        (
+            """
+            USE m_baz, ONLY: t_bar
+            TYPE(t_bar) :: v_bar
+            INTEGER, DIMENSION(2) :: var_arr
+            ASSOCIATE (tmp => v_bar)
+                ASSOCIATE (tmp2 => tmp%v_baz%p_baz())
+                END ASSOCIATE
+            END ASSOCIATE
+            """,
+            ["p_baz"],
+        ),
+        (
+            """
+            ASSOCIATE (tmp => p_faz(p_fuz(1)))
+            END ASSOCIATE
+            """,
+            ["p_faz", "p_fuz"],
+        ),
     ],
 )
 def test_type_chain_function_and_subroutine_calls(
@@ -425,7 +524,17 @@ def test_type_chain_function_and_subroutine_calls(
     MODULE m_main
 
         CONTAINS
+        
+        FUNCTION p_faz(arg) RESULT(ret_val)
+            INTEGER, INTENT(IN) :: arg
+            INTEGER :: ret_val
+        END FUNCTION p_faz
 
+        FUNCTION p_fuz(arg) RESULT(ret_val)
+            INTEGER, INTENT(IN) :: arg
+            INTEGER :: ret_val
+        END FUNCTION p_fuz
+        
         SUBROUTINE main
             {call_segment}
         END SUBROUTINE main
@@ -456,6 +565,137 @@ def test_type_chain_function_and_subroutine_calls(
         assert isinstance(call, FortranBase)
 
         assert call.name == expected_name
+
+
+def test_call_in_module_procedure(parse_fortran_file):
+    data = f"""\
+    module foo
+      type :: nuz
+      contains
+        procedure :: cor
+      end type nuz
+      interface
+        module subroutine bar()
+        end subroutine bar
+      end interface
+    contains
+      function cor(this_) result (ret_val)
+        class (nuz), intent(in) :: this_
+        real :: ret_val
+      end function cor
+    end module foo
+
+    submodule(foo) baz
+    contains
+      module procedure bar
+        type (nuz) :: var
+        real :: val
+        val = var%cor()
+      end procedure bar
+    end submodule baz
+    """
+    expected = ["cor"]
+
+    fortran_file = parse_fortran_file(data, display=["public", "protected", "private"])
+    fp = FakeProject()
+    modules = {
+        module.name: module
+        for module in chain(fortran_file.modules, fortran_file.submodules)
+    }
+    for module in modules.values():
+        find_used_modules(module, modules.values(), [], [])
+
+    # correlation order is important
+    modules["foo"].correlate(fp)
+    modules["baz"].correlate(fp)
+
+    main_subroutines = {sub.name: sub for sub in modules["baz"].modprocedures}
+    calls = main_subroutines["bar"].calls
+
+    assert len(calls) == len(expected)
+
+    calls_sorted = sorted(calls, key=lambda x: getattr(x, "name", x))
+    expected_sorted = sorted(expected)
+    for call, expected_name in zip(calls_sorted, expected_sorted):
+        assert isinstance(call, FortranBase)
+
+        assert call.name == expected_name
+
+
+def test_submodule_private_var_call(parse_fortran_file):
+    data = f"""\
+    module foo
+      type :: nuz
+        integer :: var
+      end type nuz
+
+      type(nuz), dimension(2), private :: pri_var
+
+      interface
+        module subroutine bar()
+        end subroutine bar
+      end interface
+    end module foo
+
+    submodule(foo) baz
+    contains
+      module procedure bar
+        integer :: val
+        val = pri_var(1)%var
+      end procedure bar
+    end submodule baz
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fp = FakeProject()
+    modules = {
+        module.name: module
+        for module in chain(fortran_file.modules, fortran_file.submodules)
+    }
+    for module in modules.values():
+        find_used_modules(module, modules.values(), [], [])
+
+    # correlation order is important
+    modules["foo"].correlate(fp)
+    modules["baz"].correlate(fp)
+
+    main_subroutines = {sub.name: sub for sub in modules["baz"].modprocedures}
+    calls = main_subroutines["bar"].calls
+
+    assert calls == []
+
+
+def test_internal_proc_arg_var_call(parse_fortran_file):
+    data = f"""\
+    module foo
+      type :: nuz
+        integer :: var
+      end type nuz
+      type(nuz), dimension(2), private :: pri_var
+    contains
+      subroutine bar(nuz_var)
+        class(nuz), dimension(2) :: nuz_var
+      contains
+        subroutine baz
+          integer :: val
+          val = nuz_var(1)%var
+        end subroutine baz
+      end subroutine bar
+    end module foo
+    """
+
+    fortran_file = parse_fortran_file(data)
+    fp = FakeProject()
+    modules = {module.name: module for module in fortran_file.modules}
+    for module in modules.values():
+        find_used_modules(module, modules.values(), [], [])
+
+    # correlation order is important
+    modules["foo"].correlate(fp)
+
+    calls = modules["foo"].subroutines[0].subroutines[0].calls
+
+    assert calls == []
 
 
 def test_component_access(parse_fortran_file):

@@ -2,6 +2,7 @@ from markdown import Markdown, Extension
 from typing import Any, Dict, List, Union, Optional
 
 from ford.md_environ import EnvironExtension
+from ford.md_admonition import AdmonitionExtension
 
 
 class MetaMarkdown(Markdown):
@@ -20,6 +21,7 @@ class MetaMarkdown(Markdown):
             "markdown.extensions.extra",
             "mdx_math",
             EnvironExtension(),
+            AdmonitionExtension(),
         ]
         if extensions is None:
             extensions = []

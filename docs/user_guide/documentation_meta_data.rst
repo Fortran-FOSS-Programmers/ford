@@ -1,10 +1,12 @@
+.. _sec-doc-metadata:
+
 ========================
  Documentation Metadata
 ========================
 
-When documenting your source files you can provide meta-data at the top
-of an item’s documentation. Meta-data is specified in the same way as in
-the [[project file|Project File Options]]. There can not be any other
+When documenting your source files you can provide metadata at the top
+of an item’s documentation. Metadata is specified in the same way as in
+the :ref:`sec-project-options`. There can not be any other
 documentation before it; not even a blank line of documentation. This
 will work::
 
@@ -25,9 +27,16 @@ but this won’t::
      !!
      !! This data-type represents a cat.
 
-The meta-data will be displayed for procedures, derived types, files,
+The metadata will be displayed for procedures, derived types, files,
 programs, modules, type-bound procedures, and interfaces. It may be
-displayed in more cases in future. Recognized types of meta-data are:
+displayed in more cases in future.
+
+Metadata keys are letters, numbers, underscores, and dashes followed
+by a colon. Please also note that anything that *looks* like metadata
+will be parsed as such and so won't appear in the rendered
+documentation.
+
+Recognized types of metadata are:
 
 .. _metadata-author:
 

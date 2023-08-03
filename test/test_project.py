@@ -1,6 +1,7 @@
 from ford.fortran_project import Project
 from ford import DEFAULT_SETTINGS
 from ford.utils import normalise_path
+from ford.sourceform import FortranVariable
 
 from copy import deepcopy
 from itertools import chain
@@ -421,6 +422,36 @@ def test_module_use_everything_reexport(copy_fortran_file):
     }
 
 
+def test_use_within_interface(copy_fortran_file):
+    data = """\
+    module module1
+      implicit none
+      private
+      interface
+        subroutine routine_1()
+          use module2, only: routine_2
+        end subroutine routine_1
+      end interface
+      public :: routine
+    end module module1
+
+    module module2
+      implicit none
+      private
+      public :: routine_2
+    contains
+      subroutine routine_2(i)
+        integer,intent(in) :: i
+        write(*,*) i
+      end subroutine routine_2
+    end module module2
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+    assert "routine_2" in project.modules[0].all_procs["routine_1"].procedure.all_procs
+
+
 def test_member_in_other_module(copy_fortran_file):
     data = """\
     module module1
@@ -539,6 +570,29 @@ def test_display_private_derived_types(copy_fortran_file):
     assert type_names == {"no_attrs", "public_attr", "private_attr"}
 
 
+def test_display_private_module_procedure(copy_fortran_file):
+    data = """\
+      module foo
+        interface
+          module subroutine bar()
+          end subroutine bar
+        end interface
+      end module foo
+
+      submodule (foo) baz
+      contains
+        module procedure bar
+        end procedure
+      end submodule baz
+      """
+
+    settings = copy_fortran_file(data)
+    settings["display"] = ["public", "protected", "private"]
+
+    project = create_project(settings)
+    assert project.submodprocedures[0].name == "bar"
+
+
 def test_interface_type_name(copy_fortran_file):
     """Check for shared prototype list"""
     data = """\
@@ -621,6 +675,36 @@ def test_imported_abstract_interface_type_name(copy_fortran_file):
     project = create_project(settings)
     proto_names = [var.proto[0].name for var in project.modules[1].variables]
     assert proto_names == ["hello", "hello", "goodbye", "goodbye"]
+
+
+def test_generic_interface_inherited_attrs(copy_fortran_file):
+    data = """\
+    module module1
+      implicit none
+      interface routine
+        module subroutine routine_1(var)
+          integer, dimension(:) :: var
+        end subroutine routine_1
+      end interface
+      public :: routine
+    end module module1
+
+    submodule(module1) module2
+      implicit none
+    contains
+      module procedure routine_1
+      end procedure
+    end submodule module2
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+
+    module_implementation = project.modules[0].all_procs["routine_1"].module
+    # Check that the module implementation has been linked
+    assert not isinstance(module_implementation, bool)
+    # Check that mod proc has the inherited arg
+    assert isinstance(module_implementation.args[0], FortranVariable)
 
 
 def test_display_internal_procedures(copy_fortran_file):
