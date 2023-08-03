@@ -35,7 +35,15 @@ from collections import defaultdict
 if TYPE_CHECKING:
     from ford.fortran_project import Project
 
-LINK_RE = re.compile(r"\[\[(\w+(?:\.\w+)?)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)?\]\]")
+LINK_RE = re.compile(
+    r"""\[\[
+    (?P<name>\w+(?:\.\w+)?)
+    (?:\((?P<entity>\w+)\))?
+    (?::(?P<child_name>\w+)
+    (?:\((?P<child_entity>\w+)\))?)?
+    \]\]""",
+    re.VERBOSE,
+)
 
 
 def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
@@ -217,35 +225,36 @@ def sub_links(string: str, project: Project) -> str:
         searchlist = []
         item = None
         # [name,obj,subname,subobj]
-        if not match.group(2):
+        if not match["entity"]:
             for key, val in LINK_TYPES.items():
                 searchlist.extend(getattr(project, val))
         else:
-            if match.group(2).lower() in LINK_TYPES:
-                searchlist.extend(getattr(project, LINK_TYPES[match.group(2).lower()]))
+            if match["entity"].lower() in LINK_TYPES:
+                searchlist.extend(getattr(project, LINK_TYPES[match["entity"].lower()]))
             else:
                 print(
                     ERR.format(
-                        match.group(), f'Unrecognized classification "{match.group(2)}"'
+                        match.group(),
+                        f'Unrecognized classification "{match["entity"]}"',
                     )
                 )
                 return match.group()
 
         for obj in searchlist:
-            if match.group(1).lower() == obj.name.lower():
+            if match["name"].lower() == obj.name.lower():
                 url = obj.get_url()
                 name = obj.name
                 found = True
                 item = obj
                 break
         else:
-            print(ERR.format(match.group(), f'"{match.group(1)}" not found.'))
+            print(ERR.format(match.group(), f'"{match["name"]}" not found.'))
             url = ""
-            name = match.group(1)
+            name = match["name"]
 
-        if found and match.group(3):
+        if found and match["child_name"]:
             searchlist = []
-            if not match.group(4):
+            if not match["child_entity"]:
                 for key, val in SUBLINK_TYPES.items():
                     if val == "constructor":
                         if getattr(item, "constructor", False):
@@ -255,20 +264,22 @@ def sub_links(string: str, project: Project) -> str:
                     else:
                         searchlist.extend(getattr(item, val, []))
             else:
-                if match.group(4).lower() in SUBLINK_TYPES:
-                    if hasattr(item, SUBLINK_TYPES[match.group(4).lower()]):
-                        if match.group(4).lower() == "constructor":
+                if match["child_entity"].lower() in SUBLINK_TYPES:
+                    if hasattr(item, SUBLINK_TYPES[match["child_entity"].lower()]):
+                        if match["child_entity"].lower() == "constructor":
                             if item.constructor:
                                 searchlist.append(item.constructor)
                         else:
                             searchlist.extend(
-                                getattr(item, SUBLINK_TYPES[match.group(4).lower()])
+                                getattr(
+                                    item, SUBLINK_TYPES[match["child_entity"].lower()]
+                                )
                             )
                     else:
                         print(
                             ERR.format(
                                 match.group(),
-                                f'"{match.group(4)}" can not be contained in "{item.obj}"',
+                                f'"{match["child_entity"]}" can not be contained in "{item.obj}"',
                             )
                         )
                         return match.group()
@@ -276,13 +287,13 @@ def sub_links(string: str, project: Project) -> str:
                     print(
                         ERR.format(
                             match.group(),
-                            f'Unrecognized classification "{match.group(2)}".',
+                            f'Unrecognized classification "{match["entity"]}".',
                         )
                     )
                     return match.group()
 
             for obj in searchlist:
-                if match.group(3).lower() == obj.name.lower():
+                if match["child_name"].lower() == obj.name.lower():
                     url = str(url) + "#" + obj.anchor
                     name = obj.name
                     item = obj
@@ -291,7 +302,7 @@ def sub_links(string: str, project: Project) -> str:
                 print(
                     ERR.format(
                         match.group(),
-                        f'"{match.group(3)}" not found in "{name}", linking to page for "{name}" instead.',
+                        f'"{match["child_name"]}" not found in "{name}", linking to page for "{name}" instead.',
                     )
                 )
 
