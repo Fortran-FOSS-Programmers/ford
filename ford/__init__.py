@@ -41,6 +41,8 @@ import ford.output
 import ford.utils
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
+from pathlib import Path
+import tomli
 
 from importlib.metadata import version, PackageNotFoundError
 
@@ -206,16 +208,19 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
 def convert_to_bool(name, option):
     """Convert value 'option' to a bool, with a nice error message on
     failure. Expects a list from the markdown meta-data extension"""
-    if len(option) > 1:
-        raise ValueError(
-            f"Could not convert option '{name}' to bool: expected a single value but got a list ({option})"
-        )
-    try:
-        return ford.utils.str_to_bool(option[0])
-    except ValueError:
-        raise ValueError(
-            f"Could not convert option '{name}' to bool: expected 'true'/'false', got: {option[0]}"
-        )
+    if type(option ) != bool:
+        if len(option) > 1:
+            raise ValueError(
+                f"Could not convert option '{name}' to bool: expected a single value but got a list ({option})"
+            )
+        try:
+            return ford.utils.str_to_bool(option[0])
+        except ValueError:
+            raise ValueError(
+                f"Could not convert option '{name}' to bool: expected 'true'/'false', got: {option[0]}"
+            )
+    else:
+        return option
 
 
 def initialize():
@@ -227,11 +232,18 @@ def initialize():
 
     # Read in the project-file. This will contain global documentation (which
     # will appear on the homepage) as well as any information about the project
-    # and settings for generating the documentation.
+    # and settings for generating the documentation
+
+   
     proj_docs = args.project_file.read()
     directory = os.path.dirname(args.project_file.name)
+    
+    
+    
+    #Call new function here
+    proj_data = get_proj_data(proj_docs, directory)
 
-    return parse_arguments(vars(args), proj_docs, directory)
+    return parse_arguments(vars(args), proj_docs, proj_data, directory)
 
 
 def get_command_line_arguments() -> argparse.Namespace:
@@ -373,16 +385,72 @@ def get_command_line_arguments() -> argparse.Namespace:
 
     return parser.parse_args()
 
+def get_proj_data(
+        proj_docs: str ,
+        directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
+):
+    
+    path = Path(directory)/'fpm.toml'
+    is_toml = path.is_file()
+    
+    if is_toml:
+        toml_settings = True
+    else:
+        toml_settings = False
+
+    #Initial setup of markdown reader
+    md = MetaMarkdown()
+    md.convert(proj_docs)
+
+    if toml_settings:
+        with open(path, "rb") as f:
+            toml_dict = tomli.load(f)
+        proj_data = toml_dict
+        # Remake the Markdown object with settings parsed from the project_file 
+
+        md_base = proj_data["md_base_dir"][0] if "md_base_dir" in proj_data else directory
+        md = MetaMarkdown(
+            extensions=["markdown_include.include"] + proj_data.get("md_extensions", []),
+            extension_configs={"markdown_include.include": {"base_path": md_base}},
+        )
+
+        proj_docs = md.reset().convert(proj_docs)
+        
+        
+                                    
+    else :
+        md_base = md.Meta["md_base_dir"][0] if "md_base_dir" in md.Meta else directory
+        md = MetaMarkdown(
+            extensions=["markdown_include.include"] + md.Meta.get("md_extensions", []),
+            extension_configs={"markdown_include.include": {"base_path": md_base}},
+        )
+
+        # Re-read the project file
+        proj_docs = md.reset().convert(proj_docs)
+        proj_data = md.Meta
+
+        # Think if there is a safe  way to evaluate any expressions found in this list
+        for option in proj_data:
+            default_type = DEFAULT_SETTINGS.get(option, None)
+            if isinstance(default_type, bool):
+                proj_data[option] = convert_to_bool(option, proj_data[option])
+            elif not isinstance(default_type, list):
+                # If it's not supposed to be a list, then it's
+                # probably supposed to be a single big block of text,
+                # like a description
+                proj_data[option] = "\n".join(proj_data[option])
+       
+    return proj_data
 
 def parse_arguments(
     command_line_args: dict,
     proj_docs: str,
+    proj_data: dict,
     directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
 ):
     """Consolidates arguments from the command line and from the project
     file, and then normalises them how the rest of the code expects
     """
-
     try:
         import multiprocessing
 
@@ -392,20 +460,10 @@ def parse_arguments(
 
     DEFAULT_SETTINGS["parallel"] = ncpus
 
-    # Initial set up of Markdown reader
+
+
     md = MetaMarkdown()
     md.convert(proj_docs)
-
-    # Remake the Markdown object with settings parsed from the project_file
-    md_base = md.Meta["md_base_dir"][0] if "md_base_dir" in md.Meta else directory
-    md = MetaMarkdown(
-        extensions=["markdown_include.include"] + md.Meta.get("md_extensions", []),
-        extension_configs={"markdown_include.include": {"base_path": md_base}},
-    )
-
-    # Re-read the project file
-    proj_docs = md.reset().convert(proj_docs)
-    proj_data = md.Meta
 
     # Get the default options, and any over-rides, straightened out
     for option, default in DEFAULT_SETTINGS.items():
@@ -413,15 +471,7 @@ def parse_arguments(
         if args_option is not None:
             proj_data[option] = args_option
         elif option in proj_data:
-            # Think if there is a safe  way to evaluate any expressions found in this list
-            default_type = DEFAULT_SETTINGS.get(option, None)
-            if isinstance(default_type, bool):
-                proj_data[option] = convert_to_bool(option, proj_data[option])
-            elif not isinstance(default_type, list):
-                # If it's not supposed to be a list, then it's
-                # probably supposed to be a single big block of text,
-                # like a description
-                proj_data[option] = "\n".join(proj_data[option])
+            continue
         else:
             proj_data[option] = default
 
@@ -578,19 +628,15 @@ def main(proj_data, proj_docs, md):
     if proj_data["summary"] is not None:
         proj_data["summary"] = md.convert(proj_data["summary"])
         proj_data["summary"] = ford.utils.sub_links(
-            ford.utils.sub_macros(ford.utils.sub_notes(proj_data["summary"])), project
+            ford.utils.sub_macros(proj_data["summary"]), project
         )
     if proj_data["author_description"] is not None:
         proj_data["author_description"] = md.convert(proj_data["author_description"])
         proj_data["author_description"] = ford.utils.sub_links(
-            ford.utils.sub_macros(
-                ford.utils.sub_notes(proj_data["author_description"])
-            ),
+            ford.utils.sub_macros(proj_data["author_description"]),
             project,
         )
-    proj_docs_ = ford.utils.sub_links(
-        ford.utils.sub_macros(ford.utils.sub_notes(proj_docs)), project
-    )
+    proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(proj_docs), project)
     # Process any pages
     if proj_data["page_dir"] is not None:
         page_tree = get_page_tree(
