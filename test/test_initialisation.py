@@ -9,9 +9,9 @@ from conftest import gfortran_is_not_installed
 
 
 def test_quiet_false():
-    data = ford.get_proj_data("quiet: False")
+    _, data = ford.get_proj_data("quiet: False")
     assert data["quiet"] is False
-    data2 = ford.get_proj_data("quiet: True")
+    _, data2 = ford.get_proj_data("quiet: True")
     assert data2["quiet"] is True
 
 
@@ -27,7 +27,7 @@ def test_toml(tmp_path):
     with open(p, "w") as file:
         toml.dump(toml.loads(toml_string), file)
 
-    data = ford.get_proj_data("", d)
+    _, data = ford.get_proj_data("", d)
 
     assert data["quiet"] is True
     assert data["display"][0] == "public"

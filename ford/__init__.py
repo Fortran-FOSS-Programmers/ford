@@ -236,7 +236,7 @@ def initialize():
 
     proj_docs = args.project_file.read()
     directory = os.path.dirname(args.project_file.name)
-    proj_data = get_proj_data(proj_docs, directory)
+    proj_docs, proj_data = get_proj_data(proj_docs, directory)
 
     return parse_arguments(vars(args), proj_docs, proj_data, directory)
 
@@ -436,7 +436,7 @@ def get_proj_data(
                 # like a description
                 proj_data[option] = "\n".join(proj_data[option])
 
-    return proj_data
+    return proj_docs, proj_data
 
 
 def parse_arguments(
