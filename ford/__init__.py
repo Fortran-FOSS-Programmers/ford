@@ -204,6 +204,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "year": date.today().year,
 }
 
+DEFAULT_EXTENSIONS = ["markdown_include.include"]
+
 
 def convert_to_bool(name, option):
     """Convert value 'option' to a bool, with a nice error message on
@@ -408,19 +410,18 @@ def get_proj_data(
     proj_docs: str,
     directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
 ):
+    """Load Ford settings from ``fpm.toml`` if present, or from
+    metadata in supplied project file
 
-    # Initial setup of markdown reader
-    md = MetaMarkdown()
-    md.convert(proj_docs)
+    """
 
     if proj_data := load_toml_settings(directory):
-        # Remake the Markdown object with settings parsed from the project_file
+        # Setup Markdown object with settings parsed from the toml file
         md_base = (
             proj_data["md_base_dir"][0] if "md_base_dir" in proj_data else directory
         )
         md = MetaMarkdown(
-            extensions=["markdown_include.include"]
-            + proj_data.get("md_extensions", []),
+            extensions=DEFAULT_EXTENSIONS + proj_data.get("md_extensions", []),
             extension_configs={"markdown_include.include": {"base_path": md_base}},
         )
 
@@ -434,9 +435,12 @@ def get_proj_data(
                 proj_data[key] = [value]
 
     else:
+        # Initial setup of markdown reader
+        md = MetaMarkdown()
+        md.convert(proj_docs)
         md_base = md.Meta["md_base_dir"][0] if "md_base_dir" in md.Meta else directory
         md = MetaMarkdown(
-            extensions=["markdown_include.include"] + md.Meta.get("md_extensions", []),
+            extensions=DEFAULT_EXTENSIONS + md.Meta.get("md_extensions", []),
             extension_configs={"markdown_include.include": {"base_path": md_base}},
         )
 
