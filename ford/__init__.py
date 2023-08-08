@@ -42,7 +42,11 @@ import ford.utils
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
 from pathlib import Path
-import tomli
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib  # type: ignore[no-redef]
 
 from importlib.metadata import version, PackageNotFoundError
 
@@ -395,7 +399,7 @@ def load_toml_settings(directory: Union[os.PathLike, str]) -> Optional[dict]:
         return None
 
     with open(filename, "rb") as f:
-        settings = tomli.load(f)
+        settings = tomllib.load(f)
 
     if "extra" not in settings:
         return None

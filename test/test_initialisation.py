@@ -3,8 +3,12 @@ from textwrap import dedent
 from pathlib import Path
 import sys
 import pytest
-import toml
 import os
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib  # type: ignore[no-redef]
 
 from conftest import gfortran_is_not_installed
 
@@ -31,7 +35,7 @@ def test_toml(tmp_path):
             }
         }
     }
-    settings_file.write_text(toml.dumps(settings))
+    settings_file.write_text(tomllib.dumps(settings))
 
     _, data, _ = ford.load_settings("", tmp_path)
 

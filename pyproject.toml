@@ -43,8 +43,7 @@ dependencies = [
    "beautifulsoup4 >=4.5.1",
    "graphviz ~= 0.20.0",
    "tqdm ~= 4.64.0",
-   "tomli",
-   "toml",
+   "tomli >= 1.1.0 ; python_version < '3.11'",
 ]
 dynamic = ["version"]
 
