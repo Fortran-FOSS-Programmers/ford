@@ -426,6 +426,13 @@ def get_proj_data(
 
         proj_docs = md.reset().convert(proj_docs)
 
+        # Ensure all the list settings are lists
+        for key, value in proj_data.items():
+            if isinstance(DEFAULT_SETTINGS.get(key, None), list) and (
+                not isinstance(value, list)
+            ):
+                proj_data[key] = [value]
+
     else:
         md_base = md.Meta["md_base_dir"][0] if "md_base_dir" in md.Meta else directory
         md = MetaMarkdown(

@@ -22,7 +22,15 @@ def test_quiet_false():
 
 def test_toml(tmp_path):
     settings_file = tmp_path / "fpm.toml"
-    settings = {"extra": {"ford": {"quiet": True, "display": ["public", "protected"]}}}
+    settings = {
+        "extra": {
+            "ford": {
+                "quiet": True,
+                "display": ["public", "protected"],
+                "src_dir": "./source",
+            }
+        }
+    }
     settings_file.write_text(toml.dumps(settings))
 
     _, data = ford.get_proj_data("", tmp_path)
@@ -30,6 +38,7 @@ def test_toml(tmp_path):
     assert data["quiet"] is True
     assert data["display"][0] == "public"
     assert data["display"][1] == "protected"
+    assert data["src_dir"] == ["./source"]
 
 
 def test_quiet_command_line():
