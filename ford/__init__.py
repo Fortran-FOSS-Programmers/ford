@@ -32,7 +32,7 @@ import os
 import pathlib
 import subprocess
 from datetime import date, datetime
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Optional
 from textwrap import dedent
 
 import ford.fortran_project
@@ -381,28 +381,40 @@ def get_command_line_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def load_toml_settings(directory: Union[os.PathLike, str]) -> Optional[dict]:
+    """Load Ford settings from ``fpm.toml`` file in ``directory``
+
+    Settings should be in ``[extra.ford]`` table
+    """
+
+    filename = Path(directory) / "fpm.toml"
+
+    if not filename.is_file():
+        return None
+
+    with open(filename, "rb") as f:
+        settings = tomli.load(f)
+
+    if "extra" not in settings:
+        return None
+
+    if "ford" not in settings["extra"]:
+        return None
+
+    return settings["extra"]["ford"]
+
+
 def get_proj_data(
     proj_docs: str,
     directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
 ):
-    path = Path(directory) / "fpm.toml"
-    is_toml = path.is_file()
-
-    if is_toml:
-        toml_settings = True
-    else:
-        toml_settings = False
 
     # Initial setup of markdown reader
     md = MetaMarkdown()
     md.convert(proj_docs)
 
-    if toml_settings:
-        with open(path, "rb") as f:
-            toml_dict = tomli.load(f)
-        proj_data = toml_dict
+    if proj_data := load_toml_settings(directory):
         # Remake the Markdown object with settings parsed from the project_file
-
         md_base = (
             proj_data["md_base_dir"][0] if "md_base_dir" in proj_data else directory
         )
