@@ -5,10 +5,7 @@ import sys
 import pytest
 import os
 
-try:
-    import tomllib
-except ModuleNotFoundError:
-    import tomli as tomllib  # type: ignore[no-redef]
+import tomli_w
 
 from conftest import gfortran_is_not_installed
 
@@ -35,7 +32,7 @@ def test_toml(tmp_path):
             }
         }
     }
-    settings_file.write_text(tomllib.dumps(settings))
+    settings_file.write_text(tomli_w.dumps(settings))
 
     _, data, _ = ford.load_settings("", tmp_path)
 
