@@ -32,7 +32,7 @@ import os
 import pathlib
 import subprocess
 from datetime import date, datetime
-from typing import Any, Dict, Union, Optional, Tuple
+from typing import Any, Dict, Union, Optional, Tuple, List
 from textwrap import dedent
 
 import ford.fortran_project
@@ -207,22 +207,22 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
 DEFAULT_EXTENSIONS = ["markdown_include.include"]
 
 
-def convert_to_bool(name, option):
+def convert_to_bool(name: str, option: List[str]) -> bool:
     """Convert value 'option' to a bool, with a nice error message on
     failure. Expects a list from the markdown meta-data extension"""
-    if type(option) != bool:
-        if len(option) > 1:
-            raise ValueError(
-                f"Could not convert option '{name}' to bool: expected a single value but got a list ({option})"
-            )
-        try:
-            return ford.utils.str_to_bool(option[0])
-        except ValueError:
-            raise ValueError(
-                f"Could not convert option '{name}' to bool: expected 'true'/'false', got: {option[0]}"
-            )
-    else:
+    if isinstance(option, bool):
         return option
+
+    if len(option) > 1:
+        raise ValueError(
+            f"Could not convert option '{name}' to bool: expected a single value but got a list ({option})"
+        )
+    try:
+        return ford.utils.str_to_bool(option[0])
+    except ValueError:
+        raise ValueError(
+            f"Could not convert option '{name}' to bool: expected 'true'/'false', got: {option[0]}"
+        )
 
 
 def initialize():
