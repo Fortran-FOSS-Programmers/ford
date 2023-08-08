@@ -14,9 +14,9 @@ class FakeFile:
 
 
 def test_quiet_false():
-    _, data, _ = ford.get_proj_data("quiet: False")
+    _, data, _ = ford.load_settings("quiet: False")
     assert data["quiet"] is False
-    _, data2, _ = ford.get_proj_data("quiet: True")
+    _, data2, _ = ford.load_settings("quiet: True")
     assert data2["quiet"] is True
 
 
@@ -33,7 +33,7 @@ def test_toml(tmp_path):
     }
     settings_file.write_text(toml.dumps(settings))
 
-    _, data, _ = ford.get_proj_data("", tmp_path)
+    _, data, _ = ford.load_settings("", tmp_path)
 
     assert data["quiet"] is True
     assert data["display"][0] == "public"
@@ -65,7 +65,7 @@ def test_list_input():
              one
              string
     """
-    _, data, _ = ford.get_proj_data(dedent(settings))
+    _, data, _ = ford.load_settings(dedent(settings))
 
     assert len(data["include"]) == 2
     assert data["summary"] == "This\nis\none\nstring"

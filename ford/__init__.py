@@ -32,7 +32,7 @@ import os
 import pathlib
 import subprocess
 from datetime import date, datetime
-from typing import Any, Dict, Union, Optional
+from typing import Any, Dict, Union, Optional, Tuple
 from textwrap import dedent
 
 import ford.fortran_project
@@ -238,7 +238,7 @@ def initialize():
 
     proj_docs = args.project_file.read()
     directory = os.path.dirname(args.project_file.name)
-    proj_docs, proj_data, md = get_proj_data(proj_docs, directory)
+    proj_docs, proj_data, md = load_settings(proj_docs, directory)
 
     return *parse_arguments(vars(args), proj_docs, proj_data, directory), md
 
@@ -415,11 +415,27 @@ def load_toml_settings(directory: Union[os.PathLike, str]) -> Optional[dict]:
     return proj_data
 
 
-def get_proj_data(
+def load_settings(
     proj_docs: str, directory: Union[os.PathLike, str] = pathlib.Path.cwd()
-):
+) -> Tuple[str, dict, MetaMarkdown]:
     """Load Ford settings from ``fpm.toml`` if present, or from
-    metadata in supplied project file
+    metadata in supplied project file1
+
+    Parameters
+    ----------
+    proj_docs : str
+        Text of project file
+    directory : Union[os.PathLike, str]
+        Project directory
+
+    Returns
+    -------
+    proj_docs: str
+        Text of project file converted from markdown
+    proj_data: dict
+        Project settings
+    md: MetaMarkdown
+        Markdown converter
 
     """
 
