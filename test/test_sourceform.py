@@ -458,9 +458,8 @@ def test_type_chain_function_and_subroutine_calls(
 
         assert call.name == expected_name
 
-def test_call_in_module_procedure(
-    parse_fortran_file
-):
+
+def test_call_in_module_procedure(parse_fortran_file):
     data = f"""\
     module foo
       type :: nuz
@@ -489,16 +488,18 @@ def test_call_in_module_procedure(
     """
     expected = ["cor"]
 
-    fortran_file = parse_fortran_file(data, display = ["public", "protected", "private"])
+    fortran_file = parse_fortran_file(data, display=["public", "protected", "private"])
     fp = FakeProject()
-    modules = {module.name: module for module in chain(fortran_file.modules, fortran_file.submodules)}
+    modules = {
+        module.name: module
+        for module in chain(fortran_file.modules, fortran_file.submodules)
+    }
     for module in modules.values():
         find_used_modules(module, modules.values(), [], [])
 
     # correlation order is important
     modules["foo"].correlate(fp)
     modules["baz"].correlate(fp)
-    
 
     main_subroutines = {sub.name: sub for sub in modules["baz"].modprocedures}
     calls = main_subroutines["bar"].calls
@@ -511,6 +512,7 @@ def test_call_in_module_procedure(
         assert isinstance(call, FortranBase)
 
         assert call.name == expected_name
+
 
 def test_component_access(parse_fortran_file):
     data = """\

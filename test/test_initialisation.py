@@ -14,8 +14,9 @@ def test_quiet_false():
     data2 = ford.get_proj_data("quiet: True")
     assert data2["quiet"] is True
 
+
 def test_toml(tmp_path):
-    #open file in directory and write toml to file
+    # open file in directory and write toml to file
     d = tmp_path / "sub"
     d.mkdir()
     p = d / "fpm.toml"
@@ -24,23 +25,27 @@ def test_toml(tmp_path):
     display = ["public", "protected"]
     """
     with open(p, "w") as file:
-        toml.dump(toml.loads(toml_string) , file)
+        toml.dump(toml.loads(toml_string), file)
 
-    data = ford.get_proj_data("", d)    
+    data = ford.get_proj_data("", d)
 
     assert data["quiet"] is True
     assert data["display"][0] == "public"
-    assert data["display"][1] == "protected" 
-    #check things from toml are read correctly 
+    assert data["display"][1] == "protected"
 
 
 def test_quiet_command_line():
     """Check that setting --quiet on the command line overrides project file"""
 
-    data, _, _ = ford.parse_arguments({"quiet": True}, "",ford.get_proj_data("quiet: false"))
+    data, _, _ = ford.parse_arguments(
+        {"quiet": True}, "", ford.get_proj_data("quiet: false")
+    )
     assert data["quiet"] is True
-    data, _, _ = ford.parse_arguments({"quiet": False}, "",ford.get_proj_data("quiet: true"))
+    data, _, _ = ford.parse_arguments(
+        {"quiet": False}, "", ford.get_proj_data("quiet: true")
+    )
     assert data["quiet"] is False
+
 
 def test_list_input():
     """Check that setting a non-list option is turned into a single string"""
@@ -53,13 +58,15 @@ def test_list_input():
              one
              string
     """
-    data, _, _ = ford.parse_arguments({}, dedent(settings),ford.get_proj_data(dedent(settings)))
+    data, _, _ = ford.parse_arguments(
+        {}, dedent(settings), ford.get_proj_data(dedent(settings))
+    )
 
     assert len(data["include"]) == 2
     assert data["summary"] == "This\nis\none\nstring"
 
 
-def test_path_normalisation(): 
+def test_path_normalisation():
     """Check that paths get normalised correctly"""
 
     settings = """\
@@ -67,14 +74,14 @@ def test_path_normalisation():
     src_dir: src1
              src2
     """
-    data, _, _ = ford.parse_arguments({},"",ford.get_proj_data(dedent(settings)),"/prefix/path")
+    data, _, _ = ford.parse_arguments(
+        {}, "", ford.get_proj_data(dedent(settings)), "/prefix/path"
+    )
     assert str(data["page_dir"]) == "/prefix/path/my_pages"
     assert [str(p) for p in data["src_dir"]] == [
         "/prefix/path/src1",
         "/prefix/path/src2",
     ]
-
-
 
 
 def test_source_not_subdir_output():
@@ -88,13 +95,14 @@ def test_source_not_subdir_output():
     # This shouldn't be
     with pytest.raises(ValueError):
         data, _, _ = ford.parse_arguments(
-            {}, "",{"src_dir": ["4/5", "/1/2/3"], "output_dir": "/1/2"}, "/prefix"
+            {}, "", {"src_dir": ["4/5", "/1/2/3"], "output_dir": "/1/2"}, "/prefix"
         )
     # src_dir == output_dir
     with pytest.raises(ValueError):
         data, _, _ = ford.parse_arguments(
-            {}, "", {"src_dir": ["/1/2/"], "output_dir": "/1/2"},"/prefix"
+            {}, "", {"src_dir": ["/1/2/"], "output_dir": "/1/2"}, "/prefix"
         )
+
 
 def test_repeated_docmark():
     """Check that setting --quiet on the command line overrides project file"""
@@ -105,7 +113,7 @@ def test_repeated_docmark():
     """
 
     with pytest.raises(ValueError):
-        ford.parse_arguments({},"", ford.get_proj_data(dedent(settings)))
+        ford.parse_arguments({}, "", ford.get_proj_data(dedent(settings)))
 
     settings = """\
     docmark: !<
@@ -113,7 +121,7 @@ def test_repeated_docmark():
     """
 
     with pytest.raises(ValueError):
-        ford.parse_arguments({},"", ford.get_proj_data(dedent(settings)))
+        ford.parse_arguments({}, "", ford.get_proj_data(dedent(settings)))
 
     settings = """\
     docmark_alt: !!
@@ -121,26 +129,29 @@ def test_repeated_docmark():
     """
 
     with pytest.raises(ValueError):
-        ford.parse_arguments({},"", ford.get_proj_data(dedent(settings)))
+        ford.parse_arguments({}, "", ford.get_proj_data(dedent(settings)))
 
 
 def test_no_preprocessor():
-
     data, _, _ = ford.parse_arguments({}, "", ford.get_proj_data("preprocess: False"))
 
     assert data["fpp_extensions"] == []
 
 
-def test_bad_preprocessor(): 
+def test_bad_preprocessor():
     class FakeFile:
         name = "test file"
 
     with pytest.raises(SystemExit):
-        ford.parse_arguments({"project_file": FakeFile()}, "", ford.get_proj_data("preprocess: False"))
+        ford.parse_arguments(
+            {"project_file": FakeFile()}, "", ford.get_proj_data("preprocess: False")
+        )
 
 
-def test_maybe_ok_preprocessor():#FAILED
-    data, _, _ = ford.parse_arguments({}, "preprocessor: true", ford.get_proj_data( "preprocessor: true"))
+def test_maybe_ok_preprocessor():  # FAILED
+    data, _, _ = ford.parse_arguments(
+        {}, "preprocessor: true", ford.get_proj_data("preprocessor: true")
+    )
 
     if data["preprocess"] is True:
         assert isinstance(data["preprocessor"], list)
@@ -200,4 +211,3 @@ def test_output_dir_cli(monkeypatch, tmp_path):
         settings, _, _ = ford.initialize()
 
     assert settings["output_dir"] == tmp_path / "something_else"
- 

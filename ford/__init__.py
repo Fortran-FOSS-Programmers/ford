@@ -208,7 +208,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
 def convert_to_bool(name, option):
     """Convert value 'option' to a bool, with a nice error message on
     failure. Expects a list from the markdown meta-data extension"""
-    if type(option ) != bool:
+    if type(option) != bool:
         if len(option) > 1:
             raise ValueError(
                 f"Could not convert option '{name}' to bool: expected a single value but got a list ({option})"
@@ -234,13 +234,8 @@ def initialize():
     # will appear on the homepage) as well as any information about the project
     # and settings for generating the documentation
 
-   
     proj_docs = args.project_file.read()
     directory = os.path.dirname(args.project_file.name)
-    
-    
-    
-    #Call new function here
     proj_data = get_proj_data(proj_docs, directory)
 
     return parse_arguments(vars(args), proj_docs, proj_data, directory)
@@ -385,20 +380,20 @@ def get_command_line_arguments() -> argparse.Namespace:
 
     return parser.parse_args()
 
+
 def get_proj_data(
-        proj_docs: str ,
-        directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
+    proj_docs: str,
+    directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
 ):
-    
-    path = Path(directory)/'fpm.toml'
+    path = Path(directory) / "fpm.toml"
     is_toml = path.is_file()
-    
+
     if is_toml:
         toml_settings = True
     else:
         toml_settings = False
 
-    #Initial setup of markdown reader
+    # Initial setup of markdown reader
     md = MetaMarkdown()
     md.convert(proj_docs)
 
@@ -406,19 +401,20 @@ def get_proj_data(
         with open(path, "rb") as f:
             toml_dict = tomli.load(f)
         proj_data = toml_dict
-        # Remake the Markdown object with settings parsed from the project_file 
+        # Remake the Markdown object with settings parsed from the project_file
 
-        md_base = proj_data["md_base_dir"][0] if "md_base_dir" in proj_data else directory
+        md_base = (
+            proj_data["md_base_dir"][0] if "md_base_dir" in proj_data else directory
+        )
         md = MetaMarkdown(
-            extensions=["markdown_include.include"] + proj_data.get("md_extensions", []),
+            extensions=["markdown_include.include"]
+            + proj_data.get("md_extensions", []),
             extension_configs={"markdown_include.include": {"base_path": md_base}},
         )
 
         proj_docs = md.reset().convert(proj_docs)
-        
-        
-                                    
-    else :
+
+    else:
         md_base = md.Meta["md_base_dir"][0] if "md_base_dir" in md.Meta else directory
         md = MetaMarkdown(
             extensions=["markdown_include.include"] + md.Meta.get("md_extensions", []),
@@ -439,8 +435,9 @@ def get_proj_data(
                 # probably supposed to be a single big block of text,
                 # like a description
                 proj_data[option] = "\n".join(proj_data[option])
-       
+
     return proj_data
+
 
 def parse_arguments(
     command_line_args: dict,
@@ -459,8 +456,6 @@ def parse_arguments(
         ncpus = "0"
 
     DEFAULT_SETTINGS["parallel"] = ncpus
-
-
 
     md = MetaMarkdown()
     md.convert(proj_docs)
