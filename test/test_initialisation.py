@@ -37,13 +37,9 @@ def test_toml(tmp_path):
 def test_quiet_command_line():
     """Check that setting --quiet on the command line overrides project file"""
 
-    data, _, _ = ford.parse_arguments(
-        {"quiet": True}, "", ford.get_proj_data("quiet: false")
-    )
+    data, _, _ = ford.parse_arguments({"quiet": True}, "", {"quiet": "false"})
     assert data["quiet"] is True
-    data, _, _ = ford.parse_arguments(
-        {"quiet": False}, "", ford.get_proj_data("quiet: true")
-    )
+    data, _, _ = ford.parse_arguments({"quiet": False}, "", {"quiet": "true"})
     assert data["quiet"] is False
 
 
@@ -58,9 +54,7 @@ def test_list_input():
              one
              string
     """
-    data, _, _ = ford.parse_arguments(
-        {}, dedent(settings), ford.get_proj_data(dedent(settings))
-    )
+    data, _, _ = ford.parse_arguments({}, *ford.get_proj_data(dedent(settings)))
 
     assert len(data["include"]) == 2
     assert data["summary"] == "This\nis\none\nstring"
@@ -69,13 +63,8 @@ def test_list_input():
 def test_path_normalisation():
     """Check that paths get normalised correctly"""
 
-    settings = """\
-    page_dir: my_pages
-    src_dir: src1
-             src2
-    """
     data, _, _ = ford.parse_arguments(
-        {}, "", ford.get_proj_data(dedent(settings)), "/prefix/path"
+        {}, "", {"page_dir": "my_pages", "src_dir": ["src1", "src2"]}, "/prefix/path"
     )
     assert str(data["page_dir"]) == "/prefix/path/my_pages"
     assert [str(p) for p in data["src_dir"]] == [
@@ -107,33 +96,18 @@ def test_source_not_subdir_output():
 def test_repeated_docmark():
     """Check that setting --quiet on the command line overrides project file"""
 
-    settings = """\
-    docmark: !
-    predocmark: !
-    """
+    with pytest.raises(ValueError):
+        ford.parse_arguments({}, "", {"docmark": "!", "predocmark": "!"})
 
     with pytest.raises(ValueError):
-        ford.parse_arguments({}, "", ford.get_proj_data(dedent(settings)))
-
-    settings = """\
-    docmark: !<
-    predocmark_alt: !<
-    """
+        ford.parse_arguments({}, "", {"docmark": "!<", "predocmark_alt": "!<"})
 
     with pytest.raises(ValueError):
-        ford.parse_arguments({}, "", ford.get_proj_data(dedent(settings)))
-
-    settings = """\
-    docmark_alt: !!
-    predocmark_alt: !!
-    """
-
-    with pytest.raises(ValueError):
-        ford.parse_arguments({}, "", ford.get_proj_data(dedent(settings)))
+        ford.parse_arguments({}, "", {"docmark_alt": "!!", "predocmark_alt": "!!"})
 
 
 def test_no_preprocessor():
-    data, _, _ = ford.parse_arguments({}, "", ford.get_proj_data("preprocess: False"))
+    data, _, _ = ford.parse_arguments({}, "", {"preprocess": False})
 
     assert data["fpp_extensions"] == []
 
@@ -144,14 +118,12 @@ def test_bad_preprocessor():
 
     with pytest.raises(SystemExit):
         ford.parse_arguments(
-            {"project_file": FakeFile()}, "", ford.get_proj_data("preprocess: False")
+            {"project_file": FakeFile()}, "", {"preprocessor": "false"}
         )
 
 
-def test_maybe_ok_preprocessor():  # FAILED
-    data, _, _ = ford.parse_arguments(
-        {}, "preprocessor: true", ford.get_proj_data("preprocessor: true")
-    )
+def test_maybe_ok_preprocessor():
+    data, _, _ = ford.parse_arguments({}, "", {"preprocessor": "true"})
 
     if data["preprocess"] is True:
         assert isinstance(data["preprocessor"], list)
@@ -162,7 +134,7 @@ def test_maybe_ok_preprocessor():  # FAILED
     gfortran_is_not_installed(), reason="Requires gfortran to be installed"
 )
 def test_gfortran_preprocessor():
-    data, _, _ = ford.parse_arguments({}, "preprocessor: gfortran -E")
+    data, _, _ = ford.parse_arguments({}, "", {"preprocessor": "gfortran -E"})
 
     assert data["preprocess"] is True
 
