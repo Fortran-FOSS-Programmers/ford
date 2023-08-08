@@ -5,9 +5,9 @@
 Once you have written a project file which you’re satisfied with, it is
 time to run FORD. The most basic syntax for running ford is just
 
-::
+.. code:: console
 
-   ford project-file.md
+   $ ford project-file.md
 
 More advanced `command line options <sec-command-line-options>` are
 available. Assuming that there are no errors, your documentation will

@@ -1,11 +1,16 @@
 import ford
 from textwrap import dedent
+from pathlib import Path
 import sys
 import pytest
 import toml
 import os
 
 from conftest import gfortran_is_not_installed
+
+
+class FakeFile:
+    name = "test file"
 
 
 def test_quiet_false():
@@ -37,9 +42,13 @@ def test_toml(tmp_path):
 def test_quiet_command_line():
     """Check that setting --quiet on the command line overrides project file"""
 
-    data, _, _ = ford.parse_arguments({"quiet": True}, "", {"quiet": "false"})
+    data, _, _ = ford.parse_arguments(
+        {"quiet": True, "preprocess": False}, "", {"quiet": "false"}
+    )
     assert data["quiet"] is True
-    data, _, _ = ford.parse_arguments({"quiet": False}, "", {"quiet": "true"})
+    data, _, _ = ford.parse_arguments(
+        {"quiet": False, "preprocess": False}, "", {"quiet": "true"}
+    )
     assert data["quiet"] is False
 
 
@@ -54,7 +63,9 @@ def test_list_input():
              one
              string
     """
-    data, _, _ = ford.parse_arguments({}, *ford.get_proj_data(dedent(settings)))
+    data, _, _ = ford.parse_arguments(
+        {"preprocess": False}, *ford.get_proj_data(dedent(settings))
+    )
 
     assert len(data["include"]) == 2
     assert data["summary"] == "This\nis\none\nstring"
@@ -64,12 +75,15 @@ def test_path_normalisation():
     """Check that paths get normalised correctly"""
 
     data, _, _ = ford.parse_arguments(
-        {}, "", {"page_dir": "my_pages", "src_dir": ["src1", "src2"]}, "/prefix/path"
+        {"preprocess": False},
+        "",
+        {"page_dir": "my_pages", "src_dir": ["src1", "src2"]},
+        "/prefix/path",
     )
-    assert str(data["page_dir"]) == "/prefix/path/my_pages"
+    assert str(data["page_dir"]) == str(Path("/prefix/path/my_pages").absolute())
     assert [str(p) for p in data["src_dir"]] == [
-        "/prefix/path/src1",
-        "/prefix/path/src2",
+        str(Path("/prefix/path/src1").absolute()),
+        str(Path("/prefix/path/src2").absolute()),
     ]
 
 
@@ -78,18 +92,27 @@ def test_source_not_subdir_output():
 
     # This should be fine
     data, _, _ = ford.parse_arguments(
-        {}, "", {"src_dir": ["/1/2/3", "4/5"], "output_dir": "/3/4"}, "/prefix"
+        {"src_dir": ["/1/2/3", "4/5"], "output_dir": "/3/4", "preprocess": False},
+        "",
+        {},
+        "/prefix",
     )
 
     # This shouldn't be
     with pytest.raises(ValueError):
         data, _, _ = ford.parse_arguments(
-            {}, "", {"src_dir": ["4/5", "/1/2/3"], "output_dir": "/1/2"}, "/prefix"
+            {"src_dir": ["4/5", "/1/2/3"], "output_dir": "/1/2", "preprocess": False},
+            "",
+            {},
+            "/prefix",
         )
     # src_dir == output_dir
     with pytest.raises(ValueError):
         data, _, _ = ford.parse_arguments(
-            {}, "", {"src_dir": ["/1/2/"], "output_dir": "/1/2"}, "/prefix"
+            {"src_dir": ["/1/2/"], "output_dir": "/1/2", "preprocess": False},
+            "",
+            {},
+            "/prefix",
         )
 
 
@@ -97,13 +120,19 @@ def test_repeated_docmark():
     """Check that setting --quiet on the command line overrides project file"""
 
     with pytest.raises(ValueError):
-        ford.parse_arguments({}, "", {"docmark": "!", "predocmark": "!"})
+        ford.parse_arguments(
+            {"preprocess": False}, "", {"docmark": "!", "predocmark": "!"}
+        )
 
     with pytest.raises(ValueError):
-        ford.parse_arguments({}, "", {"docmark": "!<", "predocmark_alt": "!<"})
+        ford.parse_arguments(
+            {"preprocess": False}, "", {"docmark": "!<", "predocmark_alt": "!<"}
+        )
 
     with pytest.raises(ValueError):
-        ford.parse_arguments({}, "", {"docmark_alt": "!!", "predocmark_alt": "!!"})
+        ford.parse_arguments(
+            {"preprocess": False}, "", {"docmark_alt": "!!", "predocmark_alt": "!!"}
+        )
 
 
 def test_no_preprocessor():
@@ -113,15 +142,15 @@ def test_no_preprocessor():
 
 
 def test_bad_preprocessor():
-    class FakeFile:
-        name = "test file"
-
     with pytest.raises(SystemExit):
         ford.parse_arguments(
             {"project_file": FakeFile()}, "", {"preprocessor": "false"}
         )
 
 
+@pytest.mark.skipif(
+    sys.platform.startswith("win"), reason="FIXME: Need portable do-nothing command"
+)
 def test_maybe_ok_preprocessor():
     data, _, _ = ford.parse_arguments({}, "", {"preprocessor": "true"})
 
@@ -141,7 +170,7 @@ def test_gfortran_preprocessor():
 
 def test_absolute_src_dir(monkeypatch, tmp_path):
     project_file = tmp_path / "example.md"
-    project_file.touch()
+    project_file.write_text("preprocess: False")
     src_dir = tmp_path / "not_here"
 
     with monkeypatch.context() as m:
@@ -167,7 +196,7 @@ def test_absolute_src_dir(monkeypatch, tmp_path):
 
 def test_output_dir_cli(monkeypatch, tmp_path):
     project_file = tmp_path / "example.md"
-    project_file.touch()
+    project_file.write_text("preprocess: False")
 
     with monkeypatch.context() as m:
         m.setattr(sys, "argv", ["ford", str(project_file), "--output_dir", "something"])
@@ -175,8 +204,8 @@ def test_output_dir_cli(monkeypatch, tmp_path):
 
     assert settings["output_dir"] == tmp_path / "something"
 
-    with open(project_file, "w") as f:
-        f.write("output_dir: something_else")
+    with open(project_file, "a") as f:
+        f.write("\noutput_dir: something_else")
 
     with monkeypatch.context() as m:
         m.setattr(sys, "argv", ["ford", str(project_file)])

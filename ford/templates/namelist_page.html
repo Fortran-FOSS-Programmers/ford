@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ namelist.name }} %ndash; {{ project }}
+{% endblock title %}
+
+{% block body %}
+  {% import "macros.html" as macros %}
+  <div class="row">
+    <h1>{{ namelist.name }}</h1>
+    {{ macros.info_bar(namelist, incl_src, project_url, None) }}
+  </div>
+
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      {{ macros.sidebar(project, namelist) }}
+    </div>
+
+    <div class="col-md-9" id='text'>
+      <section class="visible-xs visible-sm hidden-md">
+        {{ macros.content_list(namelist, 1) }}
+      </section>
+
+      {{ macros.namelist_summary(namelist, True) }}
+      <br>
+    </div>
+  </div>
+{% endblock body %}

@@ -1,7 +1,8 @@
 import pathlib
+import os.path
 import re
 import sys
-from typing import List
+from typing import List, Optional
 
 import ford
 import ford.fortran_project
@@ -12,7 +13,7 @@ from bs4 import BeautifulSoup
 DEFAULT_SRC = "src"
 
 
-def run_ford(monkeypatch, md_file: pathlib.Path, extra_args: list = None):
+def run_ford(monkeypatch, md_file: pathlib.Path, extra_args: Optional[list] = None):
     """Modify command line args with argv"""
     with monkeypatch.context() as m:
         command = ["ford", str(md_file)]
@@ -38,6 +39,7 @@ def test_extra_mods_empty(
     settings = """\
     search: false
     extra_mods:
+    preprocess: false
     """
 
     copy_fortran_file(data)
@@ -61,6 +63,7 @@ def test_extra_mods_intrinsic(
     settings = """\
     search: false
     extra_mods: dummy: dummy_module
+    preprocess: false
     """
     # Initial value of intrinsic mods
     old_intrinsic_mods = ford.fortran_project.INTRINSIC_MODS.copy()
@@ -98,6 +101,7 @@ def test_default_aliases(
     """
     settings = """\
     search: false
+    preprocess: false
 
     Test: The project media url should be |media|
     """
@@ -109,14 +113,15 @@ def test_default_aliases(
 
     html_dir = tmp_path / "doc"
     index_text = get_main_body_text(html_dir, "index.html")
+    media_dir = os.path.join(".", "media")
     expected_index_text = [
-        "Test: The project media url should be ./media",
+        f"Test: The project media url should be {media_dir}",
     ]
     assert index_text == expected_index_text
 
     module_text = get_main_body_text(html_dir, "module/test.html")
     expected_module_text = [
-        "Test: The project media url (./media) should work here too"
+        f"Test: The project media url ({media_dir}) should work here too"
     ]
     assert module_text == expected_module_text
 
@@ -142,6 +147,7 @@ def test_one_alias(
     """
     settings = """\
     search: false
+    preprocess: false
     alias: foo = bar
 
     Test: This |foo| should be expanded as 'bar'
@@ -191,6 +197,7 @@ def test_multiple_aliases(
     """
     settings = """\
     search: false
+    preprocess: false
     alias: foo = bar
            zing = quaff
 

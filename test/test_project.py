@@ -1,6 +1,7 @@
 from ford.fortran_project import Project
 from ford import DEFAULT_SETTINGS
 from ford.utils import normalise_path
+from ford.sourceform import FortranVariable
 
 from copy import deepcopy
 from itertools import chain
@@ -421,6 +422,36 @@ def test_module_use_everything_reexport(copy_fortran_file):
     }
 
 
+def test_use_within_interface(copy_fortran_file):
+    data = """\
+    module module1
+      implicit none
+      private
+      interface
+        subroutine routine_1()
+          use module2, only: routine_2
+        end subroutine routine_1
+      end interface
+      public :: routine
+    end module module1
+
+    module module2
+      implicit none
+      private
+      public :: routine_2
+    contains
+      subroutine routine_2(i)
+        integer,intent(in) :: i
+        write(*,*) i
+      end subroutine routine_2
+    end module module2
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+    assert "routine_2" in project.modules[0].all_procs["routine_1"].procedure.all_procs
+
+
 def test_member_in_other_module(copy_fortran_file):
     data = """\
     module module1
@@ -644,6 +675,36 @@ def test_imported_abstract_interface_type_name(copy_fortran_file):
     project = create_project(settings)
     proto_names = [var.proto[0].name for var in project.modules[1].variables]
     assert proto_names == ["hello", "hello", "goodbye", "goodbye"]
+
+
+def test_generic_interface_inherited_attrs(copy_fortran_file):
+    data = """\
+    module module1
+      implicit none
+      interface routine
+        module subroutine routine_1(var)
+          integer, dimension(:) :: var
+        end subroutine routine_1
+      end interface
+      public :: routine
+    end module module1
+
+    submodule(module1) module2
+      implicit none
+    contains
+      module procedure routine_1
+      end procedure
+    end submodule module2
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+
+    module_implementation = project.modules[0].all_procs["routine_1"].module
+    # Check that the module implementation has been linked
+    assert not isinstance(module_implementation, bool)
+    # Check that mod proc has the inherited arg
+    assert isinstance(module_implementation.args[0], FortranVariable)
 
 
 def test_display_internal_procedures(copy_fortran_file):
@@ -1037,3 +1098,33 @@ def test_submodule_procedure_issue_446(copy_fortran_file):
     submodproc = module.descendants[0].modprocedures[0]
 
     assert interface.procedure.module == submodproc
+
+
+def test_find_namelists(copy_fortran_file):
+    data = """\
+    module mod1
+    contains
+      subroutine sub1()
+        namelist /namelist_b/ var_a
+      end subroutine sub1
+    end module mod1
+
+    program prog
+      integer :: var_b
+    contains
+      subroutine sub(var_b)
+        integer :: var_d, var_a, var_b
+        character(len=*), intent(in) :: string
+        namelist /namelist_a/ var_a, var_b, var_c, var_d
+        read(string, nml=namelist_a)
+        write(*, *) "Read in:"
+        write(*, nml=namelist_a)
+      end subroutine sub
+    end program prog
+    """
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+    assert len(project.namelists) == 2
+    namelist_names = sorted((namelist.name for namelist in project.namelists))
+    expected_names = sorted(("namelist_a", "namelist_b"))
+    assert namelist_names == expected_names

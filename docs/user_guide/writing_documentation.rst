@@ -74,7 +74,7 @@ in the opinion of this author, especially with regards to the list of
 arguments. Since version 1.0.0 it is now possible to place
 documentation before the code which it is documenting. To do so, use
 the ``predocmark``, which is set to ``>`` by default (it may be
-changed in the specify in the meta-data of your `project file
+changed in the specify in the metadata of your `project file
 <sec-project-options>`).  In the first line of your preceding
 documentation, use ``!>`` rather than the usual ``!!``. This can be
 used on all lines of the preceding documentation if desired, but this
@@ -87,7 +87,7 @@ documentation comment. Any immediately following lines containing only a
 comment will then be included in the block of documentation, without
 needing the “docmark”. The same effect can be achieved for preceding
 documentation by using the ``predocmark_alt``, set to ``|`` by default.
-Both of these may be changed in the project file meta-data.
+Both of these may be changed in the project file metadata.
 
 Legacy fixed-form FORTRAN code is now supported, using the `fixed2free
 <https://github.com/ylikx/fortran-legacy-tools/tree/master/fixed2free>`__
@@ -100,10 +100,8 @@ support legacy code.
 
 By default, FORD will preprocess any files with extensions ``.F90``,
 ``.F95``, ``.F03``, ``.F08``, ``.F15``, ``.F``, or ``.FOR`` prior to
-parsing them for documentation. This behaviour can `be
-disabled <option-preprocess>`
-or `different
-extensions <option-fpp_extensions>`
+parsing them for documentation. This behaviour can `be disabled
+<option-preprocess>` or `different extensions <option-fpp_extensions>`
 can be specified, if desired. Note that any syntax-highlighted source
 code which is displayed in the output will be shown in its
 non-preprocessed form. The default preprocessor is CPP in legacy mode
@@ -114,20 +112,19 @@ Markdown
 --------
 
 All documentation, both that provided within the source files and that
-given in the project file, should be written in
-`Markdown <http://daringfireball.net/projects/markdown/syntax>`__. In
+given in the project file, should be written in `Markdown`_. In
 addition to the standard Markdown syntax, you can use all of the
-features in Python’s `Markdown
-Extra <https://pythonhosted.org/Markdown/extensions/extra.html>`__.
-Other Markdown extensions automatically loaded are
-`CodeHilite <https://pythonhosted.org/Markdown/extensions/code_hilite.html>`__
-which will provide syntax highlighting for any code fragments you place
-in your documentation and
-`Meta-Data <https://pythonhosted.org/Markdown/extensions/meta_data.html>`__.
-The latter is used internally as a way for the user to provide extra
-information to and/or customize the behaviour of FORD (see
-[[Documentation Meta-Data]]). Information on providing meta-data and
-what types of data FORD will look for can be found in the next section.
+features in Python’s `Markdown Extra`_. Other Markdown extensions
+automatically loaded are `CodeHilite`_, which provides syntax
+highlighting for code fragments in your documentation, and
+`Meta-Data`_, which is used as a way to provide extra information
+and/or customize behaviour. See :ref:`sec-doc-metadata` for the syntax
+and what metadata you can set.
+
+.. _Markdown: http://daringfireball.net/projects/markdown/syntax
+.. _Markdown Extra: https://pythonhosted.org/Markdown/extensions/extra.html
+.. _CodeHilite: https://pythonhosted.org/Markdown/extensions/code_hilite.html
+.. _Meta-Data: https://pythonhosted.org/Markdown/extensions/meta_data.html
 
 LaTeX Support
 -------------
@@ -143,25 +140,74 @@ back to number equations as you would in a LaTeX document. For more
 details on that feature, see the `MathJax Documentation
 <http://docs.mathjax.org/en/latest/input/tex/eqnumbers.html>`__.
 
-Special Environments
---------------------
+.. _sec-note-boxes:
 
-Much like in Doxygen, you can use a ``@note`` environment to place the
-succeeding documentation into a special boxed paragraph. This syntax may
-be used at any location in the documentation comment and it will include
-as the note’s contents anything until the first use of ``@endnote``
-(provided there are no new ``@note`` or other environments, described
-below, started before then). If no such ``@endnote`` tag can be found
-then the note’s contents will include until the end of the paragraph
-where the environment was activated. Other environments which behave the
-same way are ``@warning``, ``@todo``, and ``@bug``.
+Notes and Warning Boxes
+-----------------------
 
-Note that these designations are case-insensitive (which, as Fortran
-programmers, we’re all used to). If these environments are used within
-the first paragraph of something’s documentation and you do not manually
-specify a summary, then the environment will be included in the summary
-of your documentation. If you do not want it included, just place the
-environment in a new paragraph of its own.
+If you want to call particular attention to a piece of information,
+you can use the ``@note`` markup to place it in a highlighted box:
+
+.. code:: markdown
+
+    @note
+    You can include any notes (or bugs, warnings, or todos) like so.
+    @endnote
+
+becomes:
+
+.. figure:: note_box.png
+   :alt: An example of a @note box
+
+   An example of a ``@note`` box
+
+This syntax may be used at almost any location in the documentation
+comment and it will include as the note’s contents anything until the
+first use of ``@endnote`` (provided there are no new ``@note`` or
+other boxes, described below, started before then). If no such
+``@endnote`` tag can be found then the note’s contents will include
+until the end of the paragraph where the environment was activated.
+
+There are some variations on ``@note`` boxes, which are coloured
+differently:
+
+- ``@note``
+- ``@warning``
+- ``@todo``
+- ``@bug``
+- ``@history``
+
+You can give them a custom title by putting it in quotes immediately
+after the tag:
+
+.. code:: markdown
+
+    @note "Custom title"
+    Note text
+    @endnote
+
+These boxes all use the CSS class ``alert``, as well as
+``alert-<name>`` (for example, ``alert-note``), so you can customise
+them if you wish. You can even add your own CSS classes, although you
+must also give a title in that case:
+
+.. code:: markdown
+
+    @note highlight blink "Title"
+    Note text
+    @endnote
+
+Note that these tags are case-insensitive (which, as Fortran
+programmers, we’re all used to). If a note is used within the first
+paragraph of something’s documentation and you do not manually specify
+a summary, then the note will be included in the summary of your
+documentation. If you do not want it included, just place the note in
+a new paragraph of its own.
+
+Notes can include other markdown, such as lists or code blocks, and
+can be used in other places such as lists -- although you need to be
+careful about indentation in such cases.
+
 
 “Include” Capabilities
 ----------------------
@@ -172,7 +218,7 @@ syntax ``{!file-name.md!}`` in any of your documentation will be
 replaced by the contents of file-name.md. This will be the first thing
 done when processing Markdown, and thus all Markdown syntax within
 file-name.md will be processed correctly. You can nest these include
-statments as many times as you like. All file paths are evaluated
+statements as many times as you like. All file paths are evaluated
 relative to the directory containing the project file, unless set to
 do otherwise.
 
