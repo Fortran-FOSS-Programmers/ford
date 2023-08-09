@@ -134,7 +134,9 @@ def test_external_project(external_project):
 
     # Find links to external modules
     uses_box = top_program_html.find(string="Uses").parent.parent.parent
-    links = {tag.text: tag.a["href"] for tag in uses_box("li", class_="list-inline-item")}
+    links = {
+        tag.text: tag.a["href"] for tag in uses_box("li", class_="list-inline-item")
+    }
 
     assert len(links) == 3
     assert "external_module" in links
@@ -157,7 +159,9 @@ def test_procedure_module_use_links_(external_project):
 
     # Find links to external modules
     uses_box = procedure_html.find(string="Uses").parent.parent.parent
-    links = {tag.text: tag.a["href"] for tag in uses_box("li", class_="list-inline-item")}
+    links = {
+        tag.text: tag.a["href"] for tag in uses_box("li", class_="list-inline-item")
+    }
 
     assert len(links) == 1
     assert "external_module" in links
