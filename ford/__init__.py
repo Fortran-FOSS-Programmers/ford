@@ -444,26 +444,10 @@ def load_settings(
     """
 
     proj_data = load_toml_settings(directory)
-    from_toml = proj_data is not None
 
     if proj_data is None:
-        # Initial setup of markdown reader in order to get any markdown extensions
-        md = MetaMarkdown()
-        md.convert(proj_docs)
-        proj_data = md.Meta
-
-    # Setup Markdown object with any user-specified extensions
-    md_base = proj_data.get("md_base_dir", [directory])[0]
-    md = MetaMarkdown(
-        extensions=DEFAULT_EXTENSIONS + proj_data.get("md_extensions", []),
-        extension_configs={"markdown_include.include": {"base_path": md_base}},
-    )
-
-    # Now re-read project file with all extensions loaded
-    proj_docs = md.reset().convert(proj_docs)
-
-    if not from_toml:
-        proj_data = md.Meta
+        proj_data, docs_list = ford.utils.meta_preprocessor(proj_docs.splitlines())
+        proj_docs = "\n".join(docs_list)
         # Some very basic type-casting from the parsed markdown metadata.
         # Think if there is a safe  way to evaluate any expressions found in this list
         for option in proj_data:
@@ -474,6 +458,16 @@ def load_settings(
                 # If it's not supposed to be a list, then it's probably supposed
                 # to be a single big block of text, like a description
                 proj_data[option] = "\n".join(proj_data[option])
+
+    # Setup Markdown object with any user-specified extensions
+    md_base = proj_data.get("md_base_dir", [str(directory)])[0]
+    md = MetaMarkdown(
+        extensions=DEFAULT_EXTENSIONS + proj_data.get("md_extensions", []),
+        extension_configs={"markdown_include.include": {"base_path": md_base}},
+    )
+
+    # Now re-read project file with all extensions loaded
+    proj_docs = md.reset().convert(proj_docs)
 
     return proj_docs, proj_data, md
 
