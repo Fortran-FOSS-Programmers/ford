@@ -173,6 +173,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "macro": [],
     "mathjax_config": None,
     "max_frontpage_items": 10,
+    "md_extensions": [],
     "media_dir": None,
     "output_dir": "./doc",
     "page_dir": None,
