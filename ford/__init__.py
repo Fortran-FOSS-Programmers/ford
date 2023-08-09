@@ -208,8 +208,6 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "year": date.today().year,
 }
 
-DEFAULT_EXTENSIONS = ["markdown_include.include"]
-
 
 def convert_to_bool(name: str, option: List[str]) -> bool:
     """Convert value 'option' to a bool, with a nice error message on
@@ -460,10 +458,9 @@ def load_settings(
                 proj_data[option] = "\n".join(proj_data[option])
 
     # Setup Markdown object with any user-specified extensions
-    md_base = proj_data.get("md_base_dir", [str(directory)])[0]
     md = MetaMarkdown(
-        extensions=DEFAULT_EXTENSIONS + proj_data.get("md_extensions", []),
-        extension_configs={"markdown_include.include": {"base_path": md_base}},
+        proj_data.get("md_base_dir", [str(directory)])[0],
+        extensions=proj_data.get("md_extensions", []),
     )
 
     # Now re-read project file with all extensions loaded
