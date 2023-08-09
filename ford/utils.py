@@ -43,7 +43,7 @@ from urllib.error import URLError
 from urllib.request import urlopen
 from urllib.parse import urljoin
 import pathlib
-from typing import Dict, Union, TYPE_CHECKING
+from typing import Dict, Union, TYPE_CHECKING, List, Any, Tuple
 from io import StringIO
 import itertools
 
@@ -556,9 +556,41 @@ BEGIN_RE = re.compile(r'^-{3}(\s.*)?')
 END_RE = re.compile(r'^(-{3}|\.{3})(\s.*)?')
 
 
-def meta_preprocessor(lines):
-    """ Get Meta-Data. """
-    """ Parse Meta-Data and store in Markdown.Meta. """
+def meta_preprocessor(lines: List[str]) -> Tuple[Dict[str, Any], List[str]]:
+    """Extract metadata from start of ``lines``
+
+    This is modified from the `Meta-Data Python Markdown extension`_
+    and uses the same syntax
+
+    Arguments
+    ---------
+    lines:
+        List of lines to process
+
+    Returns
+    -------
+    meta:
+        Dictionary of metadata, with lowercase keys
+    lines:
+        Original text with metadata lines removed
+
+    Notes
+    -----
+
+    Original code copyright 2007-2008 `Waylan Limberg
+    <http://achinghead.com>`_
+
+    Changes copyright 2008-2014 `The Python Markdown Project
+    <https://python-markdown.github.io>`_
+
+    Further changes copyright 2023 Ford authors
+
+    License: `BSD <https://opensource.org/licenses/bsd-license.php>`_
+
+    .. _Meta-Data Python Markdown extension:
+      https://python-markdown.github.io/extensions/meta_data/
+
+    """
 
     if lines and BEGIN_RE.match(lines[0]):
         lines.pop(0)
