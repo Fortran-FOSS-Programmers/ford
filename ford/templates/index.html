@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block body %}
       <!-- Main component for a primary marketing message or call to action -->
-      <div class="jumbotron">
+      <div class="p-5 mb-4 bg-light border rounded-3" id="jumbotron">
         {{ summary }}
         	 {% if project_github or project_bitbucket or project_gitlab or project_sourceforge or project_website %}
 	<p> Find us on&hellip;</p>
@@ -29,57 +29,54 @@
       </div>
 
       <div class="row" id='text'>
-		  {% if author %}
-        <div class="col-md-8">
-		  {% else %}
-        <div class="col-md-12">
-		  {% endif %}
+		{% set col = "col-md-8" if author else "col-md-12"%}
+        <div class={{ col }}>
           <h1>{{ project }}</h1>
           {{ proj_docs }}
         </div>
-		  {% if author %}
-        <div class="col-md-4">
-	  <div class="well">
-          <h2>Developer Info</h2>
-          <h4>{{ author }}</h4>
-          {% if author_pic %}
-     		 <img src="{{ author_pic }}" alt="Developer picture" class="img-thumbnail">
-    		 {% endif %}
-          {{ author_description }}
-			   {% if github or bitbucket or facebook or twitter or google_plus or linkedin or email or website %}
-            <div class="text-center"><div class="btn-group" role="group">
-              {% if email %}
-              <a class="btn btn-lg btn-primary" href="mailto:{{ email }}"><i class="fa fa-envelope fa-lg"></i></a>
+		{% if author %}
+          <div class="col-md-4">
+	        <div class="card card-body bg-light">
+              {% if author_pic %}
+     		    <img src="{{ author_pic }}" alt="Developer picture" class="card-img-top">
+    		  {% endif %}
+              <h2 class="card-title">Developer Info</h2>
+              <h4 class="card-text">{{ author }}</h4>
+              <p class="card-text">{{ author_description }}</p>
+			  {% if github or bitbucket or facebook or twitter or google_plus or linkedin or email or website %}
+                <div class="text-center"><div class="btn-group" role="group">
+                    {% if email %}
+                      <a class="btn btn-lg btn-primary" href="mailto:{{ email }}"><i class="fa fa-envelope fa-lg"></i></a>
+                    {% endif %}
+                    {% if website %}
+                      <a class="btn btn-lg btn-primary" href="{{ website }}"><i class="fa fa-globe fa-lg"></i></a>
+                    {% endif %}
+                    {% if github %}
+                      <a class="btn btn-lg btn-primary" href="{{ github }}"><i class="fa fa-github fa-lg"></i></a>
+                    {% endif %}
+                    {% if gitlab %}
+                      <a class="btn btn-lg btn-primary" href="{{ gitlab }}"><i class="fa fa-gitlab fa-lg"></i></a>
+				    {% endif %}
+				    {% if bitbucket %}
+                      <a class="btn btn-lg btn-primary" href="{{ bitbucket }}"><i class="fa fa-bitbucket fa-lg"></i></a>
+                    {% endif %}
+                    {% if facebook %}
+                      <a class="btn btn-lg btn-primary" href="{{ facebook }}"><i class="fa fa-facebook fa-lg"></i></a>
+				    {% endif %}
+                    {% if google_plus %}
+                      <a class="btn btn-lg btn-primary" href="{{ google_plus }}"><i class="fa fa-google-plus fa-lg"></i></a>
+				    {% endif %}
+                    {% if linkedin %}
+                      <a class="btn btn-lg btn-primary" href="{{ linkedin }}"><i class="fa fa-linkedin fa-lg"></i></a>
+				    {% endif %}
+                    {% if twitter %}
+                      <a class="btn btn-lg btn-primary" href="{{ twitter }}"><i class="fa fa-twitter fa-lg"></i></a>
+				    {% endif %}
+                </div></div>
               {% endif %}
-              {% if website %}
-             <a class="btn btn-lg btn-primary" href="{{ website }}"><i class="fa fa-globe fa-lg"></i></a>
-              {% endif %}
-              {% if github %}
-              <a class="btn btn-lg btn-primary" href="{{ github }}"><i class="fa fa-github fa-lg"></i></a>
-              {% endif %}
-              {% if gitlab %}
-              <a class="btn btn-lg btn-primary" href="{{ gitlab }}"><i class="fa fa-gitlab fa-lg"></i></a>
-				  {% endif %}
-				  {% if bitbucket %}
-              <a class="btn btn-lg btn-primary" href="{{ bitbucket }}"><i class="fa fa-bitbucket fa-lg"></i></a>
-              {% endif %}
-              {% if facebook %}
-              <a class="btn btn-lg btn-primary" href="{{ facebook }}"><i class="fa fa-facebook fa-lg"></i></a>
-				  {% endif %}
-              {% if google_plus %}
-              <a class="btn btn-lg btn-primary" href="{{ google_plus }}"><i class="fa fa-google-plus fa-lg"></i></a>
-				  {% endif %}
-              {% if linkedin %}
-              <a class="btn btn-lg btn-primary" href="{{ linkedin }}"><i class="fa fa-linkedin fa-lg"></i></a>
-				  {% endif %}
-              {% if twitter %}
-              <a class="btn btn-lg btn-primary" href="{{ twitter }}"><i class="fa fa-twitter fa-lg"></i></a>
-				  {% endif %}
-            </div></div>
-            {% endif %}
-       </div>
-       </div>
-       {% endif %}
+            </div>
+          </div>
+        {% endif %}
       </div>
       {% set count=0 %}
       {% if incl_src %}{% set count = count + 1 %}{% endif %}

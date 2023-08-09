@@ -11,43 +11,38 @@
   </div>
   <div class="row">
     <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
-    {{ macros.sidebar(project,src) }}
+      {{ macros.sidebar(project,src) }}
     </div>
     <div class="col-md-9" id='text'>
       {{ src.doc }}
       <br>
-    {% if src.efferentgraph %}
-    <div class="panel panel-default">
-      <div class="panel-heading">
-  <h3 class="panel-title">This file depends on</h3>
-      </div>
-      <div class="panel-body">
-  {{ src.efferentgraph }}
-      </div>
-    </div>
-    {% endif %}
+      {% if src.efferentgraph %}
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">This file depends on</h3>
+          </div>
+          <div class="card-body">
+            {{ src.efferentgraph }}
+          </div>
+        </div>
+      {% endif %}
       {% if src.afferentgraph %}
-    <div class="panel panel-default">
-      <div class="panel-heading">
-  <h3 class="panel-title">Files dependent on this one</h3>
-      </div>
-      <div class="panel-body">
-  {{ src.afferentgraph }}
-      </div>
-    </div>
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Files dependent on this one</h3>
+          </div>
+          <div class="card-body">
+            {{ src.afferentgraph }}
+          </div>
+        </div>
       {% endif %}
       {% if src.doc or src.efferentgraph or src.afferentgraph%}<br>{% endif %}
 
-    <section class="visible-xs visible-sm hidden-md">
-      {{ macros.content_list(src,1) }}
-    </section>
-    <br class="visible-xs visible-sm hidden-md">
-
-    <section>
-      <h2><span class="anchor" id="src"></span>Source Code</h2>
-    {{ src.src }}
-    </section>
+      <section>
+        <h2><span class="anchor" id="src"></span>Source Code</h2>
+        {{ src.src }}
+      </section>
     </div>
   </div>
 
-  {% endblock body %}
+{% endblock body %}

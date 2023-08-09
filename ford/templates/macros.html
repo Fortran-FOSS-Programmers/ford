@@ -1,62 +1,66 @@
 {% macro info_bar(entity, incl_src, base_url, line_info) %}
-  <div class="row" id="info-bar">
-    <div class="col-lg-12">
-      <div class="well well-sm">
+  <div class="container p-2 mb-4 bg-light border rounded-3">
+    <div class="row align-items-center justify-content-between" id="info-bar">
+      <div class="col">
         <ul class="list-inline" style="margin-bottom:0px;display:inline">
           {% if entity | meta('author') %}
-            <li id="meta-author"><i class="fa fa-pencil"></i> {{ entity | meta('author') }}</li>
+            <li class="list-inline-item" id="meta-author"><i class="fa fa-pencil"></i> {{ entity | meta('author') }}</li>
           {% endif %}
           {% if entity | meta('date') %}
-            <li id="meta-date"><i class="fa fa-calendar-o"></i> {{ entity | meta('date') }}</li>
+            <li class="list-inline-item" id="meta-date"><i class="fa fa-calendar-o"></i> {{ entity | meta('date') }}</li>
           {% endif %}
           {% if entity | meta('license') %}
-            <li id="meta-license"><i class="fa fa-legal"></i> {{ entity | meta('license') }}</li>
+            <li class="list-inline-item" id="meta-license"><i class="fa fa-legal"></i> {{ entity | meta('license') }}</li>
           {% elif projectData['license'] %}
-            <li id="meta-license"><i class="fa fa-legal"></i> {{ projectData['license'] }}</li>
+            <li class="list-inline-item" id="meta-license"><i class="fa fa-legal"></i> {{ projectData['license'] }}</li>
           {% endif %}
           {% if entity | meta('since') %}
-            <li id="meta-since"><i class="fa fa-history"></i> Since: {{ entity | meta('since') }}</li>
+            <li class="list-inline-item" id="meta-since"><i class="fa fa-history"></i> Since: {{ entity | meta('since') }}</li>
           {% endif %}
           {% if entity | meta('version') %}
-            <li id="meta-version"><i class="fa fa-barcode"></i> {{ entity | meta('version') }}</li>
+            <li class="list-inline-item" id="meta-version"><i class="fa fa-barcode"></i> {{ entity | meta('version') }}</li>
           {% endif %}
           {% if entity | meta('category') %}
-            <li id="meta-category"><i class="fa fa-folder-open"></i> {{ entity | meta('category') }}</li>
+            <li class="list-inline-item" id="meta-category"><i class="fa fa-folder-open"></i> {{ entity | meta('category') }}</li>
           {% endif %}
 
           {% if line_info %}
-            <li id="statements"><i class="fa fa-list-ol"></i>
-              <a data-toggle="tooltip"
-                 data-placement="bottom" data-html="true"
+            <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
+              <a data-bs-toggle="tooltip"
+                 data-bs-placement="bottom" data-html="true"
                  title="{{ line_info }}">{{ entity | meta('num_lines') }} statements</a>
             </li>
           {% endif %}
 
           {% if incl_src %}
-            <li id="source-file">
+            <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
               <a href="{{ base_url }}/src/{{ entity.filename }}"> Source File</a>
             </li>
           {% endif %}
         </ul>
-        <ol class="breadcrumb in-well text-right">
-          {% if incl_src %}
-            {% for item in entity.hierarchy %}
-              <li>{{ item }}</li>
-            {% endfor %}
-          {% else %}
-            {% for item in entity.hierarchy[1:] %}
-              <li>{{ item }}</li>
-            {% endfor %}
-          {%endif%}
-          <li class="active">{{ entity.name }}</li>
-        </ol>
+      </div>
+      <div class="col">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb justify-content-end mb-0">
+            {% if incl_src %}
+              {% for item in entity.hierarchy %}
+                <li class="breadcrumb-item">{{ item }}</li>
+              {% endfor %}
+            {% else %}
+              {% for item in entity.hierarchy[1:] %}
+                <li class="breadcrumb-item">{{ item }}</li>
+              {% endfor %}
+            {%endif%}
+            <li class="breadcrumb-item active" aria-current="page">{{ entity.name }}</li>
+          </ol>
+        </nav>
       </div>
     </div>
   </div>
   <script>
     $(function () {
-    $('[data-toggle="tooltip"]').tooltip()
+    $('[data-bs-toggle="tooltip"]').tooltip()
     })
   </script>
 {% endmacro %}
@@ -64,14 +68,13 @@
 
 {% macro panel_contents(name, collection, anchor, panelnum, collection_url=False) %}
   {% if collection %}
-    <div class="panel panel-primary">
-      <div class="panel-heading text-left">
-        <h3 class="panel-title">
-          <a data-toggle="collapse" href="#{{ anchor }}-{{ panelnum }}">{{ name }}</a>
-        </h3>
-      </div>
-      <div id="{{ anchor }}-{{ panelnum }}" class="panel-collapse collapse">
-        <div class="list-group">
+    <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#{{ anchor }}-{{ panelnum }}"
+         aria-expanded="false" aria-controls="{{ anchor }}-{{ panelnum }}">
+         <h4 class="card-header bg-primary text-white">{{ name }}</h4>
+      </a>
+      <div id="{{ anchor }}-{{ panelnum }}" class="collapse">
+        <div class="list-group list-group-flush">
           {% for item in collection %}
             {% if item is string %}
               {% set name = item %}
@@ -113,8 +116,8 @@
   {{ panel_contents("Module Procedures", self.modprocs, "modprocs", panelnum, self.get_url()) }}
   {{ panel_contents("Namelists", self.namelists, "namelists", panelnum, self.get_url()) }}
   {% if self.src %}
-    <div class="panel panel-primary">
-      <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+    <div class="card card-primary">
+      <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
       <div class="list-group">
         <a class="list-group-item" href="{{ self.get_url() }}#src">{{ self.name }}</a>
       </div>
@@ -164,7 +167,7 @@
 {% macro deprecated(entity) %}
   {# Add 'Deprecated' warning #}
   {%- if entity | meta('deprecated') -%}
-    <span class="label label-danger depwarn">Deprecated</span>
+    <span class="badge bg-danger depwarn">Deprecated</span>
   {%- endif -%}
 {% endmacro %}
 
@@ -172,14 +175,14 @@
   <table class="table table-striped varlist">
     <thead>
       <tr>
-        <th>Type</th>
-        {% if permission %}<th>Visibility</th>{% endif %}
-        {% if intent %}<th>Intent</th><th>Optional</th>{% endif %}
-        <th>Attributes</th>
-        <th></th>
-        <th>Name</th>
-        {% if not intent %}<th></th><th>Initial</th>{% endif %}
-        <th></th>
+        <th scope="col">Type</th>
+        {% if permission %}<th scope="col">Visibility</th>{% endif %}
+        {% if intent %}<th scope="col">Intent</th><th scope="col">Optional</th>{% endif %}
+        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        {% if not intent %}<th></th><th scope="col">Initial</th>{% endif %}
+        <th scope="col"></th>
     </thead>
     {% set colnum = 6 + permission|int + intent|int %}
     <tbody>
@@ -318,12 +321,12 @@
 {% endmacro %}
 
 {% macro bound_info(tb) %}
-  <div class="panel panel-default">
-    <div class="panel-heading codesum"><span class="anchor" id="{{ tb.anchor }}"></span><h3>{% if tb.generic -%}generic,{% else %}procedure{% if tb.proto -%}({% if not tb.protomatch or tb.proto.visible -%}{{ tb.proto }}{% else %}{{ tb.proto.name }}{%- endif %}){%- endif %},{%- endif %} {{ tb.permission }}{% if tb.deferred -%}, deferred{%- endif %}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {% for bind in tb.bindings -%}{% if not bind.parent or bind.visible %}{{ bind }}{% else %}{{ bind.name }}{% endif %}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
+  <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="{{ tb.anchor }}"></span><h3>{% if tb.generic -%}generic,{% else %}procedure{% if tb.proto -%}({% if not tb.protomatch or tb.proto.visible -%}{{ tb.proto }}{% else %}{{ tb.proto.name }}{%- endif %}){%- endif %},{%- endif %} {{ tb.permission }}{% if tb.deferred -%}, deferred{%- endif %}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {% for bind in tb.bindings -%}{% if not bind.parent or bind.visible %}{{ bind }}{% else %}{{ bind.name }}{% endif %}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
         {{ deprecated(tb) }}
     </h3></div>
     {% if tb.doc or meta_list(tb.meta)|trim|length is more_than_one %}
-      <div class="panel-body">
+      <div class="card-body">
         {{ meta_list(tb.meta) }}
         {{ tb.doc }}
       </div>
@@ -369,8 +372,8 @@
 
 
 {% macro interface(intr, full_docstring=True) %}
-  <div class="panel panel-default">
-    <div class="panel-heading codesum">
+  <div class="card">
+    <div class="card-header bg-light codesum">
       <span class="anchor" id="{{ intr.anchor }}"></span>
       <h3>{% if intr.parobj == 'module' and intr.generic %}{{ intr.permission }}{% endif %}
         interface
@@ -379,7 +382,7 @@
       </h3>
     </div>
     {% if intr.doc or (meta_list(intr.meta)|trim and not intr.visible) %}
-      <div class="panel-body">
+      <div class="card-body">
         {% if not intr.visible %}
           {{ meta_list(intr.meta) }}
         {% endif %}
@@ -414,12 +417,12 @@
 {% endmacro %}
 
 {% macro absinterface(intr) %}
-  <div class="panel panel-default">
-    <div class="panel-heading codesum"><span class="anchor" id="{{ intr.anchor }}"></span><h3>abstract interface
+  <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="{{ intr.anchor }}"></span><h3>abstract interface
         {{ deprecated(intr) }}
     </h3></div>
     {% if intr.doc or meta_list(intr.meta)|trim %}
-      <div class="panel-body">
+      <div class="card-body">
         {{ meta_list(intr.meta) }}
         {{ intr | meta('summary') }}
       </div>
@@ -450,12 +453,12 @@
 
 
 {% macro final(proc) %}
-  <div class="panel panel-default">
-    <div class="panel-heading codesum">
+  <div class="card">
+    <div class="card-header codesum">
       <span class="anchor" id="{{ proc.anchor }}"></span>
       <h3>final :: <strong>{{ proc.name }}</strong> {{ deprecated(proc) }}</h3>
     </div>
-    <div class="panel-body">
+    <div class="card-body">
       {{ meta_list(proc.meta) }}
       {{ proc.doc }}
     </div>
@@ -474,8 +477,8 @@
 {% endmacro %}
 
 {% macro type_summary(dtype) %}
-  <div class="panel panel-default">
-    <div class="panel-heading codesum">
+  <div class="card">
+    <div class="card-header codesum">
       <span class="anchor" id="{{ dtype.anchor }}"></span>
       <h3>
         type
@@ -487,7 +490,7 @@
         {{ deprecated(dtype) }}
       </h3>
     </div>
-    <div class="panel-body">
+    <div class="card-body">
       {% if not dtype.visible %}
         {{ meta_list(dtype.meta) }}
       {% endif %}
@@ -578,14 +581,22 @@
 {% endmacro %}
 
 {% macro common_block(com) %}
-  <div class="panel panel-default">
-    <div class="panel-heading codesum"><span class="anchor" id="{{ com.anchor }}"></span><h3>
-        <a data-toggle="popover" data-html="true" tabindex="0"
-           data-trigger="focus"
-           data-content="<h4>Used Elsewhere:</h4>{% for item in com.other_uses %}{% if item != com %}<a href='{{ item.get_url() }}'>{% if item.parent.name -%}{{ item.parent.name }}{%- else -%}<em>unnamed</em>{%- endif %}</a> ({% if item.parobj == 'proc' -%}{{ item.parent.proctype|lower }}{%- else -%}{{ item.parobj }}{%- endif %})<br>{% endif %}{% endfor %}">common{% if com.name %} /{{ com.name }}/{% endif %}</a>
-           {{ deprecated(com) }}
-    </h3></div>
-    <div class="panel-body">
+  <div class="card">
+    <div class="card-header codesum">
+      <span class="anchor" id="{{ com.anchor }}"></span>
+      <h3>
+        <a href="#"
+           data-bs-toggle="popover"
+           data-bs-html="true"
+           data-bs-trigger="focus"
+           data-bs-title="Used elsewhere:"
+           data-bs-content="{{ common_popover(com) }}">
+           common{% if com.name %} /{{ com.name }}/{% endif %}
+        </a>
+        {{ deprecated(com) }}
+      </h3>
+    </div>
+    <div class="card-body">
       {% if meta_list(com.meta)|trim %}
         {{ meta_list(com.meta) }}
       {% endif %}
@@ -597,11 +608,19 @@
   </div>
 {% endmacro %}
 
+{% macro common_popover(common) %}
+  {%- for item in common.other_uses -%}
+    {%- if item != common -%}
+      <a href='{{ item.get_url() }}'>{% if item.parent.name -%}{{ item.parent.name }}{%- else -%}<em>unnamed</em>{%- endif %}</a>
+      ({% if item.parobj == 'proc' -%}{{ item.parent.proctype|lower }}{%- else -%}{{ item.parobj }}{%- endif %})<br>
+    {%- endif -%}
+  {%- endfor -%}
+{% endmacro %}
 
 {% macro enum_entry(enum) %}
-  <div class="panel panel-default">
-    <div class="panel-heading codesum"><span class="anchor" id="{{ enum.anchor }}"></span><h3>enum, bind(c){{ deprecated(enum) }}</h3></div>
-    <div class="panel-body">
+  <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="{{ enum.anchor }}"></span><h3>enum, bind(c){{ deprecated(enum) }}</h3></div>
+    <div class="card-body">
       <h4>Enumerators</h4>
       <table class="table table-striped varlist">
         <tbody>
@@ -623,9 +642,9 @@
 {% endmacro %}
 
 {% macro proc_entry(proc) %}
-  <div class="panel panel-default">
-    <div class="panel-heading codesum"><span class="anchor" id="{{ proc.anchor }}"></span><h3>{{ proc_line(proc) }}</h3></div>
-    <div class="panel-body">
+  <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="{{ proc.anchor }}"></span><h3>{{ proc_line(proc) }}</h3></div>
+    <div class="card-body">
       {{ proc_summary(proc,False) }}
     </div>
   </div>
@@ -633,12 +652,12 @@
 
 {# The full panel for a single namelist on another entitys page #}
 {% macro namelist_panel(namelist) %}
-  <div class="panel panel-default">
-    <div class="panel-heading codesum">
+  <div class="card">
+    <div class="card-header codesum">
       <span class="anchor" id="{{ namelist.anchor }}"></span>
       <h3>Namelist {{ namelist }}</h3>
     </div>
-    <div class="panel-body">
+    <div class="card-body">
       {{ namelist_summary(namelist, False) }}
     </div>
   </div>
@@ -687,37 +706,37 @@
 
 {% macro use_list(obj) %}
   {% if obj.uses or obj.ancestry %}
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title">Uses</h3>
-      </div>
-      <ul class="list-group">
-        {% if obj.uses %}
-          <li class="list-group-item">
-            <ul class="list-inline">
-              {% for use in obj.uses %}
-                <li>{{ use }}</li>
-              {% endfor %}
-            </ul>
-          </li>
-        {% endif %}
-        {% if obj.ancestry %}
-          <li class="list-group-item">
-            <ul class="list-inline">
-              <li><h5>Ancestors:</h5></li>
-              {% for anc in obj.ancestry %}
-                <li>{{ anc }}</li>
-                {% if not loop.last -%}<li>:</li>{%- endif %}
+    <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          {% if obj.uses %}
+            <li class="list-group-item">
+              <ul class="list-inline">
+                {% for use in obj.uses %}
+                  <li class="list-inline-item">{{ use }}</li>
                 {% endfor %}
-            </ul>
-          </li>
-        {% endif %}
-        {% if obj.usesgraph %}
-          <li class="list-group-item">
-            {{ obj.usesgraph }}
-          </li>
-        {% endif %}
-      </ul>
+              </ul>
+            </li>
+          {% endif %}
+          {% if obj.ancestry %}
+            <li class="list-group-item">
+              <ul class="list-inline">
+                <li><h5>Ancestors:</h5></li>
+                {% for anc in obj.ancestry %}
+                  <li class="list-inline-item">{{ anc }}</li>
+                  {% if not loop.last -%}<li>:</li>{%- endif %}
+                  {% endfor %}
+              </ul>
+            </li>
+          {% endif %}
+          {% if obj.usesgraph %}
+            <li class="list-group-item">
+              {{ obj.usesgraph }}
+            </li>
+          {% endif %}
+        </ul>
+      </div>
     </div>
   {% endif %}
 {% endmacro %}
@@ -725,27 +744,27 @@
 
 {% macro usedby_list(obj) %}
   {% if obj.usedbygraph or obj.descendants %}
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <h3 class="panel-title">Used by</h3>
+    <div class="card">
+      <h3 class="card-header card-title bg-light">Used by</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          {% if obj.descendants %}
+            <li class="list-group-item">
+              <ul class="list-inline">
+                <li class="list-inline-item"><h5>Descendants:</h5></li>
+                {% for anc in obj.descendants %}
+                  <li class="list-inline-item">{{ anc }}</li>
+                {% endfor %}
+              </ul>
+            </li>
+          {% endif %}
+          {% if obj.usedbygraph %}
+            <li class="list-group-item">
+              {{ obj.usedbygraph }}
+            </li>
+          {% endif %}
+        </ul>
       </div>
-      <ul class="list-group">
-        {% if obj.descendants %}
-          <li class="list-group-item">
-            <ul class="list-inline">
-              <li><h5>Descendants:</h5></li>
-              {% for anc in obj.descendants %}
-                <li>{{ anc }}</li>
-              {% endfor %}
-            </ul>
-          </li>
-        {% endif %}
-        {% if obj.usedbygraph %}
-          <li class="list-group-item">
-            {{ obj.usedbygraph }}
-          </li>
-        {% endif %}
-      </ul>
     </div>
   {% endif %}
 {% endmacro %}

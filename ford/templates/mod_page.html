@@ -11,7 +11,7 @@
   </div>
 
   <div class="row">
-    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+    <div class="col-md-3">
       {{ macros.sidebar(project,module) }}
     </div>
 
@@ -21,11 +21,6 @@
       {{ macros.use_list(module) }}
       {{ macros.usedby_list(module) }}
       <br>
-
-      <section class="visible-xs visible-sm hidden-md">
-        {{ macros.content_list(module,1) }}
-      </section>
-      <br class="visible-xs visible-sm hidden-md">
 
       {% if module.common %}
         <section>
@@ -37,7 +32,7 @@
         <br>
         <script>
           $(function () {
-          $('[data-toggle="popover"]').popover()
+          $('[data-bs-toggle="popover"]').popover()
           })
         </script>
       {% endif %}
