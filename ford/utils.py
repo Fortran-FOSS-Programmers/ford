@@ -555,7 +555,7 @@ BEGIN_RE = re.compile(r"^-{3}(\s.*)?")
 END_RE = re.compile(r"^(-{3}|\.{3})(\s.*)?")
 
 
-def meta_preprocessor(lines: List[str]) -> Tuple[Dict[str, Any], List[str]]:
+def meta_preprocessor(lines: Union[str, List[str]]) -> Tuple[Dict[str, Any], str]:
     """Extract metadata from start of ``lines``
 
     This is modified from the `Meta-Data Python Markdown extension`_
@@ -564,7 +564,7 @@ def meta_preprocessor(lines: List[str]) -> Tuple[Dict[str, Any], List[str]]:
     Arguments
     ---------
     lines:
-        List of lines to process
+        Text to process
 
     Returns
     -------
@@ -591,6 +591,9 @@ def meta_preprocessor(lines: List[str]) -> Tuple[Dict[str, Any], List[str]]:
 
     """
 
+    if isinstance(lines, str):
+        lines = lines.splitlines()
+
     if lines and BEGIN_RE.match(lines[0]):
         lines.pop(0)
     meta = defaultdict(list)
@@ -610,4 +613,4 @@ def meta_preprocessor(lines: List[str]) -> Tuple[Dict[str, Any], List[str]]:
             else:
                 lines.insert(0, line)
                 break  # no meta data - done
-    return meta, lines
+    return meta, "\n".join(lines)

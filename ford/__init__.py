@@ -444,8 +444,7 @@ def load_settings(
     proj_data = load_toml_settings(directory)
 
     if proj_data is None:
-        proj_data, docs_list = ford.utils.meta_preprocessor(proj_docs.splitlines())
-        proj_docs = "\n".join(docs_list)
+        proj_data, proj_docs = ford.utils.meta_preprocessor(proj_docs)
         # Some very basic type-casting from the parsed markdown metadata.
         # Think if there is a safe  way to evaluate any expressions found in this list
         for option in proj_data:

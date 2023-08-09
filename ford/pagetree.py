@@ -27,8 +27,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import List, Optional
-import textwrap
+from textwrap import dedent
 from ford.utils import meta_preprocessor
+
 
 class PageNode:
     """
@@ -46,8 +47,7 @@ class PageNode:
         encoding: str = "utf-8",
     ):
         print(f"Reading page {os.path.relpath(path)}")
-        text = textwrap.dedent(Path(path).read_text(encoding=encoding)).splitlines()
-        self.meta, doclist = meta_preprocessor(text)
+        self.meta, text = meta_preprocessor(dedent(Path(path).read_text(encoding)))
 
         if "title" not in self.meta:
             raise ValueError(f"Page '{path}' has no title metadata")
@@ -68,7 +68,7 @@ class PageNode:
         #   project settings
         self.copy_subdir = self.meta.get("copy_subdir", proj_copy_subdir)
         self.parent = parent
-        self.contents = md.reset().convert("\n".join(doclist))
+        self.contents = md.reset().convert(text)
         self.subpages: List[PageNode] = []
         self.files: List[os.PathLike] = []
         self.filename = Path(path.stem)
