@@ -340,6 +340,7 @@ class FortranBase:
                     doc.insert(0, "")
                 doc.append("")
             self.meta, doclist = ford.utils.meta_preprocessor(doc)
+            doclist.insert(0, "")
             self.doc = md.reset().convert("\n".join(doclist))
         else:
             if (
