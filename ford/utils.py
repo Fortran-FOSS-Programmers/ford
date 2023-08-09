@@ -46,6 +46,7 @@ import pathlib
 from typing import Dict, Union, TYPE_CHECKING, List, Any, Tuple
 from io import StringIO
 import itertools
+from collections import defaultdict
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
@@ -546,14 +547,12 @@ def traverse(root, attrs) -> list:
         nodes.extend(traverse(obj, attrs))
     return nodes
 
-from collections import defaultdict
-import re 
 
 # Global Vars
-META_RE = re.compile(r'^[ ]{0,3}(?P<key>[A-Za-z0-9_-]+):\s*(?P<value>.*)')
-META_MORE_RE = re.compile(r'^[ ]{4,}(?P<value>.*)')
-BEGIN_RE = re.compile(r'^-{3}(\s.*)?')
-END_RE = re.compile(r'^(-{3}|\.{3})(\s.*)?')
+META_RE = re.compile(r"^[ ]{0,3}(?P<key>[A-Za-z0-9_-]+):\s*(?P<value>.*)")
+META_MORE_RE = re.compile(r"^[ ]{4,}(?P<value>.*)")
+BEGIN_RE = re.compile(r"^-{3}(\s.*)?")
+END_RE = re.compile(r"^(-{3}|\.{3})(\s.*)?")
 
 
 def meta_preprocessor(lines: List[str]) -> Tuple[Dict[str, Any], List[str]]:
@@ -598,16 +597,16 @@ def meta_preprocessor(lines: List[str]) -> Tuple[Dict[str, Any], List[str]]:
     key = None
     while lines:
         line = lines.pop(0)
-        if line.strip() == '' or END_RE.match(line):
+        if line.strip() == "" or END_RE.match(line):
             break  # blank line or end of YAML header - done
         if m1 := META_RE.match(line):
-            key = m1.group('key').lower().strip()
-            value = m1.group('value').strip()
+            key = m1.group("key").lower().strip()
+            value = m1.group("value").strip()
             meta[key].append(value)
         else:
             if (m2 := META_MORE_RE.match(line)) and key:
                 # Add another line to existing key
-                meta[key].append(m2.group('value').strip())
+                meta[key].append(m2.group("value").strip())
             else:
                 lines.insert(0, line)
                 break  # no meta data - done

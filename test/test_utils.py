@@ -56,18 +56,23 @@ def test_str_to_bool_already_bool():
 def test_strip_paren(string, level, expected):
     assert ford.utils.strip_paren(string, retlevel=level) == expected
 
-def test_meta_preprocessor():
 
+def test_meta_preprocessor():
     text = dedent(
-    """\
+        """\
     key1: value1
     key2: value2
           value2a
     key3: value3
 
-    no more metadata""").splitlines()
+    no more metadata"""
+    ).splitlines()
 
     meta, doc = meta_preprocessor(text)
-    
-    assert doc == ['no more metadata']
-    assert meta == {'key1': ['value1'], 'key2': ['value2', 'value2a'], 'key3': ['value3']}
+
+    assert doc == ["no more metadata"]
+    assert meta == {
+        "key1": ["value1"],
+        "key2": ["value2", "value2a"],
+        "key3": ["value3"],
+    }
