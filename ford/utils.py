@@ -213,6 +213,7 @@ def sub_links(string: str, project: Project) -> str:
         "extabsinterface": "extInterfaces",
         "program": "programs",
         "block": "blockdata",
+        "namelist": "namelists",
     }
 
     SUBLINK_TYPES = {

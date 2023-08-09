@@ -32,7 +32,7 @@ import os
 import pathlib
 import subprocess
 from datetime import date, datetime
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Optional, Tuple, List
 from textwrap import dedent
 
 import ford.fortran_project
@@ -41,6 +41,12 @@ import ford.output
 import ford.utils
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
+from pathlib import Path
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib  # type: ignore[no-redef]
 
 from importlib.metadata import version, PackageNotFoundError
 
@@ -202,10 +208,15 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "year": date.today().year,
 }
 
+DEFAULT_EXTENSIONS = ["markdown_include.include"]
 
-def convert_to_bool(name, option):
+
+def convert_to_bool(name: str, option: List[str]) -> bool:
     """Convert value 'option' to a bool, with a nice error message on
     failure. Expects a list from the markdown meta-data extension"""
+    if isinstance(option, bool):
+        return option
+
     if len(option) > 1:
         raise ValueError(
             f"Could not convert option '{name}' to bool: expected a single value but got a list ({option})"
@@ -227,11 +238,13 @@ def initialize():
 
     # Read in the project-file. This will contain global documentation (which
     # will appear on the homepage) as well as any information about the project
-    # and settings for generating the documentation.
+    # and settings for generating the documentation
+
     proj_docs = args.project_file.read()
     directory = os.path.dirname(args.project_file.name)
+    proj_docs, proj_data, md = load_settings(proj_docs, directory)
 
-    return parse_arguments(vars(args), proj_docs, directory)
+    return *parse_arguments(vars(args), proj_docs, proj_data, directory), md
 
 
 def get_command_line_arguments() -> argparse.Namespace:
@@ -374,15 +387,106 @@ def get_command_line_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def load_toml_settings(directory: Union[os.PathLike, str]) -> Optional[dict]:
+    """Load Ford settings from ``fpm.toml`` file in ``directory``
+
+    Settings should be in ``[extra.ford]`` table
+    """
+
+    filename = Path(directory) / "fpm.toml"
+
+    if not filename.is_file():
+        return None
+
+    with open(filename, "rb") as f:
+        settings = tomllib.load(f)
+
+    if "extra" not in settings:
+        return None
+
+    if "ford" not in settings["extra"]:
+        return None
+
+    proj_data = settings["extra"]["ford"]
+
+    # Ensure all the list settings are lists
+    for key, value in proj_data.items():
+        if isinstance(DEFAULT_SETTINGS.get(key, None), list) and (
+            not isinstance(value, list)
+        ):
+            proj_data[key] = [value]
+
+    return proj_data
+
+
+def load_settings(
+    proj_docs: str, directory: Union[os.PathLike, str] = pathlib.Path.cwd()
+) -> Tuple[str, dict, MetaMarkdown]:
+    """Load Ford settings from ``fpm.toml`` if present, or from
+    metadata in supplied project file1
+
+    Parameters
+    ----------
+    proj_docs : str
+        Text of project file
+    directory : Union[os.PathLike, str]
+        Project directory
+
+    Returns
+    -------
+    proj_docs: str
+        Text of project file converted from markdown
+    proj_data: dict
+        Project settings
+    md: MetaMarkdown
+        Markdown converter
+
+    """
+
+    proj_data = load_toml_settings(directory)
+    from_toml = proj_data is not None
+
+    if proj_data is None:
+        # Initial setup of markdown reader in order to get any markdown extensions
+        md = MetaMarkdown()
+        md.convert(proj_docs)
+        proj_data = md.Meta
+
+    # Setup Markdown object with any user-specified extensions
+    md_base = proj_data.get("md_base_dir", [directory])[0]
+    md = MetaMarkdown(
+        extensions=DEFAULT_EXTENSIONS + proj_data.get("md_extensions", []),
+        extension_configs={"markdown_include.include": {"base_path": md_base}},
+    )
+
+    # Now re-read project file with all extensions loaded
+    proj_docs = md.reset().convert(proj_docs)
+
+    if not from_toml:
+        proj_data = md.Meta
+        # Some very basic type-casting from the parsed markdown metadata.
+        # Think if there is a safe  way to evaluate any expressions found in this list
+        for option in proj_data:
+            default_type = DEFAULT_SETTINGS.get(option, None)
+            if isinstance(default_type, bool):
+                proj_data[option] = convert_to_bool(option, proj_data[option])
+            elif not isinstance(default_type, list):
+                # If it's not supposed to be a list, then it's probably supposed
+                # to be a single big block of text, like a description
+                proj_data[option] = "\n".join(proj_data[option])
+
+    return proj_docs, proj_data, md
+
+
 def parse_arguments(
     command_line_args: dict,
     proj_docs: str,
+    proj_data: dict,
     directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
 ):
     """Consolidates arguments from the command line and from the project
     file, and then normalises them how the rest of the code expects
     """
-
     try:
         import multiprocessing
 
@@ -392,36 +496,13 @@ def parse_arguments(
 
     DEFAULT_SETTINGS["parallel"] = ncpus
 
-    # Initial set up of Markdown reader
-    md = MetaMarkdown()
-    md.convert(proj_docs)
-
-    # Remake the Markdown object with settings parsed from the project_file
-    md_base = md.Meta["md_base_dir"][0] if "md_base_dir" in md.Meta else directory
-    md = MetaMarkdown(
-        extensions=["markdown_include.include"] + md.Meta.get("md_extensions", []),
-        extension_configs={"markdown_include.include": {"base_path": md_base}},
-    )
-
-    # Re-read the project file
-    proj_docs = md.reset().convert(proj_docs)
-    proj_data = md.Meta
-
     # Get the default options, and any over-rides, straightened out
     for option, default in DEFAULT_SETTINGS.items():
         args_option = command_line_args.get(option, None)
         if args_option is not None:
             proj_data[option] = args_option
         elif option in proj_data:
-            # Think if there is a safe  way to evaluate any expressions found in this list
-            default_type = DEFAULT_SETTINGS.get(option, None)
-            if isinstance(default_type, bool):
-                proj_data[option] = convert_to_bool(option, proj_data[option])
-            elif not isinstance(default_type, list):
-                # If it's not supposed to be a list, then it's
-                # probably supposed to be a single big block of text,
-                # like a description
-                proj_data[option] = "\n".join(proj_data[option])
+            continue
         else:
             proj_data[option] = default
 
@@ -533,9 +614,7 @@ def parse_arguments(
             f'Notice: doc_license "{proj_data["doc_license"]}" is not a recognized value, using the value as a custom license value.'
         )
 
-    # Return project data, docs, and the Markdown reader
-    md.reset()
-    return (proj_data, proj_docs, md)
+    return proj_data, proj_docs
 
 
 def main(proj_data, proj_docs, md):

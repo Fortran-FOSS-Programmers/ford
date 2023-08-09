@@ -1098,3 +1098,33 @@ def test_submodule_procedure_issue_446(copy_fortran_file):
     submodproc = module.descendants[0].modprocedures[0]
 
     assert interface.procedure.module == submodproc
+
+
+def test_find_namelists(copy_fortran_file):
+    data = """\
+    module mod1
+    contains
+      subroutine sub1()
+        namelist /namelist_b/ var_a
+      end subroutine sub1
+    end module mod1
+
+    program prog
+      integer :: var_b
+    contains
+      subroutine sub(var_b)
+        integer :: var_d, var_a, var_b
+        character(len=*), intent(in) :: string
+        namelist /namelist_a/ var_a, var_b, var_c, var_d
+        read(string, nml=namelist_a)
+        write(*, *) "Read in:"
+        write(*, nml=namelist_a)
+      end subroutine sub
+    end program prog
+    """
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+    assert len(project.namelists) == 2
+    namelist_names = sorted((namelist.name for namelist in project.namelists))
+    expected_names = sorted(("namelist_a", "namelist_b"))
+    assert namelist_names == expected_names

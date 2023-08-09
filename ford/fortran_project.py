@@ -85,6 +85,7 @@ class Project:
         self.extInterfaces = []
         self.extTypes = []
         self.extVariables = []
+        self.namelists = []
 
         # Get all files within topdir, recursively
         srcdir_list = self.make_srcdir_list(settings["exclude_dir"])
@@ -120,19 +121,32 @@ class Project:
 
                         print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
                         continue
+
+                    def namelist_check(entity):
+                        self.namelists.extend(getattr(entity, "namelists", []))
+
                     for module in self.files[-1].modules:
                         self.modules.append(module)
+                        for routine in module.routines:
+                            namelist_check(routine)
                     for submod in self.files[-1].submodules:
                         self.submodules.append(submod)
+                        for routine in submod.routines:
+                            namelist_check(routine)
                     for function in self.files[-1].functions:
                         function.visible = True
                         self.procedures.append(function)
+                        namelist_check(function)
                     for subroutine in self.files[-1].subroutines:
                         subroutine.visible = True
                         self.procedures.append(subroutine)
+                        namelist_check(subroutine)
                     for program in self.files[-1].programs:
                         program.visible = True
                         self.programs.append(program)
+                        namelist_check(program)
+                        for routine in program.routines:
+                            namelist_check(routine)
                     for block in self.files[-1].blockdata:
                         self.blockdata.append(block)
                 elif extension in self.extra_filetypes:

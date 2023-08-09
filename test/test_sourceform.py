@@ -2089,3 +2089,56 @@ def test_submodule_procedure_calls(parse_fortran_file):
     submodule.correlate(FakeProject())
 
     assert submodule.modprocedures[0].calls[0] == submodule.functions[0]
+
+
+def test_namelist(parse_fortran_file):
+    data = """\
+    module mod_a
+      integer :: var_a
+    end module mod_a
+    module mod_b
+      use mod_a
+      integer :: var_b
+    end module mod_b
+
+    program prog
+      integer :: var_c
+    contains
+      subroutine sub(var_d)
+        use mod_b
+        integer, intent(in) :: var_d
+        integer :: var_e
+        namelist /namelist_a/ var_a, var_b, var_c, var_d, var_e
+        !! namelist docstring
+      end subroutine sub
+    end program prog
+    """
+    fortran_file = parse_fortran_file(data)
+    namelist = fortran_file.programs[0].subroutines[0].namelists[0]
+    assert namelist.name == "namelist_a"
+
+    expected_names = sorted(["var_a", "var_b", "var_c", "var_d", "var_e"])
+    output_names = sorted(namelist.variables)
+    assert output_names == expected_names
+
+    assert namelist.doc_list == [" namelist docstring"]
+
+
+def test_namelist_correlate(parse_fortran_file):
+    data = """\
+    program prog
+      integer :: var_c
+    contains
+      subroutine sub(var_b)
+        integer, intent(in) :: var_b
+        integer :: var_a
+        namelist /namelist_a/ var_a, var_b, var_c
+      end subroutine sub
+    end program prog
+    """
+    fortran_file = parse_fortran_file(data)
+    fortran_file.programs[0].correlate(FakeProject())
+    namelist = fortran_file.programs[0].subroutines[0].namelists[0]
+    expected_names = sorted(["var_a", "var_b", "var_c"])
+    output_names = sorted([variables.name for variables in namelist.variables])
+    assert output_names == expected_names

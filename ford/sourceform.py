@@ -226,6 +226,7 @@ class FortranBase:
                 FortranModule,
                 GenericSource,
                 FortranBlockData,
+                FortranNamelist,
             ),
         ) or (
             isinstance(
@@ -542,6 +543,7 @@ class FortranBase:
                 "interfaces",
                 "modprocedures",
                 "modules",
+                "namelists",
                 "programs",
                 "submodules",
                 "subroutines",
@@ -662,6 +664,9 @@ class FortranContainer(FortranBase):
     VARIABLE_STRING = (
         r"^(integer|real|double\s*precision|character|complex|double\s*complex|logical|type(?!\s+is)|class(?!\s+is|\s+default)|"
         r"procedure|enumerator{})\s*((?:\(|\s\w|[:,*]).*)$"
+    )
+    NAMELIST_RE = re.compile(
+        r"namelist\s*/(?P<name>\w+)/\s*(?P<vars>(?:\w+,?\s*)+)", re.IGNORECASE
     )
 
     def __init__(
@@ -881,6 +886,14 @@ class FortranContainer(FortranBase):
                     self.num_lines += self.subroutines[-1].num_lines - 1
                 else:
                     self.print_error(line, "Unexpected SUBROUTINE")
+
+            elif match := self.NAMELIST_RE.match(line):
+                if hasattr(self, "namelists"):
+                    self.namelists.append(
+                        FortranNamelist(source, match, self, self.permission)
+                    )
+                else:
+                    self.print_error(line, "Unexpected NAMELIST")
 
             elif match := self.FUNCTION_RE.match(line):
                 if isinstance(self, FortranCodeUnit) and not incontains:
@@ -1103,10 +1116,10 @@ class FortranCodeUnit(FortranContainer):
         self.variables: List[FortranVariable] = []
         self.all_procs: Dict[str, Union[FortranProcedure, FortranInterface]] = {}
         self.public_list: List[str] = []
+        self.namelists: List[FortranNamelist] = []
 
     def _cleanup(self) -> None:
         self.process_attribs()
-
         self.all_procs = {p.name.lower(): p for p in self.routines}
         for interface in self.interfaces:
             if not interface.abstract:
@@ -1114,7 +1127,6 @@ class FortranCodeUnit(FortranContainer):
             if interface.generic:
                 for proc in interface.routines:
                     self.all_procs[proc.name.lower()] = proc
-
         self.variables = [v for v in self.variables if "external" not in v.attribs]
 
     def correlate(self, project: Project) -> None:
@@ -1250,6 +1262,7 @@ class FortranCodeUnit(FortranContainer):
             "variables",
             "common",
             "modprocedures",
+            "namelists",
         ):
             entity.correlate(project)
         if hasattr(self, "args") and not getattr(self, "mp", False):
@@ -1841,6 +1854,30 @@ class FortranProgram(FortranCodeUnit):
         if self.name is None:
             self.name = ""
         self._common_initialize()
+
+
+class FortranNamelist(FortranBase):
+    """
+    An object representing a Fortran namelist and holding all of said
+    namelist's contents
+    """
+
+    def _initialize(self, line: re.Match) -> None:
+        self.variables = [
+            variable.strip().lower() for variable in line["vars"].split(",")
+        ]
+        self.name = line["name"]
+        self.visible = True
+
+    def correlate(self, project):
+        all_vars: Dict[str, FortranVariable] = {}
+        all_vars.update(self.parent.all_vars)
+        if isinstance(self.parent, FortranProcedure):
+            all_vars.update({arg.name: arg for arg in self.parent.args})
+
+        self.variables = [
+            all_vars.get(variable, variable) for variable in self.variables
+        ]
 
 
 class FortranType(FortranContainer):
