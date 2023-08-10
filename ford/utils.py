@@ -43,9 +43,10 @@ from urllib.error import URLError
 from urllib.request import urlopen
 from urllib.parse import urljoin
 import pathlib
-from typing import Dict, Union, TYPE_CHECKING
+from typing import Dict, Union, TYPE_CHECKING, List, Any, Tuple
 from io import StringIO
 import itertools
+from collections import defaultdict
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
@@ -545,3 +546,71 @@ def traverse(root, attrs) -> list:
         nodes.append(obj)
         nodes.extend(traverse(obj, attrs))
     return nodes
+
+
+# Global Vars
+META_RE = re.compile(r"^[ ]{0,3}(?P<key>[A-Za-z0-9_-]+):\s*(?P<value>.*)")
+META_MORE_RE = re.compile(r"^[ ]{4,}(?P<value>.*)")
+BEGIN_RE = re.compile(r"^-{3}(\s.*)?")
+END_RE = re.compile(r"^(-{3}|\.{3})(\s.*)?")
+
+
+def meta_preprocessor(lines: Union[str, List[str]]) -> Tuple[Dict[str, Any], str]:
+    """Extract metadata from start of ``lines``
+
+    This is modified from the `Meta-Data Python Markdown extension`_
+    and uses the same syntax
+
+    Arguments
+    ---------
+    lines:
+        Text to process
+
+    Returns
+    -------
+    meta:
+        Dictionary of metadata, with lowercase keys
+    lines:
+        Original text with metadata lines removed
+
+    Notes
+    -----
+
+    Original code copyright 2007-2008 `Waylan Limberg
+    <http://achinghead.com>`_
+
+    Changes copyright 2008-2014 `The Python Markdown Project
+    <https://python-markdown.github.io>`_
+
+    Further changes copyright 2023 Ford authors
+
+    License: `BSD <https://opensource.org/licenses/bsd-license.php>`_
+
+    .. _Meta-Data Python Markdown extension:
+      https://python-markdown.github.io/extensions/meta_data/
+
+    """
+
+    if isinstance(lines, str):
+        lines = lines.splitlines()
+
+    if lines and BEGIN_RE.match(lines[0]):
+        lines.pop(0)
+    meta = defaultdict(list)
+    key = None
+    while lines:
+        line = lines.pop(0)
+        if line.strip() == "" or END_RE.match(line):
+            break  # blank line or end of YAML header - done
+        if m1 := META_RE.match(line):
+            key = m1.group("key").lower().strip()
+            value = m1.group("value").strip()
+            meta[key].append(value)
+        else:
+            if (m2 := META_MORE_RE.match(line)) and key:
+                # Add another line to existing key
+                meta[key].append(m2.group("value").strip())
+            else:
+                lines.insert(0, line)
+                break  # no meta data - done
+    return meta, "\n".join(lines)

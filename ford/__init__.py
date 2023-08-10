@@ -34,6 +34,12 @@ import subprocess
 from datetime import date, datetime
 from typing import Any, Dict, Union, Optional, Tuple, List
 from textwrap import dedent
+import warnings
+from markdown_include.include import (
+    INC_SYNTAX as MD_INCLUDE_RE,
+    MarkdownInclude,
+    IncludePreprocessor,
+)
 
 import ford.fortran_project
 import ford.sourceform
@@ -173,6 +179,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "macro": [],
     "mathjax_config": None,
     "max_frontpage_items": 10,
+    "md_extensions": [],
     "media_dir": None,
     "output_dir": "./doc",
     "page_dir": None,
@@ -207,8 +214,6 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "website": None,
     "year": date.today().year,
 }
-
-DEFAULT_EXTENSIONS = ["markdown_include.include"]
 
 
 def convert_to_bool(name: str, option: List[str]) -> bool:
@@ -444,36 +449,44 @@ def load_settings(
     """
 
     proj_data = load_toml_settings(directory)
-    from_toml = proj_data is not None
 
     if proj_data is None:
-        # Initial setup of markdown reader in order to get any markdown extensions
-        md = MetaMarkdown()
-        md.convert(proj_docs)
-        proj_data = md.Meta
+        proj_data, proj_docs = ford.utils.meta_preprocessor(proj_docs)
+        # Some very basic type-casting from the parsed markdown metadata.
+        # Think if there is a safe  way to evaluate any expressions found in this list
+        for option, value in proj_data.items():
+            default_type = DEFAULT_SETTINGS.get(option, None)
+            if isinstance(default_type, bool):
+                proj_data[option] = convert_to_bool(option, value)
+            elif not isinstance(default_type, list):
+                # If it's not supposed to be a list, then it's probably supposed
+                # to be a single big block of text, like a description
+                proj_data[option] = "\n".join(value)
+
+        # Workaround for file inclusion in metadata
+        for option, value in proj_data.items():
+            if isinstance(value, str) and MD_INCLUDE_RE.match(value):
+                warnings.warn(
+                    "Including other files in project file metadata is deprecated and "
+                    "will stop working in a future release.\n"
+                    f"    {option}: {value}",
+                    FutureWarning,
+                )
+                md_base_dir = proj_data.get("md_base_dir", [str(directory)])[0]
+                configs = MarkdownInclude({"base_path": md_base_dir}).getConfigs()
+                include_preprocessor = IncludePreprocessor(None, configs)
+                proj_data[option] = "\n".join(
+                    include_preprocessor.run(value.splitlines())
+                )
 
     # Setup Markdown object with any user-specified extensions
-    md_base = proj_data.get("md_base_dir", [directory])[0]
     md = MetaMarkdown(
-        extensions=DEFAULT_EXTENSIONS + proj_data.get("md_extensions", []),
-        extension_configs={"markdown_include.include": {"base_path": md_base}},
+        proj_data.get("md_base_dir", [str(directory)])[0],
+        extensions=proj_data.get("md_extensions", []),
     )
 
     # Now re-read project file with all extensions loaded
     proj_docs = md.reset().convert(proj_docs)
-
-    if not from_toml:
-        proj_data = md.Meta
-        # Some very basic type-casting from the parsed markdown metadata.
-        # Think if there is a safe  way to evaluate any expressions found in this list
-        for option in proj_data:
-            default_type = DEFAULT_SETTINGS.get(option, None)
-            if isinstance(default_type, bool):
-                proj_data[option] = convert_to_bool(option, proj_data[option])
-            elif not isinstance(default_type, list):
-                # If it's not supposed to be a list, then it's probably supposed
-                # to be a single big block of text, like a description
-                proj_data[option] = "\n".join(proj_data[option])
 
     return proj_docs, proj_data, md
 

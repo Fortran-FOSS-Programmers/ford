@@ -1,5 +1,11 @@
 # Changelog
 
+## [v7.0.0](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.2.5...)
+
+**Breaking changes:**
+
+- It is no longer possible to include other files in the project file metadata
+
 ## [v6.1.9](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.9) (2022-03-14)
 
 [Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.8...v6.1.9)

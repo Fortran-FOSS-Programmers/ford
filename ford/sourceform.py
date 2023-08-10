@@ -321,12 +321,8 @@ class FortranBase:
         Process the documentation with Markdown to produce HTML.
         """
         if len(self.doc_list) > 0:
-            # Remove any common leading whitespace from the docstring
-            # so that the markdown conversion is a bit more robust
-            doc = textwrap.dedent("\n".join(self.doc_list)).splitlines()
-
-            if len(doc) == 1 and ":" in doc[0]:
-                words = doc[0].split(":")[0].strip()
+            if len(self.doc_list) == 1 and ":" in self.doc_list[0]:
+                words = self.doc_list[0].split(":")[0].strip()
                 if words.lower() not in [
                     "author",
                     "date",
@@ -338,10 +334,12 @@ class FortranBase:
                     "display",
                     "graph",
                 ]:
-                    doc.insert(0, "")
-                doc.append("")
-            self.doc = md.reset().convert("\n".join(doc))
-            self.meta = md.Meta
+                    self.doc_list.insert(0, "")
+                self.doc_list.append("")
+            self.meta, docs = ford.utils.meta_preprocessor(self.doc_list)
+            # Remove any common leading whitespace from the docstring
+            # so that the markdown conversion is a bit more robust
+            self.doc = md.reset().convert(textwrap.dedent(docs))
         else:
             if (
                 self.settings["warn"]

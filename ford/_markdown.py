@@ -8,15 +8,14 @@ from ford.md_admonition import AdmonitionExtension
 class MetaMarkdown(Markdown):
     """Helper subclass that captures our defaults"""
 
-    Meta: Dict[str, Any]
-
     def __init__(
         self,
+        md_base: str,
         extensions: Optional[List[Union[str, Extension]]] = None,
         extension_configs: Optional[Dict[str, Dict]] = None,
     ):
         default_extensions: List[Union[str, Extension]] = [
-            "markdown.extensions.meta",
+            "markdown_include.include",
             "markdown.extensions.codehilite",
             "markdown.extensions.extra",
             "mdx_math",
@@ -26,8 +25,11 @@ class MetaMarkdown(Markdown):
         if extensions is None:
             extensions = []
 
+        default_config = {"markdown_include.include": {"base_path": md_base}}
+        default_config.update(extension_configs or {})
+
         super().__init__(
             extensions=default_extensions + extensions,
             output_format="html",
-            extension_configs=extension_configs or {},
+            extension_configs=default_config,
         )
