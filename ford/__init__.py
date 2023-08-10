@@ -58,6 +58,7 @@ import ford.fortran_project
 import ford.sourceform
 import ford.output
 import ford.utils
+from ford._typing import PathLike
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
 from ford.version import __version__
@@ -68,8 +69,6 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
 
-
-PathLike = Union[os.PathLike, str]
 
 __appname__ = "FORD"
 __author__ = "Chris MacMackin"
@@ -440,7 +439,7 @@ def get_command_line_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_toml_settings(directory: Union[os.PathLike, str]) -> Optional[Settings]:
+def load_toml_settings(directory: PathLike) -> Optional[Settings]:
     """Load Ford settings from ``fpm.toml`` file in ``directory``
 
     Settings should be in ``[extra.ford]`` table
@@ -509,7 +508,7 @@ def load_settings(
     ----------
     proj_docs : str
         Text of project file
-    directory : Union[os.PathLike, str]
+    directory :
         Project directory
 
     Returns
@@ -544,7 +543,7 @@ def parse_arguments(
     command_line_args: dict,
     proj_docs: str,
     proj_data: dict,
-    directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
+    directory: PathLike = pathlib.Path.cwd(),
 ):
     """Consolidates arguments from the command line and from the project
     file, and then normalises them how the rest of the code expects
