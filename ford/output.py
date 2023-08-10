@@ -22,6 +22,7 @@
 #
 #
 
+from dataclasses import asdict
 import sys
 import os
 import shutil
@@ -37,6 +38,7 @@ import ford.sourceform
 import ford.tipue_search
 import ford.utils
 from ford.graphs import graphviz_installed, GraphManager
+from ford.settings import Settings
 
 loc = pathlib.Path(__file__).parent
 env = jinja2.Environment(
@@ -80,28 +82,30 @@ class Documentation:
     a project.
     """
 
-    def __init__(self, data, proj_docs, project, pagetree):
+    def __init__(self, settings: Settings, proj_docs: str, project, pagetree):
         # This lets us use meta data anywhere within the template.
         # Also, in future for other template, we may not need to
         # pass the data obj.
-        env.globals["projectData"] = data
+        env.globals["projectData"] = asdict(settings)
         self.project = project
+        self.settings = settings
         # Jinja2's `if` statement counts `None` as truthy, so to avoid
         # lots of refactoring and messiness in the templates, just get
         # rid of None values
-        self.data = {k: v for k, v in data.items() if v is not None}
+        self.data = {k: v for k, v in asdict(settings).items() if v is not None}
+        self.data["pages"] = pagetree
         self.lists = []
         self.docs = []
-        self.njobs = int(self.data["parallel"])
+        self.njobs = settings.parallel
         self.parallel = self.njobs > 0
 
         self.index = IndexPage(self.data, project, proj_docs)
         self.search = SearchPage(self.data, project)
-        if not graphviz_installed and data["graph"]:
+        if not graphviz_installed and settings.graph:
             print(
                 "Warning: Will not be able to generate graphs. Graphviz not installed."
             )
-        if self.data["relative"]:
+        if settings.relative:
             graphparent = "../"
         else:
             graphparent = ""
@@ -119,7 +123,7 @@ class Documentation:
                 (project.blockdata, BlockPage),
                 (project.namelists, NamelistPage),
             ]
-            if data["incl_src"]:
+            if settings.incl_src:
                 entity_list_page_map.append((project.allfiles, FilePage))
 
             for entity_list, page_class in entity_list_page_map:
@@ -129,7 +133,7 @@ class Documentation:
             # Create lists of each entity type
             if len(project.procedures) > 0:
                 self.lists.append(ProcList(self.data, project))
-            if data["incl_src"] and (len(project.files) + len(project.extra_files) > 1):
+            if settings.incl_src and (len(project.files) + len(project.extra_files) > 1):
                 self.lists.append(FileList(self.data, project))
             if len(project.modules) + len(project.submodules) > 0:
                 self.lists.append(ModList(self.data, project))
@@ -149,23 +153,23 @@ class Documentation:
                 PagetreePage(self.data, project, item) for item in (pagetree or [])
             ]
         except Exception:
-            if data["dbg"]:
+            if settings.dbg:
                 traceback.print_exc()
                 sys.exit("Error encountered.")
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
 
         self.graphs = GraphManager(
-            self.data["project_url"],
-            self.data["output_dir"],
+            settings.project_url,
+            settings.output_dir,
             self.data.get("graph_dir", ""),
             graphparent,
-            self.data["coloured_edges"],
-            self.data["show_proc_parent"],
+            settings.coloured_edges,
+            settings.show_proc_parent,
             save_graphs=bool(self.data.get("graph_dir", False)),
         )
 
-        if graphviz_installed and data["graph"]:
+        if graphviz_installed and settings.graph:
             for entity_list in [
                 project.types,
                 project.procedures,
@@ -190,10 +194,10 @@ class Documentation:
             project.usegraph = ""
             project.filegraph = ""
 
-        if data["search"]:
-            url = "" if data["relative"] else data["project_url"]
+        if settings.search:
+            url = "" if settings.relative else settings.project_url
             self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(
-                data["output_dir"], url
+                settings.output_dir, url
             )
             self.tipue.create_node(self.index.html, "index.html", {"category": "home"})
             jobs = len(self.docs) + len(self.pagetree)

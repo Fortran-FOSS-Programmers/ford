@@ -45,6 +45,7 @@ from ford.reader import FortranReader
 import ford.utils
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
+from ford.settings import Settings
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
@@ -181,16 +182,16 @@ class FortranBase:
         if self.parent:
             self.parobj: Optional[str] = self.parent.obj
             self.display: List[str] = self.parent.display
-            self.settings: Dict = self.parent.settings
+            self.settings: Settings = self.parent.settings
         else:
             self.parobj = None
             self.display = []
-            self.settings = {}
+            self.settings = Settings()
 
         self._initialize(first_line)
         del self.strings
 
-        self.doc_list = read_docstring(source, self.settings["docmark"])
+        self.doc_list = read_docstring(source, self.settings.docmark)
         self.hierarchy = self._make_hierarchy()
 
     def _make_hierarchy(self) -> List[FortranContainer]:
@@ -313,7 +314,8 @@ class FortranBase:
 
         Use ``default`` if ``key`` is not in ``self.settings``.
         """
-        value = self.meta.get(key, self.settings.get(key, default))
+        # FIXME: is this still needed?
+        value = self.meta.get(key, getattr(self.settings, key, default))
         self.meta[key] = transform(value) if transform else value
 
     def markdown(self, md: MetaMarkdown, project: Project):
@@ -342,7 +344,7 @@ class FortranBase:
             self.doc = md.reset().convert(textwrap.dedent(docs))
         else:
             if (
-                self.settings["warn"]
+                self.settings.warn
                 and self.obj != "sourcefile"
                 and self.obj != "genericsource"
             ):
@@ -415,7 +417,7 @@ class FortranBase:
                     self.src = highlight(match.group(), FortranLexer(), HtmlFormatter())
                 else:
                     self.src = ""
-                    if self.settings["warn"]:
+                    if self.settings.warn:
                         print(
                             f"Warning: Could not extract source code for {self.obj} '{self.name}' in file '{self.filename}'"
                         )
@@ -470,7 +472,7 @@ class FortranBase:
             "src": None,
         }
 
-        sort_key = SORT_KEY_FUNCTIONS[self.settings["sort"].lower()]
+        sort_key = SORT_KEY_FUNCTIONS[self.settings.sort.lower()]
         if sort_key is None:
             return
 
@@ -552,7 +554,7 @@ class FortranBase:
 
     def _should_display(self, item) -> bool:
         """Return True if item should be displayed"""
-        if self.settings["hide_undoc"] and not item.doc:
+        if self.settings.hide_undoc and not item.doc:
             return False
         return item.permission in self.display
 
@@ -681,7 +683,7 @@ class FortranContainer(FortranBase):
             self.permission = "private"
 
         typestr = ""
-        for vtype in self.settings["extra_vartypes"]:
+        for vtype in self.settings.extra_vartypes:
             typestr = typestr + "|" + vtype
         self.VARIABLE_RE = re.compile(
             self.VARIABLE_STRING.format(typestr), re.IGNORECASE
@@ -703,7 +705,7 @@ class FortranContainer(FortranBase):
         associations = Associations()
 
         for line in source:
-            if line[0:2] == "!" + self.settings["docmark"]:
+            if line[0:2] == "!" + self.settings.docmark:
                 self.doc_list.append(line[2:])
                 continue
             if line.strip() != "":
@@ -722,7 +724,7 @@ class FortranContainer(FortranBase):
             # Cache the lowercased line
             line_lower = line.lower()
 
-            if self.settings["lower"]:
+            if self.settings.lower:
                 line = line_lower
 
             # Check the various possibilities for what is on this line
@@ -1085,10 +1087,10 @@ class FortranContainer(FortranBase):
     def print_error(self, line, error, describe_object=True) -> None:
         description = f" in {self.obj} '{self.name}'" if describe_object else ""
         message = f"ERROR in file '{self.filename}': {error}{description}:\n\t{line}"
-        if self.settings["dbg"]:
+        if self.settings.dbg:
             return print(message)
 
-        if self.settings["force"]:
+        if self.settings.force:
             return
         raise ValueError(message)
 
@@ -1467,7 +1469,7 @@ class FortranSourceFile(FortranContainer):
     def __init__(
         self,
         filepath: str,
-        settings: Dict,
+        settings: Settings,
         preprocessor=None,
         fixed: bool = False,
         **kwargs,
@@ -1488,26 +1490,26 @@ class FortranSourceFile(FortranContainer):
         self.doc_list = []
         self.hierarchy = []
         self.obj = "sourcefile"
-        self.display = settings["display"]
+        self.display = settings.display
         self.encoding = kwargs.get("encoding", True)
         self.permission = "public"
 
         source = FortranReader(
             self.path,
-            settings["docmark"],
-            settings["predocmark"],
-            settings["docmark_alt"],
-            settings["predocmark_alt"],
+            settings.docmark,
+            settings.predocmark,
+            settings.docmark_alt,
+            settings.predocmark_alt,
             fixed,
-            settings["fixed_length_limit"],
+            settings.fixed_length_limit,
             preprocessor,
-            settings["macro"],
-            settings["include"],
-            settings["encoding"],
+            settings.macro,
+            settings.include,
+            settings.encoding,
         )
 
         super().__init__(source, "")
-        self.raw_src = pathlib.Path(self.path).read_text(encoding=settings["encoding"])
+        self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
         lexer = FortranFixedLexer() if self.fixed else FortranLexer()
         self.src = highlight(
             self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
@@ -1795,7 +1797,7 @@ class FortranFunction(FortranProcedure):
 
         with suppress(ValueError):
             parsed_type = parse_type(
-                attribstr, self.strings, self.settings["extra_vartypes"]
+                attribstr, self.strings, self.settings.extra_vartypes
             )
             self.retvar = FortranVariable(
                 name=self.retvar,
@@ -2174,9 +2176,7 @@ class FortranFinalProc(FortranBase):
         self.parobj = self.parent.obj
         self.display = self.parent.display
         self.settings = self.parent.settings
-        self.doc_list = (
-            read_docstring(source, self.settings["docmark"]) if source else []
-        )
+        self.doc_list = read_docstring(source, self.settings.docmark) if source else []
         self.hierarchy = self._make_hierarchy()
 
     def correlate(self, project):
@@ -2564,7 +2564,7 @@ class FortranSpoof:
         self.name = name
         self.parent = parent
         self.obj = obj
-        if self.parent.settings["warn"]:
+        if self.parent.settings.warn:
             print(
                 f"Warning: {self.obj} '{self.name}' in {self.parent.obj} '{self.parent.name}' could not be matched to "
                 f"corresponding item in code (file {self.filename})"
@@ -2592,26 +2592,26 @@ class GenericSource(FortranBase):
     not be analyzed, but documentation can be extracted.
     """
 
-    def __init__(self, filename, settings):
+    def __init__(self, filename, settings: Settings):
         self.obj = "sourcefile"
         self.parobj = None
         self.parent = None
         self.hierarchy = []
         self.settings = settings
         self.num_lines = 0
-        extra_filetypes = settings["extra_filetypes"][filename.split(".")[-1]]
+        extra_filetypes = settings.extra_filetypes[filename.split(".")[-1]]
         comchar = extra_filetypes[0]
         if len(extra_filetypes) > 1:
             self.lexer_str = extra_filetypes[1]
         else:
             self.lexer_str = None
-        docmark = settings["docmark"]
-        predocmark = settings["predocmark"]
-        docmark_alt = settings["docmark_alt"]
-        predocmark_alt = settings["predocmark_alt"]
+        docmark = settings.docmark
+        predocmark = settings.predocmark
+        docmark_alt = settings.docmark_alt
+        predocmark_alt = settings.predocmark_alt
         self.path = filename.strip()
         self.name = os.path.basename(self.path)
-        self.raw_src = pathlib.Path(self.path).read_text(encoding=settings["encoding"])
+        self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
         # TODO: Get line numbers to display properly
         if self.lexer_str is None:
             lexer = guess_lexer_for_filename(self.name, self.raw_src)
@@ -2672,7 +2672,7 @@ class GenericSource(FortranBase):
         self.doc_list = []
         prevdoc = False
         docalt = False
-        for line in open(filename, "r", encoding=settings["encoding"]):
+        for line in open(filename, "r", encoding=settings.encoding):
             line = line.strip()
             if doc_alt_re:
                 match = doc_alt_re.match(line)
@@ -2749,7 +2749,7 @@ def line_to_variables(source, line, inherit_permission, parent):
     Returns a list of variables declared in the provided line of code. The
     line of code should be provided as a string.
     """
-    parsed_type = parse_type(line, parent.strings, parent.settings["extra_vartypes"])
+    parsed_type = parse_type(line, parent.strings, parent.settings.extra_vartypes)
     attribs = []
     intent = ""
     optional = False
@@ -2782,7 +2782,7 @@ def line_to_variables(source, line, inherit_permission, parent):
         declarestr = ATTRIBSPLIT2_RE.match(parsed_type.rest).group(2)
     declarations = ford.utils.paren_split(",", declarestr)
 
-    doc = read_docstring(source, parent.settings["docmark"])
+    doc = read_docstring(source, parent.settings.docmark)
 
     varlist = []
     for dec in declarations:
@@ -2971,7 +2971,7 @@ def get_mod_procs(
         for item in re.split(r"\s*,\s*", names)
     ]
 
-    retlist[-1].doc_list = read_docstring(source, parent.settings["docmark"])
+    retlist[-1].doc_list = read_docstring(source, parent.settings.docmark)
     return retlist
 
 

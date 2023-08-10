@@ -17,7 +17,7 @@ ANY_TEXT = re.compile(r"h[1-4]|p")
 
 
 def front_page_list(settings, items):
-    max_frontpage_items = int(settings["max_frontpage_items"])
+    max_frontpage_items = int(settings.max_frontpage_items)
     return sorted(items)[:max_frontpage_items]
 
 
@@ -62,7 +62,7 @@ def test_nav_bar(example_index):
     link_names = {link.text.strip() for link in navbar_links}
 
     expected_pages = {
-        settings["project"],
+        settings.project,
         "Notes",
         "Source Files",
         "Block Data",
@@ -85,7 +85,7 @@ def test_jumbotron(example_index):
     jumbotron = index.find("div", "jumbotron")
 
     jumbotron_text = (p.text for p in jumbotron("p"))
-    assert settings["summary"] in jumbotron_text
+    assert settings.summary in jumbotron_text
 
     links = [link["href"] for link in jumbotron("a")]
 
@@ -97,8 +97,8 @@ def test_jumbotron(example_index):
         "project_sourceforge",
         "project_website",
     ]:
-        if settings[location_link] is not None:
-            assert settings[location_link] in links
+        if (link := getattr(settings, location_link)) is not None:
+            assert link in links
 
 
 def test_developer_info_box(example_index):
@@ -110,8 +110,8 @@ def test_developer_info_box(example_index):
 
     dev_text = [tag.text for tag in developer_info(ANY_TEXT)]
 
-    for expected_text in ["author", "author_description"]:
-        assert settings[expected_text] in dev_text
+    assert settings.author in dev_text
+    assert settings.author_description in dev_text
 
 
 def test_latex(example_index):

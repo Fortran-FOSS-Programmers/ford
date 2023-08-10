@@ -5,7 +5,6 @@ import ford.sourceform
 
 from textwrap import dedent
 from typing import Dict
-from dataclasses import asdict
 
 import markdown
 import pytest
@@ -164,7 +163,7 @@ def make_project_graphs(tmp_path_factory, request):
         f.write(dedent(data))
 
     settings = Settings(src_dir=src_dir, graph=True, proc_internals=proc_internals)
-    project = create_project(asdict(settings))
+    project = create_project((settings))
 
     graphs = GraphManager(
         "", "", graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=True
@@ -514,7 +513,7 @@ def test_graphs_as_table(tmp_path):
         f.write(dedent(data))
 
     settings = Settings(src_dir=src_dir, graph=True, graph_maxnodes=4)
-    project = create_project(asdict(settings))
+    project = create_project((settings))
 
     graphs = GraphManager(
         "", "", graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=True

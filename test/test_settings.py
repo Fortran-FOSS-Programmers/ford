@@ -4,6 +4,7 @@ from typing import List, Optional
 from textwrap import dedent
 import pytest
 
+
 @pytest.mark.parametrize(
     ("type_in", "tp", "expected"),
     (
@@ -42,9 +43,9 @@ def test_settings_type_conversion_from_markdown():
         ),
     )
 
-    assert settings["src_dir"] == ["source"]
-    assert settings["fpp_extensions"] == ["fpp", "F90"]
-    assert settings["project"] == "some project"
-    assert settings["summary"] == "first\nsecond"
-    assert settings["preprocess"] is True
-    assert settings["max_frontpage_items"] == 4
+    assert settings.src_dir == ["source"]
+    assert settings.fpp_extensions == ["fpp", "F90"]
+    assert settings.project == "some project"
+    assert settings.summary == "first\nsecond"
+    assert settings.preprocess is True
+    assert settings.max_frontpage_items == 4

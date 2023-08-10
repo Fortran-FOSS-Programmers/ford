@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, InitVar
 from datetime import date
 from pathlib import Path
 from typing import (
@@ -19,8 +19,8 @@ from markdown_include.include import (
     IncludePreprocessor,
 )
 
-from ford.utils import str_to_bool, meta_preprocessor
 from ford._typing import PathLike
+from ford.utils import str_to_bool, meta_preprocessor
 
 try:
     import tomllib
@@ -124,6 +124,7 @@ class Settings:
     macro: list = field(default_factory=list)
     mathjax_config: Optional[str] = None
     max_frontpage_items: int = 10
+    md_base_dir: Optional[str] = None
     md_extensions: list = field(default_factory=list)
     media_dir: Optional[str] = None
     output_dir: str = "./doc"
@@ -145,6 +146,7 @@ class Settings:
     project_url: str = ""
     project_website: Optional[str] = None
     quiet: bool = False
+    relative: bool = field(init=False)
     revision: Optional[str] = None
     search: bool = True
     show_proc_parent: bool = False
@@ -159,7 +161,11 @@ class Settings:
     website: Optional[str] = None
     year: str = str(date.today().year)
 
-    def __post_init__(self):
+    directory: InitVar[Optional[PathLike]] = None
+
+    def __post_init__(self, directory):
+        self.relative = self.project_url == ""
+
         field_types = get_type_hints(self)
 
         for key, value in asdict(self).items():
@@ -170,6 +176,12 @@ class Settings:
 
             if is_same_type(default_type, list):
                 setattr(self, key, [value])
+
+        if directory is None:
+            return
+
+        if self.md_base_dir is None:
+            self.md_base_dir = directory
 
 
 def load_toml_settings(directory: PathLike) -> Optional[Settings]:
@@ -192,12 +204,11 @@ def load_toml_settings(directory: PathLike) -> Optional[Settings]:
     if "ford" not in settings["extra"]:
         return None
 
-    return asdict(Settings(**settings["extra"]["ford"]))
+    return Settings(**settings["extra"]["ford"])
 
 
 def load_markdown_settings(directory: PathLike, project_file: str) -> Tuple[Dict, str]:
     settings, project_file = meta_preprocessor(project_file)
-    settings = asdict(Settings(**settings))
     field_types = get_type_hints(Settings)
 
     for key, value in settings.items():
@@ -223,9 +234,10 @@ def load_markdown_settings(directory: PathLike, project_file: str) -> Tuple[Dict
                 f"    {option}: {value}",
                 FutureWarning,
             )
-            md_base_dir = settings.get("md_base_dir", [str(directory)])[0]
-            configs = MarkdownInclude({"base_path": md_base_dir}).getConfigs()
+            configs = MarkdownInclude(
+                {"base_path": str(settings.md_base_dir)}
+            ).getConfigs()
             include_preprocessor = IncludePreprocessor(None, configs)
             settings[option] = "\n".join(include_preprocessor.run(value.splitlines()))
 
-    return settings, project_file
+    return Settings(**settings), project_file

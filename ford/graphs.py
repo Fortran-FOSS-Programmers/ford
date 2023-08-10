@@ -795,7 +795,7 @@ class FortranGraph:
             self.root.append(self.data.get_node(r))
             self.max_nesting = max(self.max_nesting, int(r.meta["graph_maxdepth"]))
             self.max_nodes = max(self.max_nodes, int(r.meta["graph_maxnodes"]))
-            self.warn = self.warn or (r.settings["warn"])
+            self.warn = self.warn or (r.settings.warn)
 
         ident = ident or f"{root[0].get_dir()}~~{root[0].ident}"
         self.ident = f"{ident}~~{self.__class__.__name__}"
@@ -1343,6 +1343,7 @@ class GraphManager:
 
     def __init__(
         self,
+        # FIXME: remove unused arguments
         base_url: os.PathLike,
         outdir: os.PathLike,
         graphdir: os.PathLike,
