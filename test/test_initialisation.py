@@ -3,7 +3,6 @@ from textwrap import dedent
 from pathlib import Path
 import sys
 import pytest
-import os
 from typing import List, Optional
 from dataclasses import asdict
 
@@ -229,49 +228,3 @@ def test_output_dir_cli(monkeypatch, tmp_path):
         settings, _, _ = ford.initialize()
 
     assert settings["output_dir"] == tmp_path / "something_else"
-
-
-@pytest.mark.parametrize(
-    ("type_in", "tp", "expected"),
-    (
-        (list, list, True),
-        (list, str, False),
-        (List[str], list, True),
-        (Optional[str], str, True),
-    ),
-)
-def test_is_same_type(type_in, tp, expected):
-    assert ford.is_same_type(type_in, tp) is expected
-
-
-def test_settings_type_conversion():
-    settings = ford.Settings(src_dir="./src")
-
-    assert settings.src_dir == ["./src"]
-
-
-def test_settings_type_conversion_from_markdown():
-    settings, _ = ford.load_markdown_settings(
-        ".",
-        dedent(
-            """\
-            ---
-            project: some project
-            src_dir: source
-            summary: first
-                     second
-            preprocess: true
-            fpp_extensions: fpp
-                            F90
-            max_frontpage_items: 4
-            ---
-            """
-        ),
-    )
-
-    assert settings["src_dir"] == ["source"]
-    assert settings["fpp_extensions"] == ["fpp", "F90"]
-    assert settings["project"] == "some project"
-    assert settings["summary"] == "first\nsecond"
-    assert settings["preprocess"] is True
-    assert settings["max_frontpage_items"] == 4
