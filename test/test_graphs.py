@@ -1,11 +1,11 @@
 from ford.fortran_project import Project
-from ford import DEFAULT_SETTINGS
+from ford import Settings
 from ford.graphs import graphviz_installed, GraphManager
 import ford.sourceform
 
-from copy import deepcopy
 from textwrap import dedent
 from typing import Dict
+from dataclasses import asdict
 
 import markdown
 import pytest
@@ -163,13 +163,8 @@ def make_project_graphs(tmp_path_factory, request):
     with open(full_filename, "w") as f:
         f.write(dedent(data))
 
-    settings = deepcopy(DEFAULT_SETTINGS)
-    settings["src_dir"] = [src_dir]
-    settings["graph"] = True
-    if proc_internals:
-        settings["proc_internals"] = request.param["proc_internals"]
-
-    project = create_project(settings)
+    settings = Settings(src_dir=src_dir, graph=True, proc_internals=proc_internals)
+    project = create_project(asdict(settings))
 
     graphs = GraphManager(
         "", "", graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=True
@@ -518,11 +513,8 @@ def test_graphs_as_table(tmp_path):
     with open(full_filename, "w") as f:
         f.write(dedent(data))
 
-    settings = deepcopy(DEFAULT_SETTINGS)
-    settings["src_dir"] = [src_dir]
-    settings["graph"] = True
-    settings["graph_maxnodes"] = 4
-    project = create_project(settings)
+    settings = Settings(src_dir=src_dir, graph=True, graph_maxnodes=4)
+    project = create_project(asdict(settings))
 
     graphs = GraphManager(
         "", "", graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=True

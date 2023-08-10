@@ -4,6 +4,8 @@ from pathlib import Path
 import sys
 import pytest
 import os
+from typing import List, Optional
+from dataclasses import asdict
 
 import tomli_w
 
@@ -46,11 +48,11 @@ def test_quiet_command_line():
     """Check that setting --quiet on the command line overrides project file"""
 
     data, _ = ford.parse_arguments(
-        {"quiet": True, "preprocess": False}, "", {"quiet": "false"}
+        {"quiet": True, "preprocess": False}, "", asdict(ford.Settings(quiet=False))
     )
     assert data["quiet"] is True
     data, _ = ford.parse_arguments(
-        {"quiet": False, "preprocess": False}, "", {"quiet": "true"}
+        {"quiet": False, "preprocess": False}, "", asdict(ford.Settings(quiet=True))
     )
     assert data["quiet"] is False
 
@@ -78,7 +80,7 @@ def test_path_normalisation():
     data, _ = ford.parse_arguments(
         {"preprocess": False},
         "",
-        {"page_dir": "my_pages", "src_dir": ["src1", "src2"]},
+        asdict(ford.Settings(page_dir="my_pages", src_dir=["src1", "src2"])),
         "/prefix/path",
     )
     assert str(data["page_dir"]) == str(Path("/prefix/path/my_pages").absolute())
@@ -95,7 +97,7 @@ def test_source_not_subdir_output():
     data, _ = ford.parse_arguments(
         {"src_dir": ["/1/2/3", "4/5"], "output_dir": "/3/4", "preprocess": False},
         "",
-        {},
+        asdict(ford.Settings()),
         "/prefix",
     )
 
@@ -104,7 +106,7 @@ def test_source_not_subdir_output():
         data, _ = ford.parse_arguments(
             {"src_dir": ["4/5", "/1/2/3"], "output_dir": "/1/2", "preprocess": False},
             "",
-            {},
+            asdict(ford.Settings()),
             "/prefix",
         )
     # src_dir == output_dir
@@ -112,7 +114,7 @@ def test_source_not_subdir_output():
         data, _ = ford.parse_arguments(
             {"src_dir": ["/1/2/"], "output_dir": "/1/2", "preprocess": False},
             "",
-            {},
+            asdict(ford.Settings()),
             "/prefix",
         )
 
@@ -122,22 +124,30 @@ def test_repeated_docmark():
 
     with pytest.raises(ValueError):
         ford.parse_arguments(
-            {"preprocess": False}, "", {"docmark": "!", "predocmark": "!"}
+            {"preprocess": False},
+            "",
+            asdict(ford.Settings(**{"docmark": "!", "predocmark": "!"})),
         )
 
     with pytest.raises(ValueError):
         ford.parse_arguments(
-            {"preprocess": False}, "", {"docmark": "!<", "predocmark_alt": "!<"}
+            {"preprocess": False},
+            "",
+            asdict(ford.Settings(**{"docmark": "!<", "predocmark_alt": "!<"})),
         )
 
     with pytest.raises(ValueError):
         ford.parse_arguments(
-            {"preprocess": False}, "", {"docmark_alt": "!!", "predocmark_alt": "!!"}
+            {"preprocess": False},
+            "",
+            asdict(ford.Settings(**{"docmark_alt": "!!", "predocmark_alt": "!!"})),
         )
 
 
 def test_no_preprocessor():
-    data, _ = ford.parse_arguments({}, "", {"preprocess": False})
+    data, _ = ford.parse_arguments(
+        {}, "", asdict(ford.Settings(**{"preprocess": False}))
+    )
 
     assert data["fpp_extensions"] == []
 
@@ -145,7 +155,9 @@ def test_no_preprocessor():
 def test_bad_preprocessor():
     with pytest.raises(SystemExit):
         ford.parse_arguments(
-            {"project_file": FakeFile()}, "", {"preprocessor": "false"}
+            {"project_file": FakeFile()},
+            "",
+            asdict(ford.Settings(**{"preprocessor": "false"})),
         )
 
 
@@ -153,7 +165,9 @@ def test_bad_preprocessor():
     sys.platform.startswith("win"), reason="FIXME: Need portable do-nothing command"
 )
 def test_maybe_ok_preprocessor():
-    data, _ = ford.parse_arguments({}, "", {"preprocessor": "true"})
+    data, _ = ford.parse_arguments(
+        {}, "", asdict(ford.Settings(**{"preprocessor": "true"}))
+    )
 
     if data["preprocess"] is True:
         assert isinstance(data["preprocessor"], list)
@@ -164,7 +178,9 @@ def test_maybe_ok_preprocessor():
     gfortran_is_not_installed(), reason="Requires gfortran to be installed"
 )
 def test_gfortran_preprocessor():
-    data, _ = ford.parse_arguments({}, "", {"preprocessor": "gfortran -E"})
+    data, _ = ford.parse_arguments(
+        {}, "", asdict(ford.Settings(**{"preprocessor": "gfortran -E"}))
+    )
 
     assert data["preprocess"] is True
 
@@ -213,3 +229,49 @@ def test_output_dir_cli(monkeypatch, tmp_path):
         settings, _, _ = ford.initialize()
 
     assert settings["output_dir"] == tmp_path / "something_else"
+
+
+@pytest.mark.parametrize(
+    ("type_in", "tp", "expected"),
+    (
+        (list, list, True),
+        (list, str, False),
+        (List[str], list, True),
+        (Optional[str], str, True),
+    ),
+)
+def test_is_same_type(type_in, tp, expected):
+    assert ford.is_same_type(type_in, tp) is expected
+
+
+def test_settings_type_conversion():
+    settings = ford.Settings(src_dir="./src")
+
+    assert settings.src_dir == ["./src"]
+
+
+def test_settings_type_conversion_from_markdown():
+    settings, _ = ford.load_markdown_settings(
+        ".",
+        dedent(
+            """\
+            ---
+            project: some project
+            src_dir: source
+            summary: first
+                     second
+            preprocess: true
+            fpp_extensions: fpp
+                            F90
+            max_frontpage_items: 4
+            ---
+            """
+        ),
+    )
+
+    assert settings["src_dir"] == ["source"]
+    assert settings["fpp_extensions"] == ["fpp", "F90"]
+    assert settings["project"] == "some project"
+    assert settings["summary"] == "first\nsecond"
+    assert settings["preprocess"] is True
+    assert settings["max_frontpage_items"] == 4

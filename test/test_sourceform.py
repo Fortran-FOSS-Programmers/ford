@@ -7,10 +7,9 @@ from ford.sourceform import (
     line_to_variables,
 )
 from ford.fortran_project import find_used_modules
-from ford import DEFAULT_SETTINGS
+from ford import Settings
 
-from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Union, List, Optional
 from itertools import chain
 
@@ -27,10 +26,8 @@ class FakeProject:
 def parse_fortran_file(copy_fortran_file):
     def parse_file(data, **kwargs):
         filename = copy_fortran_file(data)
-        settings = deepcopy(DEFAULT_SETTINGS)
-        settings.update(kwargs)
-
-        return FortranSourceFile(str(filename), settings)
+        settings = Settings(**kwargs)
+        return FortranSourceFile(str(filename), asdict(settings))
 
     return parse_file
 

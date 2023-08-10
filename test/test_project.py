@@ -1,10 +1,10 @@
 from ford.fortran_project import Project
-from ford import DEFAULT_SETTINGS
+from ford import Settings
 from ford.utils import normalise_path
 from ford.sourceform import FortranVariable
 
-from copy import deepcopy
 from itertools import chain
+from dataclasses import asdict
 
 import markdown
 import pytest
@@ -19,9 +19,7 @@ def copy_fortran_file(tmp_path):
         filename = src_dir / "test.f90"
         with open(filename, "w") as f:
             f.write(data)
-        settings = deepcopy(DEFAULT_SETTINGS)
-        settings["src_dir"] = [src_dir]
-        return settings
+        return asdict(Settings(src_dir=src_dir))
 
     return copy_file
 
@@ -33,7 +31,7 @@ def create_project(settings: dict):
         "markdown.extensions.extra",
     ]
     md = markdown.Markdown(
-        extensions=md_ext, output_format="html5", extension_configs={}
+        extensions=md_ext, output_format="html", extension_configs={}
     )
 
     project = Project(settings)
@@ -748,10 +746,8 @@ def test_exclude_dir(tmp_path):
     with open(exclude_dir / "exclude.f90", "w") as f:
         f.write("program bar\nend program")
 
-    settings = deepcopy(DEFAULT_SETTINGS)
-    settings["src_dir"] = [tmp_path]
-    settings["exclude_dir"] = [normalise_path(tmp_path, "sub1")]
-    project = Project(settings)
+    settings = Settings(src_dir=tmp_path, exclude_dir=normalise_path(tmp_path, "sub1"))
+    project = Project(asdict(settings))
 
     program_names = {program.name for program in project.programs}
     assert program_names == {"foo"}
@@ -768,10 +764,8 @@ def test_exclude(tmp_path):
     with open(exclude_dir / "exclude.f90", "w") as f:
         f.write("program bar\nend program")
 
-    settings = deepcopy(DEFAULT_SETTINGS)
-    settings["src_dir"] = [tmp_path]
-    settings["exclude"] = ["exclude.f90"]
-    project = Project(settings)
+    settings = Settings(src_dir=tmp_path, exclude="exclude.f90")
+    project = Project(asdict(settings))
 
     program_names = {program.name for program in project.programs}
     assert program_names == {"foo"}
