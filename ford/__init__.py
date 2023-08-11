@@ -25,14 +25,13 @@
 
 from contextlib import contextmanager
 from io import StringIO
-import itertools
 import sys
 import argparse
 import os
 import pathlib
 import subprocess
 from datetime import datetime
-from typing import Dict, Tuple
+from typing import Tuple
 from textwrap import dedent
 
 from ford.external_project import dump_modules
@@ -302,7 +301,9 @@ def load_settings(
         proj_data, proj_docs = load_markdown_settings(directory, proj_docs)
 
     # Setup Markdown object with any user-specified extensions
-    md = MetaMarkdown(proj_data.md_base_dir, extensions=proj_data.md_extensions)
+    md = MetaMarkdown(
+        proj_data.md_base_dir or directory, extensions=proj_data.md_extensions
+    )
 
     # Now re-read project file with all extensions loaded
     proj_docs = md.reset().convert(proj_docs)
@@ -358,10 +359,10 @@ def parse_arguments(
         </script>
         <script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
         """
+
     # Handle preprocessor:
     if proj_data.preprocess:
-        proj_data.preprocessor = proj_data.preprocessor.split()
-        command = proj_data.preprocessor + [os.devnull]
+        command = proj_data.preprocessor.split() + [os.devnull]
         # Check whether preprocessor works (reading nothing from stdin)
         try:
             subprocess.run(command, check=True, capture_output=True, text=True)
@@ -454,7 +455,6 @@ def main(proj_data: Settings, proj_docs: str, md: MetaMarkdown):
         print()
     else:
         page_tree = None
-    proj_data.pages = page_tree
 
     # Produce the documentation using Jinja2. Output it to the desired location
     # and copy any files that are needed (CSS, JS, images, fonts, source files,

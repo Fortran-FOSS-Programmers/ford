@@ -29,6 +29,7 @@ import shutil
 import traceback
 from itertools import chain
 import pathlib
+from typing import List, Union, Callable, Type, Tuple
 
 import jinja2
 
@@ -94,7 +95,7 @@ class Documentation:
         # rid of None values
         self.data = {k: v for k, v in asdict(settings).items() if v is not None}
         self.data["pages"] = pagetree
-        self.lists = []
+        self.lists: List[ListPage] = []
         self.docs = []
         self.njobs = settings.parallel
         self.parallel = self.njobs > 0
@@ -111,8 +112,10 @@ class Documentation:
             graphparent = ""
         print("Creating HTML documentation...")
         try:
+            PageFactory = Union[Type, Callable]
+
             # Create individual entity pages
-            entity_list_page_map = [
+            entity_list_page_map: List[Tuple[List, PageFactory]] = [
                 (project.types, TypePage),
                 (project.absinterfaces, AbsIntPage),
                 (project.procedures, ProcPage),
@@ -162,8 +165,6 @@ class Documentation:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
 
         self.graphs = GraphManager(
-            settings.project_url,
-            settings.output_dir,
             self.data.get("graph_dir", ""),
             graphparent,
             settings.coloured_edges,

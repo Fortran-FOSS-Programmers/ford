@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field, asdict, InitVar
-from datetime import date, datetime
+from dataclasses import dataclass, field, asdict
+from datetime import date
 from itertools import combinations
 from pathlib import Path
 from typing import (
@@ -13,7 +13,7 @@ from typing import (
     Tuple,
 )
 import warnings
-from markdown_include.include import (
+from markdown_include.include import ( # type: ignore[import]
     INC_SYNTAX as MD_INCLUDE_RE,
     MarkdownInclude,
     IncludePreprocessor,
@@ -125,7 +125,7 @@ class Settings:
     macro: list = field(default_factory=list)
     mathjax_config: Optional[Path] = None
     max_frontpage_items: int = 10
-    md_base_dir: Optional[str] = None
+    md_base_dir: Optional[Path] = None
     md_extensions: list = field(default_factory=list)
     media_dir: Optional[Path] = None
     output_dir: Path = Path("./doc")

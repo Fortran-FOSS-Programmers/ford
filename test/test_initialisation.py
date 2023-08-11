@@ -163,8 +163,7 @@ def test_maybe_ok_preprocessor():
     data, _ = ford.parse_arguments({}, "", (ford.Settings(**{"preprocessor": "true"})))
 
     if data.preprocess is True:
-        assert isinstance(data.preprocessor, list)
-        assert len(data.preprocessor) > 0
+        assert data.preprocessor == "true"
 
 
 @pytest.mark.skipif(

@@ -25,7 +25,7 @@
 import os
 import toposort
 from itertools import chain
-from typing import List
+from typing import List, Union, Dict
 
 from ford.external_project import load_external_modules
 import ford.utils
@@ -35,6 +35,17 @@ from ford.sourceform import (
     FortranModule,
     FortranSubmodule,
     ExternalModule,
+    FortranInterface,
+    FortranType,
+    FortranModuleProcedureImplementation,
+    FortranCommon,
+    ExternalFunction,
+    ExternalSubroutine,
+    FortranNamelist,
+    ExternalType,
+    ExternalInterface,
+    ExternalVariable,
+    FortranProcedure,
 )
 from ford.settings import Settings
 
@@ -74,20 +85,20 @@ class Project:
         self.files = []
         self.modules = []
         self.programs = []
-        self.procedures = []
-        self.absinterfaces = []
-        self.types = []
-        self.submodules = []
-        self.submodprocedures = []
+        self.procedures: List[FortranProcedure] = []
+        self.absinterfaces: List[FortranInterface] = []
+        self.types: List[FortranType] = []
+        self.submodules: List[FortranSubmodule] = []
+        self.submodprocedures: List[FortranModuleProcedureImplementation] = []
         self.extra_files = []
         self.blockdata = []
-        self.common = {}
-        self.extModules = []
-        self.extProcedures = []
-        self.extInterfaces = []
-        self.extTypes = []
-        self.extVariables = []
-        self.namelists = []
+        self.common: Dict[str, FortranCommon] = {}
+        self.extModules: List[ExternalModule] = []
+        self.extProcedures: List[Union[ExternalSubroutine, ExternalFunction]] = []
+        self.extInterfaces: List[ExternalInterface] = []
+        self.extTypes: List[ExternalType] = []
+        self.extVariables: List[ExternalVariable] = []
+        self.namelists: List[FortranNamelist] = []
 
         # Get all files within topdir, recursively
         srcdir_list = self.make_srcdir_list(settings.exclude_dir)
@@ -103,7 +114,7 @@ class Project:
                     # Get contents of the file
                     print(f"Reading file {relative_path}")
                     if extension in settings.fpp_extensions:
-                        preprocessor = settings.preprocessor
+                        preprocessor = settings.preprocessor.split()
                     else:
                         preprocessor = None
                     try:
@@ -394,6 +405,9 @@ def find_used_modules(
     """
     # Find the modules that this entity uses
     for dependency in entity.uses:
+        # Can safely skip if already known
+        if isinstance(dependency[0], FortranModule):
+            continue
         dependency_name = dependency[0].lower()
         for candidate in chain(modules, external_modules):
             if dependency_name == candidate.name.lower():

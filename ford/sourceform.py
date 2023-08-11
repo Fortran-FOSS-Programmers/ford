@@ -46,6 +46,7 @@ import ford.utils
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
 from ford.settings import Settings
+from ford._typing import PathLike
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
@@ -92,7 +93,7 @@ class Associations:
     to how they are added, and fall out of scope in Fortran ASSOCIATE blocks.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # a list of dictionaries representing the associations in each batch, in order of
         # when the batch was added
         self._batches: List[Dict[str, List[str]]] = []
@@ -1433,7 +1434,7 @@ class FortranCodeUnit(FortranContainer):
 
             return labels.get(label, None)
 
-        context = self
+        context: Optional[FortranBase] = self
         for call in call_chain[:-1]:
             item = get_label_item(context, call)
 
@@ -1447,6 +1448,8 @@ class FortranCodeUnit(FortranContainer):
                 context = item
             elif isinstance(item, FortranVariable):
                 type_str = strip_type(item.full_type)
+                if item.parent is None:
+                    return None
                 context = item.parent.all_types.get(type_str, None)
             else:
                 context = None
@@ -1870,6 +1873,7 @@ class FortranNamelist(FortranBase):
 
     def correlate(self, project):
         all_vars: Dict[str, FortranVariable] = {}
+
         all_vars.update(self.parent.all_vars)
         if isinstance(self.parent, FortranProcedure):
             all_vars.update({arg.name: arg for arg in self.parent.args})
