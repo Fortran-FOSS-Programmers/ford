@@ -48,22 +48,13 @@ import ford.output
 import ford.utils
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
+from ford.version import __version__
 from pathlib import Path
 
 try:
     import tomllib
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
-
-from importlib.metadata import version, PackageNotFoundError
-
-try:
-    __version__ = version(__name__)
-except PackageNotFoundError:
-    from setuptools_scm import get_version  # type: ignore[import]
-
-    __version__ = get_version(root="..", relative_to=__file__)
-
 
 __appname__ = "FORD"
 __author__ = "Chris MacMackin"
