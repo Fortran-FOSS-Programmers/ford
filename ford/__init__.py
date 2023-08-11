@@ -327,12 +327,7 @@ def parse_arguments(
 
     proj_data.normalise_paths(directory)
 
-    proj_data.display = [item.lower() for item in proj_data.display]
     proj_data.creation_date = datetime.now().strftime(proj_data.creation_date)
-    proj_data.relative = proj_data.project_url == ""
-    proj_data.extensions += [
-        ext for ext in proj_data.fpp_extensions if ext not in proj_data.extensions
-    ]
     # Parse file extensions and comment characters for extra filetypes
     extdict = {}
     for ext in proj_data.extra_filetypes:
@@ -351,16 +346,6 @@ def parse_arguments(
         if proj_data.output_dir in (srcdir, *srcdir.parents):
             raise ValueError(
                 f"Source directory {srcdir} is a subdirectory of output directory {proj_data.output_dir}."
-            )
-
-    # Check that none of the docmarks are the same
-    docmarks = ["docmark", "predocmark", "docmark_alt", "predocmark_alt"]
-    for first, second in itertools.combinations(docmarks, 2):
-        first_mark = getattr(proj_data, first)
-        second_mark = getattr(proj_data, second)
-        if first_mark == second_mark != "":
-            raise ValueError(
-                f"{first} ('{first_mark}') and {second} ('{second_mark}') are the same"
             )
 
     # Add gitter sidecar if specified in metadata

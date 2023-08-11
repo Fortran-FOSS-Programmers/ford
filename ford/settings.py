@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field, asdict, InitVar
-from datetime import date
+from datetime import date, datetime
+from itertools import combinations
 from pathlib import Path
 from typing import (
-    Dict,
     List,
     Optional,
     Type,
@@ -175,6 +175,19 @@ class Settings:
 
             if get_origin(default_type) is list and not isinstance(value, list):
                 setattr(self, key, [value])
+
+        self.display = [item.lower() for item in self.display]
+        self.extensions = list(set(self.extensions) | set(self.fpp_extensions))
+
+        # Check that none of the docmarks are the same
+        docmarks = ["docmark", "predocmark", "docmark_alt", "predocmark_alt"]
+        for first, second in combinations(docmarks, 2):
+            first_mark = getattr(self, first)
+            second_mark = getattr(self, second)
+            if first_mark == second_mark != "":
+                raise ValueError(
+                    f"{first} ('{first_mark}') and {second} ('{second_mark}') are the same"
+                )
 
     def normalise_paths(self, directory=None):
         if directory is None:
