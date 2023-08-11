@@ -19,6 +19,7 @@ from ford.sourceform import (
     ExternalBoundProcedure,
 )
 from ford.utils import register_macro
+from ford.version import __version__
 
 
 # attributes of a module object needed for further processing
@@ -49,6 +50,8 @@ ENTITIES = {
     "subroutine": ExternalSubroutine,
     "boundprocedure": ExternalBoundProcedure,
 }
+
+METADATA_NAME = "ford-metadata"
 
 
 def obj2dict(intObj):
@@ -145,8 +148,14 @@ def dict2obj(project, extDict, url, parent=None, remote: bool = False) -> Fortra
 def dump_modules(project, path="."):
     """Dump modules to JSON file"""
 
-    extModules = [obj2dict(module) for module in project.modules]
-    (pathlib.Path(path) / "modules.json").write_text(json.dumps(extModules))
+    modules = [obj2dict(module) for module in project.modules]
+    data = {
+        METADATA_NAME: {
+            "version": __version__,
+        },
+        "modules": modules,
+    }
+    (pathlib.Path(path) / "modules.json").write_text(json.dumps(data))
 
 
 def load_external_modules(project):
@@ -172,6 +181,11 @@ def load_external_modules(project):
         except (URLError, json.JSONDecodeError) as error:
             extModules = []
             print(f"Could not open external URL '{url}', reason: {error}")
+
+        if METADATA_NAME in extModules:
+            # TODO: Check version compatibility
+            extModules = extModules["modules"]
+
         # convert modules defined in the JSON database to module objects
         for extModule in extModules:
             dict2obj(project, extModule, url, remote=remote)
