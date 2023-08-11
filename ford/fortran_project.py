@@ -283,10 +283,10 @@ class Project:
 
         # Perform remaining correlations for the project
         for container in ranklist:
-            if type(container) != str:
+            if not isinstance(container, str):
                 container.correlate(self)
         for container in ranklist:
-            if type(container) != str:
+            if not isinstance(container, str):
                 container.prune()
 
         if self.settings.project_url == ".":

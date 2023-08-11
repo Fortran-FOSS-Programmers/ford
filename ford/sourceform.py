@@ -46,7 +46,6 @@ import ford.utils
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
 from ford.settings import Settings
-from ford._typing import PathLike
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
@@ -1957,7 +1956,7 @@ class FortranType(FortranContainer):
         # Identify inherited type-bound procedures which are not overridden
         inherited = []
         inherited_generic = []
-        if self.extends and type(self.extends) is not str:
+        if self.extends and not isinstance(self.extends, str):
             for bp in self.extends.boundprocs:
                 if bp.permission == "private":
                     continue
@@ -2450,7 +2449,7 @@ class FortranBlockData(FortranContainer):
 
         # Add procedures and types from USED modules to our lists
         for mod, extra in self.uses:
-            if type(mod) is str:
+            if isinstance(mod, str):
                 continue
             procs, absints, types, variables = mod.get_used_entities(extra)
             self.all_procs.update(procs)

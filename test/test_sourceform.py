@@ -565,7 +565,7 @@ def test_type_chain_function_and_subroutine_calls(
 
 
 def test_call_in_module_procedure(parse_fortran_file):
-    data = f"""\
+    data = """\
     module foo
       type :: nuz
       contains
@@ -620,7 +620,7 @@ def test_call_in_module_procedure(parse_fortran_file):
 
 
 def test_submodule_private_var_call(parse_fortran_file):
-    data = f"""\
+    data = """\
     module foo
       type :: nuz
         integer :: var
@@ -663,7 +663,7 @@ def test_submodule_private_var_call(parse_fortran_file):
 
 
 def test_internal_proc_arg_var_call(parse_fortran_file):
-    data = f"""\
+    data = """\
     module foo
       type :: nuz
         integer :: var
