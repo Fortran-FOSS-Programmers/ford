@@ -133,7 +133,9 @@ class Documentation:
             # Create lists of each entity type
             if len(project.procedures) > 0:
                 self.lists.append(ProcList(self.data, project))
-            if settings.incl_src and (len(project.files) + len(project.extra_files) > 1):
+            if settings.incl_src and (
+                len(project.files) + len(project.extra_files) > 1
+            ):
                 self.lists.append(FileList(self.data, project))
             if len(project.modules) + len(project.submodules) > 0:
                 self.lists.append(ModList(self.data, project))
@@ -260,12 +262,7 @@ class Documentation:
         if "css" in self.data:
             shutil.copy(self.data["css"], out_dir / "css" / "user.css")
 
-        if self.data["favicon"] == "default-icon":
-            favicon_path = loc / "favicon.png"
-        else:
-            favicon_path = self.data["favicon"]
-
-        shutil.copy(favicon_path, out_dir / "favicon.png")
+        shutil.copy(self.data["favicon"], out_dir / "favicon.png")
 
         if self.data["incl_src"]:
             for src in self.project.allfiles:

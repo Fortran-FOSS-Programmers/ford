@@ -325,34 +325,7 @@ def parse_arguments(
         if value is not None:
             setattr(proj_data, key, value)
 
-    # Evaluate paths relative to project file location
-    base_dir = pathlib.Path(directory).absolute()
-    proj_data.base_dir = base_dir
-
-    for var_name in (
-        "page_dir",
-        "output_dir",
-        "graph_dir",
-        "media_dir",
-        "css",
-        "mathjax_config",
-        "src_dir",
-        "exclude_dir",
-        "include",
-    ):
-        if (var := getattr(proj_data, var_name)) is None:
-            continue
-        if isinstance(var, list):
-            setattr(
-                proj_data,
-                var_name,
-                [ford.utils.normalise_path(base_dir, p) for p in var],
-            )
-        else:
-            setattr(proj_data, var_name, ford.utils.normalise_path(base_dir, var))
-
-    if proj_data.favicon.strip() != Settings.favicon:
-        proj_data.favicon = ford.utils.normalise_path(base_dir, proj_data.favicon)
+    proj_data.normalise_paths(directory)
 
     proj_data.display = [item.lower() for item in proj_data.display]
     proj_data.creation_date = datetime.now().strftime(proj_data.creation_date)

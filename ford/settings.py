@@ -20,12 +20,15 @@ from markdown_include.include import (
 )
 
 from ford._typing import PathLike
-from ford.utils import str_to_bool, meta_preprocessor
+from ford.utils import str_to_bool, meta_preprocessor, normalise_path
 
 try:
     import tomllib
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
+
+
+FAVICON_PATH = Path(__file__).parent / "favicon.png"
 
 
 def default_cpus() -> int:
@@ -40,9 +43,7 @@ def default_cpus() -> int:
 def is_same_type(type_in: Type, tp: Type) -> bool:
     """Returns True if ``type_in`` is the same type as either ``tp``
     or ``Optional[tp]``"""
-    return (
-        (type_in is tp) or (get_origin(type_in) is tp) or is_optional_type(type_in, tp)
-    )
+    return (type_in is tp) or is_optional_type(type_in, tp)
 
 
 def is_optional_type(tp: Type, sub_tp: Type) -> bool:
@@ -79,9 +80,9 @@ class Settings:
     author_pic: Optional[str] = None
     bitbucket: Optional[str] = None
     coloured_edges: bool = False
-    copy_subdir: List[str] = field(default_factory=list)
+    copy_subdir: List[Path] = field(default_factory=list)
     creation_date: str = "%Y-%m-%dT%H:%M:%S.%f%z"
-    css: Optional[str] = None
+    css: Optional[Path] = None
     dbg: bool = True
     display: List[str] = field(default_factory=lambda: ["public", "protected"])
     doc_license: str = ""
@@ -90,7 +91,7 @@ class Settings:
     email: Optional[str] = None
     encoding: str = "utf-8"
     exclude: List[str] = field(default_factory=list)
-    exclude_dir: List[str] = field(default_factory=list)
+    exclude_dir: List[Path] = field(default_factory=list)
     extensions: List[str] = field(
         default_factory=lambda: ["f90", "f95", "f03", "f08", "f15"]
     )
@@ -100,7 +101,7 @@ class Settings:
     extra_mods: list = field(default_factory=list)
     extra_vartypes: list = field(default_factory=list)
     facebook: Optional[str] = None
-    favicon: str = "default-icon"
+    favicon: Path = FAVICON_PATH
     fixed_extensions: list = field(default_factory=lambda: ["f", "for", "F", "FOR"])
     fixed_length_limit: bool = True
     force: bool = False
@@ -112,23 +113,23 @@ class Settings:
     gitter_sidecar: Optional[str] = None
     google_plus: Optional[str] = None
     graph: bool = False
-    graph_dir: Optional[str] = None
+    graph_dir: Optional[Path] = None
     graph_maxdepth: int = 10000
     graph_maxnodes: int = 1000000000
     hide_undoc: bool = False
     incl_src: bool = True
-    include: list = field(default_factory=list)
+    include: List[Path] = field(default_factory=list)
     license: str = ""
     linkedin: Optional[str] = None
     lower: bool = False
     macro: list = field(default_factory=list)
-    mathjax_config: Optional[str] = None
+    mathjax_config: Optional[Path] = None
     max_frontpage_items: int = 10
     md_base_dir: Optional[str] = None
     md_extensions: list = field(default_factory=list)
-    media_dir: Optional[str] = None
-    output_dir: str = "./doc"
-    page_dir: Optional[str] = None
+    media_dir: Optional[Path] = None
+    output_dir: Path = Path("./doc")
+    page_dir: Optional[Path] = None
     parallel: int = default_cpus()
     predocmark: str = ">"
     predocmark_alt: str = "|"
@@ -152,7 +153,7 @@ class Settings:
     show_proc_parent: bool = False
     sort: str = "src"
     source: bool = False
-    src_dir: list = field(default_factory=lambda: ["./src"])
+    src_dir: List[Path] = field(default_factory=lambda: [Path("./src")])
     summary: Optional[str] = None
     terms_of_service_url: Optional[str] = None
     twitter: Optional[str] = None
@@ -161,9 +162,7 @@ class Settings:
     website: Optional[str] = None
     year: str = str(date.today().year)
 
-    directory: InitVar[Optional[PathLike]] = None
-
-    def __post_init__(self, directory):
+    def __post_init__(self):
         self.relative = self.project_url == ""
 
         field_types = get_type_hints(self)
@@ -174,11 +173,27 @@ class Settings:
             if is_same_type(default_type, type(value)):
                 continue
 
-            if is_same_type(default_type, list):
+            if get_origin(default_type) is list and not isinstance(value, list):
                 setattr(self, key, [value])
 
+    def normalise_paths(self, directory=None):
         if directory is None:
-            return
+            directory = Path.cwd()
+        directory = Path(directory).absolute()
+        field_types = get_type_hints(self)
+
+        for key, value in asdict(self).items():
+            default_type = field_types[key]
+
+            if is_same_type(default_type, type(value)):
+                continue
+
+            if is_same_type(default_type, List[Path]):
+                value = getattr(self, key)
+                setattr(self, key, [normalise_path(directory, v) for v in value])
+
+            if is_same_type(default_type, Path):
+                setattr(self, key, normalise_path(directory, value))
 
         if self.md_base_dir is None:
             self.md_base_dir = directory
@@ -207,7 +222,9 @@ def load_toml_settings(directory: PathLike) -> Optional[Settings]:
     return Settings(**settings["extra"]["ford"])
 
 
-def load_markdown_settings(directory: PathLike, project_file: str) -> Tuple[Dict, str]:
+def load_markdown_settings(
+    directory: PathLike, project_file: str
+) -> Tuple[Settings, str]:
     settings, project_file = meta_preprocessor(project_file)
     field_types = get_type_hints(Settings)
 
@@ -222,7 +239,9 @@ def load_markdown_settings(directory: PathLike, project_file: str) -> Tuple[Dict
             settings[key] = convert_to_bool(key, value)
         elif is_same_type(default_type, int):
             settings[key] = int(value[0])
-        elif is_same_type(default_type, str) and isinstance(value, list):
+        elif (
+            is_same_type(default_type, str) or is_same_type(default_type, Path)
+        ) and isinstance(value, list):
             settings[key] = "\n".join(value)
 
     # Workaround for file inclusion in metadata
@@ -234,9 +253,8 @@ def load_markdown_settings(directory: PathLike, project_file: str) -> Tuple[Dict
                 f"    {option}: {value}",
                 FutureWarning,
             )
-            configs = MarkdownInclude(
-                {"base_path": str(settings.md_base_dir)}
-            ).getConfigs()
+            md_base_dir = settings["md_base_dir"] or directory
+            configs = MarkdownInclude({"base_path": str(md_base_dir)}).getConfigs()
             include_preprocessor = IncludePreprocessor(None, configs)
             settings[option] = "\n".join(include_preprocessor.run(value.splitlines()))
 

@@ -10,7 +10,7 @@ import pytest
     (
         (list, list, True),
         (list, str, False),
-        (List[str], list, True),
+        (List[str], List[str], True),
         (Optional[str], str, True),
     ),
 )
