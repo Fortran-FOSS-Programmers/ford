@@ -1321,11 +1321,6 @@ class GraphManager:
 
     Parameters
     ----------
-    base_url:
-        The URL at which the documentation will be stored. If using
-        relative URLs then should be '..'.
-    outdir:
-        The directory in which the documentation will be produced.
     graphdir:
         The location of the graphs within the output tree.
     parentdir:
@@ -1343,9 +1338,6 @@ class GraphManager:
 
     def __init__(
         self,
-        # FIXME: remove unused arguments
-        base_url: os.PathLike,
-        outdir: os.PathLike,
         graphdir: os.PathLike,
         parentdir: str,
         coloured_edges: bool,

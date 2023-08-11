@@ -166,7 +166,7 @@ def make_project_graphs(tmp_path_factory, request):
     project = create_project((settings))
 
     graphs = GraphManager(
-        "", "", graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=True
+        graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=True
     )
     for entity_list in [
         project.types,
@@ -516,7 +516,7 @@ def test_graphs_as_table(tmp_path):
     project = create_project((settings))
 
     graphs = GraphManager(
-        "", "", graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=True
+        graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=True
     )
     for entity_list in [
         project.procedures,
