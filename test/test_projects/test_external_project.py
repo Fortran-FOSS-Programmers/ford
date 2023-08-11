@@ -113,7 +113,7 @@ def external_project(tmp_path_factory, monkeymodule, restore_macros_module):
     with monkeymodule.context() as m:
         os.chdir(top_level_project)
         m.setattr(sys, "argv", ["ford", "doc.md"])
-        m.setattr(ford.utils, "urlopen", mock_open)
+        m.setattr(ford.external_project, "urlopen", mock_open)
         ford.run()
 
     # Make sure we're in a directory where relative paths won't

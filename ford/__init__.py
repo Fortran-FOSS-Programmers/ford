@@ -41,6 +41,7 @@ from markdown_include.include import (
     IncludePreprocessor,
 )
 
+from ford.external_project import dump_modules
 import ford.fortran_project
 import ford.sourceform
 import ford.output
@@ -702,7 +703,7 @@ def main(proj_data, proj_docs, md):
     if proj_data["externalize"]:
         # save FortranModules to a JSON file which then can be used
         # for external modules
-        ford.utils.external(project, make=True, path=proj_data["output_dir"])
+        dump_modules(project, path=proj_data["output_dir"])
 
     return 0
 
