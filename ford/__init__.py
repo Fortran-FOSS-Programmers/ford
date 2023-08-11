@@ -41,28 +41,20 @@ from markdown_include.include import (
     IncludePreprocessor,
 )
 
+from ford.external_project import dump_modules
 import ford.fortran_project
 import ford.sourceform
 import ford.output
 import ford.utils
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
+from ford.version import __version__
 from pathlib import Path
 
 try:
     import tomllib
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
-
-from importlib.metadata import version, PackageNotFoundError
-
-try:
-    __version__ = version(__name__)
-except PackageNotFoundError:
-    from setuptools_scm import get_version  # type: ignore[import]
-
-    __version__ = get_version(root="..", relative_to=__file__)
-
 
 __appname__ = "FORD"
 __author__ = "Chris MacMackin"
@@ -702,7 +694,7 @@ def main(proj_data, proj_docs, md):
     if proj_data["externalize"]:
         # save FortranModules to a JSON file which then can be used
         # for external modules
-        ford.utils.external(project, make=True, path=proj_data["output_dir"])
+        dump_modules(project, path=proj_data["output_dir"])
 
     return 0
 

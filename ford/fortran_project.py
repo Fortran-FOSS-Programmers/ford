@@ -27,6 +27,7 @@ import toposort
 from itertools import chain
 from typing import List
 
+from ford.external_project import load_external_modules
 import ford.utils
 import ford.sourceform
 from ford.sourceform import (
@@ -204,7 +205,7 @@ class Project:
         )
 
         # load external FORD FortranModules
-        ford.utils.external(self)
+        load_external_modules(self)
 
         # Match USE statements up with the module objects or links
         for entity in chain(
