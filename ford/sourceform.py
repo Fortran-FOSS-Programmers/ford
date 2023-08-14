@@ -45,7 +45,7 @@ from ford.reader import FortranReader
 import ford.utils
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
-from ford.settings import Settings
+from ford.settings import ProjectSettings
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
@@ -182,11 +182,11 @@ class FortranBase:
         if self.parent:
             self.parobj: Optional[str] = self.parent.obj
             self.display: List[str] = self.parent.display
-            self.settings: Settings = self.parent.settings
+            self.settings: ProjectSettings = self.parent.settings
         else:
             self.parobj = None
             self.display = []
-            self.settings = Settings()
+            self.settings = ProjectSettings()
 
         self._initialize(first_line)
         del self.strings
@@ -1478,7 +1478,7 @@ class FortranSourceFile(FortranContainer):
     def __init__(
         self,
         filepath: str,
-        settings: Settings,
+        settings: ProjectSettings,
         preprocessor=None,
         fixed: bool = False,
         **kwargs,
@@ -2602,7 +2602,7 @@ class GenericSource(FortranBase):
     not be analyzed, but documentation can be extracted.
     """
 
-    def __init__(self, filename, settings: Settings):
+    def __init__(self, filename, settings: ProjectSettings):
         self.obj = "sourcefile"
         self.parobj = None
         self.parent = None

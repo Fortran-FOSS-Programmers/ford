@@ -7,7 +7,7 @@ from ford.sourceform import (
     line_to_variables,
 )
 from ford.fortran_project import find_used_modules
-from ford import Settings
+from ford import ProjectSettings
 
 from dataclasses import dataclass, field
 from typing import Union, List, Optional
@@ -26,7 +26,7 @@ class FakeProject:
 def parse_fortran_file(copy_fortran_file):
     def parse_file(data, **kwargs):
         filename = copy_fortran_file(data)
-        settings = Settings(**kwargs)
+        settings = ProjectSettings(**kwargs)
         return FortranSourceFile(str(filename), (settings))
 
     return parse_file
@@ -1234,7 +1234,7 @@ class FakeSource:
 @dataclass
 class FakeParent:
     strings: List[str] = field(default_factory=lambda: ['"Hello"', "'World'"])
-    settings: Settings = field(default_factory=Settings)
+    settings: ProjectSettings = field(default_factory=ProjectSettings)
     obj: str = "module"
     parent = None
 

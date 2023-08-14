@@ -73,7 +73,7 @@ def convert_to_bool(name: str, option: List[str]) -> bool:
 
 
 @dataclass
-class Settings:
+class ProjectSettings:
     alias: List[str] = field(default_factory=list)
     author: Optional[str] = None
     author_description: Optional[str] = None
@@ -215,7 +215,7 @@ class Settings:
             self.md_base_dir = directory
 
 
-def load_toml_settings(directory: PathLike) -> Optional[Settings]:
+def load_toml_settings(directory: PathLike) -> Optional[ProjectSettings]:
     """Load Ford settings from ``fpm.toml`` file in ``directory``
 
     Settings should be in ``[extra.ford]`` table
@@ -235,14 +235,14 @@ def load_toml_settings(directory: PathLike) -> Optional[Settings]:
     if "ford" not in settings["extra"]:
         return None
 
-    return Settings(**settings["extra"]["ford"])
+    return ProjectSettings(**settings["extra"]["ford"])
 
 
 def load_markdown_settings(
     directory: PathLike, project_file: str
-) -> Tuple[Settings, str]:
+) -> Tuple[ProjectSettings, str]:
     settings, project_file = meta_preprocessor(project_file)
-    field_types = get_type_hints(Settings)
+    field_types = get_type_hints(ProjectSettings)
 
     keys_to_drop = []
 
@@ -284,4 +284,4 @@ def load_markdown_settings(
     for key in keys_to_drop:
         settings.pop(key)
 
-    return Settings(**settings), project_file
+    return ProjectSettings(**settings), project_file

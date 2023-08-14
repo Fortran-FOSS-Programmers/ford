@@ -45,11 +45,11 @@ def test_quiet_command_line():
     """Check that setting --quiet on the command line overrides project file"""
 
     data, _ = ford.parse_arguments(
-        {"quiet": True, "preprocess": False}, "", ford.Settings(quiet=False)
+        {"quiet": True, "preprocess": False}, "", ford.ProjectSettings(quiet=False)
     )
     assert data.quiet is True
     data, _ = ford.parse_arguments(
-        {"quiet": False, "preprocess": False}, "", (ford.Settings(quiet=True))
+        {"quiet": False, "preprocess": False}, "", (ford.ProjectSettings(quiet=True))
     )
     assert data.quiet is False
 
@@ -77,7 +77,7 @@ def test_path_normalisation():
     data, _ = ford.parse_arguments(
         {"preprocess": False},
         "",
-        ford.Settings(page_dir="my_pages", src_dir=["src1", "src2"]),
+        ford.ProjectSettings(page_dir="my_pages", src_dir=["src1", "src2"]),
         directory="/prefix/path",
     )
     assert data.page_dir == Path("/prefix/path/my_pages").absolute()
@@ -94,7 +94,7 @@ def test_source_not_subdir_output():
     data, _ = ford.parse_arguments(
         {"src_dir": ["/1/2/3", "4/5"], "output_dir": "/3/4", "preprocess": False},
         "",
-        ford.Settings(),
+        ford.ProjectSettings(),
         directory="/prefix",
     )
 
@@ -103,7 +103,7 @@ def test_source_not_subdir_output():
         data, _ = ford.parse_arguments(
             {"src_dir": ["4/5", "/1/2/3"], "output_dir": "/1/2", "preprocess": False},
             "",
-            ford.Settings(),
+            ford.ProjectSettings(),
             directory="/prefix",
         )
     # src_dir == output_dir
@@ -111,7 +111,7 @@ def test_source_not_subdir_output():
         data, _ = ford.parse_arguments(
             {"src_dir": ["/1/2/"], "output_dir": "/1/2", "preprocess": False},
             "",
-            ford.Settings(),
+            ford.ProjectSettings(),
             directory="/prefix",
         )
 
@@ -123,26 +123,28 @@ def test_repeated_docmark():
         ford.parse_arguments(
             {"preprocess": False},
             "",
-            (ford.Settings(**{"docmark": "!", "predocmark": "!"})),
+            (ford.ProjectSettings(**{"docmark": "!", "predocmark": "!"})),
         )
 
     with pytest.raises(ValueError):
         ford.parse_arguments(
             {"preprocess": False},
             "",
-            (ford.Settings(**{"docmark": "!<", "predocmark_alt": "!<"})),
+            (ford.ProjectSettings(**{"docmark": "!<", "predocmark_alt": "!<"})),
         )
 
     with pytest.raises(ValueError):
         ford.parse_arguments(
             {"preprocess": False},
             "",
-            (ford.Settings(**{"docmark_alt": "!!", "predocmark_alt": "!!"})),
+            (ford.ProjectSettings(**{"docmark_alt": "!!", "predocmark_alt": "!!"})),
         )
 
 
 def test_no_preprocessor():
-    data, _ = ford.parse_arguments({}, "", (ford.Settings(**{"preprocess": False})))
+    data, _ = ford.parse_arguments(
+        {}, "", (ford.ProjectSettings(**{"preprocess": False}))
+    )
 
     assert data.fpp_extensions == []
 
@@ -152,7 +154,7 @@ def test_bad_preprocessor():
         ford.parse_arguments(
             {"project_file": FakeFile()},
             "",
-            (ford.Settings(**{"preprocessor": "false"})),
+            (ford.ProjectSettings(**{"preprocessor": "false"})),
         )
 
 
@@ -160,7 +162,9 @@ def test_bad_preprocessor():
     sys.platform.startswith("win"), reason="FIXME: Need portable do-nothing command"
 )
 def test_maybe_ok_preprocessor():
-    data, _ = ford.parse_arguments({}, "", (ford.Settings(**{"preprocessor": "true"})))
+    data, _ = ford.parse_arguments(
+        {}, "", (ford.ProjectSettings(**{"preprocessor": "true"}))
+    )
 
     if data.preprocess is True:
         assert data.preprocessor == "true"
@@ -171,7 +175,7 @@ def test_maybe_ok_preprocessor():
 )
 def test_gfortran_preprocessor():
     data, _ = ford.parse_arguments(
-        {}, "", (ford.Settings(**{"preprocessor": "gfortran -E"}))
+        {}, "", (ford.ProjectSettings(**{"preprocessor": "gfortran -E"}))
     )
 
     assert data.preprocess is True

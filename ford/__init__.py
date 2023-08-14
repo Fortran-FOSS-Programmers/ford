@@ -43,7 +43,7 @@ from ford._typing import PathLike
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
 from ford.version import __version__
-from ford.settings import Settings, load_markdown_settings, load_toml_settings
+from ford.settings import ProjectSettings, load_markdown_settings, load_toml_settings
 
 
 __appname__ = "FORD"
@@ -273,7 +273,7 @@ def get_command_line_arguments() -> argparse.Namespace:
 
 def load_settings(
     proj_docs: str, directory: PathLike = pathlib.Path(".")
-) -> Tuple[str, Settings, MetaMarkdown]:
+) -> Tuple[str, ProjectSettings, MetaMarkdown]:
     """Load Ford settings from ``fpm.toml`` if present, or from
     metadata in supplied project file1
 
@@ -314,7 +314,7 @@ def load_settings(
 def parse_arguments(
     command_line_args: dict,
     proj_docs: str,
-    proj_data: Settings,
+    proj_data: ProjectSettings,
     directory: PathLike = pathlib.Path("."),
 ):
     """Consolidates arguments from the command line and from the project
@@ -399,7 +399,7 @@ def parse_arguments(
     return proj_data, proj_docs
 
 
-def main(proj_data: Settings, proj_docs: str, md: MetaMarkdown):
+def main(proj_data: ProjectSettings, proj_docs: str, md: MetaMarkdown):
     """
     Main driver of FORD.
     """

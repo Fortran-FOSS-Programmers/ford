@@ -1,4 +1,4 @@
-from ford.settings import is_same_type, Settings, load_markdown_settings
+from ford.settings import is_same_type, ProjectSettings, load_markdown_settings
 
 from typing import List, Optional
 from textwrap import dedent
@@ -19,7 +19,7 @@ def test_is_same_type(type_in, tp, expected):
 
 
 def test_settings_type_conversion():
-    settings = Settings(src_dir="./src")
+    settings = ProjectSettings(src_dir="./src")
 
     assert settings.src_dir == ["./src"]
 

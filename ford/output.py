@@ -39,7 +39,7 @@ import ford.sourceform
 import ford.tipue_search
 import ford.utils
 from ford.graphs import graphviz_installed, GraphManager
-from ford.settings import Settings
+from ford.settings import ProjectSettings
 
 loc = pathlib.Path(__file__).parent
 env = jinja2.Environment(
@@ -83,7 +83,7 @@ class Documentation:
     a project.
     """
 
-    def __init__(self, settings: Settings, proj_docs: str, project, pagetree):
+    def __init__(self, settings: ProjectSettings, proj_docs: str, project, pagetree):
         # This lets us use meta data anywhere within the template.
         # Also, in future for other template, we may not need to
         # pass the data obj.

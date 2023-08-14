@@ -1,5 +1,5 @@
 from ford.fortran_project import Project
-from ford import Settings
+from ford import ProjectSettings
 from ford.graphs import graphviz_installed, GraphManager
 import ford.sourceform
 
@@ -162,7 +162,9 @@ def make_project_graphs(tmp_path_factory, request):
     with open(full_filename, "w") as f:
         f.write(dedent(data))
 
-    settings = Settings(src_dir=src_dir, graph=True, proc_internals=proc_internals)
+    settings = ProjectSettings(
+        src_dir=src_dir, graph=True, proc_internals=proc_internals
+    )
     project = create_project((settings))
 
     graphs = GraphManager(
@@ -512,7 +514,7 @@ def test_graphs_as_table(tmp_path):
     with open(full_filename, "w") as f:
         f.write(dedent(data))
 
-    settings = Settings(src_dir=src_dir, graph=True, graph_maxnodes=4)
+    settings = ProjectSettings(src_dir=src_dir, graph=True, graph_maxnodes=4)
     project = create_project((settings))
 
     graphs = GraphManager(
