@@ -272,7 +272,7 @@ def get_command_line_arguments() -> argparse.Namespace:
 
 
 def load_settings(
-    proj_docs: str, directory: PathLike = pathlib.Path.cwd()
+    proj_docs: str, directory: PathLike = pathlib.Path(".")
 ) -> Tuple[str, Settings, MetaMarkdown]:
     """Load Ford settings from ``fpm.toml`` if present, or from
     metadata in supplied project file1
@@ -315,7 +315,7 @@ def parse_arguments(
     command_line_args: dict,
     proj_docs: str,
     proj_data: Settings,
-    directory: PathLike = pathlib.Path.cwd(),
+    directory: PathLike = pathlib.Path("."),
 ):
     """Consolidates arguments from the command line and from the project
     file, and then normalises them how the rest of the code expects

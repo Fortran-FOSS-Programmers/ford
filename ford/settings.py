@@ -28,7 +28,7 @@ except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
 
 
-FAVICON_PATH = Path(__file__).parent / "favicon.png"
+FAVICON_PATH = Path("favicon.png")
 
 
 def default_cpus() -> int:
@@ -194,6 +194,9 @@ class Settings:
             directory = Path.cwd()
         directory = Path(directory).absolute()
         field_types = get_type_hints(self)
+
+        if self.favicon == FAVICON_PATH:
+            self.favicon = Path(__file__).parent / FAVICON_PATH
 
         for key, value in asdict(self).items():
             default_type = field_types[key]
