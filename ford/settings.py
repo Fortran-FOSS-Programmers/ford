@@ -1,18 +1,20 @@
-from dataclasses import dataclass, field, asdict
+import warnings
+from dataclasses import asdict, dataclass, field
 from datetime import date
 from itertools import combinations
 from pathlib import Path
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
+    Tuple,
     Type,
     Union,
     get_args,
     get_origin,
     get_type_hints,
-    Tuple,
 )
-import warnings
 from markdown_include.include import (  # type: ignore[import]
     INC_SYNTAX as MD_INCLUDE_RE,
     MarkdownInclude,
@@ -20,7 +22,7 @@ from markdown_include.include import (  # type: ignore[import]
 )
 
 from ford._typing import PathLike
-from ford.utils import str_to_bool, meta_preprocessor, normalise_path
+from ford.utils import meta_preprocessor, normalise_path, str_to_bool
 
 try:
     import tomllib
@@ -189,6 +191,10 @@ class ProjectSettings:
                     f"{first} ('{first_mark}') and {second} ('{second_mark}') are the same"
                 )
 
+    @classmethod
+    def from_markdown_metadata(cls, meta: Dict[str, Any]):
+        return cls(**convert_types_from_metapreprocessor(cls, meta))
+
     def normalise_paths(self, directory=None):
         if directory is None:
             directory = Path.cwd()
@@ -284,4 +290,84 @@ def load_markdown_settings(
     for key in keys_to_drop:
         settings.pop(key)
 
-    return ProjectSettings(**settings), project_file
+    return ProjectSettings.from_markdown_metadata(settings), project_file
+
+
+def convert_types_from_metapreprocessor(cls: Type, settings: Dict[str, Any]):
+    """Convert a dict's value's types to be consistent with a given dataclass"""
+
+    field_types = get_type_hints(cls)
+
+    keys_to_drop = []
+
+    for key, value in settings.items():
+        try:
+            default_type = field_types[key]
+        except KeyError:
+            warnings.warn(f"Ignoring unknown Ford metadata key {key!r}")
+            keys_to_drop.append(key)
+            continue
+
+        if is_same_type(default_type, type(value)):
+            continue
+        if is_same_type(default_type, list):
+            settings[key] = [value]
+        elif is_same_type(default_type, bool):
+            settings[key] = convert_to_bool(key, value)
+        elif is_same_type(default_type, int):
+            settings[key] = int(value[0])
+        elif (
+            is_same_type(default_type, str) or is_same_type(default_type, Path)
+        ) and isinstance(value, list):
+            settings[key] = "\n".join(value)
+
+    for key in keys_to_drop:
+        settings.pop(key)
+
+    return settings
+
+
+@dataclass
+class EntitySettings:
+    author: Optional[str] = None
+    category: Optional[str] = None
+    copy_subdir: List[Path] = field(default_factory=list)
+    date: Optional[str] = None
+    deprecated: bool = False
+    display: List[str] = field(default_factory=list)
+    graph: bool = ProjectSettings.graph
+    graph_maxdepth: int = ProjectSettings.graph_maxdepth
+    graph_maxnodes: int = ProjectSettings.graph_maxnodes
+    license: Optional[str] = None
+    num_lines: Optional[int] = None
+    ordered_subpage: List[str] = field(default_factory=list)
+    proc_internals: bool = ProjectSettings.proc_internals
+    since: Optional[str] = None
+    source: bool = ProjectSettings.source
+    summary: Optional[str] = None
+    title: Optional[str] = None
+    version: Optional[str] = None
+
+    @classmethod
+    def from_markdown_metadata(cls, meta: Dict[str, Any]):
+        return cls(**convert_types_from_metapreprocessor(cls, meta))
+
+    @classmethod
+    def from_project_settings(cls, project_settings: ProjectSettings):
+        """Inherit entity-specific settings from project-level settings"""
+        return cls(
+            graph=project_settings.graph,
+            graph_maxdepth=project_settings.graph_maxdepth,
+            graph_maxnodes=project_settings.graph_maxnodes,
+            proc_internals=project_settings.proc_internals,
+            source=project_settings.source,
+        )
+
+    def update(self, metadata: Dict[str, Any]) -> None:
+        """Update self with values from a dict"""
+        current_settings = asdict(self)
+        current_settings.update(
+            convert_types_from_metapreprocessor(type(self), metadata)
+        )
+        for key, value in current_settings.items():
+            setattr(self, key, value)

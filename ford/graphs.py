@@ -793,8 +793,8 @@ class FortranGraph:
 
         for r in root:
             self.root.append(self.data.get_node(r))
-            self.max_nesting = max(self.max_nesting, int(r.meta["graph_maxdepth"]))
-            self.max_nodes = max(self.max_nodes, int(r.meta["graph_maxnodes"]))
+            self.max_nesting = max(self.max_nesting, int(r.meta.graph_maxdepth))
+            self.max_nodes = max(self.max_nodes, int(r.meta.graph_maxnodes))
             self.warn = self.warn or (r.settings.warn)
 
         ident = ident or f"{root[0].get_dir()}~~{root[0].ident}"
@@ -1363,7 +1363,7 @@ class GraphManager:
 
     def register(self, obj: FortranContainer):
         """Register ``obj`` as a node to be used in graphs"""
-        if obj.meta["graph"]:
+        if obj.meta.graph:
             self.data.register(obj)
             self.graph_objs.append(obj)
 

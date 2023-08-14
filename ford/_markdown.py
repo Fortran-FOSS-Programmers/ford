@@ -11,7 +11,7 @@ class MetaMarkdown(Markdown):
 
     def __init__(
         self,
-        md_base: PathLike,
+        md_base: PathLike = ".",
         extensions: Optional[List[Union[str, Extension]]] = None,
         extension_configs: Optional[Dict[str, Dict]] = None,
     ):

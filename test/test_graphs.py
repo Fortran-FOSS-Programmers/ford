@@ -165,7 +165,7 @@ def make_project_graphs(tmp_path_factory, request):
     settings = ProjectSettings(
         src_dir=src_dir, graph=True, proc_internals=proc_internals
     )
-    project = create_project((settings))
+    project = create_project(settings)
 
     graphs = GraphManager(
         graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=True

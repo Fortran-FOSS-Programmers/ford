@@ -39,7 +39,7 @@ import ford.sourceform
 import ford.tipue_search
 import ford.utils
 from ford.graphs import graphviz_installed, GraphManager
-from ford.settings import ProjectSettings
+from ford.settings import ProjectSettings, EntitySettings
 
 loc = pathlib.Path(__file__).parent
 env = jinja2.Environment(
@@ -68,7 +68,7 @@ def meta(entity, item):
             "please check that this file compiles with a Fortran compiler"
         )
 
-    return entity.meta.get(item, None)
+    return getattr(entity.meta, item, None)
 
 
 env.tests["more_than_one"] = is_more_than_one
@@ -202,7 +202,9 @@ class Documentation:
             self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(
                 settings.output_dir, url
             )
-            self.tipue.create_node(self.index.html, "index.html", {"category": "home"})
+            self.tipue.create_node(
+                self.index.html, "index.html", EntitySettings(category="home")
+            )
             jobs = len(self.docs) + len(self.pagetree)
             for p in tqdm(
                 chain(self.docs, self.pagetree),
@@ -299,7 +301,7 @@ class BasePage:
         self.data = data
         self.proj = proj
         self.obj = obj
-        self.meta = getattr(obj, "meta", {})
+        self.meta = getattr(obj, "meta", EntitySettings())
         self.out_dir = self.data["output_dir"]
         self.page_dir = self.out_dir / "page"
 

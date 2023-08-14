@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 import re
 import os.path
 import pathlib
@@ -45,7 +45,7 @@ from ford.reader import FortranReader
 import ford.utils
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
-from ford.settings import ProjectSettings
+from ford.settings import ProjectSettings, EntitySettings
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
@@ -308,21 +308,11 @@ class FortranBase:
         """
         return self.ident < other.ident
 
-    def _ensure_meta_key_set(self, key: str, transform=None, default=None):
-        """Ensure that ``key`` is set in ``self.meta``, after applying
-        an optional ``transform``.
-
-        Use ``default`` if ``key`` is not in ``self.settings``.
-        """
-        # FIXME: is this still needed?
-        value = self.meta.get(key, getattr(self.settings, key, default))
-        self.meta[key] = transform(value) if transform else value
-
     def _set_display(self):
         if self.parent:
             self.display = self.parent.display
 
-        tmp = [item.lower() for item in self.meta.get("display", [])]
+        tmp = [item.lower() for item in self.meta.display]
         if isinstance(self, FortranSourceFile):
             while "none" in tmp:
                 tmp.remove("none")
@@ -338,55 +328,31 @@ class FortranBase:
             self.display = tmp
 
     def read_metadata(self):
+        """Read the metadata from an entity's docstring"""
+
+        self.meta = EntitySettings.from_project_settings(self.settings)
+        self.doc = ""
+
         if len(self.doc_list) > 0:
             if len(self.doc_list) == 1 and ":" in self.doc_list[0]:
                 words = self.doc_list[0].split(":")[0].strip()
-                if words.lower() not in [
-                    "author",
-                    "date",
-                    "license",
-                    "version",
-                    "category",
-                    "summary",
-                    "deprecated",
-                    "display",
-                    "graph",
-                ]:
+                field_names = [field.name for field in fields(EntitySettings)]
+                if words.lower() not in field_names:
                     self.doc_list.insert(0, "")
-                self.doc_list.append("")
-            self.meta, docs = ford.utils.meta_preprocessor(self.doc_list)
+
+            meta, docs = ford.utils.meta_preprocessor(self.doc_list)
+            self.meta.update(meta)
             # Remove any common leading whitespace from the docstring
             # so that the markdown conversion is a bit more robust
             self.doc = textwrap.dedent(docs)
         else:
-            if (
-                self.settings.warn
-                and self.obj != "sourcefile"
-                and self.obj != "genericsource"
-            ):
+            if self.settings.warn and self.obj not in ("sourcefile", "genericsource"):
                 # TODO: Add ability to print line number where this item is in file
                 print(
                     f"Warning: Undocumented {self.obj} '{self.name}' in file '{self.filename}'"
                 )
-            self.doc = ""
-            self.meta = {}
 
         self._set_display()
-
-        for key in self.meta:
-            if len(self.meta[key]) == 1:
-                self.meta[key] = self.meta[key][0]
-
-        self._ensure_meta_key_set("graph", ford.utils.str_to_bool)
-        self._ensure_meta_key_set("graph_maxdepth")
-        self._ensure_meta_key_set("graph_maxnodes")
-        self._ensure_meta_key_set("deprecated", ford.utils.str_to_bool, False)
-
-        if self.obj == "proc":
-            self._ensure_meta_key_set("proc_internals", ford.utils.str_to_bool)
-
-        if self.obj in ["proc", "type", "program"]:
-            self._ensure_meta_key_set("source", ford.utils.str_to_bool)
 
     def markdown(self, md: MetaMarkdown, project: Project):
         """
@@ -396,28 +362,26 @@ class FortranBase:
         self.read_metadata()
 
         if hasattr(self, "num_lines"):
-            self.meta["num_lines"] = self.num_lines
+            self.meta.num_lines = self.num_lines
 
         self.doc = md.reset().convert(self.doc)
         self.doc = ford.utils.sub_macros(self.doc)
 
-        if self.meta.get("summary", None) is not None:
-            self.meta["summary"] = md.convert("\n".join(self.meta["summary"]))
-            self.meta["summary"] = ford.utils.sub_macros(self.meta["summary"])
+        if self.meta.summary is not None:
+            self.meta.summary = md.convert("\n".join(self.meta.summary))
+            self.meta.summary = ford.utils.sub_macros(self.meta.summary)
         elif paragraph := PARA_CAPTURE_RE.search(self.doc):
             # If there is no stand-alone webpage for this item, e.g.
             # an internal routine, make the whole doc blob appear,
             # without the link to "more..."
-            self.meta["summary"] = paragraph.group() if self.get_url() else self.doc
+            self.meta.summary = paragraph.group() if self.get_url() else self.doc
         else:
-            self.meta["summary"] = ""
+            self.meta.summary = ""
 
-        if self.meta["summary"].strip() != self.doc.strip():
-            self.meta[
-                "summary"
-            ] += f'<a href="{self.get_url()}" class="pull-right"><emph>Read more&hellip;</emph></a>'
+        if self.meta.summary.strip() != self.doc.strip():
+            self.meta.summary += f'<a href="{self.get_url()}" class="pull-right"><emph>Read more&hellip;</emph></a>'
 
-        if self.obj in ["proc", "type", "program"] and self.meta["source"]:
+        if self.obj in ["proc", "type", "program"] and self.meta.source:
             obj = getattr(self, "proctype", self.obj).lower()
             regex = re.compile(
                 self.SRC_CAPTURE_STR.format(obj, self.name),
@@ -507,8 +471,8 @@ class FortranBase:
         Process intra-site links to documentation of other parts of the program.
         """
         self.doc = ford.utils.sub_links(self.doc, project)
-        if self.meta.get("summary", None) is not None:
-            self.meta["summary"] = ford.utils.sub_links(self.meta["summary"], project)
+        if self.meta.summary is not None:
+            self.meta.summary = ford.utils.sub_links(self.meta.summary, project)
 
         # Create links in the project
         for item in self.children:
@@ -1353,7 +1317,7 @@ class FortranCodeUnit(FortranContainer):
         Remove anything which shouldn't be displayed.
         """
 
-        if self.obj == "proc" and not self.meta["proc_internals"]:
+        if self.obj == "proc" and not self.meta.proc_internals:
             self.functions = []
             self.subroutines = []
             self.types = []
@@ -1952,7 +1916,7 @@ class FortranType(FortranContainer):
         for invar in inherited:
             if not hasattr(invar, "doc"):
                 invar.doc = f"Inherited from [[{self.extends}]]"
-                invar.meta = {}
+                invar.meta = EntitySettings()
         self.variables = inherited + self.variables
 
         # Match boundprocs with procedures
@@ -2239,7 +2203,7 @@ class FortranVariable(FortranBase):
         self.parameter = parameter
         self.initial = initial
         self.dimension = ""
-        self.meta = {}
+        self.meta = EntitySettings()
         self.visible = False
 
         indexlist = []

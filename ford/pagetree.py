@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import List, Optional, Sequence
 from textwrap import dedent
 from ford.utils import meta_preprocessor
+from ford.settings import EntitySettings
 
 
 class PageNode:
@@ -47,18 +48,19 @@ class PageNode:
         encoding: str = "utf-8",
     ):
         print(f"Reading page {os.path.relpath(path)}")
-        self.meta, text = meta_preprocessor(dedent(Path(path).read_text(encoding)))
+        meta, text = meta_preprocessor(dedent(Path(path).read_text(encoding)))
+        self.meta = EntitySettings.from_markdown_metadata(meta)
 
-        if "title" not in self.meta:
+        if self.meta.title is None:
             raise ValueError(f"Page '{path}' has no title metadata")
 
-        self.title = "\n".join(self.meta["title"])
-        self.author = "\n".join(self.meta.get("author", []))
-        self.date = "\n".join(self.meta.get("date", []))
+        self.title = self.meta.title
+        self.author = self.meta.author
+        self.date = self.meta.date
 
         # index.md is the main page, it should not be added by the user in the subpage lists.
         self.ordered_subpages = [
-            x for x in self.meta.get("ordered_subpage", []) if x != "index.md"
+            x for x in self.meta.ordered_subpage if x != "index.md"
         ]
 
         # set list of directory names that are to be copied along without
@@ -66,7 +68,7 @@ class PageNode:
         #   first priority is the copy_dir option in the *.md file
         #   if this option is not set in the file fall back to the global
         #   project settings
-        self.copy_subdir = self.meta.get("copy_subdir", proj_copy_subdir)
+        self.copy_subdir = self.meta.copy_subdir or proj_copy_subdir
         self.parent = parent
         self.contents = md.reset().convert(text)
         self.subpages: List[PageNode] = []

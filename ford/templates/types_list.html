@@ -11,7 +11,7 @@ All Types &ndash; {{ project }}
 			 <tr><th>Type</th><th>Location</th><th>Extends</th><th>Description</th></tr>
 			 </thead><tbody>
 			 {% for dtype in project.types|sort(attribute='name') %}
-			   <tr><td>{{ dtype }}</td><td>{{ dtype.parent }}</td><td>{{ dtype.extends }}</td><td>{{ dtype.meta['summary'] }}</td></tr>
+			   <tr><td>{{ dtype }}</td><td>{{ dtype.parent }}</td><td>{{ dtype.extends }}</td><td>{{ dtype.meta.summary }}</td></tr>
 			 {% endfor %}
 			 </tbody></table>
              {{ project.typegraph }}
