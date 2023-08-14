@@ -244,8 +244,15 @@ def load_markdown_settings(
     settings, project_file = meta_preprocessor(project_file)
     field_types = get_type_hints(Settings)
 
+    keys_to_drop = []
+
     for key, value in settings.items():
-        default_type = field_types[key]
+        try:
+            default_type = field_types[key]
+        except KeyError:
+            warnings.warn(f"Ignoring unknown Ford metadata key {key!r}")
+            keys_to_drop.append(key)
+            continue
 
         if is_same_type(default_type, type(value)):
             continue
@@ -273,5 +280,8 @@ def load_markdown_settings(
             configs = MarkdownInclude({"base_path": str(md_base_dir)}).getConfigs()
             include_preprocessor = IncludePreprocessor(None, configs)
             settings[option] = "\n".join(include_preprocessor.run(value.splitlines()))
+
+    for key in keys_to_drop:
+        settings.pop(key)
 
     return Settings(**settings), project_file
