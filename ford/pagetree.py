@@ -70,7 +70,7 @@ class PageNode:
         #   project settings
         self.copy_subdir = self.meta.copy_subdir or proj_copy_subdir
         self.parent = parent
-        self.contents = md.reset().convert(text)
+        self.contents = md.reset().convert("\n".join(text))
         self.subpages: List[PageNode] = []
         self.files: List[os.PathLike] = []
         self.filename = Path(path.stem)

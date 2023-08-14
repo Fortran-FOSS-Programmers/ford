@@ -290,7 +290,7 @@ def load_markdown_settings(
     for key in keys_to_drop:
         settings.pop(key)
 
-    return ProjectSettings.from_markdown_metadata(settings), project_file
+    return ProjectSettings.from_markdown_metadata(settings), "\n".join(project_file)
 
 
 def convert_types_from_metapreprocessor(cls: Type, settings: Dict[str, Any]):

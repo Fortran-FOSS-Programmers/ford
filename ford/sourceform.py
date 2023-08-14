@@ -192,6 +192,7 @@ class FortranBase:
         del self.strings
 
         self.doc_list = read_docstring(source, self.settings.docmark)
+        self.read_metadata()
         self.hierarchy = self._make_hierarchy()
 
     def _make_hierarchy(self) -> List[FortranContainer]:
@@ -331,7 +332,6 @@ class FortranBase:
         """Read the metadata from an entity's docstring"""
 
         self.meta = EntitySettings.from_project_settings(self.settings)
-        self.doc = ""
 
         if len(self.doc_list) > 0:
             if len(self.doc_list) == 1 and ":" in self.doc_list[0]:
@@ -340,11 +340,8 @@ class FortranBase:
                 if words.lower() not in field_names:
                     self.doc_list.insert(0, "")
 
-            meta, docs = ford.utils.meta_preprocessor(self.doc_list)
+            meta, self.doc_list = ford.utils.meta_preprocessor(self.doc_list)
             self.meta.update(meta)
-            # Remove any common leading whitespace from the docstring
-            # so that the markdown conversion is a bit more robust
-            self.doc = textwrap.dedent(docs)
         else:
             if self.settings.warn and self.obj not in ("sourcefile", "genericsource"):
                 # TODO: Add ability to print line number where this item is in file
@@ -359,12 +356,12 @@ class FortranBase:
         Process the documentation with Markdown to produce HTML.
         """
 
-        self.read_metadata()
-
         if hasattr(self, "num_lines"):
             self.meta.num_lines = self.num_lines
 
-        self.doc = md.reset().convert(self.doc)
+        # Remove any common leading whitespace from the docstring
+        # so that the markdown conversion is a bit more robust
+        self.doc = md.reset().convert(textwrap.dedent("\n".join(self.doc_list)))
         self.doc = ford.utils.sub_macros(self.doc)
 
         if self.meta.summary is not None:
@@ -1482,6 +1479,7 @@ class FortranSourceFile(FortranContainer):
         )
 
         super().__init__(source, "")
+        self.read_metadata()
         self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
         lexer = FortranFixedLexer() if self.fixed else FortranLexer()
         self.src = highlight(
@@ -2126,6 +2124,7 @@ class FortranModuleProcedureInterface(FortranInterface):
         self.visible = parent.visible
         self.num_lines = parent.num_lines
         self.doc_list = doc_list
+        self.read_metadata()
         self.variables = copy.copy(parent.variables)
 
         self.procedure = procedure
@@ -2151,6 +2150,7 @@ class FortranFinalProc(FortranBase):
         self.display = self.parent.display
         self.settings = self.parent.settings
         self.doc_list = read_docstring(source, self.settings.docmark) if source else []
+        self.read_metadata()
         self.hierarchy = self._make_hierarchy()
 
     def correlate(self, project):
@@ -2198,12 +2198,12 @@ class FortranVariable(FortranBase):
         self.strlen = strlen
         self.proto = copy.copy(proto)
         self.doc_list = copy.copy(doc) if doc is not None else []
+        self.read_metadata()
         self.permission = permission
         self.points = points
         self.parameter = parameter
         self.initial = initial
         self.dimension = ""
-        self.meta = EntitySettings()
         self.visible = False
 
         indexlist = []
@@ -2385,6 +2385,7 @@ class FortranModuleProcedureReference(FortranBase):
         self.name = name
         self.procedure = None
         self.doc_list = []
+        self.read_metadata()
         self.hierarchy = self._make_hierarchy()
 
 

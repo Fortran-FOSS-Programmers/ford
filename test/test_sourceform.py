@@ -1237,6 +1237,7 @@ class FakeParent:
     settings: ProjectSettings = field(default_factory=ProjectSettings)
     obj: str = "module"
     parent = None
+    display: List[str] = field(default_factory=list)
 
 
 def _make_list_str() -> List[str]:
