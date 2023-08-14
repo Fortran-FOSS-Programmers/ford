@@ -276,7 +276,7 @@ def load_markdown_settings(
                 f"    {option}: {value}",
                 FutureWarning,
             )
-            md_base_dir = settings["md_base_dir"] or directory
+            md_base_dir = settings.get("md_base_dir", directory)
             configs = MarkdownInclude({"base_path": str(md_base_dir)}).getConfigs()
             include_preprocessor = IncludePreprocessor(None, configs)
             settings[option] = "\n".join(include_preprocessor.run(value.splitlines()))
