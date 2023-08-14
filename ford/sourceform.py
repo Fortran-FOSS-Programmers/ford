@@ -318,10 +318,26 @@ class FortranBase:
         value = self.meta.get(key, getattr(self.settings, key, default))
         self.meta[key] = transform(value) if transform else value
 
-    def markdown(self, md: MetaMarkdown, project: Project):
-        """
-        Process the documentation with Markdown to produce HTML.
-        """
+    def _set_display(self):
+        if self.parent:
+            self.display = self.parent.display
+
+        tmp = [item.lower() for item in self.meta.get("display", [])]
+        if isinstance(self, FortranSourceFile):
+            while "none" in tmp:
+                tmp.remove("none")
+
+        if not tmp:
+            return
+
+        if "none" in tmp:
+            self.display = []
+        elif "public" not in tmp and "private" not in tmp and "protected" not in tmp:
+            return
+        else:
+            self.display = tmp
+
+    def read_metadata(self):
         if len(self.doc_list) > 0:
             if len(self.doc_list) == 1 and ":" in self.doc_list[0]:
                 words = self.doc_list[0].split(":")[0].strip()
@@ -341,7 +357,7 @@ class FortranBase:
             self.meta, docs = ford.utils.meta_preprocessor(self.doc_list)
             # Remove any common leading whitespace from the docstring
             # so that the markdown conversion is a bit more robust
-            self.doc = md.reset().convert(textwrap.dedent(docs))
+            self.doc = textwrap.dedent(docs)
         else:
             if (
                 self.settings.warn
@@ -355,38 +371,38 @@ class FortranBase:
             self.doc = ""
             self.meta = {}
 
-        if self.parent:
-            self.display = self.parent.display
+        self._set_display()
 
         for key in self.meta:
-            if key == "display":
-                tmp = [item.lower() for item in self.meta[key]]
-                if type(self) == FortranSourceFile:
-                    while "none" in tmp:
-                        tmp.remove("none")
-                if not tmp:
-                    continue
-                elif "none" in tmp:
-                    self.display = []
-                elif (
-                    "public" not in tmp
-                    and "private" not in tmp
-                    and "protected" not in tmp
-                ):
-                    pass
-                else:
-                    self.display = tmp
-            elif len(self.meta[key]) == 1:
+            if len(self.meta[key]) == 1:
                 self.meta[key] = self.meta[key][0]
-            elif key == "summary":
-                self.meta[key] = "\n".join(self.meta[key])
+
+        self._ensure_meta_key_set("graph", ford.utils.str_to_bool)
+        self._ensure_meta_key_set("graph_maxdepth")
+        self._ensure_meta_key_set("graph_maxnodes")
+        self._ensure_meta_key_set("deprecated", ford.utils.str_to_bool, False)
+
+        if self.obj == "proc":
+            self._ensure_meta_key_set("proc_internals", ford.utils.str_to_bool)
+
+        if self.obj in ["proc", "type", "program"]:
+            self._ensure_meta_key_set("source", ford.utils.str_to_bool)
+
+    def markdown(self, md: MetaMarkdown, project: Project):
+        """
+        Process the documentation with Markdown to produce HTML.
+        """
+
+        self.read_metadata()
+
         if hasattr(self, "num_lines"):
             self.meta["num_lines"] = self.num_lines
 
+        self.doc = md.reset().convert(self.doc)
         self.doc = ford.utils.sub_macros(self.doc)
 
         if self.meta.get("summary", None) is not None:
-            self.meta["summary"] = md.convert(self.meta["summary"])
+            self.meta["summary"] = md.convert("\n".join(self.meta["summary"]))
             self.meta["summary"] = ford.utils.sub_macros(self.meta["summary"])
         elif paragraph := PARA_CAPTURE_RE.search(self.doc):
             # If there is no stand-alone webpage for this item, e.g.
@@ -395,35 +411,26 @@ class FortranBase:
             self.meta["summary"] = paragraph.group() if self.get_url() else self.doc
         else:
             self.meta["summary"] = ""
+
         if self.meta["summary"].strip() != self.doc.strip():
             self.meta[
                 "summary"
             ] += f'<a href="{self.get_url()}" class="pull-right"><emph>Read more&hellip;</emph></a>'
 
-        self._ensure_meta_key_set("graph", ford.utils.str_to_bool)
-        self._ensure_meta_key_set("graph_maxdepth")
-        self._ensure_meta_key_set("graph_maxnodes")
-        self._ensure_meta_key_set("deprecated", ford.utils.str_to_bool, False)
-
-        if self.obj in ["proc", "type", "program"]:
-            self._ensure_meta_key_set("source", ford.utils.str_to_bool)
-            if self.meta["source"]:
-                obj = getattr(self, "proctype", self.obj).lower()
-                regex = re.compile(
-                    self.SRC_CAPTURE_STR.format(obj, self.name),
-                    re.IGNORECASE | re.DOTALL | re.MULTILINE,
-                )
-                if match := regex.search(self.source_file.raw_src):
-                    self.src = highlight(match.group(), FortranLexer(), HtmlFormatter())
-                else:
-                    self.src = ""
-                    if self.settings.warn:
-                        print(
-                            f"Warning: Could not extract source code for {self.obj} '{self.name}' in file '{self.filename}'"
-                        )
-
-        if self.obj == "proc":
-            self._ensure_meta_key_set("proc_internals", ford.utils.str_to_bool)
+        if self.obj in ["proc", "type", "program"] and self.meta["source"]:
+            obj = getattr(self, "proctype", self.obj).lower()
+            regex = re.compile(
+                self.SRC_CAPTURE_STR.format(obj, self.name),
+                re.IGNORECASE | re.DOTALL | re.MULTILINE,
+            )
+            if match := regex.search(self.source_file.raw_src):
+                self.src = highlight(match.group(), FortranLexer(), HtmlFormatter())
+            else:
+                self.src = ""
+                if self.settings.warn:
+                    print(
+                        f"Warning: Could not extract source code for {self.obj} '{self.name}' in file '{self.filename}'"
+                    )
 
         # Create Markdown
         for item in self.children:
