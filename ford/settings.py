@@ -43,7 +43,7 @@ def default_cpus() -> int:
 def is_same_type(type_in: Type, tp: Type) -> bool:
     """Returns True if ``type_in`` is the same type as either ``tp``
     or ``Optional[tp]``"""
-    return (type_in is tp) or is_optional_type(type_in, tp)
+    return (type_in == tp) or is_optional_type(type_in, tp)
 
 
 def is_optional_type(tp: Type, sub_tp: Type) -> bool:
@@ -51,7 +51,7 @@ def is_optional_type(tp: Type, sub_tp: Type) -> bool:
     if get_origin(tp) is not Union:
         return False
 
-    return any(tp is sub_tp for tp in get_args(tp))
+    return any(tp == sub_tp for tp in get_args(tp))
 
 
 def convert_to_bool(name: str, option: List[str]) -> bool:
@@ -199,10 +199,10 @@ class Settings:
             self.favicon = Path(__file__).parent / FAVICON_PATH
 
         for key, value in asdict(self).items():
-            default_type = field_types[key]
-
-            if is_same_type(default_type, type(value)):
+            if value is None:
                 continue
+
+            default_type = field_types[key]
 
             if is_same_type(default_type, List[Path]):
                 value = getattr(self, key)
