@@ -71,7 +71,6 @@ def test_nav_bar(example_index):
         "Derived Types",
         "Programs",
         "Abstract Interfaces",
-        "Contents",
         "Namelists",
     }
     assert expected_pages == link_names
@@ -82,7 +81,7 @@ def test_jumbotron(example_index):
     framework is used"""
 
     index, settings = example_index
-    jumbotron = index.find("div", "jumbotron")
+    jumbotron = index.find("div", id="jumbotron")
 
     jumbotron_text = (p.text for p in jumbotron("p"))
     assert settings["summary"] in jumbotron_text
@@ -279,40 +278,38 @@ def test_side_panel(example_project):
     side_panel = index.find(id="sidebar")
     assert "None" not in side_panel.text
 
-    side_panels = index.find_all(class_="panel-primary")
-    # Twice as many due to the "hidden" panel that appears at the
-    # bottom on mobile
-    assert len(side_panels) == 2 * 4
+    side_panels = side_panel.find_all(class_="card-header")
+    assert len(side_panels) == 4
 
-    variables_panel = side_panels[0]
+    variables_panel = side_panels[0].parent.parent
     assert len(variables_panel("a")) == 2
-    assert variables_panel.a.text == "Variables"
+    assert variables_panel.a.text.strip() == "Variables"
     variables_anchor_link = variables_panel("a")[1]
-    assert variables_anchor_link.text == "global_pi"
+    assert variables_anchor_link.text.strip() == "global_pi"
     assert (
         variables_anchor_link["href"]
         == "../program/ford_test_program.html#variable-global_pi"
     )
 
-    subroutines_panel = side_panels[3]
+    subroutines_panel = side_panels[3].parent.parent
     assert len(subroutines_panel("a")) == 4
-    assert subroutines_panel.a.text == "Subroutines"
+    assert subroutines_panel.a.text.strip() == "Subroutines"
     subroutines_anchor_link = subroutines_panel("a")[1]
-    assert subroutines_anchor_link.text == "do_foo_stuff"
+    assert subroutines_anchor_link.text.strip() == "do_foo_stuff"
     assert (
         subroutines_anchor_link["href"]
         == "../program/ford_test_program.html#proc-do_foo_stuff"
     )
 
     type_index = read_html(path / "type/example_type.html")
-    constructor_panel = type_index.find(id="cons-1")
-    assert constructor_panel.a.text == "example_type"
+    constructor_panel = type_index.find(id="cons-0")
+    assert constructor_panel.a.text.strip() == "example_type"
     assert (
         constructor_panel.a["href"]
         == "../type/example_type.html#interface-example_type"
     )
-    finaliser_panel = type_index.find(id="fins-1")
-    assert finaliser_panel.a.text == "example_type_finalise"
+    finaliser_panel = type_index.find(id="fins-0")
+    assert finaliser_panel.a.text.strip() == "example_type_finalise"
     assert (
         finaliser_panel.a["href"]
         == "../type/example_type.html#finalproc-example_type_finalise"
@@ -320,8 +317,8 @@ def test_side_panel(example_project):
 
     check_index = read_html(path / "interface/check.html")
     check_sidebar = check_index.find(id="sidebar")
-    assert "None" in check_sidebar.text
-    assert check_sidebar.find_all(class_="panel-primary") == []
+    assert "None" in check_sidebar.text.strip()
+    assert check_sidebar.find_all(class_="card-primary") == []
 
 
 def test_variable_lists(example_project):
@@ -458,7 +455,7 @@ def test_static_pages(example_project):
     assert notes_page.find(id="author").text.strip() == "Jane Bloggs", "author"
     assert notes_page.find(id="date") is None, "date"
 
-    sidebar = notes_page.find(class_="well toc")
+    sidebar = notes_page.find(id="sidebar-toc")
     subpage_links = sidebar.find_all("a")
 
     # Check the links in the sidebare to subpages is correct

@@ -20,31 +20,26 @@
     {{ dtype.doc }}
     {% if dtype.inherbygraph or dtype.inhergraph %}<br>{% endif %}
     {% if dtype.inhergraph %}
-    <div class="panel panel-default">
-      <div class="panel-heading">
-  <h3 class="panel-title">Inherits</h3>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Inherits</h3>
       </div>
-      <div class="panel-body">
+      <div class="card-body">
     {{ dtype.inhergraph }}
       </div>
     </div>
     {% endif %}
     {% if dtype.inherbygraph %}
-    <div class="panel panel-default">
-      <div class="panel-heading">
-  <h3 class="panel-title">Inherited by</h3>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Inherited by</h3>
       </div>
-      <div class="panel-body">
+      <div class="card-body">
      {{ dtype.inherbygraph }}
       </div>
     </div>
     {% endif %}
     <br>
-
-    <section class="visible-xs visible-sm hidden-md">
-      {{ macros.content_list(dtype,1) }}
-    </section>
-    <br class="visible-xs visible-sm hidden-md">
 
     {% if dtype.variables|length > 0 %}
     <section>
@@ -61,12 +56,12 @@
           {{ macros.interface(dtype.constructor) }}
         {% elif dtype.constructor.obj in ["subroutine", "function"] %}
           {% set obj = dtype.constructor %}
-          <div class="panel panel-default">
-            <div class="panel-heading codesum">
+          <div class="card">
+            <div class="card-header codesum">
               <span class="anchor" id="{{ obj.anchor }}"></span>
               <h3>{{ macros.proc_line(obj) }}</h3>
             </div>
-            <div class="panel-body">
+            <div class="card-body">
               {{ macros.proc_summary(obj, full_docstring=True) }}
             </div>
           </div>

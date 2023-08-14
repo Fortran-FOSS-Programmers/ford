@@ -3,54 +3,60 @@
 {% block body %}
   <div class="row">
     <h1>{{ page.title }}</h1>
-    <div class="row">
-      <div class="col-lg-12">
-        <div class="well well-sm" style="min-height: 40px;">
+    <div class="container p-2 mb-4 bg-light border rounded-3">
+      <div class="row align-items-center justify-content-between">
+        <div class="col">
           <ul class="list-inline" style="margin-bottom:0px; display:inline">
             {% if page.author %}
-              <li id="author"><i class="fa fa-pencil"></i> {{ page.author }}</li>
+              <li class="list-inline-item" id="author"><i class="fa fa-pencil"></i> {{ page.author }}</li>
             {% endif %}
             {% if page.date %}
-              <li id="date"><i class="fa fa-calendar-o"></i> {{ page.date }}</li>
+              <li class="list-inline-item" id="date"><i class="fa fa-calendar-o"></i> {{ page.date }}</li>
             {% endif %}
           </ul>
-          <ol class="breadcrumb in-well">
-            {% for item in page.hierarchy %}
-              <li>{{ item }}</li>
-            {% endfor %}
-            <li class="active">{{ page.title }}</li>
-          </ol>
+        </div>
+        <div class="col">
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb justify-content-end mb-0">
+              {% for item in page.hierarchy %}
+                <li class="breadcrumb-item">{{ item }}</li>
+              {% endfor %}
+              <li class="breadcrumb-item active" aria-current="page">{{ page.title }}</li>
+            </ol>
+          </nav>
         </div>
       </div>
     </div>
   </div>
-  
+
   <div class="row">
-    <div class="col-md-9 col-md-push-3" id='text'>
-      {{ page.contents }}
-    </div>
     {% if pages.subpages %}
-      <div class="col-md-3 col-md-pull-9">
-        <hr class="visible-xs visible-sm">
-        <div class="well toc">
-          <ul class="nav nav-stacked nav-pills">
-            <li role="presentation" class="title{% if pages==page %} disabled{% endif %}">{{ pages }}</li>
+      <div class="col-3">
+        <div class="card card-body bg-light" id="sidebar-toc">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link{% if pages==page %} active disabled{% endif %}" href="{{ pages.url}}">{{ pages.title }}</a>
+            </li>
           </ul>
           <hr>
-          <ul class="nav nav-stacked nav-pills">
+          <nav class="nav flex-column">
             {% for subpage in pages.subpages recursive %}
-              <li role="presentation"{% if subpage==page %} class="disabled"{% endif %}>
-                {{ subpage }}
-                {% if subpage.subpages %}
-                  <ul class="nav nav-stacked nav-pills">
-                    {{ loop(subpage.subpages) }}
-                  </ul>
-                {% endif %}
+              <li class-"nav-item">
+                <a class="nav-link{% if subpage==page %} active disabled{% endif %}" href="{{ subpage.url}}">{{ subpage.title }}</a>
               </li>
+              {% if subpage.subpages %}
+                <nav class="nav flex-column">
+                  {{ loop(subpage.subpages) }}
+                </nav>
+              {% endif %}
             {% endfor %}
-          </ul>
+          </nav>
         </div>
       </div>
     {% endif %}
+
+    <div class="col" id='text'>
+      {{ page.contents }}
+    </div>
   </div>
 {% endblock body %}

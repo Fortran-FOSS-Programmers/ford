@@ -49,31 +49,26 @@
     <br>
     {% endif %}
     {% if procedure.callsgraph %}
-    <div class="panel panel-default">
-      <div class="panel-heading">
-  <h3 class="panel-title">Calls</h3>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Calls</h3>
       </div>
-      <div class="panel-body">
+      <div class="card-body">
   {{ procedure.callsgraph }}
       </div>
     </div>
      {% endif %}
      {% if procedure.calledbygraph %}
-    <div class="panel panel-default">
-      <div class="panel-heading">
-  <h3 class="panel-title">Called by</h3>
+    <div class="card">
+      <div class="card-header">
+  <h3 class="card-title">Called by</h3>
       </div>
-      <div class="panel-body">
+      <div class="card-body">
   {{ procedure.calledbygraph }}
       </div>
     </div>
      {% endif %}
     <br>
-
-    <section class="visible-xs visible-sm hidden-md">
-      {{ macros.content_list(procedure,1) }}
-    </section>
-    <br class="visible-xs visible-sm hidden-md">
 
     {% if procedure.common|length > 0 %}
     <section>
@@ -85,7 +80,7 @@
     <br>
     <script>
       $(function () {
-      $('[data-toggle="popover"]').popover()
+      $('[data-bs-toggle="popover"]').popover()
       })
     </script>
     {% endif %}

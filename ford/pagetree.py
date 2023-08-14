@@ -87,8 +87,12 @@ class PageNode:
     def path(self):
         return self.location / self.filename.with_suffix(".html")
 
+    @property
+    def url(self):
+        return self.base_url / "page" / self.path
+
     def __str__(self):
-        return f"<a href='{self.base_url / 'page' / self.path}'>{self.title}</a>"
+        return f"<a href='{self.url}'>{self.title}</a>"
 
     def __iter__(self):
         retlist = [self]
