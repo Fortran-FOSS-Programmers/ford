@@ -2384,7 +2384,7 @@ class FortranModuleProcedureReference(FortranBase):
     implementation are both defined elsewhere
 
     For example, this class represents the reference to ``fft_1d`` in
-    a generic interface:
+    a generic interface::
 
         interface fft
             module procedure fft_1d
