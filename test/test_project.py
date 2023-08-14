@@ -1,10 +1,10 @@
 from ford.fortran_project import Project
-from ford import DEFAULT_SETTINGS
+from ford import Settings
 from ford.utils import normalise_path
 from ford.sourceform import FortranVariable
 
-from copy import deepcopy
 from itertools import chain
+
 
 import markdown
 import pytest
@@ -19,9 +19,7 @@ def copy_fortran_file(tmp_path):
         filename = src_dir / "test.f90"
         with open(filename, "w") as f:
             f.write(data)
-        settings = deepcopy(DEFAULT_SETTINGS)
-        settings["src_dir"] = [src_dir]
-        return settings
+        return Settings(src_dir=src_dir)
 
     return copy_file
 
@@ -33,7 +31,7 @@ def create_project(settings: dict):
         "markdown.extensions.extra",
     ]
     md = markdown.Markdown(
-        extensions=md_ext, output_format="html5", extension_configs={}
+        extensions=md_ext, output_format="html", extension_configs={}
     )
 
     project = Project(settings)
@@ -510,7 +508,7 @@ def test_display_derived_types(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    settings["display"] = ["public"]
+    settings.display = ["public"]
     project = Project(settings)
     project.correlate()
 
@@ -537,7 +535,7 @@ def test_display_derived_types_default_private(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    settings["display"] = ["public"]
+    settings.display = ["public"]
     project = create_project(settings)
 
     type_names = set([t.name for t in project.types])
@@ -563,7 +561,7 @@ def test_display_private_derived_types(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    settings["display"] = ["public", "private"]
+    settings.display = ["public", "private"]
     project = create_project(settings)
 
     type_names = set([t.name for t in project.types])
@@ -587,7 +585,7 @@ def test_display_private_module_procedure(copy_fortran_file):
       """
 
     settings = copy_fortran_file(data)
-    settings["display"] = ["public", "protected", "private"]
+    settings.display = ["public", "protected", "private"]
 
     project = create_project(settings)
     assert project.submodprocedures[0].name == "bar"
@@ -748,10 +746,8 @@ def test_exclude_dir(tmp_path):
     with open(exclude_dir / "exclude.f90", "w") as f:
         f.write("program bar\nend program")
 
-    settings = deepcopy(DEFAULT_SETTINGS)
-    settings["src_dir"] = [tmp_path]
-    settings["exclude_dir"] = [normalise_path(tmp_path, "sub1")]
-    project = Project(settings)
+    settings = Settings(src_dir=tmp_path, exclude_dir=normalise_path(tmp_path, "sub1"))
+    project = Project((settings))
 
     program_names = {program.name for program in project.programs}
     assert program_names == {"foo"}
@@ -768,10 +764,8 @@ def test_exclude(tmp_path):
     with open(exclude_dir / "exclude.f90", "w") as f:
         f.write("program bar\nend program")
 
-    settings = deepcopy(DEFAULT_SETTINGS)
-    settings["src_dir"] = [tmp_path]
-    settings["exclude"] = ["exclude.f90"]
-    project = Project(settings)
+    settings = Settings(src_dir=tmp_path, exclude="exclude.f90")
+    project = Project((settings))
 
     program_names = {program.name for program in project.programs}
     assert program_names == {"foo"}
@@ -904,8 +898,8 @@ def test_sort(copy_fortran_file, sort_kind, expected_order):
     """
 
     settings = copy_fortran_file(data)
-    settings["sort"] = sort_kind
-    settings["display"] = ["public", "private", "protected"]
+    settings.sort = sort_kind
+    settings.display = ["public", "private", "protected"]
     project = create_project(settings)
     module = project.modules[0]
 
@@ -948,7 +942,7 @@ def test_uses(copy_fortran_file):
     }
 
     settings = copy_fortran_file(data)
-    settings["extra_mods"] = [f"{key}: {value}" for key, value in extra_mods.items()]
+    settings.extra_mods = [f"{key}: {value}" for key, value in extra_mods.items()]
 
     project = create_project(settings)
     mod_a = project.modules[0]
@@ -991,7 +985,7 @@ def test_submodule_uses(copy_fortran_file):
     }
 
     settings = copy_fortran_file(data)
-    settings["extra_mods"] = [f"{key}: {value}" for key, value in extra_mods.items()]
+    settings.extra_mods = [f"{key}: {value}" for key, value in extra_mods.items()]
 
     project = create_project(settings)
     mod_a = project.modules[0]
@@ -1089,7 +1083,7 @@ def test_submodule_procedure_issue_446(copy_fortran_file):
     """
 
     settings = copy_fortran_file(data)
-    settings["display"] = ["public", "private", "protected"]
+    settings.display = ["public", "private", "protected"]
     project = create_project(settings)
     module = project.modules[0]
 

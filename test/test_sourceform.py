@@ -7,9 +7,8 @@ from ford.sourceform import (
     line_to_variables,
 )
 from ford.fortran_project import find_used_modules
-from ford import DEFAULT_SETTINGS
+from ford import Settings
 
-from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Union, List, Optional
 from itertools import chain
@@ -27,10 +26,8 @@ class FakeProject:
 def parse_fortran_file(copy_fortran_file):
     def parse_file(data, **kwargs):
         filename = copy_fortran_file(data)
-        settings = deepcopy(DEFAULT_SETTINGS)
-        settings.update(kwargs)
-
-        return FortranSourceFile(str(filename), settings)
+        settings = Settings(**kwargs)
+        return FortranSourceFile(str(filename), (settings))
 
     return parse_file
 
@@ -568,7 +565,7 @@ def test_type_chain_function_and_subroutine_calls(
 
 
 def test_call_in_module_procedure(parse_fortran_file):
-    data = f"""\
+    data = """\
     module foo
       type :: nuz
       contains
@@ -623,7 +620,7 @@ def test_call_in_module_procedure(parse_fortran_file):
 
 
 def test_submodule_private_var_call(parse_fortran_file):
-    data = f"""\
+    data = """\
     module foo
       type :: nuz
         integer :: var
@@ -666,7 +663,7 @@ def test_submodule_private_var_call(parse_fortran_file):
 
 
 def test_internal_proc_arg_var_call(parse_fortran_file):
-    data = f"""\
+    data = """\
     module foo
       type :: nuz
         integer :: var
@@ -1237,7 +1234,7 @@ class FakeSource:
 @dataclass
 class FakeParent:
     strings: List[str] = field(default_factory=lambda: ['"Hello"', "'World'"])
-    settings = {"extra_vartypes": [], "docmark": "!"}
+    settings: Settings = field(default_factory=Settings)
     obj: str = "module"
     parent = None
 

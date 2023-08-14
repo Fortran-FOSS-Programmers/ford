@@ -25,7 +25,7 @@
 import os
 import toposort
 from itertools import chain
-from typing import List
+from typing import List, Union, Dict
 
 from ford.external_project import load_external_modules
 import ford.utils
@@ -35,7 +35,19 @@ from ford.sourceform import (
     FortranModule,
     FortranSubmodule,
     ExternalModule,
+    FortranInterface,
+    FortranType,
+    FortranModuleProcedureImplementation,
+    FortranCommon,
+    ExternalFunction,
+    ExternalSubroutine,
+    FortranNamelist,
+    ExternalType,
+    ExternalInterface,
+    ExternalVariable,
+    FortranProcedure,
 )
+from ford.settings import Settings
 
 
 INTRINSIC_MODS = {
@@ -57,42 +69,42 @@ class Project:
     project which is to be documented.
     """
 
-    def __init__(self, settings):
+    def __init__(self, settings: Settings):
         self.settings = settings
-        self.name = settings["project"]
-        self.external = settings["external"]
-        self.topdirs = settings["src_dir"]
-        self.extensions = settings["extensions"]
-        self.fixed_extensions = settings["fixed_extensions"]
-        self.extra_filetypes = settings["extra_filetypes"]
-        self.display = settings["display"]
-        self.encoding = settings["encoding"]
+        self.name = settings.project
+        self.external = settings.external
+        self.topdirs = settings.src_dir
+        self.extensions = settings.extensions
+        self.fixed_extensions = settings.fixed_extensions
+        self.extra_filetypes = settings.extra_filetypes
+        self.display = settings.display
+        self.encoding = settings.encoding
 
-        html_incl_src = settings.get("incl_src", True)
+        html_incl_src = settings.incl_src
 
         self.files = []
         self.modules = []
         self.programs = []
-        self.procedures = []
-        self.absinterfaces = []
-        self.types = []
-        self.submodules = []
-        self.submodprocedures = []
+        self.procedures: List[FortranProcedure] = []
+        self.absinterfaces: List[FortranInterface] = []
+        self.types: List[FortranType] = []
+        self.submodules: List[FortranSubmodule] = []
+        self.submodprocedures: List[FortranModuleProcedureImplementation] = []
         self.extra_files = []
         self.blockdata = []
-        self.common = {}
-        self.extModules = []
-        self.extProcedures = []
-        self.extInterfaces = []
-        self.extTypes = []
-        self.extVariables = []
-        self.namelists = []
+        self.common: Dict[str, FortranCommon] = {}
+        self.extModules: List[ExternalModule] = []
+        self.extProcedures: List[Union[ExternalSubroutine, ExternalFunction]] = []
+        self.extInterfaces: List[ExternalInterface] = []
+        self.extTypes: List[ExternalType] = []
+        self.extVariables: List[ExternalVariable] = []
+        self.namelists: List[FortranNamelist] = []
 
         # Get all files within topdir, recursively
-        srcdir_list = self.make_srcdir_list(settings["exclude_dir"])
+        srcdir_list = self.make_srcdir_list(settings.exclude_dir)
         for curdir in srcdir_list:
             for item in [f for f in curdir.iterdir() if f.is_file()]:
-                if item.name in settings["exclude"]:
+                if item.name in settings.exclude:
                     continue
 
                 filename = curdir / item
@@ -101,8 +113,8 @@ class Project:
                 if extension in self.extensions or extension in self.fixed_extensions:
                     # Get contents of the file
                     print(f"Reading file {relative_path}")
-                    if extension in settings["fpp_extensions"]:
-                        preprocessor = settings["preprocessor"]
+                    if extension in settings.fpp_extensions:
+                        preprocessor = settings.preprocessor.split()
                     else:
                         preprocessor = None
                     try:
@@ -117,7 +129,7 @@ class Project:
                             )
                         )
                     except Exception as e:
-                        if not settings["dbg"]:
+                        if not settings.dbg:
                             raise e
 
                         print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
@@ -157,14 +169,14 @@ class Project:
                             ford.sourceform.GenericSource(str(filename), settings)
                         )
                     except Exception as e:
-                        if not settings["dbg"]:
+                        if not settings.dbg:
                             raise e
 
                         print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
                         continue
 
     def warn(self, message):
-        if self.settings["warn"]:
+        if self.settings.warn:
             print(f"Warning: {message}")
 
     @property
@@ -186,7 +198,7 @@ class Project:
         print("Correlating information from different parts of your project...")
 
         non_local_mods = INTRINSIC_MODS.copy()
-        for item in self.settings["extra_mods"]:
+        for item in self.settings.extra_mods:
             if not item:
                 continue
             try:
@@ -258,7 +270,7 @@ class Project:
 
         # Get dependencies for programs and top-level procedures as well,
         # if dependency graphs are to be produced
-        if self.settings["graph"]:
+        if self.settings.graph:
             for entity in chain(self.procedures, self.programs, self.blockdata):
                 entity.deplist = set(filter_modules(entity))
 
@@ -271,16 +283,16 @@ class Project:
 
         # Perform remaining correlations for the project
         for container in ranklist:
-            if type(container) != str:
+            if not isinstance(container, str):
                 container.correlate(self)
         for container in ranklist:
-            if type(container) != str:
+            if not isinstance(container, str):
                 container.prune()
 
-        if self.settings["project_url"] == ".":
+        if self.settings.project_url == ".":
             url = ".."
         else:
-            url = self.settings["project_url"]
+            url = self.settings.project_url
 
         # Mapping of various entity containers in code units to the
         # corresponding container in the project
@@ -330,7 +342,7 @@ class Project:
         """
         print("\nProcessing documentation comments...")
         ford.sourceform.set_base_url(base_url)
-        if self.settings["warn"]:
+        if self.settings.warn:
             print()
         for src in self.allfiles:
             src.markdown(md, self)
@@ -393,6 +405,9 @@ def find_used_modules(
     """
     # Find the modules that this entity uses
     for dependency in entity.uses:
+        # Can safely skip if already known
+        if isinstance(dependency[0], FortranModule):
+            continue
         dependency_name = dependency[0].lower()
         for candidate in chain(modules, external_modules):
             if dependency_name == candidate.name.lower():

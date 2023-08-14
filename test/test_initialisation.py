@@ -3,7 +3,6 @@ from textwrap import dedent
 from pathlib import Path
 import sys
 import pytest
-import os
 
 import tomli_w
 
@@ -16,9 +15,9 @@ class FakeFile:
 
 def test_quiet_false():
     _, data, _ = ford.load_settings("quiet: False")
-    assert data["quiet"] is False
+    assert data.quiet is False
     _, data2, _ = ford.load_settings("quiet: True")
-    assert data2["quiet"] is True
+    assert data2.quiet is True
 
 
 def test_toml(tmp_path):
@@ -36,23 +35,23 @@ def test_toml(tmp_path):
 
     _, data, _ = ford.load_settings("", tmp_path)
 
-    assert data["quiet"] is True
-    assert data["display"][0] == "public"
-    assert data["display"][1] == "protected"
-    assert data["src_dir"] == ["./source"]
+    assert data.quiet is True
+    assert data.display[0] == "public"
+    assert data.display[1] == "protected"
+    assert data.src_dir == ["./source"]
 
 
 def test_quiet_command_line():
     """Check that setting --quiet on the command line overrides project file"""
 
     data, _ = ford.parse_arguments(
-        {"quiet": True, "preprocess": False}, "", {"quiet": "false"}
+        {"quiet": True, "preprocess": False}, "", ford.Settings(quiet=False)
     )
-    assert data["quiet"] is True
+    assert data.quiet is True
     data, _ = ford.parse_arguments(
-        {"quiet": False, "preprocess": False}, "", {"quiet": "true"}
+        {"quiet": False, "preprocess": False}, "", (ford.Settings(quiet=True))
     )
-    assert data["quiet"] is False
+    assert data.quiet is False
 
 
 def test_list_input():
@@ -68,8 +67,8 @@ def test_list_input():
     """
     _, data, _ = ford.load_settings(dedent(settings))
 
-    assert len(data["include"]) == 2
-    assert data["summary"] == "This\nis\none\nstring"
+    assert len(data.include) == 2
+    assert data.summary == "This\nis\none\nstring"
 
 
 def test_path_normalisation():
@@ -78,13 +77,13 @@ def test_path_normalisation():
     data, _ = ford.parse_arguments(
         {"preprocess": False},
         "",
-        {"page_dir": "my_pages", "src_dir": ["src1", "src2"]},
-        "/prefix/path",
+        ford.Settings(page_dir="my_pages", src_dir=["src1", "src2"]),
+        directory="/prefix/path",
     )
-    assert str(data["page_dir"]) == str(Path("/prefix/path/my_pages").absolute())
-    assert [str(p) for p in data["src_dir"]] == [
-        str(Path("/prefix/path/src1").absolute()),
-        str(Path("/prefix/path/src2").absolute()),
+    assert data.page_dir == Path("/prefix/path/my_pages").absolute()
+    assert data.src_dir == [
+        Path("/prefix/path/src1").absolute(),
+        Path("/prefix/path/src2").absolute(),
     ]
 
 
@@ -95,8 +94,8 @@ def test_source_not_subdir_output():
     data, _ = ford.parse_arguments(
         {"src_dir": ["/1/2/3", "4/5"], "output_dir": "/3/4", "preprocess": False},
         "",
-        {},
-        "/prefix",
+        ford.Settings(),
+        directory="/prefix",
     )
 
     # This shouldn't be
@@ -104,16 +103,16 @@ def test_source_not_subdir_output():
         data, _ = ford.parse_arguments(
             {"src_dir": ["4/5", "/1/2/3"], "output_dir": "/1/2", "preprocess": False},
             "",
-            {},
-            "/prefix",
+            ford.Settings(),
+            directory="/prefix",
         )
     # src_dir == output_dir
     with pytest.raises(ValueError):
         data, _ = ford.parse_arguments(
             {"src_dir": ["/1/2/"], "output_dir": "/1/2", "preprocess": False},
             "",
-            {},
-            "/prefix",
+            ford.Settings(),
+            directory="/prefix",
         )
 
 
@@ -122,30 +121,38 @@ def test_repeated_docmark():
 
     with pytest.raises(ValueError):
         ford.parse_arguments(
-            {"preprocess": False}, "", {"docmark": "!", "predocmark": "!"}
+            {"preprocess": False},
+            "",
+            (ford.Settings(**{"docmark": "!", "predocmark": "!"})),
         )
 
     with pytest.raises(ValueError):
         ford.parse_arguments(
-            {"preprocess": False}, "", {"docmark": "!<", "predocmark_alt": "!<"}
+            {"preprocess": False},
+            "",
+            (ford.Settings(**{"docmark": "!<", "predocmark_alt": "!<"})),
         )
 
     with pytest.raises(ValueError):
         ford.parse_arguments(
-            {"preprocess": False}, "", {"docmark_alt": "!!", "predocmark_alt": "!!"}
+            {"preprocess": False},
+            "",
+            (ford.Settings(**{"docmark_alt": "!!", "predocmark_alt": "!!"})),
         )
 
 
 def test_no_preprocessor():
-    data, _ = ford.parse_arguments({}, "", {"preprocess": False})
+    data, _ = ford.parse_arguments({}, "", (ford.Settings(**{"preprocess": False})))
 
-    assert data["fpp_extensions"] == []
+    assert data.fpp_extensions == []
 
 
 def test_bad_preprocessor():
     with pytest.raises(SystemExit):
         ford.parse_arguments(
-            {"project_file": FakeFile()}, "", {"preprocessor": "false"}
+            {"project_file": FakeFile()},
+            "",
+            (ford.Settings(**{"preprocessor": "false"})),
         )
 
 
@@ -153,20 +160,21 @@ def test_bad_preprocessor():
     sys.platform.startswith("win"), reason="FIXME: Need portable do-nothing command"
 )
 def test_maybe_ok_preprocessor():
-    data, _ = ford.parse_arguments({}, "", {"preprocessor": "true"})
+    data, _ = ford.parse_arguments({}, "", (ford.Settings(**{"preprocessor": "true"})))
 
-    if data["preprocess"] is True:
-        assert isinstance(data["preprocessor"], list)
-        assert len(data["preprocessor"]) > 0
+    if data.preprocess is True:
+        assert data.preprocessor == "true"
 
 
 @pytest.mark.skipif(
     gfortran_is_not_installed(), reason="Requires gfortran to be installed"
 )
 def test_gfortran_preprocessor():
-    data, _ = ford.parse_arguments({}, "", {"preprocessor": "gfortran -E"})
+    data, _ = ford.parse_arguments(
+        {}, "", (ford.Settings(**{"preprocessor": "gfortran -E"}))
+    )
 
-    assert data["preprocess"] is True
+    assert data.preprocess is True
 
 
 def test_absolute_src_dir(monkeypatch, tmp_path):
@@ -178,13 +186,13 @@ def test_absolute_src_dir(monkeypatch, tmp_path):
         m.setattr(sys, "argv", ["ford", str(project_file)])
         args, _, _ = ford.initialize()
 
-    assert args["src_dir"] == [tmp_path / "./src"]
+    assert args.src_dir == [tmp_path / "./src"]
 
     with monkeypatch.context() as m:
         m.setattr(sys, "argv", ["ford", str(project_file), "--src_dir", str(src_dir)])
         args, _, _ = ford.initialize()
 
-    assert args["src_dir"] == [src_dir]
+    assert args.src_dir == [src_dir]
 
     with monkeypatch.context() as m:
         m.setattr(
@@ -192,7 +200,7 @@ def test_absolute_src_dir(monkeypatch, tmp_path):
         )
         args, _, _ = ford.initialize()
 
-    assert args["src_dir"] == [src_dir]
+    assert args.src_dir == [src_dir]
 
 
 def test_output_dir_cli(monkeypatch, tmp_path):
@@ -203,7 +211,7 @@ def test_output_dir_cli(monkeypatch, tmp_path):
         m.setattr(sys, "argv", ["ford", str(project_file), "--output_dir", "something"])
         settings, _, _ = ford.initialize()
 
-    assert settings["output_dir"] == tmp_path / "something"
+    assert settings.output_dir == tmp_path / "something"
 
     with open(project_file, "a") as f:
         f.write("\noutput_dir: something_else")
@@ -212,4 +220,4 @@ def test_output_dir_cli(monkeypatch, tmp_path):
         m.setattr(sys, "argv", ["ford", str(project_file)])
         settings, _, _ = ford.initialize()
 
-    assert settings["output_dir"] == tmp_path / "something_else"
+    assert settings.output_dir == tmp_path / "something_else"

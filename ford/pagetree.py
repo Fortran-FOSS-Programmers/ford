@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Sequence
 from textwrap import dedent
 from ford.utils import meta_preprocessor
 
@@ -42,7 +42,7 @@ class PageNode:
         self,
         md,
         path: Path,
-        proj_copy_subdir: List[str],
+        proj_copy_subdir: Sequence[os.PathLike],
         parent: Optional[PageNode],
         encoding: str = "utf-8",
     ):
@@ -103,7 +103,7 @@ class PageNode:
 
 def get_page_tree(
     topdir: os.PathLike,
-    proj_copy_subdir: List[str],
+    proj_copy_subdir: Sequence[os.PathLike],
     md,
     parent=None,
     encoding: str = "utf-8",

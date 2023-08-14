@@ -1,8 +1,9 @@
 from markdown import Markdown, Extension
-from typing import Any, Dict, List, Union, Optional
+from typing import Dict, List, Union, Optional
 
 from ford.md_environ import EnvironExtension
 from ford.md_admonition import AdmonitionExtension
+from ford._typing import PathLike
 
 
 class MetaMarkdown(Markdown):
@@ -10,7 +11,7 @@ class MetaMarkdown(Markdown):
 
     def __init__(
         self,
-        md_base: str,
+        md_base: PathLike,
         extensions: Optional[List[Union[str, Extension]]] = None,
         extension_configs: Optional[Dict[str, Dict]] = None,
     ):

@@ -25,36 +25,26 @@
 
 from contextlib import contextmanager
 from io import StringIO
-import itertools
 import sys
 import argparse
 import os
 import pathlib
 import subprocess
-from datetime import date, datetime
-from typing import Any, Dict, Union, Optional, Tuple, List
+from datetime import datetime
+from typing import Tuple
 from textwrap import dedent
-import warnings
-from markdown_include.include import (
-    INC_SYNTAX as MD_INCLUDE_RE,
-    MarkdownInclude,
-    IncludePreprocessor,
-)
 
 from ford.external_project import dump_modules
 import ford.fortran_project
 import ford.sourceform
 import ford.output
 import ford.utils
+from ford._typing import PathLike
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
 from ford.version import __version__
-from pathlib import Path
+from ford.settings import Settings, load_markdown_settings, load_toml_settings
 
-try:
-    import tomllib
-except ModuleNotFoundError:
-    import tomli as tomllib  # type: ignore[no-redef]
 
 __appname__ = "FORD"
 __author__ = "Chris MacMackin"
@@ -121,109 +111,6 @@ LICENSES = {
     "mit": '<a rel="license" href="https://opensource.org/licenses/MIT">MIT</a>',
     "": "",
 }
-
-
-DEFAULT_SETTINGS: Dict[str, Any] = {
-    "alias": [],
-    "author": None,
-    "author_description": None,
-    "author_pic": None,
-    "bitbucket": None,
-    "coloured_edges": False,
-    "copy_subdir": [],
-    "creation_date": "%Y-%m-%dT%H:%M:%S.%f%z",
-    "css": None,
-    "dbg": True,
-    "display": ["public", "protected"],
-    "doc_license": "",
-    "docmark": "!",
-    "docmark_alt": "*",
-    "email": None,
-    "encoding": "utf-8",
-    "exclude": [],
-    "exclude_dir": [],
-    "extensions": ["f90", "f95", "f03", "f08", "f15"],
-    "external": [],
-    "externalize": False,
-    "extra_filetypes": [],
-    "extra_mods": [],
-    "extra_vartypes": [],
-    "facebook": None,
-    "favicon": "default-icon",
-    "fixed_extensions": ["f", "for", "F", "FOR"],
-    "fixed_length_limit": True,
-    "force": False,
-    "fpp_extensions": ["F90", "F95", "F03", "F08", "F15", "F", "FOR"],
-    "github": None,
-    "gitlab": None,
-    "gitter_sidecar": None,
-    "google_plus": None,
-    "graph": False,
-    "graph_dir": None,
-    "graph_maxdepth": "10000",
-    "graph_maxnodes": "1000000000",
-    "hide_undoc": False,
-    "incl_src": True,
-    "include": [],
-    "license": "",
-    "linkedin": None,
-    "lower": False,
-    "macro": [],
-    "mathjax_config": None,
-    "max_frontpage_items": 10,
-    "md_extensions": [],
-    "media_dir": None,
-    "output_dir": "./doc",
-    "page_dir": None,
-    "parallel": 1,
-    "predocmark": ">",
-    "predocmark_alt": "|",
-    "preprocess": True,
-    "preprocessor": "cpp -traditional-cpp -E -D__GFORTRAN__",
-    "print_creation_date": False,
-    "privacy_policy_url": None,
-    "proc_internals": False,
-    "project": "Fortran Program",
-    "project_bitbucket": None,
-    "project_download": None,
-    "project_github": None,
-    "project_gitlab": None,
-    "project_sourceforge": None,
-    "project_url": "",
-    "project_website": None,
-    "quiet": False,
-    "revision": None,
-    "search": True,
-    "show_proc_parent": False,
-    "sort": "src",
-    "source": False,
-    "src_dir": ["./src"],
-    "summary": None,
-    "terms_of_service_url": None,
-    "twitter": None,
-    "version": None,
-    "warn": False,
-    "website": None,
-    "year": date.today().year,
-}
-
-
-def convert_to_bool(name: str, option: List[str]) -> bool:
-    """Convert value 'option' to a bool, with a nice error message on
-    failure. Expects a list from the markdown meta-data extension"""
-    if isinstance(option, bool):
-        return option
-
-    if len(option) > 1:
-        raise ValueError(
-            f"Could not convert option '{name}' to bool: expected a single value but got a list ({option})"
-        )
-    try:
-        return ford.utils.str_to_bool(option[0])
-    except ValueError:
-        raise ValueError(
-            f"Could not convert option '{name}' to bool: expected 'true'/'false', got: {option[0]}"
-        )
 
 
 def initialize():
@@ -384,41 +271,9 @@ def get_command_line_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_toml_settings(directory: Union[os.PathLike, str]) -> Optional[dict]:
-    """Load Ford settings from ``fpm.toml`` file in ``directory``
-
-    Settings should be in ``[extra.ford]`` table
-    """
-
-    filename = Path(directory) / "fpm.toml"
-
-    if not filename.is_file():
-        return None
-
-    with open(filename, "rb") as f:
-        settings = tomllib.load(f)
-
-    if "extra" not in settings:
-        return None
-
-    if "ford" not in settings["extra"]:
-        return None
-
-    proj_data = settings["extra"]["ford"]
-
-    # Ensure all the list settings are lists
-    for key, value in proj_data.items():
-        if isinstance(DEFAULT_SETTINGS.get(key, None), list) and (
-            not isinstance(value, list)
-        ):
-            proj_data[key] = [value]
-
-    return proj_data
-
-
 def load_settings(
-    proj_docs: str, directory: Union[os.PathLike, str] = pathlib.Path.cwd()
-) -> Tuple[str, dict, MetaMarkdown]:
+    proj_docs: str, directory: PathLike = pathlib.Path(".")
+) -> Tuple[str, Settings, MetaMarkdown]:
     """Load Ford settings from ``fpm.toml`` if present, or from
     metadata in supplied project file1
 
@@ -426,7 +281,7 @@ def load_settings(
     ----------
     proj_docs : str
         Text of project file
-    directory : Union[os.PathLike, str]
+    directory :
         Project directory
 
     Returns
@@ -443,38 +298,11 @@ def load_settings(
     proj_data = load_toml_settings(directory)
 
     if proj_data is None:
-        proj_data, proj_docs = ford.utils.meta_preprocessor(proj_docs)
-        # Some very basic type-casting from the parsed markdown metadata.
-        # Think if there is a safe  way to evaluate any expressions found in this list
-        for option, value in proj_data.items():
-            default_type = DEFAULT_SETTINGS.get(option, None)
-            if isinstance(default_type, bool):
-                proj_data[option] = convert_to_bool(option, value)
-            elif not isinstance(default_type, list):
-                # If it's not supposed to be a list, then it's probably supposed
-                # to be a single big block of text, like a description
-                proj_data[option] = "\n".join(value)
-
-        # Workaround for file inclusion in metadata
-        for option, value in proj_data.items():
-            if isinstance(value, str) and MD_INCLUDE_RE.match(value):
-                warnings.warn(
-                    "Including other files in project file metadata is deprecated and "
-                    "will stop working in a future release.\n"
-                    f"    {option}: {value}",
-                    FutureWarning,
-                )
-                md_base_dir = proj_data.get("md_base_dir", [str(directory)])[0]
-                configs = MarkdownInclude({"base_path": md_base_dir}).getConfigs()
-                include_preprocessor = IncludePreprocessor(None, configs)
-                proj_data[option] = "\n".join(
-                    include_preprocessor.run(value.splitlines())
-                )
+        proj_data, proj_docs = load_markdown_settings(directory, proj_docs)
 
     # Setup Markdown object with any user-specified extensions
     md = MetaMarkdown(
-        proj_data.get("md_base_dir", [str(directory)])[0],
-        extensions=proj_data.get("md_extensions", []),
+        proj_data.md_base_dir or directory, extensions=proj_data.md_extensions
     )
 
     # Now re-read project file with all extensions loaded
@@ -486,67 +314,24 @@ def load_settings(
 def parse_arguments(
     command_line_args: dict,
     proj_docs: str,
-    proj_data: dict,
-    directory: Union[os.PathLike, str] = pathlib.Path.cwd(),
+    proj_data: Settings,
+    directory: PathLike = pathlib.Path("."),
 ):
     """Consolidates arguments from the command line and from the project
     file, and then normalises them how the rest of the code expects
     """
-    try:
-        import multiprocessing
-
-        ncpus = str(multiprocessing.cpu_count())
-    except (ImportError, NotImplementedError):
-        ncpus = "0"
-
-    DEFAULT_SETTINGS["parallel"] = ncpus
 
     # Get the default options, and any over-rides, straightened out
-    for option, default in DEFAULT_SETTINGS.items():
-        args_option = command_line_args.get(option, None)
-        if args_option is not None:
-            proj_data[option] = args_option
-        elif option in proj_data:
-            continue
-        else:
-            proj_data[option] = default
+    for key, value in command_line_args.items():
+        if value is not None:
+            setattr(proj_data, key, value)
 
-    # Evaluate paths relative to project file location
-    base_dir = pathlib.Path(directory).absolute()
-    proj_data["base_dir"] = base_dir
+    proj_data.normalise_paths(directory)
 
-    for var in (
-        "page_dir",
-        "output_dir",
-        "graph_dir",
-        "media_dir",
-        "css",
-        "mathjax_config",
-        "src_dir",
-        "exclude_dir",
-        "include",
-    ):
-        if proj_data[var] is None:
-            continue
-        if isinstance(proj_data[var], list):
-            proj_data[var] = [
-                ford.utils.normalise_path(base_dir, p) for p in proj_data[var]
-            ]
-        else:
-            proj_data[var] = ford.utils.normalise_path(base_dir, proj_data[var])
-
-    if proj_data["favicon"].strip() != DEFAULT_SETTINGS["favicon"]:
-        proj_data["favicon"] = ford.utils.normalise_path(base_dir, proj_data["favicon"])
-
-    proj_data["display"] = [item.lower() for item in proj_data["display"]]
-    proj_data["creation_date"] = datetime.now().strftime(proj_data["creation_date"])
-    proj_data["relative"] = proj_data["project_url"] == ""
-    proj_data["extensions"] += [
-        ext for ext in proj_data["fpp_extensions"] if ext not in proj_data["extensions"]
-    ]
+    proj_data.creation_date = datetime.now().strftime(proj_data.creation_date)
     # Parse file extensions and comment characters for extra filetypes
     extdict = {}
-    for ext in proj_data["extra_filetypes"]:
+    for ext in proj_data.extra_filetypes:
         sp = ext.split()
         if len(sp) < 2:
             continue
@@ -554,38 +339,30 @@ def parse_arguments(
             extdict[sp[0]] = sp[1]  # (comment_char) only
         else:
             extdict[sp[0]] = (sp[1], sp[2])  # (comment_char and lexer_str)
-    proj_data["extra_filetypes"] = extdict
+    proj_data.extra_filetypes = extdict
 
     # Make sure no src_dir is contained within output_dir
-    for srcdir in proj_data["src_dir"]:
+    for srcdir in proj_data.src_dir:
         # In Python 3.9+ we can use pathlib.Path.is_relative_to
-        if proj_data["output_dir"] in (srcdir, *srcdir.parents):
+        if proj_data.output_dir in (srcdir, *srcdir.parents):
             raise ValueError(
-                f"Source directory {srcdir} is a subdirectory of output directory {proj_data['output_dir']}."
-            )
-
-    # Check that none of the docmarks are the same
-    docmarks = ["docmark", "predocmark", "docmark_alt", "predocmark_alt"]
-    for first, second in itertools.combinations(docmarks, 2):
-        if proj_data[first] == proj_data[second] != "":
-            raise ValueError(
-                f"{first} ('{proj_data[first]}') and {second} ('{proj_data[second]}') are the same"
+                f"Source directory {srcdir} is a subdirectory of output directory {proj_data.output_dir}."
             )
 
     # Add gitter sidecar if specified in metadata
-    if proj_data["gitter_sidecar"] is not None:
+    if proj_data.gitter_sidecar is not None:
         proj_docs += f"""
         <script>
             ((window.gitter = {{}}).chat = {{}}).options = {{
-            room: '{proj_data["gitter_sidecar"].strip()}'
+            room: '{proj_data.gitter_sidecar.strip()}'
             }};
         </script>
         <script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
         """
+
     # Handle preprocessor:
-    if proj_data["preprocess"]:
-        proj_data["preprocessor"] = proj_data["preprocessor"].split()
-        command = proj_data["preprocessor"] + [os.devnull]
+    if proj_data.preprocess:
+        command = proj_data.preprocessor.split() + [os.devnull]
         # Check whether preprocessor works (reading nothing from stdin)
         try:
             subprocess.run(command, check=True, capture_output=True, text=True)
@@ -602,32 +379,32 @@ def parse_arguments(
                 )
             )
     else:
-        proj_data["fpp_extensions"] = []
+        proj_data.fpp_extensions = []
 
     # Get the correct license for project license or use value as a custom license value.
     try:
-        proj_data["license"] = LICENSES[proj_data["license"].lower()]
+        proj_data.license = LICENSES[proj_data.license.lower()]
     except KeyError:
         print(
-            f'Notice: license "{proj_data["license"]}" is not a recognized value, using the value as a custom license value.'
+            f'Notice: license "{proj_data.license}" is not a recognized value, using the value as a custom license value.'
         )
     # Get the correct license for doc license(website or doc) or use value as a custom license value.
     try:
-        proj_data["doc_license"] = LICENSES[proj_data["doc_license"].lower()]
+        proj_data.doc_license = LICENSES[proj_data.doc_license.lower()]
     except KeyError:
         print(
-            f'Notice: doc_license "{proj_data["doc_license"]}" is not a recognized value, using the value as a custom license value.'
+            f'Notice: doc_license "{proj_data.doc_license}" is not a recognized value, using the value as a custom license value.'
         )
 
     return proj_data, proj_docs
 
 
-def main(proj_data, proj_docs, md):
+def main(proj_data: Settings, proj_docs: str, md: MetaMarkdown):
     """
     Main driver of FORD.
     """
-    if proj_data["relative"]:
-        proj_data["project_url"] = "."
+    if proj_data.relative:
+        proj_data.project_url = "."
     # Parse the files in your project
     project = ford.fortran_project.Project(proj_data)
     if len(project.files) < 1:
@@ -637,52 +414,47 @@ def main(proj_data, proj_docs, md):
         sys.exit(1)
 
     # Define core macros:
-    ford.utils.register_macro(f"url = {proj_data['project_url']}")
-    ford.utils.register_macro(
-        f'media = {os.path.join(proj_data["project_url"], "media")}'
-    )
-    ford.utils.register_macro(
-        f'page = {os.path.join(proj_data["project_url"], "page")}'
-    )
+    ford.utils.register_macro(f"url = {proj_data.project_url}")
+    ford.utils.register_macro(f'media = {os.path.join(proj_data.project_url, "media")}')
+    ford.utils.register_macro(f'page = {os.path.join(proj_data.project_url, "page")}')
 
     # Register the user defined aliases:
-    for alias in proj_data["alias"]:
+    for alias in proj_data.alias:
         ford.utils.register_macro(alias)
 
     # Convert the documentation from Markdown to HTML. Make sure to properly
     # handle LateX and metadata.
-    base_url = ".." if proj_data["relative"] else proj_data["project_url"]
+    base_url = ".." if proj_data.relative else proj_data.project_url
     project.markdown(md, base_url)
     project.correlate()
     project.make_links(base_url)
 
     # Convert summaries and descriptions to HTML
-    if proj_data["relative"]:
+    if proj_data.relative:
         ford.sourceform.set_base_url(".")
-    if proj_data["summary"] is not None:
-        proj_data["summary"] = md.convert(proj_data["summary"])
-        proj_data["summary"] = ford.utils.sub_links(
-            ford.utils.sub_macros(proj_data["summary"]), project
+    if proj_data.summary is not None:
+        proj_data.summary = md.convert(proj_data.summary)
+        proj_data.summary = ford.utils.sub_links(
+            ford.utils.sub_macros(proj_data.summary), project
         )
-    if proj_data["author_description"] is not None:
-        proj_data["author_description"] = md.convert(proj_data["author_description"])
-        proj_data["author_description"] = ford.utils.sub_links(
-            ford.utils.sub_macros(proj_data["author_description"]),
+    if proj_data.author_description is not None:
+        proj_data.author_description = md.convert(proj_data.author_description)
+        proj_data.author_description = ford.utils.sub_links(
+            ford.utils.sub_macros(proj_data.author_description),
             project,
         )
     proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(proj_docs), project)
     # Process any pages
-    if proj_data["page_dir"] is not None:
+    if proj_data.page_dir is not None:
         page_tree = get_page_tree(
-            pathlib.Path(proj_data["page_dir"]),
-            proj_data["copy_subdir"],
+            pathlib.Path(proj_data.page_dir),
+            proj_data.copy_subdir,
             md,
-            encoding=proj_data["encoding"],
+            encoding=proj_data.encoding,
         )
         print()
     else:
         page_tree = None
-    proj_data["pages"] = page_tree
 
     # Produce the documentation using Jinja2. Output it to the desired location
     # and copy any files that are needed (CSS, JS, images, fonts, source files,
@@ -691,10 +463,10 @@ def main(proj_data, proj_docs, md):
     docs = ford.output.Documentation(proj_data, proj_docs_, project, page_tree)
     docs.writeout()
 
-    if proj_data["externalize"]:
+    if proj_data.externalize:
         # save FortranModules to a JSON file which then can be used
         # for external modules
-        dump_modules(project, path=proj_data["output_dir"])
+        dump_modules(project, path=proj_data.output_dir)
 
     return 0
 
@@ -702,7 +474,7 @@ def main(proj_data, proj_docs, md):
 def run():
     proj_data, proj_docs, md = initialize()
 
-    f = StringIO() if proj_data["quiet"] else sys.stdout
+    f = StringIO() if proj_data.quiet else sys.stdout
     with stdout_redirector(f):
         main(proj_data, proj_docs, md)
 

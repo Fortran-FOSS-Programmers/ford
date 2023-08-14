@@ -27,12 +27,13 @@ import sys
 import re
 import ford.utils
 import subprocess
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Sequence
 from io import StringIO, TextIOWrapper
 
 import os.path
 
 from ford.fixed2free2 import convertToFree
+from ford._typing import PathLike
 
 
 def _contains_unterminated_string(string: str) -> bool:
@@ -115,7 +116,7 @@ class FortranReader:
         length_limit: bool = True,
         preprocessor: Optional[List[str]] = None,
         macros: Optional[List[str]] = None,
-        inc_dirs: Optional[List[str]] = None,
+        inc_dirs: Optional[Sequence[PathLike]] = None,
         encoding: str = "utf-8",
     ):
         # Check that none of the docmarks are the same

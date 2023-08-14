@@ -12,6 +12,7 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
+   ford.external_project
    ford.fixed2free2
    ford.fortran_project
    ford.graphs
@@ -22,6 +23,8 @@ Submodules
    ford.output
    ford.pagetree
    ford.reader
+   ford.settings
    ford.sourceform
    ford.tipue_search
    ford.utils
+   ford.version
