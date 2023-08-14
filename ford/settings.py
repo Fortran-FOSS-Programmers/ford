@@ -13,7 +13,7 @@ from typing import (
     Tuple,
 )
 import warnings
-from markdown_include.include import ( # type: ignore[import]
+from markdown_include.include import (  # type: ignore[import]
     INC_SYNTAX as MD_INCLUDE_RE,
     MarkdownInclude,
     IncludePreprocessor,
