@@ -188,9 +188,6 @@ class FortranBase:
             self.display = []
             self.settings = ProjectSettings()
 
-        self._initialize(first_line)
-        del self.strings
-
         self.doc_list = read_docstring(source, self.settings.docmark)
         self.hierarchy = self._make_hierarchy()
         self.read_metadata()
@@ -199,6 +196,9 @@ class FortranBase:
         # public procedures that are also part of a generic interface), so we
         # need to make sure we don't convert the docstrings twice
         self.source_file._to_be_markdowned.append(self)
+
+        self._initialize(first_line)
+        del self.strings
 
     def _make_hierarchy(self) -> List[FortranContainer]:
         """Create list of ancestor entities"""
@@ -2068,6 +2068,9 @@ class FortranInterface(FortranContainer):
         self.abstract = bool(line.group(1))
         if self.generic and self.abstract:
             raise Exception(f"Generic interface '{self.name}' can not be abstract")
+
+        if self.abstract:
+            self.source_file._to_be_markdowned.remove(self)
 
     def correlate(self, project):
         self.all_absinterfaces = self.parent.all_absinterfaces
