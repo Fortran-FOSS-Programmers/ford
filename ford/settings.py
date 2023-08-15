@@ -181,6 +181,9 @@ class ProjectSettings:
         self.display = [item.lower() for item in self.display]
         self.extensions = list(set(self.extensions) | set(self.fpp_extensions))
 
+        if self.relative:
+            self.project_url = "."
+
         # Check that none of the docmarks are the same
         docmarks = ["docmark", "predocmark", "docmark_alt", "predocmark_alt"]
         for first, second in combinations(docmarks, 2):

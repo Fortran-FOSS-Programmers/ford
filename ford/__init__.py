@@ -403,8 +403,7 @@ def main(proj_data: ProjectSettings, proj_docs: str, md: MetaMarkdown):
     """
     Main driver of FORD.
     """
-    if proj_data.relative:
-        proj_data.project_url = "."
+
     # Parse the files in your project
     project = ford.fortran_project.Project(proj_data)
     if len(project.files) < 1:
