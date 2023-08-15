@@ -76,7 +76,7 @@ def convert_to_bool(name: str, option: List[str]) -> bool:
 
 @dataclass
 class ProjectSettings:
-    alias: List[str] = field(default_factory=list)
+    alias: Dict[str, str] = field(default_factory=dict)
     author: Optional[str] = None
     author_description: Optional[str] = None
     author_pic: Optional[str] = None
@@ -97,7 +97,7 @@ class ProjectSettings:
     extensions: List[str] = field(
         default_factory=lambda: ["f90", "f95", "f03", "f08", "f15"]
     )
-    external: list = field(default_factory=list)
+    external: Dict[str, str] = field(default_factory=dict)
     externalize: bool = False
     extra_filetypes: list = field(default_factory=list)
     extra_mods: list = field(default_factory=list)
@@ -294,11 +294,41 @@ def convert_types_from_metapreprocessor(cls: Type, settings: Dict[str, Any]):
             is_same_type(default_type, str) or is_same_type(default_type, Path)
         ) and isinstance(value, list):
             settings[key] = "\n".join(value)
+        elif (get_origin(default_type) == dict) and not isinstance(value, dict):
+            if isinstance(value, str):
+                value = [value]
+
+            settings[key] = _parse_to_dict(value, name=key)
 
     for key in keys_to_drop:
         settings.pop(key)
 
     return settings
+
+
+def _parse_to_dict(string_list: List[str], name: str) -> Dict[str, str]:
+    """Parse a list of strings of form "key = value" into a dict
+
+    Parameters
+    ----------
+    string_list : List[str]
+        List of strings to parse
+    name : str
+        Name in parent settings object, only used for error message
+
+    """
+
+    result = {}
+    for string in string_list:
+        try:
+            key, value = string.split("=", 1)
+        except ValueError:
+            raise RuntimeError(
+                f"Error setting option {name!r}: expected '=' in {string!r}"
+            )
+
+        result[key.strip()] = value.strip()
+    return result
 
 
 @dataclass
