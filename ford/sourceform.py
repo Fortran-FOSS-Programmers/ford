@@ -367,11 +367,9 @@ class FortranBase:
         # Remove any common leading whitespace from the docstring
         # so that the markdown conversion is a bit more robust
         self.doc = md.reset().convert(textwrap.dedent("\n".join(self.doc_list)))
-        self.doc = ford.utils.sub_macros(self.doc)
 
         if self.meta.summary is not None:
             self.meta.summary = md.convert("\n".join(self.meta.summary))
-            self.meta.summary = ford.utils.sub_macros(self.meta.summary)
         elif paragraph := PARA_CAPTURE_RE.search(self.doc):
             # If there is no stand-alone webpage for this item, e.g.
             # an internal routine, make the whole doc blob appear,

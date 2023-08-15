@@ -73,17 +73,7 @@ def monkeymodule(request):
 
 
 @pytest.fixture(scope="module")
-def restore_macros_module():
-    """pytest won't let us use function-scope fixtures in module-scope
-    fixtures, so we need to reimplement this with module scope"""
-
-    old_macros = copy.copy(ford.utils._MACRO_DICT)
-    yield
-    ford.utils._MACRO_DICT = copy.copy(old_macros)
-
-
-@pytest.fixture(scope="module")
-def external_project(tmp_path_factory, monkeymodule, restore_macros_module):
+def external_project(tmp_path_factory, monkeymodule):
     """Generate the documentation for an "external" project and then
     for a "top level" one that uses the first.
 

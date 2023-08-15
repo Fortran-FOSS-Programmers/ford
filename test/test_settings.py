@@ -56,7 +56,13 @@ def test_settings_type_conversion_from_markdown():
     assert settings.summary == "first\nsecond"
     assert settings.preprocess is True
     assert settings.max_frontpage_items == 4
-    assert settings.alias == {"a": "b", "c": "d"}
+    assert settings.alias == {
+        "a": "b",
+        "c": "d",
+        "url": ".",
+        "media": "media",
+        "page": "page",
+    }
 
 
 def test_entity_settings_from_project():

@@ -38,12 +38,6 @@ if TYPE_CHECKING:
 LINK_RE = re.compile(r"\[\[(\w+(?:\.\w+)?)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)?\]\]")
 
 
-# Dictionary for all macro definitions to be used in the documentation.
-# Each key of the form |name| will be replaced by the value found in the
-# dictionary in sub_macros.
-_MACRO_DICT: Dict[str, str] = {}
-
-
 def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
     """
     By default takes a string starting with an open parenthesis and returns the portion
@@ -307,48 +301,6 @@ def sub_links(string: str, project: Project) -> str:
 
     # Get information from links (need to build an RE)
     string = LINK_RE.sub(convert_link, string)
-    return string
-
-
-def register_macro(string):
-    """Register a new macro definition of the form ``key = value``.
-    In the documentation ``|key|`` can then be used to represent value.
-    If key is already defined in the list of macros an `RuntimeError`
-    will be raised.
-
-    The function returns a tuple of the form ``(value, key)``, where
-    key is ``None`` if no key definition is found in the string.
-
-    """
-
-    if "=" not in string:
-        raise RuntimeError(f"Error, no alias name provided for {string}")
-
-    chunks = string.split("=", 1)
-    key = f"|{chunks[0].strip()}|"
-    val = chunks[1].strip()
-
-    if key in _MACRO_DICT and val != _MACRO_DICT[key]:
-        # The macro is already defined. Do not overwrite it!
-        # Can be ignored if the definition is the same...
-        raise RuntimeError(
-            f'Could not register macro "{key}" as "{val}"'
-            f'because it is already defined as "{_MACRO_DICT[key]}"'
-        )
-
-    # Everything OK, add the macro definition to the dict.
-    _MACRO_DICT[key] = val
-
-    return (val, key)
-
-
-def sub_macros(string):
-    """
-    Replaces macros in documentation with their appropriate values. These macros
-    are used for things like providing URLs.
-    """
-    for key, val in _MACRO_DICT.items():
-        string = string.replace(key, val)
     return string
 
 

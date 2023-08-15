@@ -18,7 +18,6 @@ from ford.sourceform import (
     ExternalVariable,
     ExternalBoundProcedure,
 )
-from ford.utils import register_macro
 from ford.version import __version__
 
 
@@ -162,9 +161,7 @@ def load_external_modules(project):
     """Load external modules from JSON file into an existing project"""
 
     # get the external modules from the external URLs
-    for urldef in project.external:
-        # get the external modules from the external URL
-        url, short = register_macro(urldef)
+    for url in project.external.values():
         remote = re.match("https?://", url)
         try:
             if remote:

@@ -184,6 +184,16 @@ class ProjectSettings:
         if self.relative:
             self.project_url = "."
 
+        # Define some core macros
+        url_path = Path(self.project_url)
+        self.alias.update(
+            {
+                "url": self.project_url,
+                "media": str(url_path / "media"),
+                "page": str(url_path / "page"),
+            }
+        )
+
         # Check that none of the docmarks are the same
         docmarks = ["docmark", "predocmark", "docmark_alt", "predocmark_alt"]
         for first, second in combinations(docmarks, 2):
