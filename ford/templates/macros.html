@@ -771,27 +771,27 @@
 
 
 {% macro meta_list(meta) %}
-  {% if meta['author'] or meta['date'] or meta['license'] or meta['version'] or meta['category'] %}
+  {% if meta.author or meta.date or meta.license or meta.version or meta.category %}
     <dl class="dl-horizontal">
-      {% if meta['author'] %}
-        <dt>Author</dt><dd>{{ meta['author'] }}</dd>
+      {% if meta.author %}
+        <dt>Author</dt><dd>{{ meta.author }}</dd>
       {% endif %}
-      {% if meta['date'] %}
-        <dt>Date</dt><dd>{{ meta['date'] }}</dd>
+      {% if meta.date %}
+        <dt>Date</dt><dd>{{ meta.date }}</dd>
       {% endif %}
-      {% if meta['license'] %}
-        <dt>License</dt><dd>{{ meta['license'] }}</dd>
+      {% if meta.license %}
+        <dt>License</dt><dd>{{ meta.license }}</dd>
       {% elif projectData['license'] %}
         <dt>License</dt><dd>{{ projectData['license'] }}</dd>
       {% endif %}
-      {% if meta['since'] %}
-        <dt>Since</dt><dd>{{ meta['since'] }}</dd>
+      {% if meta.since %}
+        <dt>Since</dt><dd>{{ meta.since }}</dd>
       {% endif %}
-      {% if meta['version'] %}
-        <dt>Version</dt><dd>{{ meta['version'] }}</dd>
+      {% if meta.version %}
+        <dt>Version</dt><dd>{{ meta.version }}</dd>
       {% endif %}
-      {% if meta['category'] %}
-        <dt>Category</dt><dd>{{ meta['category'] }}</dd>
+      {% if meta.category %}
+        <dt>Category</dt><dd>{{ meta.category }}</dd>
       {% endif %}
     </dl>
   {% endif %}

@@ -47,7 +47,7 @@ from ford.sourceform import (
     ExternalVariable,
     FortranProcedure,
 )
-from ford.settings import Settings
+from ford.settings import ProjectSettings
 
 
 INTRINSIC_MODS = {
@@ -69,7 +69,7 @@ class Project:
     project which is to be documented.
     """
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: ProjectSettings):
         self.settings = settings
         self.name = settings.project
         self.external = settings.external

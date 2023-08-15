@@ -1,5 +1,5 @@
 from ford.fortran_project import Project
-from ford import Settings
+from ford import ProjectSettings
 from ford.utils import normalise_path
 from ford.sourceform import FortranVariable
 
@@ -19,7 +19,7 @@ def copy_fortran_file(tmp_path):
         filename = src_dir / "test.f90"
         with open(filename, "w") as f:
             f.write(data)
-        return Settings(src_dir=src_dir)
+        return ProjectSettings(src_dir=src_dir)
 
     return copy_file
 
@@ -746,7 +746,9 @@ def test_exclude_dir(tmp_path):
     with open(exclude_dir / "exclude.f90", "w") as f:
         f.write("program bar\nend program")
 
-    settings = Settings(src_dir=tmp_path, exclude_dir=normalise_path(tmp_path, "sub1"))
+    settings = ProjectSettings(
+        src_dir=tmp_path, exclude_dir=normalise_path(tmp_path, "sub1")
+    )
     project = Project((settings))
 
     program_names = {program.name for program in project.programs}
@@ -764,7 +766,7 @@ def test_exclude(tmp_path):
     with open(exclude_dir / "exclude.f90", "w") as f:
         f.write("program bar\nend program")
 
-    settings = Settings(src_dir=tmp_path, exclude="exclude.f90")
+    settings = ProjectSettings(src_dir=tmp_path, exclude="exclude.f90")
     project = Project((settings))
 
     program_names = {program.name for program in project.programs}

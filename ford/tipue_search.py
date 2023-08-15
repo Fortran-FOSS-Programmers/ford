@@ -41,6 +41,8 @@ from codecs import open
 from typing import Dict, List
 from urllib.parse import urljoin
 
+from ford.settings import EntitySettings
+
 
 class Tipue_Search_JSON_Generator:
     def __init__(self, output_path: os.PathLike, project_url: str):
@@ -50,7 +52,7 @@ class Tipue_Search_JSON_Generator:
         self.only_text = SoupStrainer("div", id="text")
         self.only_title = SoupStrainer("title")
 
-    def create_node(self, html, loc, meta={}):
+    def create_node(self, html, loc, meta: EntitySettings):
         try:
             soup = BeautifulSoup(html, "lxml", parse_only=self.only_text)
             soup_title = BeautifulSoup(html, "lxml", parse_only=self.only_title)
@@ -76,10 +78,7 @@ class Tipue_Search_JSON_Generator:
             page_title = ""
 
         # Should set default category?
-        if "category" in meta:
-            page_category = meta["category"]
-        else:
-            page_category = ""
+        page_category = meta.category or ""
 
         if self.siteurl != "":
             page_url = urljoin(self.siteurl, loc)

@@ -70,7 +70,7 @@ def test_meta_preprocessor():
 
     meta, doc = meta_preprocessor(text)
 
-    assert doc == "no more metadata"
+    assert doc == ["no more metadata"]
     assert meta == {
         "key1": ["value1"],
         "key2": ["value2", "value2a"],

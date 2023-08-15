@@ -7,13 +7,13 @@ from ford.sourceform import (
     line_to_variables,
 )
 from ford.fortran_project import find_used_modules
-from ford import Settings
+from ford import ProjectSettings
+from ford._markdown import MetaMarkdown
 
 from dataclasses import dataclass, field
 from typing import Union, List, Optional
 from itertools import chain
 
-import markdown
 import pytest
 
 
@@ -26,8 +26,8 @@ class FakeProject:
 def parse_fortran_file(copy_fortran_file):
     def parse_file(data, **kwargs):
         filename = copy_fortran_file(data)
-        settings = Settings(**kwargs)
-        return FortranSourceFile(str(filename), (settings))
+        settings = ProjectSettings(**kwargs)
+        return FortranSourceFile(str(filename), settings)
 
     return parse_file
 
@@ -1234,9 +1234,11 @@ class FakeSource:
 @dataclass
 class FakeParent:
     strings: List[str] = field(default_factory=lambda: ['"Hello"', "'World'"])
-    settings: Settings = field(default_factory=Settings)
+    settings: ProjectSettings = field(default_factory=ProjectSettings)
     obj: str = "module"
     parent = None
+    display: List[str] = field(default_factory=list)
+    _to_be_markdowned: List[FortranBase] = field(default_factory=list)
 
 
 def _make_list_str() -> List[str]:
@@ -1331,6 +1333,7 @@ class FakeVariable:
 def test_line_to_variable(line, expected_variables):
     variables = line_to_variables(FakeSource(), line, "public", FakeParent())
     attributes = expected_variables[0].__dict__
+    attributes.pop("parent")
 
     for variable, expected in zip(variables, expected_variables):
         for attr in attributes:
@@ -1339,7 +1342,6 @@ def test_line_to_variable(line, expected_variables):
             assert variable_attr == expected_attr, attr
 
     if len(expected_variables) > 1:
-        attributes.pop("parent")
         for attr in attributes:
             attribute = getattr(variable, attr)
             if not isinstance(attribute, list):
@@ -1363,14 +1365,7 @@ def test_markdown_header_bug286(parse_fortran_file):
     """
 
     fortran_file = parse_fortran_file(data)
-    md_ext = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html5", extension_configs={}
-    )
+    md = MetaMarkdown()
 
     subroutine = fortran_file.modules[0].subroutines[0]
     subroutine.markdown(md, None)
@@ -1395,14 +1390,7 @@ def test_markdown_codeblocks_bug286(parse_fortran_file):
     """
 
     fortran_file = parse_fortran_file(data)
-    md_ext = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html5", extension_configs={}
-    )
+    md = MetaMarkdown()
 
     subroutine = fortran_file.modules[0].subroutines[0]
     subroutine.markdown(md, None)
@@ -1430,20 +1418,12 @@ def test_markdown_meta_reset(parse_fortran_file):
     """
 
     fortran_file = parse_fortran_file(data)
-    md_ext = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html5", extension_configs={}
-    )
-
+    md = MetaMarkdown()
     module = fortran_file.modules[0]
     module.markdown(md, None)
-    assert module.meta["version"] == "0.1.0"
-    assert module.subroutines[0].meta["author"] == "Test name"
-    assert "author" not in module.subroutines[1].meta
+    assert module.meta.version == "0.1.0"
+    assert module.subroutines[0].meta.author == "Test name"
+    assert module.subroutines[1].meta.author is None
 
 
 def test_multiline_attributes(parse_fortran_file):
@@ -1485,20 +1465,13 @@ def test_markdown_source_meta(parse_fortran_file):
     end subroutine with_source
     """
 
-    md_ext = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html5", extension_configs={}
-    )
+    md = MetaMarkdown()
 
     fortran_file = parse_fortran_file(data)
     subroutine = fortran_file.subroutines[0]
     subroutine.markdown(md, None)
 
-    assert subroutine.meta["source"]
+    assert subroutine.meta.source is True
     assert "with_source" in subroutine.src
 
 
@@ -1511,20 +1484,12 @@ def test_markdown_source_settings(parse_fortran_file):
     end subroutine with_source
     """
 
-    md_ext = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html5", extension_configs={}
-    )
-
+    md = MetaMarkdown()
     fortran_file = parse_fortran_file(data, source=True)
     subroutine = fortran_file.subroutines[0]
     subroutine.markdown(md, None)
 
-    assert subroutine.meta["source"]
+    assert subroutine.meta.source is True
     assert "with_source" in subroutine.src
 
 

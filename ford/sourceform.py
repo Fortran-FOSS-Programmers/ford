@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 import re
 import os.path
 import pathlib
@@ -45,7 +45,7 @@ from ford.reader import FortranReader
 import ford.utils
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
-from ford.settings import Settings
+from ford.settings import ProjectSettings, EntitySettings
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
@@ -182,17 +182,23 @@ class FortranBase:
         if self.parent:
             self.parobj: Optional[str] = self.parent.obj
             self.display: List[str] = self.parent.display
-            self.settings: Settings = self.parent.settings
+            self.settings: ProjectSettings = self.parent.settings
         else:
             self.parobj = None
             self.display = []
-            self.settings = Settings()
-
-        self._initialize(first_line)
-        del self.strings
+            self.settings = ProjectSettings()
 
         self.doc_list = read_docstring(source, self.settings.docmark)
         self.hierarchy = self._make_hierarchy()
+        self.read_metadata()
+
+        # Some entities are reachable from more than one parent (for example,
+        # public procedures that are also part of a generic interface), so we
+        # need to make sure we don't convert the docstrings twice
+        self.source_file._to_be_markdowned.append(self)
+
+        self._initialize(first_line)
+        del self.strings
 
     def _make_hierarchy(self) -> List[FortranContainer]:
         """Create list of ancestor entities"""
@@ -308,127 +314,89 @@ class FortranBase:
         """
         return self.ident < other.ident
 
-    def _ensure_meta_key_set(self, key: str, transform=None, default=None):
-        """Ensure that ``key`` is set in ``self.meta``, after applying
-        an optional ``transform``.
+    def _set_display(self):
+        if self.parent:
+            self.display = self.parent.display
 
-        Use ``default`` if ``key`` is not in ``self.settings``.
-        """
-        # FIXME: is this still needed?
-        value = self.meta.get(key, getattr(self.settings, key, default))
-        self.meta[key] = transform(value) if transform else value
+        tmp = [item.lower() for item in self.meta.display]
+        if isinstance(self, FortranSourceFile):
+            while "none" in tmp:
+                tmp.remove("none")
+
+        if not tmp:
+            return
+
+        if "none" in tmp:
+            self.display = []
+        elif "public" not in tmp and "private" not in tmp and "protected" not in tmp:
+            return
+        else:
+            self.display = tmp
+
+    def read_metadata(self):
+        """Read the metadata from an entity's docstring"""
+
+        self.meta = EntitySettings.from_project_settings(self.settings)
+
+        if len(self.doc_list) > 0:
+            if len(self.doc_list) == 1 and ":" in self.doc_list[0]:
+                words = self.doc_list[0].split(":")[0].strip()
+                field_names = [field.name for field in fields(EntitySettings)]
+                if words.lower() not in field_names:
+                    self.doc_list.insert(0, "")
+
+            meta, self.doc_list = ford.utils.meta_preprocessor(self.doc_list)
+            self.meta.update(meta)
+        else:
+            if self.settings.warn and self.obj not in ("sourcefile", "genericsource"):
+                # TODO: Add ability to print line number where this item is in file
+                print(
+                    f"Warning: Undocumented {self.obj} '{self.name}' in file '{self.filename}'"
+                )
+
+        self._set_display()
 
     def markdown(self, md: MetaMarkdown, project: Project):
         """
         Process the documentation with Markdown to produce HTML.
         """
-        if len(self.doc_list) > 0:
-            if len(self.doc_list) == 1 and ":" in self.doc_list[0]:
-                words = self.doc_list[0].split(":")[0].strip()
-                if words.lower() not in [
-                    "author",
-                    "date",
-                    "license",
-                    "version",
-                    "category",
-                    "summary",
-                    "deprecated",
-                    "display",
-                    "graph",
-                ]:
-                    self.doc_list.insert(0, "")
-                self.doc_list.append("")
-            self.meta, docs = ford.utils.meta_preprocessor(self.doc_list)
-            # Remove any common leading whitespace from the docstring
-            # so that the markdown conversion is a bit more robust
-            self.doc = md.reset().convert(textwrap.dedent(docs))
-        else:
-            if (
-                self.settings.warn
-                and self.obj != "sourcefile"
-                and self.obj != "genericsource"
-            ):
-                # TODO: Add ability to print line number where this item is in file
-                print(
-                    f"Warning: Undocumented {self.obj} '{self.name}' in file '{self.filename}'"
-                )
-            self.doc = ""
-            self.meta = {}
 
-        if self.parent:
-            self.display = self.parent.display
-
-        for key in self.meta:
-            if key == "display":
-                tmp = [item.lower() for item in self.meta[key]]
-                if type(self) == FortranSourceFile:
-                    while "none" in tmp:
-                        tmp.remove("none")
-                if not tmp:
-                    continue
-                elif "none" in tmp:
-                    self.display = []
-                elif (
-                    "public" not in tmp
-                    and "private" not in tmp
-                    and "protected" not in tmp
-                ):
-                    pass
-                else:
-                    self.display = tmp
-            elif len(self.meta[key]) == 1:
-                self.meta[key] = self.meta[key][0]
-            elif key == "summary":
-                self.meta[key] = "\n".join(self.meta[key])
         if hasattr(self, "num_lines"):
-            self.meta["num_lines"] = self.num_lines
+            self.meta.num_lines = self.num_lines
 
+        # Remove any common leading whitespace from the docstring
+        # so that the markdown conversion is a bit more robust
+        self.doc = md.reset().convert(textwrap.dedent("\n".join(self.doc_list)))
         self.doc = ford.utils.sub_macros(self.doc)
 
-        if self.meta.get("summary", None) is not None:
-            self.meta["summary"] = md.convert(self.meta["summary"])
-            self.meta["summary"] = ford.utils.sub_macros(self.meta["summary"])
+        if self.meta.summary is not None:
+            self.meta.summary = md.convert("\n".join(self.meta.summary))
+            self.meta.summary = ford.utils.sub_macros(self.meta.summary)
         elif paragraph := PARA_CAPTURE_RE.search(self.doc):
             # If there is no stand-alone webpage for this item, e.g.
             # an internal routine, make the whole doc blob appear,
             # without the link to "more..."
-            self.meta["summary"] = paragraph.group() if self.get_url() else self.doc
+            self.meta.summary = paragraph.group() if self.get_url() else self.doc
         else:
-            self.meta["summary"] = ""
-        if self.meta["summary"].strip() != self.doc.strip():
-            self.meta[
-                "summary"
-            ] += f'<a href="{self.get_url()}" class="pull-right"><emph>Read more&hellip;</emph></a>'
+            self.meta.summary = ""
 
-        self._ensure_meta_key_set("graph", ford.utils.str_to_bool)
-        self._ensure_meta_key_set("graph_maxdepth")
-        self._ensure_meta_key_set("graph_maxnodes")
-        self._ensure_meta_key_set("deprecated", ford.utils.str_to_bool, False)
+        if self.meta.summary.strip() != self.doc.strip():
+            self.meta.summary += f'<a href="{self.get_url()}" class="pull-right"><emph>Read more&hellip;</emph></a>'
 
-        if self.obj in ["proc", "type", "program"]:
-            self._ensure_meta_key_set("source", ford.utils.str_to_bool)
-            if self.meta["source"]:
-                obj = getattr(self, "proctype", self.obj).lower()
-                regex = re.compile(
-                    self.SRC_CAPTURE_STR.format(obj, self.name),
-                    re.IGNORECASE | re.DOTALL | re.MULTILINE,
-                )
-                if match := regex.search(self.source_file.raw_src):
-                    self.src = highlight(match.group(), FortranLexer(), HtmlFormatter())
-                else:
-                    self.src = ""
-                    if self.settings.warn:
-                        print(
-                            f"Warning: Could not extract source code for {self.obj} '{self.name}' in file '{self.filename}'"
-                        )
-
-        if self.obj == "proc":
-            self._ensure_meta_key_set("proc_internals", ford.utils.str_to_bool)
-
-        # Create Markdown
-        for item in self.children:
-            if isinstance(item, FortranBase):
-                item.markdown(md, project)
+        if self.obj in ["proc", "type", "program"] and self.meta.source:
+            obj = getattr(self, "proctype", self.obj).lower()
+            regex = re.compile(
+                self.SRC_CAPTURE_STR.format(obj, self.name),
+                re.IGNORECASE | re.DOTALL | re.MULTILINE,
+            )
+            if match := regex.search(self.source_file.raw_src):
+                self.src = highlight(match.group(), FortranLexer(), HtmlFormatter())
+            else:
+                self.src = ""
+                if self.settings.warn:
+                    print(
+                        f"Warning: Could not extract source code for {self.obj} '{self.name}' in file '{self.filename}'"
+                    )
 
     def sort_components(self) -> None:
         """Sorts components using the method specified in the object
@@ -500,8 +468,8 @@ class FortranBase:
         Process intra-site links to documentation of other parts of the program.
         """
         self.doc = ford.utils.sub_links(self.doc, project)
-        if self.meta.get("summary", None) is not None:
-            self.meta["summary"] = ford.utils.sub_links(self.meta["summary"], project)
+        if self.meta.summary is not None:
+            self.meta.summary = ford.utils.sub_links(self.meta.summary, project)
 
         # Create links in the project
         for item in self.children:
@@ -540,6 +508,7 @@ class FortranBase:
                 "finalprocs",
                 "functions",
                 "interfaces",
+                "modprocs",
                 "modprocedures",
                 "modules",
                 "namelists",
@@ -1346,7 +1315,7 @@ class FortranCodeUnit(FortranContainer):
         Remove anything which shouldn't be displayed.
         """
 
-        if self.obj == "proc" and not self.meta["proc_internals"]:
+        if self.obj == "proc" and not self.meta.proc_internals:
             self.functions = []
             self.subroutines = []
             self.types = []
@@ -1471,7 +1440,7 @@ class FortranSourceFile(FortranContainer):
     def __init__(
         self,
         filepath: str,
-        settings: Settings,
+        settings: ProjectSettings,
         preprocessor=None,
         fixed: bool = False,
         **kwargs,
@@ -1496,6 +1465,9 @@ class FortranSourceFile(FortranContainer):
         self.encoding = kwargs.get("encoding", True)
         self.permission = "public"
 
+        # List of entities that need to have their docstrings converted to markdown
+        self._to_be_markdowned: List[FortranBase] = []
+
         source = FortranReader(
             self.path,
             settings.docmark,
@@ -1511,11 +1483,25 @@ class FortranSourceFile(FortranContainer):
         )
 
         super().__init__(source, "")
+        self.read_metadata()
         self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
         lexer = FortranFixedLexer() if self.fixed else FortranLexer()
         self.src = highlight(
             self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
         )
+
+    def markdown(self, md, project):
+        """Process the documentation with Markdown to produce HTML, and then
+        process all the entities in this file
+
+        """
+
+        super().markdown(md, project)
+
+        for item in self._to_be_markdowned:
+            # TODO: skip anything that isn't going to be displayed?
+            if isinstance(item, FortranBase) and not hasattr(item, "external_url"):
+                item.markdown(md, project)
 
 
 class FortranModule(FortranCodeUnit):
@@ -1945,11 +1931,12 @@ class FortranType(FortranContainer):
         for invar in inherited:
             if not hasattr(invar, "doc"):
                 invar.doc = f"Inherited from [[{self.extends}]]"
-                invar.meta = {}
+                invar.meta = EntitySettings()
         self.variables = inherited + self.variables
 
         # Match boundprocs with procedures
-        # FIXME: This is not at all modular because must process non-generic bound procs first--could there be a better way to do it
+        # FIXME: This is not at all modular because must process non-generic
+        # bound procs first--could there be a better way to do it
         for proc in self.boundprocs:
             if not proc.generic:
                 proc.correlate(project)
@@ -2082,6 +2069,9 @@ class FortranInterface(FortranContainer):
         if self.generic and self.abstract:
             raise Exception(f"Generic interface '{self.name}' can not be abstract")
 
+        if self.abstract:
+            self.source_file._to_be_markdowned.remove(self)
+
     def correlate(self, project):
         self.all_absinterfaces = self.parent.all_absinterfaces
         self.all_types = self.parent.all_types
@@ -2163,6 +2153,8 @@ class FortranModuleProcedureInterface(FortranInterface):
         self.procedure.parent = self
 
         self.hierarchy = self._make_hierarchy()
+        self.read_metadata()
+        self.source_file._to_be_markdowned.append(self)
 
 
 class FortranFinalProc(FortranBase):
@@ -2181,6 +2173,8 @@ class FortranFinalProc(FortranBase):
         self.settings = self.parent.settings
         self.doc_list = read_docstring(source, self.settings.docmark) if source else []
         self.hierarchy = self._make_hierarchy()
+        self.read_metadata()
+        self.source_file._to_be_markdowned.append(self)
 
     def correlate(self, project):
         self.all_procs = self.parent.all_procs
@@ -2232,7 +2226,6 @@ class FortranVariable(FortranBase):
         self.parameter = parameter
         self.initial = initial
         self.dimension = ""
-        self.meta = {}
         self.visible = False
 
         indexlist = []
@@ -2251,6 +2244,8 @@ class FortranVariable(FortranBase):
             self.name = self.name[0 : min(indexlist)]
 
         self.hierarchy = self._make_hierarchy()
+        self.read_metadata()
+        self.source_file._to_be_markdowned.append(self)
 
     def correlate(self, project):
         if not self.proto:
@@ -2415,6 +2410,8 @@ class FortranModuleProcedureReference(FortranBase):
         self.procedure = None
         self.doc_list = []
         self.hierarchy = self._make_hierarchy()
+        self.read_metadata()
+        self.source_file._to_be_markdowned.append(self)
 
 
 class FortranBlockData(FortranContainer):
@@ -2595,7 +2592,7 @@ class GenericSource(FortranBase):
     not be analyzed, but documentation can be extracted.
     """
 
-    def __init__(self, filename, settings: Settings):
+    def __init__(self, filename, settings: ProjectSettings):
         self.obj = "sourcefile"
         self.parobj = None
         self.parent = None
@@ -2721,6 +2718,8 @@ class GenericSource(FortranBase):
                 self.doc_list.append("")
                 prevdoc = False
             docalt = False
+
+        self.read_metadata()
 
     def lines_description(self, total, total_all=0):
         return ""
@@ -3103,6 +3102,9 @@ class ExternalVariable(FortranVariable):
         self.external_url = url
         self.parent = parent
         self.obj = "variable"
+        self.kind = None
+        self.strlen = None
+        self.proto = None
 
 
 class ExternalSubmodule(FortranSubmodule):
