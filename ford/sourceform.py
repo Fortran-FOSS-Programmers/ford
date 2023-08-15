@@ -2591,6 +2591,7 @@ class GenericSource(FortranBase):
         self.hierarchy = []
         self.settings = settings
         self.num_lines = 0
+        self._done_markdown = False
         extra_filetypes = settings.extra_filetypes[filename.split(".")[-1]]
         comchar = extra_filetypes[0]
         if len(extra_filetypes) > 1:
@@ -2710,6 +2711,8 @@ class GenericSource(FortranBase):
                 self.doc_list.append("")
                 prevdoc = False
             docalt = False
+
+        self.read_metadata()
 
     def lines_description(self, total, total_all=0):
         return ""
