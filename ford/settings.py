@@ -248,30 +248,7 @@ def load_markdown_settings(
     directory: PathLike, project_file: str
 ) -> Tuple[ProjectSettings, str]:
     settings, project_lines = meta_preprocessor(project_file)
-    field_types = get_type_hints(ProjectSettings)
-
-    keys_to_drop = []
-
-    for key, value in settings.items():
-        try:
-            default_type = field_types[key]
-        except KeyError:
-            warnings.warn(f"Ignoring unknown Ford metadata key {key!r}")
-            keys_to_drop.append(key)
-            continue
-
-        if is_same_type(default_type, type(value)):
-            continue
-        if is_same_type(default_type, list):
-            settings[key] = [value]
-        elif is_same_type(default_type, bool):
-            settings[key] = convert_to_bool(key, value)
-        elif is_same_type(default_type, int):
-            settings[key] = int(value[0])
-        elif (
-            is_same_type(default_type, str) or is_same_type(default_type, Path)
-        ) and isinstance(value, list):
-            settings[key] = "\n".join(value)
+    settings = convert_types_from_metapreprocessor(ProjectSettings, settings)
 
     # Workaround for file inclusion in metadata
     for option, value in settings.items():
@@ -286,9 +263,6 @@ def load_markdown_settings(
             configs = MarkdownInclude({"base_path": str(md_base_dir)}).getConfigs()
             include_preprocessor = IncludePreprocessor(None, configs)
             settings[option] = "\n".join(include_preprocessor.run(value.splitlines()))
-
-    for key in keys_to_drop:
-        settings.pop(key)
 
     return ProjectSettings.from_markdown_metadata(settings), "\n".join(project_lines)
 
