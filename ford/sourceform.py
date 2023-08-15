@@ -192,8 +192,8 @@ class FortranBase:
         del self.strings
 
         self.doc_list = read_docstring(source, self.settings.docmark)
-        self.read_metadata()
         self.hierarchy = self._make_hierarchy()
+        self.read_metadata()
 
         # Some entities are reachable from more than one parent (for example,
         # public procedures that are also part of a generic interface), so we
@@ -2137,7 +2137,6 @@ class FortranModuleProcedureInterface(FortranInterface):
         self.visible = parent.visible
         self.num_lines = parent.num_lines
         self.doc_list = doc_list
-        self.read_metadata()
         self.variables = copy.copy(parent.variables)
 
         self.procedure = procedure
@@ -2146,6 +2145,7 @@ class FortranModuleProcedureInterface(FortranInterface):
         self.procedure.parent = self
 
         self.hierarchy = self._make_hierarchy()
+        self.read_metadata()
         self._done_markdown = False
 
 
@@ -2164,8 +2164,8 @@ class FortranFinalProc(FortranBase):
         self.display = self.parent.display
         self.settings = self.parent.settings
         self.doc_list = read_docstring(source, self.settings.docmark) if source else []
-        self.read_metadata()
         self.hierarchy = self._make_hierarchy()
+        self.read_metadata()
         self._done_markdown = False
 
     def correlate(self, project):
@@ -2213,7 +2213,6 @@ class FortranVariable(FortranBase):
         self.strlen = strlen
         self.proto = copy.copy(proto)
         self.doc_list = copy.copy(doc) if doc is not None else []
-        self.read_metadata()
         self.permission = permission
         self.points = points
         self.parameter = parameter
@@ -2238,6 +2237,7 @@ class FortranVariable(FortranBase):
             self.name = self.name[0 : min(indexlist)]
 
         self.hierarchy = self._make_hierarchy()
+        self.read_metadata()
 
     def correlate(self, project):
         if not self.proto:
@@ -2401,8 +2401,8 @@ class FortranModuleProcedureReference(FortranBase):
         self.name = name
         self.procedure = None
         self.doc_list = []
-        self.read_metadata()
         self.hierarchy = self._make_hierarchy()
+        self.read_metadata()
         self._done_markdown = False
 
 
