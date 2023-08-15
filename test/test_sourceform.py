@@ -1238,6 +1238,7 @@ class FakeParent:
     obj: str = "module"
     parent = None
     display: List[str] = field(default_factory=list)
+    _to_be_markdowned: List[FortranBase] = field(default_factory=list)
 
 
 def _make_list_str() -> List[str]:
@@ -1332,6 +1333,7 @@ class FakeVariable:
 def test_line_to_variable(line, expected_variables):
     variables = line_to_variables(FakeSource(), line, "public", FakeParent())
     attributes = expected_variables[0].__dict__
+    attributes.pop("parent")
 
     for variable, expected in zip(variables, expected_variables):
         for attr in attributes:
@@ -1340,7 +1342,6 @@ def test_line_to_variable(line, expected_variables):
             assert variable_attr == expected_attr, attr
 
     if len(expected_variables) > 1:
-        attributes.pop("parent")
         for attr in attributes:
             attribute = getattr(variable, attr)
             if not isinstance(attribute, list):

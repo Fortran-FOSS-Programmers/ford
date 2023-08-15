@@ -198,7 +198,7 @@ class FortranBase:
         # Some entities are reachable from more than one parent (for example,
         # public procedures that are also part of a generic interface), so we
         # need to make sure we don't convert the docstrings twice
-        self._done_markdown = False
+        self.source_file._to_be_markdowned.append(self)
 
     def _make_hierarchy(self) -> List[FortranContainer]:
         """Create list of ancestor entities"""
@@ -361,11 +361,6 @@ class FortranBase:
         Process the documentation with Markdown to produce HTML.
         """
 
-        # Make sure we don't process entities twice
-        if self._done_markdown:
-            return
-        self._done_markdown = True
-
         if hasattr(self, "num_lines"):
             self.meta.num_lines = self.num_lines
 
@@ -402,11 +397,6 @@ class FortranBase:
                     print(
                         f"Warning: Could not extract source code for {self.obj} '{self.name}' in file '{self.filename}'"
                     )
-
-        # Create Markdown
-        for item in self.children:
-            if isinstance(item, FortranBase) and not hasattr(item, "external_url"):
-                item.markdown(md, project)
 
     def sort_components(self) -> None:
         """Sorts components using the method specified in the object
@@ -1474,7 +1464,9 @@ class FortranSourceFile(FortranContainer):
         self.display = settings.display
         self.encoding = kwargs.get("encoding", True)
         self.permission = "public"
-        self._done_markdown = False
+
+        # List of entities that need to have their docstrings converted to markdown
+        self._to_be_markdowned: List[FortranBase] = []
 
         source = FortranReader(
             self.path,
@@ -1497,6 +1489,19 @@ class FortranSourceFile(FortranContainer):
         self.src = highlight(
             self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
         )
+
+    def markdown(self, md, project):
+        """Process the documentation with Markdown to produce HTML, and then
+        process all the entities in this file
+
+        """
+
+        super().markdown(md, project)
+
+        for item in self._to_be_markdowned:
+            # TODO: skip anything that isn't going to be displayed?
+            if isinstance(item, FortranBase) and not hasattr(item, "external_url"):
+                item.markdown(md, project)
 
 
 class FortranModule(FortranCodeUnit):
@@ -2146,7 +2151,7 @@ class FortranModuleProcedureInterface(FortranInterface):
 
         self.hierarchy = self._make_hierarchy()
         self.read_metadata()
-        self._done_markdown = False
+        self.source_file._to_be_markdowned.append(self)
 
 
 class FortranFinalProc(FortranBase):
@@ -2166,7 +2171,7 @@ class FortranFinalProc(FortranBase):
         self.doc_list = read_docstring(source, self.settings.docmark) if source else []
         self.hierarchy = self._make_hierarchy()
         self.read_metadata()
-        self._done_markdown = False
+        self.source_file._to_be_markdowned.append(self)
 
     def correlate(self, project):
         self.all_procs = self.parent.all_procs
@@ -2219,7 +2224,6 @@ class FortranVariable(FortranBase):
         self.initial = initial
         self.dimension = ""
         self.visible = False
-        self._done_markdown = False
 
         indexlist = []
         indexparen = self.name.find("(")
@@ -2238,6 +2242,7 @@ class FortranVariable(FortranBase):
 
         self.hierarchy = self._make_hierarchy()
         self.read_metadata()
+        self.source_file._to_be_markdowned.append(self)
 
     def correlate(self, project):
         if not self.proto:
@@ -2403,7 +2408,7 @@ class FortranModuleProcedureReference(FortranBase):
         self.doc_list = []
         self.hierarchy = self._make_hierarchy()
         self.read_metadata()
-        self._done_markdown = False
+        self.source_file._to_be_markdowned.append(self)
 
 
 class FortranBlockData(FortranContainer):
@@ -2591,7 +2596,6 @@ class GenericSource(FortranBase):
         self.hierarchy = []
         self.settings = settings
         self.num_lines = 0
-        self._done_markdown = False
         extra_filetypes = settings.extra_filetypes[filename.split(".")[-1]]
         comchar = extra_filetypes[0]
         if len(extra_filetypes) > 1:
