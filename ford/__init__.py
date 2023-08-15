@@ -425,8 +425,8 @@ def main(proj_data: ProjectSettings, proj_docs: str, md: MetaMarkdown):
     # Convert the documentation from Markdown to HTML. Make sure to properly
     # handle LateX and metadata.
     base_url = ".." if proj_data.relative else proj_data.project_url
-    project.markdown(md, base_url)
     project.correlate()
+    project.markdown(md, base_url)
     project.make_links(base_url)
 
     # Convert summaries and descriptions to HTML

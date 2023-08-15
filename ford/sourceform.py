@@ -195,6 +195,11 @@ class FortranBase:
         self.read_metadata()
         self.hierarchy = self._make_hierarchy()
 
+        # Some entities are reachable from more than one parent (for example,
+        # public procedures that are also part of a generic interface), so we
+        # need to make sure we don't convert the docstrings twice
+        self._done_markdown = False
+
     def _make_hierarchy(self) -> List[FortranContainer]:
         """Create list of ancestor entities"""
         hierarchy = []
@@ -356,6 +361,11 @@ class FortranBase:
         Process the documentation with Markdown to produce HTML.
         """
 
+        # Make sure we don't process entities twice
+        if self._done_markdown:
+            return
+        self._done_markdown = True
+
         if hasattr(self, "num_lines"):
             self.meta.num_lines = self.num_lines
 
@@ -508,6 +518,7 @@ class FortranBase:
                 "finalprocs",
                 "functions",
                 "interfaces",
+                "modprocs",
                 "modprocedures",
                 "modules",
                 "namelists",
@@ -1463,6 +1474,7 @@ class FortranSourceFile(FortranContainer):
         self.display = settings.display
         self.encoding = kwargs.get("encoding", True)
         self.permission = "public"
+        self._done_markdown = False
 
         source = FortranReader(
             self.path,
@@ -1918,7 +1930,8 @@ class FortranType(FortranContainer):
         self.variables = inherited + self.variables
 
         # Match boundprocs with procedures
-        # FIXME: This is not at all modular because must process non-generic bound procs first--could there be a better way to do it
+        # FIXME: This is not at all modular because must process non-generic
+        # bound procs first--could there be a better way to do it
         for proc in self.boundprocs:
             if not proc.generic:
                 proc.correlate(project)
@@ -2133,6 +2146,7 @@ class FortranModuleProcedureInterface(FortranInterface):
         self.procedure.parent = self
 
         self.hierarchy = self._make_hierarchy()
+        self._done_markdown = False
 
 
 class FortranFinalProc(FortranBase):
@@ -2152,6 +2166,7 @@ class FortranFinalProc(FortranBase):
         self.doc_list = read_docstring(source, self.settings.docmark) if source else []
         self.read_metadata()
         self.hierarchy = self._make_hierarchy()
+        self._done_markdown = False
 
     def correlate(self, project):
         self.all_procs = self.parent.all_procs
@@ -2205,6 +2220,7 @@ class FortranVariable(FortranBase):
         self.initial = initial
         self.dimension = ""
         self.visible = False
+        self._done_markdown = False
 
         indexlist = []
         indexparen = self.name.find("(")
@@ -2387,6 +2403,7 @@ class FortranModuleProcedureReference(FortranBase):
         self.doc_list = []
         self.read_metadata()
         self.hierarchy = self._make_hierarchy()
+        self._done_markdown = False
 
 
 class FortranBlockData(FortranContainer):
