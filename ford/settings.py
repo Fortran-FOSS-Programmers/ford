@@ -127,7 +127,7 @@ class ProjectSettings:
     macro: list = field(default_factory=list)
     mathjax_config: Optional[Path] = None
     max_frontpage_items: int = 10
-    md_base_dir: Optional[Path] = None
+    md_base_dir: Path = Path(".")
     md_extensions: list = field(default_factory=list)
     media_dir: Optional[Path] = None
     output_dir: Path = Path("./doc")
@@ -204,6 +204,9 @@ class ProjectSettings:
         if self.favicon == FAVICON_PATH:
             self.favicon = Path(__file__).parent / FAVICON_PATH
 
+        if self.md_base_dir == Path("."):
+            self.md_base_dir = directory
+
         for key, value in asdict(self).items():
             if value is None:
                 continue
@@ -216,9 +219,6 @@ class ProjectSettings:
 
             if is_same_type(default_type, Path):
                 setattr(self, key, normalise_path(directory, value))
-
-        if self.md_base_dir is None:
-            self.md_base_dir = directory
 
 
 def load_toml_settings(directory: PathLike) -> Optional[ProjectSettings]:
