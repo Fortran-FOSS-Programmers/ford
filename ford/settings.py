@@ -247,7 +247,7 @@ def load_toml_settings(directory: PathLike) -> Optional[ProjectSettings]:
 def load_markdown_settings(
     directory: PathLike, project_file: str
 ) -> Tuple[ProjectSettings, str]:
-    settings, project_file = meta_preprocessor(project_file)
+    settings, project_lines = meta_preprocessor(project_file)
     field_types = get_type_hints(ProjectSettings)
 
     keys_to_drop = []
@@ -290,7 +290,7 @@ def load_markdown_settings(
     for key in keys_to_drop:
         settings.pop(key)
 
-    return ProjectSettings.from_markdown_metadata(settings), "\n".join(project_file)
+    return ProjectSettings.from_markdown_metadata(settings), "\n".join(project_lines)
 
 
 def convert_types_from_metapreprocessor(cls: Type, settings: Dict[str, Any]):
