@@ -3075,6 +3075,9 @@ class ExternalVariable(FortranVariable):
         self.external_url = url
         self.parent = parent
         self.obj = "variable"
+        self.kind = None
+        self.strlen = None
+        self.proto = None
 
 
 class ExternalSubmodule(FortranSubmodule):
