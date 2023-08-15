@@ -395,7 +395,7 @@ class FortranBase:
 
         # Create Markdown
         for item in self.children:
-            if isinstance(item, FortranBase):
+            if isinstance(item, FortranBase) and not hasattr(item, "external_url"):
                 item.markdown(md, project)
 
     def sort_components(self) -> None:
