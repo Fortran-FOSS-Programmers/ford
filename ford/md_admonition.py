@@ -84,25 +84,17 @@ class FordAdmonitionProcessor(AdmonitionProcessor):
 
     CLASSNAME = "alert"
     CLASSNAME_TITLE = "alert-title h4"
-    RE = re.compile(
-        r"""(?:^|\n)@note ?(?P<klass>[\w\-]+(?: +[\w\-]+)*)(?: +"(?P<title>.*?)")? *(?:\n|$)"""
-    )
+    RE = re.compile(r"""(?:^|\n)@note ?(?P<klass>[\w\-]+) *(?:\n|$)""")
 
     def get_class_and_title(self, match):
         """Get the CSS class and title for this admonition
 
-        Title defaults to the note class, while the CSS class is looked up
+        Title is the note class, while the CSS class is looked up
         in the list of note types (`ADMONITION_TYPE`)
 
         """
-        css, title = super().get_class_and_title(match)
-        if len(css_bits := css.split()) > 1:
-            klass = css_bits[0]
-            more_css = " ".join(css_bits[1:])
-        else:
-            klass = css
-            more_css = ""
-        return f"alert-{ADMONITION_TYPE[klass]} {more_css}", title
+        klass = match["klass"].lower()
+        return f"alert-{ADMONITION_TYPE[klass]}", klass.capitalize()
 
 
 class AdmonitionPreprocessor(Preprocessor):
@@ -130,7 +122,6 @@ class AdmonitionPreprocessor(Preprocessor):
     ADMONITION_RE: ClassVar[re.Pattern] = re.compile(
         rf"""(?P<indent>\s*)
         @(?P<type>{"|".join(ADMONITION_TYPE.keys())})
-        (?P<extra>(?:\ +[\w\-]+)*\ +".*")?\s*
         (?P<posttxt>.*)
         """,
         re.IGNORECASE | re.VERBOSE,
@@ -221,9 +212,10 @@ class AdmonitionPreprocessor(Preprocessor):
             # last line--deal with possible text before or after end marker
             idx = admonition.end_idx
             if end := self.END_RE.search(lines[idx]):
-                # Shove anything after the @end onto the next line
+                # Shove anything after the @end into a new paragraph
                 if end["posttxt"]:
-                    lines.insert(idx + 1, end["posttxt"])
+                    lines.insert(idx + 1, "")
+                    lines.insert(idx + 2, end["posttxt"])
 
                 # Remove the @end and possibly the line too if it ends up blank
                 lines[idx] = self.END_RE.sub("", lines[idx])
@@ -234,7 +226,7 @@ class AdmonitionPreprocessor(Preprocessor):
                     admonition.end_idx += 1
 
             # Indent any intermediate lines
-            for idx in range(admonition.start_idx + 1, admonition.end_idx):
+            for idx in range(admonition.start_idx + 1, admonition.end_idx + 1):
                 if lines[idx] != "":
                     lines[idx] = self.INDENT + lines[idx]
 
@@ -243,8 +235,7 @@ class AdmonitionPreprocessor(Preprocessor):
                 # Something has gone seriously wrong!
                 raise FordMarkdownError("Missing start of @note", idx, lines, 0, -1)
 
-            extra = match["extra"] or ""
-            lines[idx] = f"{match['indent']}@note {admonition.type.capitalize()}{extra}"
+            lines[idx] = f"{match['indent']}@note {admonition.type.capitalize()}"
             if posttxt := match["posttxt"]:
                 lines.insert(idx + 1, self.INDENT + match["indent"] + posttxt)
 
