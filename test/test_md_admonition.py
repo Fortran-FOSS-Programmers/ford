@@ -73,6 +73,19 @@ def test_paragraph():
     assert soup.div.find(not_title).text == "note text\nsome following text"
 
 
+def test_paragraph_end_line():
+    converted = convert(
+        """
+        @note note text
+        some following text"""
+    )
+
+    soup = BeautifulSoup(converted, features="html.parser")
+    assert len(soup) == 1
+    assert sorted(soup.div["class"]) == ["alert", "alert-info"]
+    assert soup.find(class_="h4").text == "Note"
+    assert soup.div.find(not_title).text == "note text\nsome following text"
+
 def test_explicit_end():
     converted = convert(
         """

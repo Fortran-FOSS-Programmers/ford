@@ -221,9 +221,10 @@ class AdmonitionPreprocessor(Preprocessor):
             # last line--deal with possible text before or after end marker
             idx = admonition.end_idx
             if end := self.END_RE.search(lines[idx]):
-                # Shove anything after the @end onto the next line
+                # Shove anything after the @end into a new paragraph
                 if end["posttxt"]:
-                    lines.insert(idx + 1, end["posttxt"])
+                    lines.insert(idx + 1, "")
+                    lines.insert(idx + 2, end["posttxt"])
 
                 # Remove the @end and possibly the line too if it ends up blank
                 lines[idx] = self.END_RE.sub("", lines[idx])
@@ -234,7 +235,7 @@ class AdmonitionPreprocessor(Preprocessor):
                     admonition.end_idx += 1
 
             # Indent any intermediate lines
-            for idx in range(admonition.start_idx + 1, admonition.end_idx):
+            for idx in range(admonition.start_idx + 1, admonition.end_idx + 1):
                 if lines[idx] != "":
                     lines[idx] = self.INDENT + lines[idx]
 
