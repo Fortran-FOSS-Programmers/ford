@@ -76,7 +76,7 @@ def convert_to_bool(name: str, option: List[str]) -> bool:
 
 @dataclass
 class ProjectSettings:
-    alias: List[str] = field(default_factory=list)
+    alias: Dict[str, str] = field(default_factory=dict)
     author: Optional[str] = None
     author_description: Optional[str] = None
     author_pic: Optional[str] = None
@@ -97,7 +97,7 @@ class ProjectSettings:
     extensions: List[str] = field(
         default_factory=lambda: ["f90", "f95", "f03", "f08", "f15"]
     )
-    external: list = field(default_factory=list)
+    external: Dict[str, str] = field(default_factory=dict)
     externalize: bool = False
     extra_filetypes: list = field(default_factory=list)
     extra_mods: list = field(default_factory=list)
@@ -127,7 +127,7 @@ class ProjectSettings:
     macro: list = field(default_factory=list)
     mathjax_config: Optional[Path] = None
     max_frontpage_items: int = 10
-    md_base_dir: Optional[Path] = None
+    md_base_dir: Path = Path(".")
     md_extensions: list = field(default_factory=list)
     media_dir: Optional[Path] = None
     output_dir: Path = Path("./doc")
@@ -181,6 +181,19 @@ class ProjectSettings:
         self.display = [item.lower() for item in self.display]
         self.extensions = list(set(self.extensions) | set(self.fpp_extensions))
 
+        if self.relative:
+            self.project_url = "."
+
+        # Define some core macros
+        url_path = Path(self.project_url)
+        self.alias.update(
+            {
+                "url": self.project_url,
+                "media": str(url_path / "media"),
+                "page": str(url_path / "page"),
+            }
+        )
+
         # Check that none of the docmarks are the same
         docmarks = ["docmark", "predocmark", "docmark_alt", "predocmark_alt"]
         for first, second in combinations(docmarks, 2):
@@ -204,6 +217,9 @@ class ProjectSettings:
         if self.favicon == FAVICON_PATH:
             self.favicon = Path(__file__).parent / FAVICON_PATH
 
+        if self.md_base_dir == Path("."):
+            self.md_base_dir = directory
+
         for key, value in asdict(self).items():
             if value is None:
                 continue
@@ -216,9 +232,6 @@ class ProjectSettings:
 
             if is_same_type(default_type, Path):
                 setattr(self, key, normalise_path(directory, value))
-
-        if self.md_base_dir is None:
-            self.md_base_dir = directory
 
 
 def load_toml_settings(directory: PathLike) -> Optional[ProjectSettings]:
@@ -294,11 +307,41 @@ def convert_types_from_metapreprocessor(cls: Type, settings: Dict[str, Any]):
             is_same_type(default_type, str) or is_same_type(default_type, Path)
         ) and isinstance(value, list):
             settings[key] = "\n".join(value)
+        elif (get_origin(default_type) == dict) and not isinstance(value, dict):
+            if isinstance(value, str):
+                value = [value]
+
+            settings[key] = _parse_to_dict(value, name=key)
 
     for key in keys_to_drop:
         settings.pop(key)
 
     return settings
+
+
+def _parse_to_dict(string_list: List[str], name: str) -> Dict[str, str]:
+    """Parse a list of strings of form "key = value" into a dict
+
+    Parameters
+    ----------
+    string_list : List[str]
+        List of strings to parse
+    name : str
+        Name in parent settings object, only used for error message
+
+    """
+
+    result = {}
+    for string in string_list:
+        try:
+            key, value = string.split("=", 1)
+        except ValueError:
+            raise RuntimeError(
+                f"Error setting option {name!r}: expected '=' in {string!r}"
+            )
+
+        result[key.strip()] = value.strip()
+    return result
 
 
 @dataclass

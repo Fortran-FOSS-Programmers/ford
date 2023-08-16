@@ -24,6 +24,7 @@
 #
 
 from contextlib import contextmanager
+import copy
 from io import StringIO
 import sys
 import argparse
@@ -126,9 +127,9 @@ def initialize():
 
     proj_docs = args.project_file.read()
     directory = os.path.dirname(args.project_file.name)
-    proj_docs, proj_data, md = load_settings(proj_docs, directory)
+    proj_docs, proj_data = load_settings(proj_docs, directory)
 
-    return *parse_arguments(vars(args), proj_docs, proj_data, directory), md
+    return parse_arguments(vars(args), proj_docs, proj_data, directory)
 
 
 def get_command_line_arguments() -> argparse.Namespace:
@@ -273,7 +274,7 @@ def get_command_line_arguments() -> argparse.Namespace:
 
 def load_settings(
     proj_docs: str, directory: PathLike = pathlib.Path(".")
-) -> Tuple[str, ProjectSettings, MetaMarkdown]:
+) -> Tuple[str, ProjectSettings]:
     """Load Ford settings from ``fpm.toml`` if present, or from
     metadata in supplied project file1
 
@@ -290,8 +291,6 @@ def load_settings(
         Text of project file converted from markdown
     proj_data: dict
         Project settings
-    md: MetaMarkdown
-        Markdown converter
 
     """
 
@@ -300,15 +299,7 @@ def load_settings(
     if proj_data is None:
         proj_data, proj_docs = load_markdown_settings(directory, proj_docs)
 
-    # Setup Markdown object with any user-specified extensions
-    md = MetaMarkdown(
-        proj_data.md_base_dir or directory, extensions=proj_data.md_extensions
-    )
-
-    # Now re-read project file with all extensions loaded
-    proj_docs = md.reset().convert(proj_docs)
-
-    return proj_docs, proj_data, md
+    return proj_docs, proj_data
 
 
 def parse_arguments(
@@ -399,12 +390,11 @@ def parse_arguments(
     return proj_data, proj_docs
 
 
-def main(proj_data: ProjectSettings, proj_docs: str, md: MetaMarkdown):
+def main(proj_data: ProjectSettings, proj_docs: str):
     """
     Main driver of FORD.
     """
-    if proj_data.relative:
-        proj_data.project_url = "."
+
     # Parse the files in your project
     project = ford.fortran_project.Project(proj_data)
     if len(project.files) < 1:
@@ -413,19 +403,18 @@ def main(proj_data: ProjectSettings, proj_docs: str, md: MetaMarkdown):
         )
         sys.exit(1)
 
-    # Define core macros:
-    ford.utils.register_macro(f"url = {proj_data.project_url}")
-    ford.utils.register_macro(f'media = {os.path.join(proj_data.project_url, "media")}')
-    ford.utils.register_macro(f'page = {os.path.join(proj_data.project_url, "page")}')
-
-    # Register the user defined aliases:
-    for alias in proj_data.alias:
-        ford.utils.register_macro(alias)
-
-    # Convert the documentation from Markdown to HTML. Make sure to properly
-    # handle LateX and metadata.
     base_url = ".." if proj_data.relative else proj_data.project_url
     project.correlate()
+
+    # Setup Markdown object with any user-specified extensions
+    aliases = copy.copy(proj_data.alias)
+    aliases.update(proj_data.external)
+    md = MetaMarkdown(
+        proj_data.md_base_dir, extensions=proj_data.md_extensions, aliases=aliases
+    )
+
+    # Convert the documentation from Markdown to HTML
+    proj_docs = md.reset().convert(proj_docs)
     project.markdown(md, base_url)
     project.make_links(base_url)
 
@@ -434,16 +423,14 @@ def main(proj_data: ProjectSettings, proj_docs: str, md: MetaMarkdown):
         ford.sourceform.set_base_url(".")
     if proj_data.summary is not None:
         proj_data.summary = md.convert(proj_data.summary)
-        proj_data.summary = ford.utils.sub_links(
-            ford.utils.sub_macros(proj_data.summary), project
-        )
+        proj_data.summary = ford.utils.sub_links(proj_data.summary, project)
     if proj_data.author_description is not None:
         proj_data.author_description = md.convert(proj_data.author_description)
         proj_data.author_description = ford.utils.sub_links(
-            ford.utils.sub_macros(proj_data.author_description),
+            proj_data.author_description,
             project,
         )
-    proj_docs_ = ford.utils.sub_links(ford.utils.sub_macros(proj_docs), project)
+    proj_docs_ = ford.utils.sub_links(proj_docs, project)
     # Process any pages
     if proj_data.page_dir is not None:
         page_tree = get_page_tree(
@@ -472,11 +459,11 @@ def main(proj_data: ProjectSettings, proj_docs: str, md: MetaMarkdown):
 
 
 def run():
-    proj_data, proj_docs, md = initialize()
+    proj_data, proj_docs = initialize()
 
     f = StringIO() if proj_data.quiet else sys.stdout
     with stdout_redirector(f):
-        main(proj_data, proj_docs, md)
+        main(proj_data, proj_docs)
 
 
 if __name__ == "__main__":

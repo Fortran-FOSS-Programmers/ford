@@ -27,7 +27,6 @@ def test_extra_mods_empty(
     copy_fortran_file,
     copy_settings_file,
     monkeypatch,
-    restore_macros,
     restore_nameselector,
 ):
     """This checks that extra_mods is parsed correctly in input md file"""
@@ -52,7 +51,6 @@ def test_extra_mods_intrinsic(
     copy_fortran_file,
     copy_settings_file,
     monkeypatch,
-    restore_macros,
     restore_nameselector,
 ):
     """This checks that adding extra_mods doesn't change the module variable INTRINSIC_MODS"""
@@ -89,7 +87,6 @@ def test_default_aliases(
     copy_settings_file,
     tmp_path,
     monkeypatch,
-    restore_macros,
     restore_nameselector,
 ):
     """Check that aliases specified in project file are replaced correctly"""
@@ -113,7 +110,7 @@ def test_default_aliases(
 
     html_dir = tmp_path / "doc"
     index_text = get_main_body_text(html_dir, "index.html")
-    media_dir = os.path.join(".", "media")
+    media_dir = pathlib.Path("./media")
     expected_index_text = [
         f"Test: The project media url should be {media_dir}",
     ]
@@ -131,7 +128,6 @@ def test_one_alias(
     copy_settings_file,
     tmp_path,
     monkeypatch,
-    restore_macros,
     restore_nameselector,
 ):
     """Check that aliases specified in project file are replaced correctly"""
@@ -181,7 +177,6 @@ def test_multiple_aliases(
     copy_settings_file,
     tmp_path,
     monkeypatch,
-    restore_macros,
     restore_nameselector,
 ):
     """Check that aliases specified in project file are replaced correctly"""

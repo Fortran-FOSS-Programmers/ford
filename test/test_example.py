@@ -35,7 +35,7 @@ def example_project(tmp_path_factory):
     with open(tmp_path / "example-project-file.md", "r") as f:
         project_file = f.read()
 
-    project_file, project_settings, _ = ford.load_settings(project_file)
+    project_file, project_settings = ford.load_settings(project_file)
     settings, _ = ford.parse_arguments({}, project_file, project_settings, tmp_path)
 
     doc_path = tmp_path / "doc"

@@ -14,9 +14,9 @@ class FakeFile:
 
 
 def test_quiet_false():
-    _, data, _ = ford.load_settings("quiet: False")
+    _, data = ford.load_settings("quiet: False")
     assert data.quiet is False
-    _, data2, _ = ford.load_settings("quiet: True")
+    _, data2 = ford.load_settings("quiet: True")
     assert data2.quiet is True
 
 
@@ -33,7 +33,7 @@ def test_toml(tmp_path):
     }
     settings_file.write_text(tomli_w.dumps(settings))
 
-    _, data, _ = ford.load_settings("", tmp_path)
+    _, data = ford.load_settings("", tmp_path)
 
     assert data.quiet is True
     assert data.display[0] == "public"
@@ -65,7 +65,7 @@ def test_list_input():
              one
              string
     """
-    _, data, _ = ford.load_settings(dedent(settings))
+    _, data = ford.load_settings(dedent(settings))
 
     assert len(data.include) == 2
     assert data.summary == "This\nis\none\nstring"
@@ -188,13 +188,13 @@ def test_absolute_src_dir(monkeypatch, tmp_path):
 
     with monkeypatch.context() as m:
         m.setattr(sys, "argv", ["ford", str(project_file)])
-        args, _, _ = ford.initialize()
+        args, _ = ford.initialize()
 
     assert args.src_dir == [tmp_path / "./src"]
 
     with monkeypatch.context() as m:
         m.setattr(sys, "argv", ["ford", str(project_file), "--src_dir", str(src_dir)])
-        args, _, _ = ford.initialize()
+        args, _ = ford.initialize()
 
     assert args.src_dir == [src_dir]
 
@@ -202,7 +202,7 @@ def test_absolute_src_dir(monkeypatch, tmp_path):
         m.setattr(
             sys, "argv", ["ford", "--src_dir", str(src_dir), "--", str(project_file)]
         )
-        args, _, _ = ford.initialize()
+        args, _ = ford.initialize()
 
     assert args.src_dir == [src_dir]
 
@@ -213,7 +213,7 @@ def test_output_dir_cli(monkeypatch, tmp_path):
 
     with monkeypatch.context() as m:
         m.setattr(sys, "argv", ["ford", str(project_file), "--output_dir", "something"])
-        settings, _, _ = ford.initialize()
+        settings, _ = ford.initialize()
 
     assert settings.output_dir == tmp_path / "something"
 
@@ -222,6 +222,6 @@ def test_output_dir_cli(monkeypatch, tmp_path):
 
     with monkeypatch.context() as m:
         m.setattr(sys, "argv", ["ford", str(project_file)])
-        settings, _, _ = ford.initialize()
+        settings, _ = ford.initialize()
 
     assert settings.output_dir == tmp_path / "something_else"
