@@ -277,7 +277,7 @@
 
   {{ header(4, small) }}Arguments{{ close_header(4, small) }}
   {% if proc.args %}
-    {{ variable_list(proc.args, intent=True, summary=proc.visible, id=False) }}
+    {{ variable_list(proc.args, intent=True, summary=proc.visible) }}
   {% else %}
     <em>None</em>
   {% endif %}

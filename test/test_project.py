@@ -6,8 +6,10 @@ from ford.sourceform import (
     FortranProgram,
     FortranSubroutine,
     FortranModule,
+    NameSelector,
 )
 from ford._markdown import MetaMarkdown
+import ford.sourceform
 
 from itertools import chain
 
@@ -17,6 +19,9 @@ from bs4 import BeautifulSoup
 
 @pytest.fixture
 def copy_fortran_file(tmp_path):
+    # Reset unique name tracker
+    setattr(ford.sourceform, "namelist", NameSelector())
+
     def copy_file(data) -> ProjectSettings:
         src_dir = tmp_path / "src"
         src_dir.mkdir()
@@ -1002,7 +1007,7 @@ def test_submodule_uses(copy_fortran_file):
 
 
 def test_make_links(copy_fortran_file):
-    links = "[[a]] [[b]] [[b:c]] [[d]] [[b:e]] [[f]] [[a:g]] [[h]]"
+    links = "[[a]] [[b(type)]] [[b:c]] [[a:d]] [[b:e]] [[f(proc)]] [[a:g]] [[h]]"
 
     data = f"""\
     module a !! {links}
@@ -1059,6 +1064,65 @@ def test_make_links(copy_fortran_file):
         link_locations = {a.string: a.get("href", None) for a in docstring("a")}
 
         assert link_locations == expected_links, (item, item.name)
+
+
+def test_link_with_context(copy_fortran_file):
+    data = """\
+    module a !! [[g]]
+      type b !! [[c]] [[e]] [[g]]
+        integer :: c
+      contains
+        procedure :: e
+      end type b
+
+      type(b) :: g
+    contains
+      subroutine d(i) !! [[i]] [[f]] [[f:x]]
+        type(b) :: i
+        contains
+          integer function f(x)
+            integer :: x
+          end function f
+      end subroutine d
+    end module a
+
+    program h
+    end program h
+    """
+    settings = copy_fortran_file(data)
+    settings.proc_internals = True
+    project = create_project(settings)
+    md = MetaMarkdown(project=project)
+    project.markdown(md, "..")
+
+    expected_links = {
+        "a": "../module/a.html",
+        "b": "../type/b.html",
+        "c": "../type/b.html#variable-c",
+        "d": "../proc/d.html",
+        "e": "../type/b.html#boundprocedure-e",
+        "f": "../proc/d.html#proc-f",
+        "g": "../module/a.html#variable-g",
+        "h": "../program/h.html",
+        "i": "../proc/d.html#variable-i",
+        "x": "../proc/d.html#variable-x",
+    }
+
+    for item in chain(
+        project.files[0].children,
+        project.modules[0].children,
+        project.types[0].children,
+        project.procedures[0].children,
+    ):
+        docstring = BeautifulSoup(item.doc, features="html.parser")
+
+        for link in docstring("a"):
+            assert link.string in expected_links, (item, item.name, link)
+            assert link.get("href", None) == expected_links[link.string], (
+                item,
+                item.name,
+                link.string,
+            )
 
 
 def test_submodule_procedure_issue_446(copy_fortran_file):

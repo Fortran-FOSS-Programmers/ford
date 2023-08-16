@@ -5,6 +5,7 @@ from markdown.inlinepatterns import InlineProcessor
 from typing import Dict, List, Union, Optional, TYPE_CHECKING
 import re
 from xml.etree.ElementTree import Element
+from contextlib import suppress
 
 from ford.md_environ import EnvironExtension
 from ford.md_admonition import AdmonitionExtension
@@ -12,6 +13,7 @@ from ford._typing import PathLike
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
+    from ford.sourceform import FortranBase
 
 
 class MetaMarkdown(Markdown):
@@ -51,6 +53,16 @@ class MetaMarkdown(Markdown):
             output_format="html",
             extension_configs=default_config,
         )
+
+        self.current_context: Optional[FortranBase] = None
+
+    def reset(self):
+        self.current_context = None
+        return super().reset()
+
+    def convert(self, source: str, context: Optional[FortranBase] = None):
+        self.current_context = context
+        return super().convert(source)
 
 
 ALIAS_RE = r"\|(.+?)\|"
@@ -106,30 +118,46 @@ class FordLinkProcessor(InlineProcessor):
         re.VERBOSE | re.UNICODE,
     )
 
-    def __init__(self, md: Markdown, project: Project):  # type: ignore[overrider]
+    def __init__(self, md: MetaMarkdown, project: Project):  # type: ignore[overrider]
         self.project = project
-        self.md = md
+        self.md: MetaMarkdown = md
 
     def getCompiledRegExp(self):
         return self.LINK_RE
 
     def convert_link(self, m: re.Match):
-        item = self.project.find(**m.groupdict())
+        item = None
+        name = m["name"]
+
+        def find_child(context):
+            with suppress(ValueError):
+                return context.find_child(name, m["entity"])
+
+        if (context := self.md.current_context) is not None:
+            item = find_child(context)
+
+            if item is None and (parent := context.parent) is not None:
+                item = find_child(parent)
+
+            if m["child_name"] and item is not None:
+                item = item.find_child(m["child_name"], m["child_entity"])
+
+        if item is None:
+            item = self.project.find(**m.groupdict())
 
         # Could resolve full parent::child, so just try to find parent instead
         if m["child_name"] and item is None:
-            parent_name = m["name"]
+            parent_name = name
             print(
                 f"Warning: Could not substitute link {m.group()}. "
                 f'"{m["child_name"]}" not found in "{parent_name}", linking to page for "{parent_name}" instead'
             )
-            item = self.project.find(m["name"], m["entity"])
+            item = self.project.find(name, m["entity"])
 
         link = Element("a")
 
         # Nothing found, so give a blank link
         if item is None:
-            name = m["name"]
             print(f"Warning: Could not substitute link {m.group()}. '{name}' not found")
             link.text = name
             return link
@@ -149,7 +177,7 @@ class FordLinkExtension(Extension):
         self.config = {"project": [kwargs.get("project", None), "Ford project"]}
         super().__init__(**kwargs)
 
-    def extendMarkdown(self, md: Markdown):
+    def extendMarkdown(self, md: MetaMarkdown):  # type: ignore[override]
         project = self.getConfig("project")
         md.inlinePatterns.register(
             FordLinkProcessor(md, project=project), "ford_links", 174
