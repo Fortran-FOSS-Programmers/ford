@@ -33,6 +33,7 @@ import ford.sourceform
 from ford.sourceform import (
     _find_in_list,
     FortranBase,
+    FortranBlockData,
     FortranCodeUnit,
     FortranModule,
     FortranSubmodule,
@@ -48,8 +49,12 @@ from ford.sourceform import (
     ExternalInterface,
     ExternalVariable,
     FortranProcedure,
+    FortranSourceFile,
+    GenericSource,
+    FortranProgram,
 )
 from ford.settings import ProjectSettings
+from ford._typing import PathLike
 
 
 INTRINSIC_MODS = {
@@ -106,18 +111,16 @@ class Project:
         self.display = settings.display
         self.encoding = settings.encoding
 
-        html_incl_src = settings.incl_src
-
-        self.files = []
-        self.modules = []
-        self.programs = []
+        self.files: List[FortranSourceFile] = []
+        self.modules: List[FortranModule] = []
+        self.programs: List[FortranProgram] = []
         self.procedures: List[FortranProcedure] = []
         self.absinterfaces: List[FortranInterface] = []
         self.types: List[FortranType] = []
         self.submodules: List[FortranSubmodule] = []
         self.submodprocedures: List[FortranModuleProcedureImplementation] = []
-        self.extra_files = []
-        self.blockdata = []
+        self.extra_files: List[GenericSource] = []
+        self.blockdata: List[FortranBlockData] = []
         self.common: Dict[str, FortranCommon] = {}
         self.extModules: List[ExternalModule] = []
         self.extProcedures: List[Union[ExternalSubroutine, ExternalFunction]] = []
@@ -135,76 +138,75 @@ class Project:
 
                 filename = curdir / item
                 relative_path = os.path.relpath(filename)
+                print(f"Reading file {relative_path}")
+
                 extension = str(item.suffix)[1:]  # Don't include the initial '.'
-                if extension in self.extensions or extension in self.fixed_extensions:
-                    # Get contents of the file
-                    print(f"Reading file {relative_path}")
-                    if extension in settings.fpp_extensions:
-                        preprocessor = settings.preprocessor.split()
-                    else:
-                        preprocessor = None
-                    try:
-                        new_file = ford.sourceform.FortranSourceFile(
-                            str(filename),
-                            settings,
-                            preprocessor,
-                            extension in self.fixed_extensions,
-                            incl_src=html_incl_src,
-                            encoding=self.encoding,
-                        )
-                    except Exception as e:
-                        if not settings.dbg:
-                            raise e
+                try:
+                    if (
+                        extension in self.extensions
+                        or extension in self.fixed_extensions
+                    ):
+                        self._fortran_file(extension, filename, settings)
+                    elif extension in self.extra_filetypes:
+                        self.extra_files.append(GenericSource(str(filename), settings))
+                except Exception as e:
+                    if not settings.dbg:
+                        raise e
 
-                        print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
-                        continue
+                    print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
+                    continue
 
-                    def namelist_check(entity):
-                        self.namelists.extend(getattr(entity, "namelists", []))
+    def _fortran_file(
+        self, extension: str, filename: PathLike, settings: ProjectSettings
+    ):
+        if extension in settings.fpp_extensions:
+            preprocessor = settings.preprocessor.split()
+        else:
+            preprocessor = None
 
-                    for module in new_file.modules:
-                        self.modules.append(module)
-                        for routine in module.routines:
-                            namelist_check(routine)
+        new_file = FortranSourceFile(
+            str(filename),
+            settings,
+            preprocessor,
+            extension in self.fixed_extensions,
+            incl_src=settings.incl_src,
+            encoding=self.encoding,
+        )
 
-                    for submod in new_file.submodules:
-                        self.submodules.append(submod)
-                        for routine in submod.routines:
-                            namelist_check(routine)
+        def namelist_check(entity):
+            self.namelists.extend(getattr(entity, "namelists", []))
 
-                    for function in new_file.functions:
-                        function.visible = True
-                        self.procedures.append(function)
-                        namelist_check(function)
+        for module in new_file.modules:
+            self.modules.append(module)
+            for routine in module.routines:
+                namelist_check(routine)
 
-                    for subroutine in new_file.subroutines:
-                        subroutine.visible = True
-                        self.procedures.append(subroutine)
-                        namelist_check(subroutine)
+        for submod in new_file.submodules:
+            self.submodules.append(submod)
+            for routine in submod.routines:
+                namelist_check(routine)
 
-                    for program in new_file.programs:
-                        program.visible = True
-                        self.programs.append(program)
-                        namelist_check(program)
-                        for routine in program.routines:
-                            namelist_check(routine)
+        for function in new_file.functions:
+            function.visible = True
+            self.procedures.append(function)
+            namelist_check(function)
 
-                    for block in new_file.blockdata:
-                        self.blockdata.append(block)
+        for subroutine in new_file.subroutines:
+            subroutine.visible = True
+            self.procedures.append(subroutine)
+            namelist_check(subroutine)
 
-                    self.files.append(new_file)
-                elif extension in self.extra_filetypes:
-                    print(f"Reading file {relative_path}")
-                    try:
-                        self.extra_files.append(
-                            ford.sourceform.GenericSource(str(filename), settings)
-                        )
-                    except Exception as e:
-                        if not settings.dbg:
-                            raise e
+        for program in new_file.programs:
+            program.visible = True
+            self.programs.append(program)
+            namelist_check(program)
+            for routine in program.routines:
+                namelist_check(routine)
 
-                        print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
-                        continue
+        for block in new_file.blockdata:
+            self.blockdata.append(block)
+
+        self.files.append(new_file)
 
     def warn(self, message):
         if self.settings.warn:
