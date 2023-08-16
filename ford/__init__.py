@@ -410,27 +410,24 @@ def main(proj_data: ProjectSettings, proj_docs: str):
     aliases = copy.copy(proj_data.alias)
     aliases.update(proj_data.external)
     md = MetaMarkdown(
-        proj_data.md_base_dir, extensions=proj_data.md_extensions, aliases=aliases
+        proj_data.md_base_dir,
+        extensions=proj_data.md_extensions,
+        aliases=aliases,
+        project=project,
     )
 
     # Convert the documentation from Markdown to HTML
     proj_docs = md.reset().convert(proj_docs)
     project.markdown(md, base_url)
-    project.make_links(base_url)
 
     # Convert summaries and descriptions to HTML
     if proj_data.relative:
         ford.sourceform.set_base_url(".")
     if proj_data.summary is not None:
         proj_data.summary = md.convert(proj_data.summary)
-        proj_data.summary = ford.utils.sub_links(proj_data.summary, project)
     if proj_data.author_description is not None:
         proj_data.author_description = md.convert(proj_data.author_description)
-        proj_data.author_description = ford.utils.sub_links(
-            proj_data.author_description,
-            project,
-        )
-    proj_docs_ = ford.utils.sub_links(proj_docs, project)
+
     # Process any pages
     if proj_data.page_dir is not None:
         page_tree = get_page_tree(
@@ -447,7 +444,7 @@ def main(proj_data: ProjectSettings, proj_docs: str):
     # and copy any files that are needed (CSS, JS, images, fonts, source files,
     # etc.)
 
-    docs = ford.output.Documentation(proj_data, proj_docs_, project, page_tree)
+    docs = ford.output.Documentation(proj_data, proj_docs, project, page_tree)
     docs.writeout()
 
     if proj_data.externalize:

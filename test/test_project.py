@@ -7,11 +7,10 @@ from ford.sourceform import (
     FortranSubroutine,
     FortranModule,
 )
+from ford._markdown import MetaMarkdown
 
 from itertools import chain
 
-
-import markdown
 import pytest
 from bs4 import BeautifulSoup
 
@@ -29,18 +28,8 @@ def copy_fortran_file(tmp_path):
     return copy_file
 
 
-def create_project(settings: dict):
-    md_ext = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html", extension_configs={}
-    )
-
+def create_project(settings: ProjectSettings):
     project = Project(settings)
-    project.markdown(md, "..")
     project.correlate()
     return project
 
@@ -1046,8 +1035,8 @@ def test_make_links(copy_fortran_file):
     """
     settings = copy_fortran_file(data)
     project = create_project(settings)
-
-    project.make_links()
+    md = MetaMarkdown(project=project)
+    project.markdown(md, "..")
 
     expected_links = {
         "a": "../module/a.html",

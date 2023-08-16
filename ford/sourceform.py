@@ -461,19 +461,6 @@ class FortranBase:
             entity = getattr(self, entities, [])
             entity.sort(key=sort_key)
 
-    def make_links(self, project: Project) -> None:
-        """
-        Process intra-site links to documentation of other parts of the program.
-        """
-        self.doc = ford.utils.sub_links(self.doc, project)
-        if self.meta.summary is not None:
-            self.meta.summary = ford.utils.sub_links(self.meta.summary, project)
-
-        # Create links in the project
-        for item in self.children:
-            if isinstance(item, FortranBase) and hasattr(item, "doc"):
-                item.make_links(project)
-
     @property
     def routines(self):
         """Iterator returning all procedures"""

@@ -398,15 +398,6 @@ class Project:
         for src in self.allfiles:
             src.markdown(md, self)
 
-    def make_links(self, base_url=".."):
-        """
-        Substitute intrasite links to documentation for other parts of
-        the program.
-        """
-        ford.sourceform.set_base_url(base_url)
-        for src in self.allfiles:
-            src.make_links(self)
-
     def make_srcdir_list(self, exclude_dirs):
         """
         Like `os.walk`, except that:

@@ -539,7 +539,6 @@ class PagetreePage(BasePage):
             ford.pagetree.set_base_url(base_url)
             data["project_url"] = base_url
         template = env.get_template("info_page.html")
-        obj.contents = ford.utils.sub_links(obj.contents, proj)
         return template.render(data, page=obj, project=proj, topnode=obj.topnode)
 
     def writeout(self):

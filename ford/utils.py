@@ -22,28 +22,13 @@
 #
 #
 
-from __future__ import annotations
-
 import re
 import os.path
 import pathlib
-from typing import Dict, Union, TYPE_CHECKING, List, Any, Tuple
+from typing import Dict, Union, List, Any, Tuple
 from io import StringIO
 import itertools
 from collections import defaultdict
-
-if TYPE_CHECKING:
-    from ford.fortran_project import Project
-
-LINK_RE = re.compile(
-    r"""\[\[
-    (?P<name>\w+(?:\.\w+)?)
-    (?:\((?P<entity>\w+)\))?
-    (?::(?P<child_name>\w+)
-    (?:\((?P<child_entity>\w+)\))?)?
-    \]\]""",
-    re.VERBOSE,
-)
 
 
 def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
@@ -170,41 +155,6 @@ def quote_split(sep, string):
         i += 1
     retlist.append(string[left:])
     return retlist
-
-
-def sub_links(string: str, project: Project) -> str:
-    """
-    Replace links to different parts of the program, formatted as
-    [[name]] or [[name(object-type)]] with the appropriate URL. Can also
-    link to an item's entry in another's page with the syntax
-    [[parent-name:name]]. The object type can be placed in parentheses
-    for either or both of these parts.
-    """
-
-    def convert_link(match):
-        item = project.find(**match.groupdict())
-
-        # Could resolve full parent::child, so just try to find parent instead
-        if match["child_name"] and item is None:
-            parent_name = match["name"]
-            print(
-                f"Warning: Could not substitute link {match.group()}. "
-                f'"{match["child_name"]}" not found in "{parent_name}", linking to page for "{parent_name}" instead'
-            )
-            item = project.find(match["name"], match["entity"])
-
-        # Nothing found, so give a blank link
-        if item is None:
-            print(
-                f"Warning: Could not substitute link {match.group()}. '{match['name']}' not found"
-            )
-            return f"<a>{match['name']}</a>"
-
-        return f'<a href="{item.get_url()}">{item.name}</a>'
-
-    # Get information from links (need to build an RE)
-    string = LINK_RE.sub(convert_link, string)
-    return string
 
 
 def str_to_bool(text):
