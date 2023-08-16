@@ -2,26 +2,19 @@ from ford.fortran_project import Project
 from ford import ProjectSettings
 from ford.graphs import graphviz_installed, GraphManager
 import ford.sourceform
+from ford._markdown import MetaMarkdown
 
 from textwrap import dedent
 from typing import Dict
 
-import markdown
+
 import pytest
 from bs4 import BeautifulSoup
 
 
-def create_project(settings: dict):
-    md_ext = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html", extension_configs={}
-    )
-
+def create_project(settings: ProjectSettings):
     project = Project(settings)
+    md = MetaMarkdown(project=project)
     project.markdown(md, "..")
     project.correlate()
     return project

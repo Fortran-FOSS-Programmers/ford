@@ -305,9 +305,12 @@ class FortranBase:
                 FortranVariable,
                 FortranEnum,
                 FortranFinalProc,
+                FortranProcedure,
             ),
         ):
             if parent_url := self.parent.get_url():
+                if "#" in parent_url:
+                    parent_url, _ = parent_url.split("#")
                 return f"{parent_url}#{self.anchor}"
             return None
         return None
@@ -398,7 +401,9 @@ class FortranBase:
 
         # Remove any common leading whitespace from the docstring
         # so that the markdown conversion is a bit more robust
-        self.doc = md.reset().convert(textwrap.dedent("\n".join(self.doc_list)))
+        self.doc = md.reset().convert(
+            textwrap.dedent("\n".join(self.doc_list)), context=self
+        )
 
         if self.meta.summary is not None:
             self.meta.summary = md.convert("\n".join(self.meta.summary))
@@ -522,10 +527,7 @@ class FortranBase:
                 "boundprocs",
                 "common",
                 "enums",
-                "finalprocs",
                 "functions",
-                "interfaces",
-                "modprocs",
                 "modprocedures",
                 "modules",
                 "namelists",
@@ -534,6 +536,10 @@ class FortranBase:
                 "subroutines",
                 "types",
                 "variables",
+                # Non-alphabetical order to preserve previous behaviour of
+                # finding types before interfaces
+                "interfaces",
+                "finalprocs",
             ),
             filter(None, (getattr(self, item, None) for item in non_list_children)),
         )
