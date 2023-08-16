@@ -22,20 +22,13 @@
 #
 #
 
-from __future__ import annotations
-
 import re
 import os.path
 import pathlib
-from typing import Dict, Union, TYPE_CHECKING, List, Any, Tuple
+from typing import Dict, Union, List, Any, Tuple
 from io import StringIO
 import itertools
 from collections import defaultdict
-
-if TYPE_CHECKING:
-    from ford.fortran_project import Project
-
-LINK_RE = re.compile(r"\[\[(\w+(?:\.\w+)?)(?:\((\w+)\))?(?::(\w+)(?:\((\w+)\))?)?\]\]")
 
 
 def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
@@ -162,146 +155,6 @@ def quote_split(sep, string):
         i += 1
     retlist.append(string[left:])
     return retlist
-
-
-def sub_links(string: str, project: Project) -> str:
-    """
-    Replace links to different parts of the program, formatted as
-    [[name]] or [[name(object-type)]] with the appropriate URL. Can also
-    link to an item's entry in another's page with the syntax
-    [[parent-name:name]]. The object type can be placed in parentheses
-    for either or both of these parts.
-    """
-    LINK_TYPES = {
-        "module": "modules",
-        "extmodule": "extModules",
-        "type": "types",
-        "exttype": "extTypes",
-        "procedure": "procedures",
-        "extprocedure": "extProcedures",
-        "subroutine": "procedures",
-        "extsubroutine": "extProcedures",
-        "function": "procedures",
-        "extfunction": "extProcedures",
-        "proc": "procedures",
-        "extproc": "extProcedures",
-        "file": "allfiles",
-        "interface": "absinterfaces",
-        "extinterface": "extInterfaces",
-        "absinterface": "absinterfaces",
-        "extabsinterface": "extInterfaces",
-        "program": "programs",
-        "block": "blockdata",
-        "namelist": "namelists",
-    }
-
-    SUBLINK_TYPES = {
-        "variable": "variables",
-        "type": "types",
-        "constructor": "constructor",
-        "interface": "interfaces",
-        "absinterface": "absinterfaces",
-        "subroutine": "subroutines",
-        "function": "functions",
-        "final": "finalprocs",
-        "bound": "boundprocs",
-        "modproc": "modprocs",
-        "common": "common",
-    }
-
-    def convert_link(match):
-        ERR = "Warning: Could not substitute link {}. {}"
-        url = ""
-        name = ""
-        found = False
-        searchlist = []
-        item = None
-        # [name,obj,subname,subobj]
-        if not match.group(2):
-            for key, val in LINK_TYPES.items():
-                searchlist.extend(getattr(project, val))
-        else:
-            if match.group(2).lower() in LINK_TYPES:
-                searchlist.extend(getattr(project, LINK_TYPES[match.group(2).lower()]))
-            else:
-                print(
-                    ERR.format(
-                        match.group(), f'Unrecognized classification "{match.group(2)}"'
-                    )
-                )
-                return match.group()
-
-        for obj in searchlist:
-            if match.group(1).lower() == obj.name.lower():
-                url = obj.get_url()
-                name = obj.name
-                found = True
-                item = obj
-                break
-        else:
-            print(ERR.format(match.group(), f'"{match.group(1)}" not found.'))
-            url = ""
-            name = match.group(1)
-
-        if found and match.group(3):
-            searchlist = []
-            if not match.group(4):
-                for key, val in SUBLINK_TYPES.items():
-                    if val == "constructor":
-                        if getattr(item, "constructor", False):
-                            searchlist.append(item.constructor)
-                        else:
-                            continue
-                    else:
-                        searchlist.extend(getattr(item, val, []))
-            else:
-                if match.group(4).lower() in SUBLINK_TYPES:
-                    if hasattr(item, SUBLINK_TYPES[match.group(4).lower()]):
-                        if match.group(4).lower() == "constructor":
-                            if item.constructor:
-                                searchlist.append(item.constructor)
-                        else:
-                            searchlist.extend(
-                                getattr(item, SUBLINK_TYPES[match.group(4).lower()])
-                            )
-                    else:
-                        print(
-                            ERR.format(
-                                match.group(),
-                                f'"{match.group(4)}" can not be contained in "{item.obj}"',
-                            )
-                        )
-                        return match.group()
-                else:
-                    print(
-                        ERR.format(
-                            match.group(),
-                            f'Unrecognized classification "{match.group(2)}".',
-                        )
-                    )
-                    return match.group()
-
-            for obj in searchlist:
-                if match.group(3).lower() == obj.name.lower():
-                    url = str(url) + "#" + obj.anchor
-                    name = obj.name
-                    item = obj
-                    break
-            else:
-                print(
-                    ERR.format(
-                        match.group(),
-                        f'"{match.group(3)}" not found in "{name}", linking to page for "{name}" instead.',
-                    )
-                )
-
-        if found:
-            return f'<a href="{url}">{name}</a>'
-        return f"<a>{name}</a>"
-
-    # Get information from links (need to build an RE)
-    string = LINK_RE.sub(convert_link, string)
-    return string
 
 
 def str_to_bool(text):

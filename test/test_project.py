@@ -1,19 +1,23 @@
 from ford.fortran_project import Project
 from ford import ProjectSettings
 from ford.utils import normalise_path
-from ford.sourceform import FortranVariable
+from ford.sourceform import (
+    FortranVariable,
+    FortranProgram,
+    FortranSubroutine,
+    FortranModule,
+)
+from ford._markdown import MetaMarkdown
 
 from itertools import chain
 
-
-import markdown
 import pytest
 from bs4 import BeautifulSoup
 
 
 @pytest.fixture
 def copy_fortran_file(tmp_path):
-    def copy_file(data):
+    def copy_file(data) -> ProjectSettings:
         src_dir = tmp_path / "src"
         src_dir.mkdir()
         filename = src_dir / "test.f90"
@@ -24,18 +28,8 @@ def copy_fortran_file(tmp_path):
     return copy_file
 
 
-def create_project(settings: dict):
-    md_ext = [
-        "markdown.extensions.meta",
-        "markdown.extensions.codehilite",
-        "markdown.extensions.extra",
-    ]
-    md = markdown.Markdown(
-        extensions=md_ext, output_format="html", extension_configs={}
-    )
-
+def create_project(settings: ProjectSettings):
     project = Project(settings)
-    project.markdown(md, "..")
     project.correlate()
     return project
 
@@ -1041,8 +1035,8 @@ def test_make_links(copy_fortran_file):
     """
     settings = copy_fortran_file(data)
     project = create_project(settings)
-
-    project.make_links()
+    md = MetaMarkdown(project=project)
+    project.markdown(md, "..")
 
     expected_links = {
         "a": "../module/a.html",
@@ -1124,3 +1118,41 @@ def test_find_namelists(copy_fortran_file):
     namelist_names = sorted((namelist.name for namelist in project.namelists))
     expected_names = sorted(("namelist_a", "namelist_b"))
     assert namelist_names == expected_names
+
+
+def test_find(copy_fortran_file):
+    data = """\
+    module foo
+      type :: test_type
+        integer :: sub
+      end type test_type
+    contains
+      subroutine sub
+      end subroutine sub
+    end module
+
+    program foo
+    end program
+    """
+
+    settings = copy_fortran_file(data)
+    settings.display = ["public", "private"]
+    project = create_project(settings)
+
+    test_type = project.find("test_type")
+    assert test_type.name == "test_type"
+
+    subroutine_sub = project.find("sub")
+    assert subroutine_sub.name == "sub"
+    assert isinstance(subroutine_sub, FortranSubroutine)
+
+    component_sub = project.find("test_type", child_name="sub")
+    assert component_sub.name == "sub"
+    assert isinstance(component_sub, FortranVariable)
+
+    foo = project.find("foo")
+    assert foo
+    prog_foo = project.find("foo", entity="program")
+    assert isinstance(prog_foo, FortranProgram)
+    mod_foo = project.find("foo", entity="module")
+    assert isinstance(mod_foo, FortranModule)

@@ -25,12 +25,14 @@
 import os
 import toposort
 from itertools import chain
-from typing import List, Union, Dict
+from typing import List, Optional, Union, Dict
 
 from ford.external_project import load_external_modules
 import ford.utils
 import ford.sourceform
 from ford.sourceform import (
+    _find_in_list,
+    FortranBase,
     FortranCodeUnit,
     FortranModule,
     FortranSubmodule,
@@ -60,6 +62,30 @@ INTRINSIC_MODS = {
     "omp_lib": '<a href="https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003">omp_lib</a>',
     "mpi": '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node410.htm">mpi</a>',
     "mpi_f08": '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node409.htm">mpi_f08</a>',
+}
+
+
+LINK_TYPES = {
+    "module": "modules",
+    "extmodule": "extModules",
+    "type": "types",
+    "exttype": "extTypes",
+    "procedure": "procedures",
+    "extprocedure": "extProcedures",
+    "subroutine": "procedures",
+    "extsubroutine": "extProcedures",
+    "function": "procedures",
+    "extfunction": "extProcedures",
+    "proc": "procedures",
+    "extproc": "extProcedures",
+    "file": "allfiles",
+    "interface": "absinterfaces",
+    "extinterface": "extInterfaces",
+    "absinterface": "absinterfaces",
+    "extabsinterface": "extInterfaces",
+    "program": "programs",
+    "block": "blockdata",
+    "namelist": "namelists",
 }
 
 
@@ -118,15 +144,13 @@ class Project:
                     else:
                         preprocessor = None
                     try:
-                        self.files.append(
-                            ford.sourceform.FortranSourceFile(
-                                str(filename),
-                                settings,
-                                preprocessor,
-                                extension in self.fixed_extensions,
-                                incl_src=html_incl_src,
-                                encoding=self.encoding,
-                            )
+                        new_file = ford.sourceform.FortranSourceFile(
+                            str(filename),
+                            settings,
+                            preprocessor,
+                            extension in self.fixed_extensions,
+                            incl_src=html_incl_src,
+                            encoding=self.encoding,
                         )
                     except Exception as e:
                         if not settings.dbg:
@@ -138,30 +162,37 @@ class Project:
                     def namelist_check(entity):
                         self.namelists.extend(getattr(entity, "namelists", []))
 
-                    for module in self.files[-1].modules:
+                    for module in new_file.modules:
                         self.modules.append(module)
                         for routine in module.routines:
                             namelist_check(routine)
-                    for submod in self.files[-1].submodules:
+
+                    for submod in new_file.submodules:
                         self.submodules.append(submod)
                         for routine in submod.routines:
                             namelist_check(routine)
-                    for function in self.files[-1].functions:
+
+                    for function in new_file.functions:
                         function.visible = True
                         self.procedures.append(function)
                         namelist_check(function)
-                    for subroutine in self.files[-1].subroutines:
+
+                    for subroutine in new_file.subroutines:
                         subroutine.visible = True
                         self.procedures.append(subroutine)
                         namelist_check(subroutine)
-                    for program in self.files[-1].programs:
+
+                    for program in new_file.programs:
                         program.visible = True
                         self.programs.append(program)
                         namelist_check(program)
                         for routine in program.routines:
                             namelist_check(routine)
-                    for block in self.files[-1].blockdata:
+
+                    for block in new_file.blockdata:
                         self.blockdata.append(block)
+
+                    self.files.append(new_file)
                 elif extension in self.extra_filetypes:
                     print(f"Reading file {relative_path}")
                     try:
@@ -347,15 +378,6 @@ class Project:
         for src in self.allfiles:
             src.markdown(md, self)
 
-    def make_links(self, base_url=".."):
-        """
-        Substitute intrasite links to documentation for other parts of
-        the program.
-        """
-        ford.sourceform.set_base_url(base_url)
-        for src in self.allfiles:
-            src.make_links(self)
-
     def make_srcdir_list(self, exclude_dirs):
         """
         Like `os.walk`, except that:
@@ -378,6 +400,52 @@ class Project:
                 dir_list.append(abs_entry)
                 dir_list += self.recursive_dir_list(abs_entry, skip)
         return dir_list
+
+    def find(
+        self,
+        name: str,
+        entity: Optional[str] = None,
+        child_name: Optional[str] = None,
+        child_entity: Optional[str] = None,
+    ) -> Optional[FortranBase]:
+        """Find an entity somewhere in the project
+
+        Parameters
+        ----------
+        name : str
+            Name of entity to look up
+        entity : Optional[str]
+            The class of entity (module, program, and so on)
+        child_name : Optional[str]
+            Name of a child of ``name`` to look up
+        child_entity : Optional[str]
+            The class of ``child_name``
+
+        Returns
+        -------
+        Optional[FortranBase]
+            Returns `None` if ``name`` not found
+
+        """
+
+        item = None
+
+        if entity is not None:
+            try:
+                collection = getattr(self, LINK_TYPES[entity])
+            except KeyError:
+                raise ValueError(f"Unknown class of entity {entity!r}")
+        else:
+            collection = chain(
+                *(getattr(self, collection) for collection in LINK_TYPES.values())
+            )
+
+        item = _find_in_list(collection, name)
+
+        if child_name is None or item is None:
+            return item
+
+        return item.find_child(child_name, child_entity)
 
 
 def find_used_modules(
