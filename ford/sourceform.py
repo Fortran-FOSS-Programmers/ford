@@ -32,7 +32,17 @@ import os.path
 import pathlib
 import copy
 import textwrap
-from typing import cast, List, Tuple, Optional, Union, Sequence, Dict, TYPE_CHECKING
+from typing import (
+    cast,
+    List,
+    Tuple,
+    Optional,
+    Union,
+    Sequence,
+    Dict,
+    TYPE_CHECKING,
+    Iterable,
+)
 from itertools import chain
 from urllib.parse import quote
 
@@ -73,6 +83,28 @@ PROTO_RE = re.compile(r"(\*|\w+)\s*(?:\((.*)\))?")
 CALL_AND_WHITESPACE_RE = re.compile(r"\(\)|\s")
 
 base_url = ""
+
+
+SUBLINK_TYPES = {
+    "variable": "variables",
+    "type": "types",
+    "constructor": "constructor",
+    "interface": "interfaces",
+    "absinterface": "absinterfaces",
+    "subroutine": "subroutines",
+    "function": "functions",
+    "final": "finalprocs",
+    "bound": "boundprocs",
+    "modproc": "modprocs",
+    "common": "common",
+}
+
+
+def _find_in_list(collection: Iterable, name: str) -> Optional[FortranBase]:
+    for item in collection:
+        if name == item.name.lower():
+            return item
+    return None
 
 
 def read_docstring(source: FortranReader, docmark: str) -> List[str]:
@@ -505,6 +537,39 @@ class FortranBase:
             ),
             filter(None, (getattr(self, item, None) for item in non_list_children)),
         )
+
+    def find_child(
+        self, name: str, entity: Optional[str] = None
+    ) -> Optional[FortranBase]:
+        """Find a child of this entity by name
+
+        Parameters
+        ----------
+        name : str
+            Name of child to look up
+        entity : Optional[str]
+            The class of entity (module, function, and so on)
+
+        Returns
+        -------
+        Optional[FortranBase]
+            Child if found, `None` if not
+
+        """
+
+        if entity is not None:
+            try:
+                collection_name = SUBLINK_TYPES[entity]
+            except KeyError:
+                raise ValueError(f"Unknown class of entity {entity!r}")
+            if not hasattr(self, collection_name):
+                raise ValueError(f"{self.obj!r} cannot have child {entity!r}")
+            # Ensure this is a list, as constructors are single items
+            collection = list(getattr(self, collection_name))
+        else:
+            collection = self.children
+
+        return _find_in_list(collection, name)
 
     def _should_display(self, item) -> bool:
         """Return True if item should be displayed"""

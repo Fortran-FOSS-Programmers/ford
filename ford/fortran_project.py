@@ -25,12 +25,13 @@
 import os
 import toposort
 from itertools import chain
-from typing import Iterable, List, Optional, Union, Dict
+from typing import List, Optional, Union, Dict
 
 from ford.external_project import load_external_modules
 import ford.utils
 import ford.sourceform
 from ford.sourceform import (
+    _find_in_list,
     FortranBase,
     FortranCodeUnit,
     FortranModule,
@@ -86,27 +87,6 @@ LINK_TYPES = {
     "block": "blockdata",
     "namelist": "namelists",
 }
-
-SUBLINK_TYPES = {
-    "variable": "variables",
-    "type": "types",
-    "constructor": "constructor",
-    "interface": "interfaces",
-    "absinterface": "absinterfaces",
-    "subroutine": "subroutines",
-    "function": "functions",
-    "final": "finalprocs",
-    "bound": "boundprocs",
-    "modproc": "modprocs",
-    "common": "common",
-}
-
-
-def _find_in_list(collection: Iterable, name: str) -> Optional[FortranBase]:
-    for item in collection:
-        if name == item.name.lower():
-            return item
-    return None
 
 
 class Project:
@@ -465,19 +445,7 @@ class Project:
         if child_name is None or item is None:
             return item
 
-        if child_entity is not None:
-            try:
-                child_collection_name = SUBLINK_TYPES[child_entity]
-            except KeyError:
-                raise ValueError(f"Unknown class of entity {child_entity!r}")
-            if not hasattr(item, child_collection_name):
-                raise ValueError(f"{item.obj!r} cannot have child {child_entity!r}")
-            # Ensure this is a list, as constructors are single items
-            child_collection = list(getattr(item, child_collection_name))
-        else:
-            child_collection = item.children
-
-        return _find_in_list(child_collection, child_name)
+        return item.find_child(child_name, child_entity)
 
 
 def find_used_modules(
