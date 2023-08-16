@@ -86,6 +86,7 @@ def test_paragraph_end_line():
     assert soup.find(class_="h4").text == "Note"
     assert soup.div.find(not_title).text == "note text\nsome following text"
 
+
 def test_explicit_end():
     converted = convert(
         """
@@ -261,29 +262,14 @@ def test_midparagraph():
 def test_title():
     converted = convert(
         """
-        @note "title" text
-        """
+        @warning some "title" text
+        over multiple lines"""
     )
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
-    assert sorted(soup.div["class"]) == ["alert", "alert-info"]
-    assert soup.find(class_="h4").text == "title"
-    assert soup.div.find(not_title).text == "text"
-
-
-def test_css_and_title():
-    converted = convert(
-        """
-        @note some css "title" text
-        """
-    )
-
-    soup = BeautifulSoup(converted, features="html.parser")
-    assert len(soup) == 1
-    assert sorted(soup.div["class"]) == sorted(["alert", "alert-info", "some", "css"])
-    assert soup.find(class_="h4").text == "title"
-    assert soup.div.find(not_title).text == "text"
+    assert sorted(soup.div["class"]) == ["alert", "alert-warning"]
+    assert soup.div.find(not_title).text == 'some "title" text\nover multiple lines'
 
 
 def test_end_marker_without_start():
