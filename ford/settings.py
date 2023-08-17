@@ -201,6 +201,7 @@ class ProjectSettings:
 
         self.display = [item.lower() for item in self.display]
         self.extensions = list(set(self.extensions) | set(self.fpp_extensions))
+        self.exclude_dir.append(self.output_dir)
 
         if self.relative:
             self.project_url = "."
