@@ -345,6 +345,9 @@ def convert_types_from_metapreprocessor(cls: Type, settings: Dict[str, Any]):
             if isinstance(value, str):
                 value = [value]
 
+            # Get rid of any empty strings
+            value = [v for v in value if v]
+
             if get_args(default_type) == (str, ExtraFileType):
                 file_types = [ExtraFileType.from_string(string) for string in value]
                 settings[key] = {
