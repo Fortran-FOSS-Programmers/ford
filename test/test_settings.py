@@ -80,7 +80,8 @@ def test_settings_type_conversion_from_markdown():
 
 
 def test_settings_from_toml():
-    text = dedent('''\
+    text = dedent(
+        '''\
     project = "some project"
     src_dir = "source"
     summary = """
@@ -95,7 +96,8 @@ def test_settings_from_toml():
       { extension = "sh", comment = "#", lexer = "bash" },
       { extension = "py", comment = "#", lexer = "python" },
     ]
-    ''')
+    '''
+    )
 
     settings = ProjectSettings(**tomllib.loads(text))
 
