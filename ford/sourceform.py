@@ -45,6 +45,7 @@ from typing import (
 )
 from itertools import chain
 from urllib.parse import quote
+import sys
 
 import toposort
 from pygments import highlight
@@ -60,6 +61,17 @@ from ford._typing import PathLike
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
+
+
+# Backports
+if sys.version_info <= (3, 9):
+
+    def remove_prefix(self: str, prefix: str, /) -> str:
+        if self.startswith(prefix):
+            return self[len(prefix) :]
+        return self
+
+    str.removeprefix = remove_prefix
 
 
 VAR_TYPE_STRING = r"^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
