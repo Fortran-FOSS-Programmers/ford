@@ -35,6 +35,11 @@ from datetime import datetime
 from typing import Tuple
 from textwrap import dedent
 
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib  # type: ignore[no-redef]
+
 from ford.external_project import dump_modules
 import ford.fortran_project
 import ford.sourceform
@@ -268,6 +273,13 @@ def get_command_line_arguments() -> argparse.Namespace:
         FORD will look in the provided paths for a modules.json file.
         """,
     )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Any other FORD options as a semicolon-separated TOML string. "
+        "Options set through this have lower precedence than other command line options",
+    )
 
     return parser.parse_args()
 
@@ -311,6 +323,11 @@ def parse_arguments(
     """Consolidates arguments from the command line and from the project
     file, and then normalises them how the rest of the code expects
     """
+
+    if (config := command_line_args.get("config", None)) is not None:
+        toml_string = "\n".join(config.split(";"))
+        for key, value in tomllib.loads(toml_string).items():
+            setattr(proj_data, key, value)
 
     # Get the default options, and any over-rides, straightened out
     for key, value in command_line_args.items():
