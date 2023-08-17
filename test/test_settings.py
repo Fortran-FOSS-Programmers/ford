@@ -3,11 +3,17 @@ from ford.settings import (
     ProjectSettings,
     load_markdown_settings,
     EntitySettings,
+    ExtraFileType,
 )
 
 from typing import List, Optional
 from textwrap import dedent
 import pytest
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib  # type: ignore[no-redef]
 
 
 @pytest.mark.parametrize(
@@ -45,6 +51,9 @@ def test_settings_type_conversion_from_markdown():
             max_frontpage_items: 4
             alias: a = b
                 c = d
+            extra_filetypes: cpp //
+                sh # bash
+                py # python
             ---
             """
         ),
@@ -62,6 +71,51 @@ def test_settings_type_conversion_from_markdown():
         "url": ".",
         "media": "media",
         "page": "page",
+    }
+    assert settings.extra_filetypes == {
+        "cpp": ExtraFileType("cpp", "//"),
+        "sh": ExtraFileType("sh", "#", "bash"),
+        "py": ExtraFileType("py", "#", "python"),
+    }
+
+
+def test_settings_from_toml():
+    text = dedent('''\
+    project = "some project"
+    src_dir = "source"
+    summary = """
+    first
+    second"""
+    preprocess = true
+    fpp_extensions = ["fpp", "F90"]
+    max_frontpage_items = 4
+    alias = {a = "b", c = "d"}
+    extra_filetypes = [
+      { extension = "cpp", comment = "//" },
+      { extension = "sh", comment = "#", lexer = "bash" },
+      { extension = "py", comment = "#", lexer = "python" },
+    ]
+    ''')
+
+    settings = ProjectSettings(**tomllib.loads(text))
+
+    assert settings.src_dir == ["source"]
+    assert settings.fpp_extensions == ["fpp", "F90"]
+    assert settings.project == "some project"
+    assert settings.summary == "first\nsecond"
+    assert settings.preprocess is True
+    assert settings.max_frontpage_items == 4
+    assert settings.alias == {
+        "a": "b",
+        "c": "d",
+        "url": ".",
+        "media": "media",
+        "page": "page",
+    }
+    assert settings.extra_filetypes == {
+        "cpp": ExtraFileType("cpp", "//"),
+        "sh": ExtraFileType("sh", "#", "bash"),
+        "py": ExtraFileType("py", "#", "python"),
     }
 
 

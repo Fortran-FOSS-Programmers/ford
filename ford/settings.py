@@ -75,6 +75,27 @@ def convert_to_bool(name: str, option: List[str]) -> bool:
 
 
 @dataclass
+class ExtraFileType:
+    extension: str
+    comment: str
+    lexer: Optional[str] = None
+
+    @classmethod
+    def from_string(cls, string: str):
+        parts = string.split()
+        if 3 < len(parts) < 2:
+            raise ValueError(
+                f"Unexpected format for 'extra_filetype': expected 'extension comment [lexer]', got {string!r}"
+            )
+
+        file_type = cls(parts[0], parts[1])
+        if len(parts) == 3:
+            file_type.lexer = parts[2]
+
+        return file_type
+
+
+@dataclass
 class ProjectSettings:
     alias: Dict[str, str] = field(default_factory=dict)
     author: Optional[str] = None
@@ -99,7 +120,7 @@ class ProjectSettings:
     )
     external: Dict[str, str] = field(default_factory=dict)
     externalize: bool = False
-    extra_filetypes: list = field(default_factory=list)
+    extra_filetypes: Dict[str, ExtraFileType] = field(default_factory=dict)
     extra_mods: list = field(default_factory=list)
     extra_vartypes: list = field(default_factory=list)
     facebook: Optional[str] = None
@@ -203,6 +224,19 @@ class ProjectSettings:
                 raise ValueError(
                     f"{first} ('{first_mark}') and {second} ('{second_mark}') are the same"
                 )
+
+        if isinstance(self.extra_filetypes, list):
+            try:
+                self.extra_filetypes = {
+                    filetype.extension: filetype for filetype in self.extra_filetypes
+                }
+            except AttributeError:
+                file_types = [
+                    ExtraFileType(**file_type) for file_type in self.extra_filetypes
+                ]
+                self.extra_filetypes = {
+                    file_type.extension: file_type for file_type in file_types
+                }
 
     @classmethod
     def from_markdown_metadata(cls, meta: Dict[str, Any]):
@@ -311,7 +345,13 @@ def convert_types_from_metapreprocessor(cls: Type, settings: Dict[str, Any]):
             if isinstance(value, str):
                 value = [value]
 
-            settings[key] = _parse_to_dict(value, name=key)
+            if get_args(default_type) == (str, ExtraFileType):
+                file_types = [ExtraFileType.from_string(string) for string in value]
+                settings[key] = {
+                    file_type.extension: file_type for file_type in file_types
+                }
+            else:
+                settings[key] = _parse_to_dict(value, name=key)
 
     for key in keys_to_drop:
         settings.pop(key)

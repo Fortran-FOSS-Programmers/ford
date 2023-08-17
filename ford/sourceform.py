@@ -56,6 +56,7 @@ import ford.utils
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
 from ford.settings import ProjectSettings, EntitySettings
+from ford._typing import PathLike
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
@@ -2648,33 +2649,30 @@ class GenericSource(FortranBase):
     not be analyzed, but documentation can be extracted.
     """
 
-    def __init__(self, filename, settings: ProjectSettings):
+    def __init__(self, filename: PathLike, settings: ProjectSettings):
         self.obj = "sourcefile"
         self.parobj = None
         self.parent = None
         self.hierarchy = []
         self.settings = settings
         self.num_lines = 0
-        extra_filetypes = settings.extra_filetypes[filename.split(".")[-1]]
-        comchar = extra_filetypes[0]
-        if len(extra_filetypes) > 1:
-            self.lexer_str = extra_filetypes[1]
-        else:
-            self.lexer_str = None
+        filename = pathlib.Path(filename)
+        extra_filetypes = settings.extra_filetypes[str(filename.suffix)[1:]]
+        comchar = extra_filetypes.comment
         docmark = settings.docmark
         predocmark = settings.predocmark
         docmark_alt = settings.docmark_alt
         predocmark_alt = settings.predocmark_alt
-        self.path = filename.strip()
-        self.name = os.path.basename(self.path)
-        self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
+        self.path = filename
+        self.name = self.path.name
+        self.raw_src = self.path.read_text(encoding=settings.encoding)
         # TODO: Get line numbers to display properly
-        if self.lexer_str is None:
+        if extra_filetypes.lexer is None:
             lexer = guess_lexer_for_filename(self.name, self.raw_src)
         else:
             import pygments.lexers
 
-            lexer = getattr(pygments.lexers, self.lexer_str)
+            lexer = getattr(pygments.lexers, extra_filetypes.lexer)
         self.src = highlight(
             self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
         )
