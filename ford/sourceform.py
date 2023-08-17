@@ -2670,11 +2670,7 @@ class GenericSource(FortranBase):
         self.num_lines = 0
         filename = pathlib.Path(filename)
         extra_filetypes = settings.extra_filetypes[str(filename.suffix)[1:]]
-        comchar = extra_filetypes.comment
-        docmark = settings.docmark
-        predocmark = settings.predocmark
-        docmark_alt = settings.docmark_alt
-        predocmark_alt = settings.predocmark_alt
+
         self.path = filename
         self.name = self.path.name
         self.raw_src = self.path.read_text(encoding=settings.encoding)
@@ -2688,96 +2684,108 @@ class GenericSource(FortranBase):
         self.src = highlight(
             self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
         )
-        com_re = re.compile(
-            r"^((?!{0}|[\"']).|(\'[^']*')|(\"[^\"]*\"))*({0}.*)$".format(
-                re.escape(comchar)
+
+        self.comment = extra_filetypes.comment
+        comchar = re.escape(extra_filetypes.comment)
+        self.com_re = re.compile(
+            r"^((?!{0}|[\"']).|(\'[^']*')|(\"[^\"]*\"))*({0}.*)$".format(comchar)
+        )
+
+        docmark = settings.docmark
+        predocmark = settings.predocmark
+        docmark_alt = settings.docmark_alt
+        predocmark_alt = settings.predocmark_alt
+
+        docmark_re_bit = (
+            f"(?:{re.escape(settings.docmark)}|{re.escape(settings.predocmark)})"
+            if settings.predocmark
+            else re.escape(settings.docmark)
+        )
+
+        self.doc_re = re.compile(
+            r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(
+                comchar, docmark_re_bit
             )
         )
-        if len(predocmark) != 0:
-            doc_re = re.compile(
-                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}(?:{1}|{2}).*)$".format(
-                    re.escape(comchar), re.escape(docmark), re.escape(predocmark)
+
+        if _docmark_alt := self._docmark_alt(settings):
+            self.doc_alt_re: Optional[re.Pattern] = re.compile(
+                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(
+                    comchar, _docmark_alt
                 )
             )
         else:
-            doc_re = re.compile(
-                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(
-                    re.escape(comchar), re.escape(docmark)
-                )
-            )
-        if len(docmark_alt) != 0 and len(predocmark_alt) != 0:
-            doc_alt_re = re.compile(
-                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}(?:{1}|{2}).*)$".format(
-                    re.escape(comchar),
-                    re.escape(docmark_alt),
-                    re.escape(predocmark_alt),
-                )
-            )
-        elif len(docmark_alt) != 0:
-            doc_alt_re = re.compile(
-                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(
-                    re.escape(comchar), re.escape(docmark_alt)
-                )
-            )
-        elif len(predocmark_alt) != 0:
-            doc_alt_re = re.compile(
-                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(
-                    re.escape(comchar), re.escape(predocmark_alt)
-                )
-            )
+            self.doc_alt_re = None
+
+        self.doc_comment = extra_filetypes.comment + docmark
+        self.doc_comment_alt = extra_filetypes.comment + docmark_alt
+        self.predoc_comment = extra_filetypes.comment + predocmark
+        self.predoc_comment_alt = extra_filetypes.comment + predocmark_alt
+
+        self.parse_file(settings.encoding)
+
+        self.read_metadata()
+
+    @staticmethod
+    def _docmark_alt(settings: ProjectSettings) -> str:
+        if settings.docmark_alt and settings.predocmark_alt:
+            return f"(?:{re.escape(settings.docmark_alt)}|{re.escape(settings.predocmark_alt)})"
+        elif settings.docmark_alt:
+            return re.escape(settings.docmark_alt)
+        elif settings.predocmark_alt:
+            return re.escape(settings.predocmark_alt)
         else:
-            doc_alt_re = None
+            return ""
+
+    def parse_file(self, encoding: str = "utf-8"):
         self.doc_list = []
         prevdoc = False
         docalt = False
-        for line in open(filename, "r", encoding=settings.encoding):
-            line = line.strip()
-            if doc_alt_re:
-                match = doc_alt_re.match(line)
-            else:
-                match = False
-            if match:
-                prevdoc = True
-                docalt = True
-                doc = match.group(4)
-                if doc.startswith(comchar + docmark_alt):
-                    doc = doc[len(comchar + docmark_alt) :].strip()
-                else:
-                    doc = doc[len(comchar + predocmark_alt) :].strip()
-                self.doc_list.append(doc)
-                continue
-            match = doc_re.match(line)
-            if match:
-                prevdoc = True
-                if docalt:
-                    docalt = False
-                doc = match.group(4)
-                if doc.startswith(comchar + docmark):
-                    doc = doc[len(comchar + docmark) :].strip()
-                else:
-                    doc = doc[len(comchar + predocmark) :].strip()
-                self.doc_list.append(doc)
-                continue
-            match = com_re.match(line)
-            if match:
-                if docalt:
-                    if match.start(4) == 0:
-                        doc = match.group(4)
-                        doc = doc[len(comchar) :].strip()
-                        self.doc_list.append(doc)
-                    else:
-                        docalt = False
-                elif prevdoc:
-                    prevdoc = False
-                    self.doc_list.append("")
-                continue
-            # if not including any comment...
-            if prevdoc:
-                self.doc_list.append("")
-                prevdoc = False
-            docalt = False
+        with open(self.path, "r", encoding=encoding) as lines:
+            for line in lines:
+                line = line.strip()
+                if self.doc_alt_re and (match := self.doc_alt_re.match(line)):
+                    prevdoc = True
+                    docalt = True
+                    self.doc_list.append(
+                        match.group(4)
+                        .removeprefix(self.doc_comment_alt)
+                        .removeprefix(self.predoc_comment_alt)
+                        .strip()
+                    )
+                    continue
 
-        self.read_metadata()
+                if match := self.doc_re.match(line):
+                    prevdoc = True
+                    if docalt:
+                        docalt = False
+
+                    self.doc_list.append(
+                        match.group(4)
+                        .removeprefix(self.doc_comment)
+                        .removeprefix(self.predoc_comment)
+                        .strip()
+                    )
+                    continue
+
+                if match := self.com_re.match(line):
+                    if docalt:
+                        if match.start(4) == 0:
+                            self.doc_list.append(
+                                match.group(4).removeprefix(self.comment).strip()
+                            )
+                        else:
+                            docalt = False
+                    elif prevdoc:
+                        prevdoc = False
+                        self.doc_list.append("")
+                    continue
+
+                # if not including any comment...
+                if prevdoc:
+                    self.doc_list.append("")
+                    prevdoc = False
+                docalt = False
 
     def lines_description(self, total, total_all=0):
         return ""

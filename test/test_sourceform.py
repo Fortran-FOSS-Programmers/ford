@@ -5,7 +5,7 @@ from ford.sourceform import (
     parse_type,
     ParsedType,
     line_to_variables,
-    GenericSource
+    GenericSource,
 )
 from ford.fortran_project import find_used_modules
 from ford import ProjectSettings
@@ -2110,14 +2110,24 @@ def test_namelist_correlate(parse_fortran_file):
 
 def test_generic_source(tmp_path):
     data = """\
-    #> Some other file type
-    #>
-    #> Longer description
+    #! docmark
+    #* docmark_alt
+    #> predocmark
+    #| predocmark_alt
     """
 
     filename = tmp_path / "generic_source.sh"
     filename.write_text(dedent(data))
 
-    settings = ProjectSettings(extra_filetypes=[{"extension": "sh", "comment": "#"}])
+    settings = ProjectSettings(
+        extra_filetypes=[{"extension": "sh", "comment": "#"}],
+    )
     source = GenericSource(filename, settings)
-    assert source.doc_list == ["Some other file type", "", "Longer description"]
+    expected_docs = [
+        "docmark",
+        "docmark_alt",
+        "predocmark",
+        "predocmark_alt",
+    ]
+
+    assert source.doc_list == expected_docs
