@@ -1,5 +1,5 @@
-from ford.fortran_project import Project
-from ford import ProjectSettings
+from ford.fortran_project import Project, find_all_files
+from ford.settings import ProjectSettings, ExtraFileType
 from ford.utils import normalise_path
 from ford.sourceform import (
     FortranVariable,
@@ -748,7 +748,7 @@ def test_exclude_dir(tmp_path):
     settings = ProjectSettings(
         src_dir=tmp_path, exclude_dir=normalise_path(tmp_path, "sub1")
     )
-    project = Project((settings))
+    project = Project(settings)
 
     program_names = {program.name for program in project.programs}
     assert program_names == {"foo"}
@@ -770,6 +770,58 @@ def test_exclude(tmp_path):
 
     program_names = {program.name for program in project.programs}
     assert program_names == {"foo"}
+
+
+def test_find_all_files(tmp_path):
+    src = tmp_path / "src"
+    src.mkdir(parents=True)
+    sub1 = src / "sub1"
+    sub1.mkdir()
+    sub2 = src / "sub2"
+    sub2.mkdir()
+    (src / "file1.f90").touch()
+    (src / "file2.F90").touch()
+    (sub1 / "file3.f").touch()
+    (sub1 / "not_this.f90").touch()
+    (sub2 / "file4.c").touch()
+    (sub2 / "not_this.f90").touch()
+
+    exclude_dir = src / "bad_dir"
+    exclude_dir.mkdir()
+    exclude_sub = exclude_dir / "sub1"
+    exclude_sub.mkdir()
+    (exclude_dir / "file5.f90").touch()
+    (exclude_sub / "file6.f90").touch()
+
+    src2 = tmp_path / "src2"
+    src2.mkdir()
+    (src2 / "file7.f90").touch()
+
+    settings = ProjectSettings(
+        exclude=["src/sub1/not_this.f90"],
+        exclude_dir=["src/bad_dir"],
+        src_dir=[src, src2],
+        extra_filetypes={"c": ExtraFileType("c", "//")},
+    )
+    settings.normalise_paths(tmp_path)
+
+    files = sorted(find_all_files(settings))
+
+    expected_files = sorted(
+        [
+            tmp_path / f
+            for f in (
+                "src/file1.f90",
+                "src/file2.F90",
+                "src/sub1/file3.f",
+                "src/sub2/file4.c",
+                "src/sub2/not_this.f90",
+                "src2/file7.f90",
+            )
+        ]
+    )
+
+    assert files == expected_files
 
 
 @pytest.mark.parametrize(

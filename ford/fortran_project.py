@@ -24,8 +24,10 @@
 
 import os
 import toposort
-from itertools import chain
-from typing import List, Optional, Union, Dict
+from itertools import chain, product
+from typing import List, Optional, Union, Dict, Iterable
+from pathlib import Path
+from fnmatch import fnmatch
 
 from ford.external_project import load_external_modules
 import ford.utils
@@ -94,6 +96,46 @@ LINK_TYPES = {
 }
 
 
+def find_all_files(settings: ProjectSettings) -> List[Path]:
+    """Returns a list of all selected files below a set of directories"""
+
+    file_extensions = chain(
+        settings.extensions,
+        settings.fixed_extensions,
+        settings.extra_filetypes.keys(),
+    )
+
+    # Get initial list of all files in all source directories
+    src_files: List[Path] = []
+
+    for src_dir, extension in product(settings.src_dir, file_extensions):
+        src_files.extend(Path(src_dir).glob(f"**/*.{extension}"))
+
+    # Remove files under excluded directories
+    for exclude_dir in settings.exclude_dir:
+        src_files = [
+            src for src in src_files if not fnmatch(str(src), f"{exclude_dir}/*")
+        ]
+
+    bottom_level_dirs = [src_dir.name for src_dir in settings.src_dir]
+    # First, let's check if the files are relative paths or not
+    for i, exclude in enumerate(settings.exclude):
+        if Path(exclude).parent.name not in bottom_level_dirs and "*" not in exclude:
+            glob_exclude = f"**/{exclude}"
+            print(
+                f"Warning: exclude file '{exclude}' is not relative to any source directories, all matching files will be excluded.\n"
+                f"To suppress this warning please change it to '{glob_exclude}' in your settings file"
+            )
+            settings.exclude[i] = glob_exclude
+
+    for exclude in settings.exclude:
+        src_files = [
+            src for src in src_files if not fnmatch(os.path.relpath(src), exclude)
+        ]
+
+    return src_files
+
+
 class Project:
     """
     An object which collects and contains all of the information about the
@@ -130,31 +172,23 @@ class Project:
         self.namelists: List[FortranNamelist] = []
 
         # Get all files within topdir, recursively
-        srcdir_list = self.make_srcdir_list(settings.exclude_dir)
-        for curdir in srcdir_list:
-            for item in [f for f in curdir.iterdir() if f.is_file()]:
-                if item.name in settings.exclude:
-                    continue
+        for filename in find_all_files(settings):
+            relative_path = os.path.relpath(filename)
+            print(f"Reading file {relative_path}")
 
-                filename = curdir / item
-                relative_path = os.path.relpath(filename)
-                print(f"Reading file {relative_path}")
+            extension = str(filename.suffix)[1:]  # Don't include the initial '.'
+            fortran_extensions = self.extensions + self.fixed_extensions
+            try:
+                if extension in fortran_extensions:
+                    self._fortran_file(extension, filename, settings)
+                elif extension in self.extra_filetypes:
+                    self.extra_files.append(GenericSource(filename, settings))
+            except Exception as e:
+                if not settings.dbg:
+                    raise e
 
-                extension = str(item.suffix)[1:]  # Don't include the initial '.'
-                try:
-                    if (
-                        extension in self.extensions
-                        or extension in self.fixed_extensions
-                    ):
-                        self._fortran_file(extension, filename, settings)
-                    elif extension in self.extra_filetypes:
-                        self.extra_files.append(GenericSource(str(filename), settings))
-                except Exception as e:
-                    if not settings.dbg:
-                        raise e
-
-                    print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
-                    continue
+                print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
+                continue
 
     def _fortran_file(
         self, extension: str, filename: PathLike, settings: ProjectSettings
@@ -379,29 +413,6 @@ class Project:
             print()
         for src in self.allfiles:
             src.markdown(md, self)
-
-    def make_srcdir_list(self, exclude_dirs):
-        """
-        Like `os.walk`, except that:
-
-        a) directories listed in exclude_dir are excluded with all
-           their subdirectories
-        b) absolute paths are returned
-        """
-        srcdir_list = []
-        for topdir in self.topdirs:
-            srcdir_list.append(topdir)
-            srcdir_list += self.recursive_dir_list(topdir, exclude_dirs)
-        return srcdir_list
-
-    def recursive_dir_list(self, topdir, skip):
-        dir_list = []
-        for entry in os.listdir(topdir):
-            abs_entry = ford.utils.normalise_path(topdir, entry)
-            if abs_entry.is_dir() and (abs_entry not in skip):
-                dir_list.append(abs_entry)
-                dir_list += self.recursive_dir_list(abs_entry, skip)
-        return dir_list
 
     def find(
         self,
