@@ -24,8 +24,10 @@
 
 import os
 import toposort
-from itertools import chain
-from typing import List, Optional, Union, Dict
+from itertools import chain, product
+from typing import List, Optional, Union, Dict, Iterable
+from pathlib import Path
+from fnmatch import fnmatch
 
 from ford.external_project import load_external_modules
 import ford.utils
@@ -33,6 +35,7 @@ import ford.sourceform
 from ford.sourceform import (
     _find_in_list,
     FortranBase,
+    FortranBlockData,
     FortranCodeUnit,
     FortranModule,
     FortranSubmodule,
@@ -48,8 +51,12 @@ from ford.sourceform import (
     ExternalInterface,
     ExternalVariable,
     FortranProcedure,
+    FortranSourceFile,
+    GenericSource,
+    FortranProgram,
 )
 from ford.settings import ProjectSettings
+from ford._typing import PathLike
 
 
 INTRINSIC_MODS = {
@@ -89,6 +96,51 @@ LINK_TYPES = {
 }
 
 
+def find_all_files(settings: ProjectSettings) -> List[Path]:
+    """Returns a list of all selected files below a set of directories"""
+
+    file_extensions = chain(
+        settings.extensions,
+        settings.fixed_extensions,
+        settings.extra_filetypes.keys(),
+    )
+
+    # Get initial list of all files in all source directories
+    src_files: List[Path] = []
+
+    for src_dir, extension in product(settings.src_dir, file_extensions):
+        src_files.extend(Path(src_dir).glob(f"**/*.{extension}"))
+
+    # Remove files under excluded directories
+    for exclude_dir in settings.exclude_dir:
+        src_files = [
+            src for src in src_files if not fnmatch(str(src), f"{exclude_dir}/*")
+        ]
+
+    bottom_level_dirs = [src_dir.name for src_dir in settings.src_dir]
+    # First, let's check if the files are relative paths or not
+    for i, exclude in enumerate(settings.exclude):
+        exclude_path = Path(exclude)
+        if (
+            not exclude_path.is_file()
+            and exclude_path.parent.name not in bottom_level_dirs
+            and "*" not in exclude
+        ):
+            glob_exclude = f"**/{exclude}"
+            print(
+                f"Warning: exclude file '{exclude}' is not relative to any source directories, all matching files will be excluded.\n"
+                f"To suppress this warning please change it to '{glob_exclude}' in your settings file"
+            )
+            settings.exclude[i] = glob_exclude
+
+    for exclude in settings.exclude:
+        src_files = [
+            src for src in src_files if not fnmatch(os.path.relpath(src), exclude)
+        ]
+
+    return src_files
+
+
 class Project:
     """
     An object which collects and contains all of the information about the
@@ -106,18 +158,16 @@ class Project:
         self.display = settings.display
         self.encoding = settings.encoding
 
-        html_incl_src = settings.incl_src
-
-        self.files = []
-        self.modules = []
-        self.programs = []
+        self.files: List[FortranSourceFile] = []
+        self.modules: List[FortranModule] = []
+        self.programs: List[FortranProgram] = []
         self.procedures: List[FortranProcedure] = []
         self.absinterfaces: List[FortranInterface] = []
         self.types: List[FortranType] = []
         self.submodules: List[FortranSubmodule] = []
         self.submodprocedures: List[FortranModuleProcedureImplementation] = []
-        self.extra_files = []
-        self.blockdata = []
+        self.extra_files: List[GenericSource] = []
+        self.blockdata: List[FortranBlockData] = []
         self.common: Dict[str, FortranCommon] = {}
         self.extModules: List[ExternalModule] = []
         self.extProcedures: List[Union[ExternalSubroutine, ExternalFunction]] = []
@@ -127,84 +177,75 @@ class Project:
         self.namelists: List[FortranNamelist] = []
 
         # Get all files within topdir, recursively
-        srcdir_list = self.make_srcdir_list(settings.exclude_dir)
-        for curdir in srcdir_list:
-            for item in [f for f in curdir.iterdir() if f.is_file()]:
-                if item.name in settings.exclude:
-                    continue
+        for filename in find_all_files(settings):
+            relative_path = os.path.relpath(filename)
+            print(f"Reading file {relative_path}")
 
-                filename = curdir / item
-                relative_path = os.path.relpath(filename)
-                extension = str(item.suffix)[1:]  # Don't include the initial '.'
-                if extension in self.extensions or extension in self.fixed_extensions:
-                    # Get contents of the file
-                    print(f"Reading file {relative_path}")
-                    if extension in settings.fpp_extensions:
-                        preprocessor = settings.preprocessor.split()
-                    else:
-                        preprocessor = None
-                    try:
-                        new_file = ford.sourceform.FortranSourceFile(
-                            str(filename),
-                            settings,
-                            preprocessor,
-                            extension in self.fixed_extensions,
-                            incl_src=html_incl_src,
-                            encoding=self.encoding,
-                        )
-                    except Exception as e:
-                        if not settings.dbg:
-                            raise e
-
-                        print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
-                        continue
-
-                    def namelist_check(entity):
-                        self.namelists.extend(getattr(entity, "namelists", []))
-
-                    for module in new_file.modules:
-                        self.modules.append(module)
-                        for routine in module.routines:
-                            namelist_check(routine)
-
-                    for submod in new_file.submodules:
-                        self.submodules.append(submod)
-                        for routine in submod.routines:
-                            namelist_check(routine)
-
-                    for function in new_file.functions:
-                        function.visible = True
-                        self.procedures.append(function)
-                        namelist_check(function)
-
-                    for subroutine in new_file.subroutines:
-                        subroutine.visible = True
-                        self.procedures.append(subroutine)
-                        namelist_check(subroutine)
-
-                    for program in new_file.programs:
-                        program.visible = True
-                        self.programs.append(program)
-                        namelist_check(program)
-                        for routine in program.routines:
-                            namelist_check(routine)
-
-                    for block in new_file.blockdata:
-                        self.blockdata.append(block)
-
-                    self.files.append(new_file)
+            extension = str(filename.suffix)[1:]  # Don't include the initial '.'
+            fortran_extensions = self.extensions + self.fixed_extensions
+            try:
+                if extension in fortran_extensions:
+                    self._fortran_file(extension, filename, settings)
                 elif extension in self.extra_filetypes:
-                    print(f"Reading file {relative_path}")
-                    try:
-                        self.extra_files.append(
-                            ford.sourceform.GenericSource(str(filename), settings)
-                        )
-                    except Exception as e:
-                        if not settings.dbg:
-                            raise e
+                    self.extra_files.append(GenericSource(filename, settings))
+            except Exception as e:
+                if not settings.dbg:
+                    raise e
 
-                        print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
-                        continue
+                print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
+                continue
+
+    def _fortran_file(
+        self, extension: str, filename: PathLike, settings: ProjectSettings
+    ):
+        if extension in settings.fpp_extensions:
+            preprocessor = settings.preprocessor.split()
+        else:
+            preprocessor = None
+
+        new_file = FortranSourceFile(
+            str(filename),
+            settings,
+            preprocessor,
+            extension in self.fixed_extensions,
+            incl_src=settings.incl_src,
+            encoding=self.encoding,
+        )
+
+        def namelist_check(entity):
+            self.namelists.extend(getattr(entity, "namelists", []))
+
+        for module in new_file.modules:
+            self.modules.append(module)
+            for routine in module.routines:
+                namelist_check(routine)
+
+        for submod in new_file.submodules:
+            self.submodules.append(submod)
+            for routine in submod.routines:
+                namelist_check(routine)
+
+        for function in new_file.functions:
+            function.visible = True
+            self.procedures.append(function)
+            namelist_check(function)
+
+        for subroutine in new_file.subroutines:
+            subroutine.visible = True
+            self.procedures.append(subroutine)
+            namelist_check(subroutine)
+
+        for program in new_file.programs:
+            program.visible = True
+            self.programs.append(program)
+            namelist_check(program)
+            for routine in program.routines:
+                namelist_check(routine)
+
+        for block in new_file.blockdata:
+            self.blockdata.append(block)
+
+        self.files.append(new_file)
 
     def warn(self, message):
         if self.settings.warn:
@@ -377,29 +418,6 @@ class Project:
             print()
         for src in self.allfiles:
             src.markdown(md, self)
-
-    def make_srcdir_list(self, exclude_dirs):
-        """
-        Like `os.walk`, except that:
-
-        a) directories listed in exclude_dir are excluded with all
-           their subdirectories
-        b) absolute paths are returned
-        """
-        srcdir_list = []
-        for topdir in self.topdirs:
-            srcdir_list.append(topdir)
-            srcdir_list += self.recursive_dir_list(topdir, exclude_dirs)
-        return srcdir_list
-
-    def recursive_dir_list(self, topdir, skip):
-        dir_list = []
-        for entry in os.listdir(topdir):
-            abs_entry = ford.utils.normalise_path(topdir, entry)
-            if abs_entry.is_dir() and (abs_entry not in skip):
-                dir_list.append(abs_entry)
-                dir_list += self.recursive_dir_list(abs_entry, skip)
-        return dir_list
 
     def find(
         self,

@@ -314,7 +314,9 @@ exclude_dir
 
 Directories whose contents should not be included in documentation. Each
 excluded directory must be on its own line. Provide the relative path to
-directory from the top level project file.
+directory from the top level project file. Can be a glob pattern, for example
+``**/test*``, which will match any directory that starts with ``test``
+anywhere in the source directory tree.
 
 .. _option-include:
 
@@ -380,8 +382,17 @@ exclude
 ^^^^^^^
 
 Source files which should not be included in documentation. Each
-excluded file must be on its own line. Provide only the file-name, not
-the full path.
+excluded file must be on its own line. This should either be a relative path
+that includes one of the source directories, or a glob pattern. For example,
+``src/not_this.f90`` to exclude a specific file, or ``**/test_*.f90`` to
+exclude any ``.f90`` files that start with ``test_`` anywhere in any of the
+source directories.
+
+.. deprecated:: 7.0.0
+   In earlier versions, ``not_this.f90`` would exclude any file called
+   ``not_this.f90`` anywhere in the project. This will now emit a warning,
+   and should be changed to either a relative path (``src/not_this.f90``) or
+   a glob pattern (``**/not_this.f90``)
 
 .. _option-extensions:
 
