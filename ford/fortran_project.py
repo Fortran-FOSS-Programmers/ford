@@ -120,7 +120,12 @@ def find_all_files(settings: ProjectSettings) -> List[Path]:
     bottom_level_dirs = [src_dir.name for src_dir in settings.src_dir]
     # First, let's check if the files are relative paths or not
     for i, exclude in enumerate(settings.exclude):
-        if Path(exclude).parent.name not in bottom_level_dirs and "*" not in exclude:
+        exclude_path = Path(exclude)
+        if (
+            not exclude_path.is_file()
+            and exclude_path.parent.name not in bottom_level_dirs
+            and "*" not in exclude
+        ):
             glob_exclude = f"**/{exclude}"
             print(
                 f"Warning: exclude file '{exclude}' is not relative to any source directories, all matching files will be excluded.\n"
