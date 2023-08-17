@@ -63,17 +63,6 @@ if TYPE_CHECKING:
     from ford.fortran_project import Project
 
 
-# Backports
-if sys.version_info <= (3, 9):
-
-    def remove_prefix(self: str, prefix: str, /) -> str:
-        if self.startswith(prefix):
-            return self[len(prefix) :]
-        return self
-
-    str.removeprefix = remove_prefix
-
-
 VAR_TYPE_STRING = r"^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
 VARKIND_RE = re.compile(r"\((.*)\)|\*\s*(\d+|\(.*\))")
 KIND_RE = re.compile(r"kind\s*=\s*([^,\s]+)", re.IGNORECASE)
@@ -2748,10 +2737,11 @@ class GenericSource(FortranBase):
                     prevdoc = True
                     docalt = True
                     self.doc_list.append(
-                        match.group(4)
-                        .removeprefix(self.doc_comment_alt)
-                        .removeprefix(self.predoc_comment_alt)
-                        .strip()
+                        remove_prefixes(
+                            match.group(4),
+                            self.doc_comment_alt,
+                            self.predoc_comment_alt,
+                        )
                     )
                     continue
 
@@ -2761,10 +2751,9 @@ class GenericSource(FortranBase):
                         docalt = False
 
                     self.doc_list.append(
-                        match.group(4)
-                        .removeprefix(self.doc_comment)
-                        .removeprefix(self.predoc_comment)
-                        .strip()
+                        remove_prefixes(
+                            match.group(4), self.doc_comment, self.predoc_comment
+                        )
                     )
                     continue
 
@@ -2772,7 +2761,7 @@ class GenericSource(FortranBase):
                     if docalt:
                         if match.start(4) == 0:
                             self.doc_list.append(
-                                match.group(4).removeprefix(self.comment).strip()
+                                remove_prefixes(match.group(4), self.comment)
                             )
                         else:
                             docalt = False
@@ -2789,6 +2778,20 @@ class GenericSource(FortranBase):
 
     def lines_description(self, total, total_all=0):
         return ""
+
+
+def remove_prefixes(string: str, prefix1: str, prefix2: Optional[str] = None) -> str:
+    if sys.version_info >= (3, 9):
+        string = string.removeprefix(prefix1)
+        if prefix2:
+            string = string.removeprefix(prefix2)
+        return string.strip()
+
+    if string.startswith(prefix1):
+        string = string[len(prefix1) :]
+    if prefix2 and string.startswith(prefix2):
+        string = string[len(prefix2) :]
+    return string.strip()
 
 
 _can_have_contains = (
