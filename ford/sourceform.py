@@ -2681,14 +2681,6 @@ class GenericSource(FortranBase):
                 re.escape(comchar)
             )
         )
-        if docmark == docmark_alt != "":
-            raise Exception("Error: docmark and docmark_alt are the same.")
-        if docmark == predocmark_alt != "":
-            raise Exception("Error: docmark and predocmark_alt are the same.")
-        if docmark_alt == predocmark != "":
-            raise Exception("Error: docmark_alt and predocmark are the same.")
-        if predocmark == predocmark_alt != "":
-            raise Exception("Error: predocmark and predocmark_alt are the same.")
         if len(predocmark) != 0:
             doc_re = re.compile(
                 r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}(?:{1}|{2}).*)$".format(
