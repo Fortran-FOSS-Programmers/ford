@@ -320,17 +320,6 @@ def parse_arguments(
     proj_data.normalise_paths(directory)
 
     proj_data.creation_date = datetime.now().strftime(proj_data.creation_date)
-    # Parse file extensions and comment characters for extra filetypes
-    extdict = {}
-    for ext in proj_data.extra_filetypes:
-        sp = ext.split()
-        if len(sp) < 2:
-            continue
-        if len(sp) == 2:
-            extdict[sp[0]] = sp[1]  # (comment_char) only
-        else:
-            extdict[sp[0]] = (sp[1], sp[2])  # (comment_char and lexer_str)
-    proj_data.extra_filetypes = extdict
 
     # Make sure no src_dir is contained within output_dir
     for srcdir in proj_data.src_dir:

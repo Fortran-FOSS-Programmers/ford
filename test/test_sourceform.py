@@ -5,6 +5,7 @@ from ford.sourceform import (
     parse_type,
     ParsedType,
     line_to_variables,
+    GenericSource,
 )
 from ford.fortran_project import find_used_modules
 from ford import ProjectSettings
@@ -13,6 +14,7 @@ from ford._markdown import MetaMarkdown
 from dataclasses import dataclass, field
 from typing import Union, List, Optional
 from itertools import chain
+from textwrap import dedent
 
 import pytest
 
@@ -2104,3 +2106,28 @@ def test_namelist_correlate(parse_fortran_file):
     expected_names = sorted(["var_a", "var_b", "var_c"])
     output_names = sorted([variables.name for variables in namelist.variables])
     assert output_names == expected_names
+
+
+def test_generic_source(tmp_path):
+    data = """\
+    #! docmark
+    #* docmark_alt
+    #> predocmark
+    #| predocmark_alt
+    """
+
+    filename = tmp_path / "generic_source.sh"
+    filename.write_text(dedent(data))
+
+    settings = ProjectSettings(
+        extra_filetypes=[{"extension": "sh", "comment": "#"}],
+    )
+    source = GenericSource(filename, settings)
+    expected_docs = [
+        "docmark",
+        "docmark_alt",
+        "predocmark",
+        "predocmark_alt",
+    ]
+
+    assert source.doc_list == expected_docs

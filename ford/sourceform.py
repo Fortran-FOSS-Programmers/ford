@@ -45,6 +45,7 @@ from typing import (
 )
 from itertools import chain
 from urllib.parse import quote
+import sys
 
 import toposort
 from pygments import highlight
@@ -56,6 +57,7 @@ import ford.utils
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
 from ford.settings import ProjectSettings, EntitySettings
+from ford._typing import PathLike
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
@@ -2648,137 +2650,148 @@ class GenericSource(FortranBase):
     not be analyzed, but documentation can be extracted.
     """
 
-    def __init__(self, filename, settings: ProjectSettings):
+    def __init__(self, filename: PathLike, settings: ProjectSettings):
         self.obj = "sourcefile"
         self.parobj = None
         self.parent = None
         self.hierarchy = []
         self.settings = settings
         self.num_lines = 0
-        extra_filetypes = settings.extra_filetypes[filename.split(".")[-1]]
-        comchar = extra_filetypes[0]
-        if len(extra_filetypes) > 1:
-            self.lexer_str = extra_filetypes[1]
-        else:
-            self.lexer_str = None
-        docmark = settings.docmark
-        predocmark = settings.predocmark
-        docmark_alt = settings.docmark_alt
-        predocmark_alt = settings.predocmark_alt
-        self.path = filename.strip()
-        self.name = os.path.basename(self.path)
-        self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
+        filename = pathlib.Path(filename)
+        extra_filetypes = settings.extra_filetypes[str(filename.suffix)[1:]]
+
+        self.path = filename
+        self.name = self.path.name
+        self.raw_src = self.path.read_text(encoding=settings.encoding)
         # TODO: Get line numbers to display properly
-        if self.lexer_str is None:
+        if extra_filetypes.lexer is None:
             lexer = guess_lexer_for_filename(self.name, self.raw_src)
         else:
             import pygments.lexers
 
-            lexer = getattr(pygments.lexers, self.lexer_str)
+            lexer = getattr(pygments.lexers, extra_filetypes.lexer)
         self.src = highlight(
             self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
         )
-        com_re = re.compile(
-            r"^((?!{0}|[\"']).|(\'[^']*')|(\"[^\"]*\"))*({0}.*)$".format(
-                re.escape(comchar)
+
+        self.comment = extra_filetypes.comment
+        comchar = re.escape(extra_filetypes.comment)
+        self.com_re = re.compile(
+            r"^((?!{0}|[\"']).|(\'[^']*')|(\"[^\"]*\"))*({0}.*)$".format(comchar)
+        )
+
+        docmark = settings.docmark
+        predocmark = settings.predocmark
+        docmark_alt = settings.docmark_alt
+        predocmark_alt = settings.predocmark_alt
+
+        docmark_re_bit = (
+            f"(?:{re.escape(settings.docmark)}|{re.escape(settings.predocmark)})"
+            if settings.predocmark
+            else re.escape(settings.docmark)
+        )
+
+        self.doc_re = re.compile(
+            r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(
+                comchar, docmark_re_bit
             )
         )
-        if docmark == docmark_alt != "":
-            raise Exception("Error: docmark and docmark_alt are the same.")
-        if docmark == predocmark_alt != "":
-            raise Exception("Error: docmark and predocmark_alt are the same.")
-        if docmark_alt == predocmark != "":
-            raise Exception("Error: docmark_alt and predocmark are the same.")
-        if predocmark == predocmark_alt != "":
-            raise Exception("Error: predocmark and predocmark_alt are the same.")
-        if len(predocmark) != 0:
-            doc_re = re.compile(
-                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}(?:{1}|{2}).*)$".format(
-                    re.escape(comchar), re.escape(docmark), re.escape(predocmark)
+
+        if _docmark_alt := self._docmark_alt(settings):
+            self.doc_alt_re: Optional[re.Pattern] = re.compile(
+                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(
+                    comchar, _docmark_alt
                 )
             )
         else:
-            doc_re = re.compile(
-                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(
-                    re.escape(comchar), re.escape(docmark)
-                )
-            )
-        if len(docmark_alt) != 0 and len(predocmark_alt) != 0:
-            doc_alt_re = re.compile(
-                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}(?:{1}|{2}).*)$".format(
-                    re.escape(comchar),
-                    re.escape(docmark_alt),
-                    re.escape(predocmark_alt),
-                )
-            )
-        elif len(docmark_alt) != 0:
-            doc_alt_re = re.compile(
-                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(
-                    re.escape(comchar), re.escape(docmark_alt)
-                )
-            )
-        elif len(predocmark_alt) != 0:
-            doc_alt_re = re.compile(
-                r"^((?!{0}|[\"']).|('[^']*')|(\"[^\"]*\"))*({0}{1}.*)$".format(
-                    re.escape(comchar), re.escape(predocmark_alt)
-                )
-            )
-        else:
-            doc_alt_re = None
-        self.doc_list = []
-        prevdoc = False
-        docalt = False
-        for line in open(filename, "r", encoding=settings.encoding):
-            line = line.strip()
-            if doc_alt_re:
-                match = doc_alt_re.match(line)
-            else:
-                match = False
-            if match:
-                prevdoc = True
-                docalt = True
-                doc = match.group(4)
-                if doc.startswith(comchar + docmark_alt):
-                    doc = doc[len(comchar + docmark_alt) :].strip()
-                else:
-                    doc = doc[len(comchar + predocmark_alt) :].strip()
-                self.doc_list.append(doc)
-                continue
-            match = doc_re.match(line)
-            if match:
-                prevdoc = True
-                if docalt:
-                    docalt = False
-                doc = match.group(4)
-                if doc.startswith(comchar + docmark):
-                    doc = doc[len(comchar + docmark) :].strip()
-                else:
-                    doc = doc[len(comchar + predocmark) :].strip()
-                self.doc_list.append(doc)
-                continue
-            match = com_re.match(line)
-            if match:
-                if docalt:
-                    if match.start(4) == 0:
-                        doc = match.group(4)
-                        doc = doc[len(comchar) :].strip()
-                        self.doc_list.append(doc)
-                    else:
-                        docalt = False
-                elif prevdoc:
-                    prevdoc = False
-                    self.doc_list.append("")
-                continue
-            # if not including any comment...
-            if prevdoc:
-                self.doc_list.append("")
-                prevdoc = False
-            docalt = False
+            self.doc_alt_re = None
+
+        self.doc_comment = extra_filetypes.comment + docmark
+        self.doc_comment_alt = extra_filetypes.comment + docmark_alt
+        self.predoc_comment = extra_filetypes.comment + predocmark
+        self.predoc_comment_alt = extra_filetypes.comment + predocmark_alt
+
+        self.parse_file(settings.encoding)
 
         self.read_metadata()
 
+    @staticmethod
+    def _docmark_alt(settings: ProjectSettings) -> str:
+        if settings.docmark_alt and settings.predocmark_alt:
+            return f"(?:{re.escape(settings.docmark_alt)}|{re.escape(settings.predocmark_alt)})"
+        elif settings.docmark_alt:
+            return re.escape(settings.docmark_alt)
+        elif settings.predocmark_alt:
+            return re.escape(settings.predocmark_alt)
+        else:
+            return ""
+
+    def parse_file(self, encoding: str = "utf-8"):
+        self.doc_list = []
+        prevdoc = False
+        docalt = False
+        with open(self.path, "r", encoding=encoding) as lines:
+            for line in lines:
+                line = line.strip()
+                if self.doc_alt_re and (match := self.doc_alt_re.match(line)):
+                    prevdoc = True
+                    docalt = True
+                    self.doc_list.append(
+                        remove_prefixes(
+                            match.group(4),
+                            self.doc_comment_alt,
+                            self.predoc_comment_alt,
+                        )
+                    )
+                    continue
+
+                if match := self.doc_re.match(line):
+                    prevdoc = True
+                    if docalt:
+                        docalt = False
+
+                    self.doc_list.append(
+                        remove_prefixes(
+                            match.group(4), self.doc_comment, self.predoc_comment
+                        )
+                    )
+                    continue
+
+                if match := self.com_re.match(line):
+                    if docalt:
+                        if match.start(4) == 0:
+                            self.doc_list.append(
+                                remove_prefixes(match.group(4), self.comment)
+                            )
+                        else:
+                            docalt = False
+                    elif prevdoc:
+                        prevdoc = False
+                        self.doc_list.append("")
+                    continue
+
+                # if not including any comment...
+                if prevdoc:
+                    self.doc_list.append("")
+                    prevdoc = False
+                docalt = False
+
     def lines_description(self, total, total_all=0):
         return ""
+
+
+def remove_prefixes(string: str, prefix1: str, prefix2: Optional[str] = None) -> str:
+    if sys.version_info >= (3, 9):
+        string = string.removeprefix(prefix1)
+        if prefix2:
+            string = string.removeprefix(prefix2)
+        return string.strip()
+
+    if string.startswith(prefix1):
+        string = string[len(prefix1) :]
+    if prefix2 and string.startswith(prefix2):
+        string = string[len(prefix2) :]
+    return string.strip()
 
 
 _can_have_contains = (
