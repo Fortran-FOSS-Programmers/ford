@@ -96,7 +96,7 @@ END_RE = re.compile(
     re.IGNORECASE,
 )
 BLOCK_RE = re.compile(r"^(\w+\s*:)?\s*block\s*$", re.IGNORECASE)
-BLOCK_DATA_RE = re.compile(r"^block\s*data\s*(\w+)?\s*$", re.IGNORECASE)
+BLOCK_DATA_RE = re.compile(r"^block\s*data\s*(?P<name>\w+)?\s*$", re.IGNORECASE)
 ASSOCIATE_RE = re.compile(
     r"""^(\w+\s*:)?         # Optional label
     \s*associate\s*\(       # Required associate statement
@@ -118,7 +118,7 @@ SUBMODULE_RE = re.compile(
     $""",
     re.IGNORECASE | re.VERBOSE,
 )
-PROGRAM_RE = re.compile(r"^program(?:\s+(\w+))?$", re.IGNORECASE)
+PROGRAM_RE = re.compile(r"^program(?:\s+(?P<name>\w+))?$", re.IGNORECASE)
 SUBROUTINE_RE = re.compile(
     r"""^\s*(?:(?P<attributes>.+?)\s+)?     # Optional attributes
     subroutine\s+(?P<name>\w+)\s*           # Required subroutine name
@@ -135,10 +135,19 @@ FUNCTION_RE = re.compile(
     re.IGNORECASE | re.VERBOSE,
 )
 TYPE_RE = re.compile(
-    r"^type(?:\s+|\s*(,.*)?::\s*)((?!(?:is\s*\())\w+)\s*(\([^()]*\))?\s*$",
-    re.IGNORECASE,
+    r"""^type                             # Required keyword
+    (?:\s+|\s*(?P<attributes>,.*)?::\s*)  # Optional attributes
+    (?P<name>(?!(?:is\s*\())\w+)\s*       # Required name
+    (?P<parameters>\([^()]*\))?\s*$       # Optional type parameters
+    """,
+    re.IGNORECASE | re.VERBOSE,
 )
-INTERFACE_RE = re.compile(r"^(abstract\s+)?interface(?:\s+(.+))?$", re.IGNORECASE)
+INTERFACE_RE = re.compile(
+    r"""^(?P<abstract>abstract\s+)?
+    interface(?:\s+(?P<name>.+))?$
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
 BOUNDPROC_RE = re.compile(
     r"""^(?P<generic>generic|procedure)\s*  # Required keyword
     (?P<prototype>\([^()]*\))?\s*           # Optional interface name
@@ -148,7 +157,9 @@ BOUNDPROC_RE = re.compile(
     """,
     re.IGNORECASE | re.VERBOSE,
 )
-COMMON_RE = re.compile(r"^common(?:\s*/\s*(\w+)\s*/\s*|\s+)(\w+.*)", re.IGNORECASE)
+COMMON_RE = re.compile(
+    r"^common(?:\s*/\s*(?P<name>\w+)\s*/\s*|\s+)(?P<variables>\w+.*)", re.IGNORECASE
+)
 COMMON_SPLIT_RE = re.compile(r"\s*(/\s*\w+\s*/)\s*", re.IGNORECASE)
 FINAL_RE = re.compile(r"^final\s*::\s*(\w.*)", re.IGNORECASE)
 USE_RE = re.compile(
@@ -337,7 +348,11 @@ class FordParser:
                     # Module procedure implementing an interface in a SUBMODULE
                     entity.modprocedures.append(
                         FortranModuleProcedureImplementation(
-                            self, source, match, entity, entity.permission
+                            self,
+                            source,
+                            entity,
+                            entity.permission,
+                            names=match["names"],
                         )
                     )
                     entity.num_lines += entity.modprocedures[-1].num_lines - 1
@@ -347,7 +362,7 @@ class FordParser:
             elif match := BLOCK_DATA_RE.match(line):
                 if hasattr(entity, "blockdata"):
                     entity.blockdata.append(
-                        FortranBlockData(self, source, match, entity)
+                        FortranBlockData(self, source, entity, name=match["name"])
                     )
                     entity.num_lines += entity.blockdata[-1].num_lines - 1
                 else:
@@ -364,7 +379,9 @@ class FordParser:
 
             elif match := MODULE_RE.match(line):
                 if hasattr(entity, "modules"):
-                    entity.modules.append(FortranModule(self, source, match, entity))
+                    entity.modules.append(
+                        FortranModule(self, source, entity, name=match["name"])
+                    )
                     entity.num_lines += entity.modules[-1].num_lines - 1
                 else:
                     entity.print_error(line, "Unexpected MODULE")
@@ -372,7 +389,7 @@ class FordParser:
             elif match := SUBMODULE_RE.match(line):
                 if hasattr(entity, "submodules"):
                     entity.submodules.append(
-                        FortranSubmodule(self, source, match, entity)
+                        FortranSubmodule(self, source, entity, **match.groupdict())
                     )
                     entity.num_lines += entity.submodules[-1].num_lines - 1
                 else:
@@ -380,7 +397,9 @@ class FordParser:
 
             elif match := PROGRAM_RE.match(line):
                 if hasattr(entity, "programs"):
-                    entity.programs.append(FortranProgram(self, source, match, entity))
+                    entity.programs.append(
+                        FortranProgram(self, source, entity, name=match["name"])
+                    )
                     entity.num_lines += entity.programs[-1].num_lines - 1
                 else:
                     entity.print_error(line, "Unexpected PROGRAM")
@@ -397,7 +416,11 @@ class FordParser:
                 elif hasattr(entity, "subroutines"):
                     entity.subroutines.append(
                         FortranSubroutine(
-                            self, source, match, entity, entity.permission
+                            self,
+                            source,
+                            entity,
+                            entity.permission,
+                            **match.groupdict(),
                         )
                     )
                     entity.num_lines += entity.subroutines[-1].num_lines - 1
@@ -407,7 +430,13 @@ class FordParser:
             elif match := NAMELIST_RE.match(line):
                 if hasattr(entity, "namelists"):
                     entity.namelists.append(
-                        FortranNamelist(source, match, entity, entity.permission)
+                        FortranNamelist(
+                            source,
+                            entity,
+                            entity.permission,
+                            name=match["name"],
+                            vars=match["vars"],
+                        )
                     )
                 else:
                     entity.print_error(line, "Unexpected NAMELIST")
@@ -417,7 +446,13 @@ class FordParser:
                     entity.print_error(line, "Unexpected FUNCTION")
                 elif hasattr(entity, "functions"):
                     entity.functions.append(
-                        FortranFunction(self, source, match, entity, entity.permission)
+                        FortranFunction(
+                            self,
+                            source,
+                            entity,
+                            entity.permission,
+                            **match.groupdict(),
+                        )
                     )
                     entity.num_lines += entity.functions[-1].num_lines - 1
                 else:
@@ -426,7 +461,13 @@ class FordParser:
             elif (match := TYPE_RE.match(line)) and blocklevel == 0:
                 if hasattr(entity, "types"):
                     entity.types.append(
-                        FortranType(self, source, match, entity, entity.permission)
+                        FortranType(
+                            self,
+                            source,
+                            entity,
+                            entity.permission,
+                            **match.groupdict(),
+                        )
                     )
                     entity.num_lines += entity.types[-1].num_lines - 1
                 else:
@@ -435,7 +476,12 @@ class FordParser:
             elif (match := INTERFACE_RE.match(line)) and blocklevel == 0:
                 if hasattr(entity, "interfaces"):
                     intr = FortranInterface(
-                        self, source, match, entity, entity.permission
+                        self,
+                        source,
+                        entity,
+                        entity.permission,
+                        abstract=match["abstract"] is not None,
+                        name=match["name"],
                     )
                     entity.num_lines += intr.num_lines - 1
                     if intr.abstract:
@@ -450,7 +496,7 @@ class FordParser:
             elif (match := ENUM_RE.match(line)) and blocklevel == 0:
                 if hasattr(entity, "enums"):
                     entity.enums.append(
-                        FortranEnum(self, source, match, entity, entity.permission)
+                        FortranEnum(self, source, entity, entity.permission)
                     )
                     entity.num_lines += entity.enums[-1].num_lines - 1
                 else:
@@ -465,7 +511,9 @@ class FordParser:
                 # Generic procedures or single name
                 if match["generic"].lower() == "generic" or len(names) == 1:
                     entity.boundprocs.append(
-                        FortranBoundProcedure(source, match, entity, child_permission)
+                        FortranBoundProcedure(
+                            source, entity, child_permission, **match.groupdict()
+                        )
                     )
                     continue
 
@@ -477,7 +525,11 @@ class FordParser:
                     )
                     entity.boundprocs.append(
                         FortranBoundProcedure(
-                            source, pseudo_line, entity, child_permission
+                            source,
+                            pseudo_line,
+                            entity,
+                            child_permission,
+                            **match.groupdict(),
                         )
                     )
 
@@ -498,9 +550,9 @@ class FordParser:
                             entity.common.append(
                                 FortranCommon(
                                     source,
-                                    COMMON_RE.match(pseudo_line),
                                     entity,
                                     "public",
+                                    **COMMON_RE.match(pseudo_line).groupdict(),
                                 )
                             )
                         for i in range(len(split) // 2):
@@ -509,7 +561,14 @@ class FordParser:
                             ].doc_list
                     else:
                         entity.common.append(
-                            FortranCommon(self, source, match, entity, "public")
+                            FortranCommon(
+                                self,
+                                source,
+                                entity,
+                                "public",
+                                name=match["name"],
+                                variables=match["variables"],
+                            )
                         )
                 else:
                     entity.print_error(line, "Unexpected COMMON statement")
@@ -674,10 +733,10 @@ class FortranBase:
     def __init__(
         self,
         source: FortranReader,
-        first_line: re.Match,
         parent: Optional[FortranContainer] = None,
         inherited_permission: str = "public",
         strings: Optional[List[str]] = None,
+        **kwargs,
     ):
         self.name = "unknown"
         self.visible = False
@@ -708,7 +767,7 @@ class FortranBase:
         # need to make sure we don't convert the docstrings twice
         self.source_file._to_be_markdowned.append(self)
 
-        self._initialize(first_line)
+        self._initialize(**kwargs)
         del self.strings
 
     def _make_hierarchy(self) -> List[FortranContainer]:
@@ -721,7 +780,7 @@ class FortranBase:
         hierarchy.reverse()
         return hierarchy
 
-    def _initialize(self, line: re.Match) -> None:
+    def _initialize(self, **kwargs) -> None:
         raise NotImplementedError()
 
     @property
@@ -1097,16 +1156,21 @@ class FortranContainer(FortranBase):
         self,
         parser,
         source,
-        first_line,
-        parent=None,
-        inherited_permission="public",
-        strings=[],
+        parent: Optional[FortranContainer] = None,
+        inherited_permission: str = "public",
+        strings: Optional[List[str]] = None,
+        **kwargs,
     ):
         self.num_lines = 0
         if not isinstance(self, FortranSourceFile):
             self.num_lines += 1
             FortranBase.__init__(
-                self, source, first_line, parent, inherited_permission, strings
+                self,
+                source,
+                parent,
+                inherited_permission,
+                strings,
+                **kwargs,
             )
 
         if type(self) is FortranSubmodule:
@@ -1604,7 +1668,7 @@ class FortranSourceFile(FortranContainer):
             settings.encoding,
         )
 
-        super().__init__(parser, source, "")
+        super().__init__(parser, source, None)
         self.read_metadata()
         self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
         lexer = FortranFixedLexer() if self.fixed else FortranLexer()
@@ -1633,8 +1697,8 @@ class FortranModule(FortranCodeUnit):
     dependencies.
     """
 
-    def _initialize(self, line: re.Match) -> None:
-        self.name = line["name"]
+    def _initialize(self, **kwargs) -> None:
+        self.name = kwargs["name"]
         self._common_initialize()
         del self.calls
         self.descendants: List[FortranSubmodule] = []
@@ -1704,12 +1768,12 @@ class FortranModule(FortranCodeUnit):
 
 
 class FortranSubmodule(FortranModule):
-    def _initialize(self, line: re.Match) -> None:
-        super()._initialize(line)
-        self.parent_submodule: Union[str, None, FortranSubmodule] = line[
+    def _initialize(self, **kwargs) -> None:
+        super()._initialize(name=kwargs["name"])
+        self.parent_submodule: Union[str, None, FortranSubmodule] = kwargs[
             "parent_submod"
         ]
-        self.ancestor_module: Union[str, FortranModule] = line["ancestor_module"]
+        self.ancestor_module: Union[str, FortranModule] = kwargs["ancestor_module"]
         del self.public_list
 
     def get_dir(self):
@@ -1881,8 +1945,8 @@ class FortranSubroutine(FortranProcedure):
 
     proctype = "Subroutine"
 
-    def _initialize(self, line: re.Match) -> None:
-        self._procedure_initialize(**line.groupdict())
+    def _initialize(self, **kwargs) -> None:
+        self._procedure_initialize(**kwargs)
 
 
 class FortranFunction(FortranProcedure):
@@ -1893,9 +1957,9 @@ class FortranFunction(FortranProcedure):
 
     proctype = "Function"
 
-    def _initialize(self, line: re.Match) -> None:
-        attribstr = self._procedure_initialize(**line.groupdict())
-        self.retvar = line["result"] or self.name
+    def _initialize(self, **kwargs) -> None:
+        attribstr = self._procedure_initialize(**kwargs)
+        self.retvar = kwargs["result"] or self.name
 
         with suppress(ValueError):
             parsed_type = parse_type(
@@ -1935,8 +1999,8 @@ class FortranModuleProcedureImplementation(FortranCodeUnit):
     module = True
     proctype = "Module Procedure"
 
-    def _initialize(self, line: re.Match) -> None:
-        self.name = line["names"]
+    def _initialize(self, **kwargs) -> None:
+        self.name = kwargs["names"]
 
         self._common_initialize()
         self.mp = True
@@ -1950,10 +2014,8 @@ class FortranProgram(FortranCodeUnit):
     An object representing the main Fortran program.
     """
 
-    def _initialize(self, line: re.Match) -> None:
-        self.name = line.group(1)
-        if self.name is None:
-            self.name = ""
+    def _initialize(self, **kwargs) -> None:
+        self.name = kwargs["name"] or ""
         self._common_initialize()
 
 
@@ -1963,11 +2025,11 @@ class FortranNamelist(FortranBase):
     namelist's contents
     """
 
-    def _initialize(self, line: re.Match) -> None:
+    def _initialize(self, **kwargs) -> None:
         self.variables = [
-            variable.strip().lower() for variable in line["vars"].split(",")
+            variable.strip().lower() for variable in kwargs["vars"].split(",")
         ]
-        self.name = line["name"]
+        self.name = kwargs["name"]
         self.visible = True
 
     def correlate(self, project):
@@ -1989,12 +2051,12 @@ class FortranType(FortranContainer):
     type's inheritance.
     """
 
-    def _initialize(self, line: re.Match) -> None:
-        self.name = line.group(2)
+    def _initialize(self, **kwargs) -> None:
+        self.name = kwargs["name"]
         self.extends = None
         self.attribs = []
-        if line.group(1):
-            attribstr = line.group(1)[1:].strip()
+        if attributes := kwargs.get("attributes", None):
+            attribstr = attributes[1:].strip()
             attriblist = SPLIT_RE.split(attribstr.strip())
             for attrib in attriblist:
                 attrib_lower = attrib.strip().lower()
@@ -2006,8 +2068,8 @@ class FortranType(FortranContainer):
                     self.attribs.append("external")
                 else:
                     self.attribs.append(attrib.strip())
-        if line.group(3):
-            paramstr = line.group(3).strip()
+        if parameters := kwargs.get("parameters", None):
+            paramstr = parameters.strip()
             self.parameters = SPLIT_RE.split(paramstr)
         else:
             self.parameters = []
@@ -2132,7 +2194,7 @@ class FortranEnum(FortranContainer):
     enumerators as variables.
     """
 
-    def _initialize(self, line: re.Match) -> None:
+    def _initialize(self, **kwargs) -> None:
         self.variables: List[FortranVariable] = []
         self.name = ""
 
@@ -2177,14 +2239,14 @@ class FortranInterface(FortranContainer):
 
     proctype = "Interface"
 
-    def _initialize(self, line: re.Match) -> None:
-        self.name = line.group(2)
+    def _initialize(self, **kwargs) -> None:
+        self.name = kwargs["name"]
         self.subroutines: List[FortranSubroutine] = []
         self.functions: List[FortranFunction] = []
         self.modprocs: List[FortranModuleProcedureReference] = []
         self.variables: List[FortranVariable] = []
         self.generic = bool(self.name)
-        self.abstract = bool(line.group(1))
+        self.abstract = bool(kwargs["abstract"])
         if self.generic and self.abstract:
             raise Exception(f"Generic interface '{self.name}' can not be abstract")
 
@@ -2441,14 +2503,14 @@ class FortranBoundProcedure(FortranBase):
     An object representing a type-bound procedure, possibly overloaded.
     """
 
-    def _initialize(self, line: re.Match) -> None:
+    def _initialize(self, **kwargs) -> None:
         self.attribs: List[str] = []
         self.deferred = False
         """Is a deferred procedure"""
         self.protomatch = False
         """Prototype has been matched to procedure"""
 
-        for attribute in ford.utils.paren_split(",", line["attributes"] or ""):
+        for attribute in ford.utils.paren_split(",", kwargs["attributes"] or ""):
             attribute = attribute.strip().lower()
             if not attribute:
                 continue
@@ -2460,10 +2522,10 @@ class FortranBoundProcedure(FortranBase):
             else:
                 self.attribs.append(attribute)
 
-        split = POINTS_TO_RE.split(line["names"])
+        split = POINTS_TO_RE.split(kwargs["names"])
         self.name = split[0].strip()
-        self.generic = line["generic"].lower() == "generic"
-        self.proto = line["prototype"]
+        self.generic = kwargs["generic"].lower() == "generic"
+        self.proto = kwargs["prototype"]
         if self.proto:
             self.proto = self.proto[1:-1].strip()
 
@@ -2589,10 +2651,8 @@ class FortranBlockData(FortranContainer):
     outside of an executing program unit.
     """
 
-    def _initialize(self, line):
-        self.name = line.group(1)
-        if not self.name:
-            self.name = "<em>unnamed</em>"
+    def _initialize(self, **kwargs):
+        self.name = kwargs["name"] or "<em>unnamed</em>"
         self.uses = []
         self.variables = []
         self.types = []
@@ -2690,12 +2750,12 @@ class FortranCommon(FortranBase):
     An object representing a common block. This is a legacy feature.
     """
 
-    def _initialize(self, line: re.Match) -> None:
-        self.name = line.group(1)
-        if not self.name:
-            self.name = ""
+    def _initialize(self, **kwargs) -> None:
+        self.name = kwargs["name"] or ""
         self.other_uses: List[FortranCommon] = []
-        self.variables = [v.strip() for v in ford.utils.paren_split(",", line.group(2))]
+        self.variables = [
+            v.strip() for v in ford.utils.paren_split(",", kwargs["variables"])
+        ]
         self.visible = True
 
     def correlate(self, project):
