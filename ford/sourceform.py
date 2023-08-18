@@ -1641,10 +1641,12 @@ class FortranSourceFile(FortranContainer):
         parser,
         preprocessor=None,
         fixed: bool = False,
-        **kwargs,
+        source: Optional[str] = None,
+        incl_src=True,
+        encoding: str = "utf-8",
     ):
         # Hack to prevent FortranBase.__str__ to generate an anchor link to the source file in HTML output.
-        self.visible = kwargs.get("incl_src", True)
+        self.visible = incl_src
         self.path = filepath.strip()
         self.name = os.path.basename(self.path)
         self.settings = settings
@@ -1661,35 +1663,37 @@ class FortranSourceFile(FortranContainer):
         self.hierarchy = []
         self.obj = "sourcefile"
         self.display = settings.display
-        self.encoding = kwargs.get("encoding", True)
+        self.encoding = encoding
         self.permission = "public"
 
         # List of entities that need to have their docstrings converted to markdown
         self._to_be_markdowned: List[FortranBase] = []
 
-        source = FortranReader(
-            self.path,
-            settings.docmark,
-            settings.predocmark,
-            settings.docmark_alt,
-            settings.predocmark_alt,
-            fixed,
-            settings.fixed_length_limit,
-            preprocessor,
-            settings.macro,
-            settings.include,
-            settings.encoding,
-        )
+        if source is None:
+            source = FortranReader(
+                self.path,
+                settings.docmark,
+                settings.predocmark,
+                settings.docmark_alt,
+                settings.predocmark_alt,
+                fixed,
+                settings.fixed_length_limit,
+                preprocessor,
+                settings.macro,
+                settings.include,
+                settings.encoding,
+            )
 
         super().__init__(parser, source, None)
         self.read_metadata()
-        self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
-        lexer = FortranFixedLexer() if self.fixed else FortranLexer()
-        self.src = highlight(
-            self.raw_src,
-            lexer,
-            HtmlFormatter(lineanchors="ln", cssclass="hl codehilite"),
-        )
+        try:
+            self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
+            lexer = FortranFixedLexer() if self.fixed else FortranLexer()
+            self.src = highlight(
+                self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl codehilite")
+            )
+        except Exception:
+            pass
 
     @property
     def markdownable_items(self):
