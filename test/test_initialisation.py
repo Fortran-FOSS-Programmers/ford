@@ -225,3 +225,18 @@ def test_output_dir_cli(monkeypatch, tmp_path):
         settings, _ = ford.initialize()
 
     assert settings.output_dir == tmp_path / "something_else"
+
+
+def test_config_option():
+    command_line_args = {
+        "preprocess": False,
+        "config": "quiet = true; display = ['public']; alias = {a = 'b', c = 'd'}",
+    }
+
+    data, _ = ford.parse_arguments(
+        command_line_args, "", ford.ProjectSettings(quiet=False)
+    )
+
+    assert data.quiet is True
+    assert data.display == ["public"]
+    assert data.alias == {"a": "b", "c": "d"}
