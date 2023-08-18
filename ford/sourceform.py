@@ -432,6 +432,7 @@ class FordParser:
                     entity.namelists.append(
                         FortranNamelist(
                             source,
+                            self,
                             entity,
                             entity.permission,
                             name=match["name"],
@@ -512,7 +513,11 @@ class FordParser:
                 if match["generic"].lower() == "generic" or len(names) == 1:
                     entity.boundprocs.append(
                         FortranBoundProcedure(
-                            source, entity, child_permission, **match.groupdict()
+                            source,
+                            self,
+                            entity,
+                            child_permission,
+                            **match.groupdict(),
                         )
                     )
                     continue
@@ -550,6 +555,7 @@ class FordParser:
                             entity.common.append(
                                 FortranCommon(
                                     source,
+                                    self,
                                     entity,
                                     "public",
                                     **COMMON_RE.match(pseudo_line).groupdict(),
@@ -619,6 +625,10 @@ class FordParser:
 
         if not isinstance(entity, FortranSourceFile):
             raise Exception("File ended while still nested.")
+
+    @staticmethod
+    def read_docstring(source: FortranReader, docmark: str) -> List[str]:
+        return read_docstring(source, docmark)
 
 
 base_url = ""
@@ -733,9 +743,11 @@ class FortranBase:
     def __init__(
         self,
         source: FortranReader,
+        parser,
         parent: Optional[FortranContainer] = None,
         inherited_permission: str = "public",
         strings: Optional[List[str]] = None,
+        comments: Optional[List[str]] = None,
         **kwargs,
     ):
         self.name = "unknown"
@@ -758,8 +770,8 @@ class FortranBase:
             self.settings = ProjectSettings()
 
         self.base_url = pathlib.Path(self.settings.project_url)
-        self.doc_list = read_docstring(source, self.settings.docmark)
         self.hierarchy = self._make_hierarchy()
+        self.doc_list = parser.read_docstring(source, self.settings.docmark)
         self.read_metadata()
 
         # Some entities are reachable from more than one parent (for example,
@@ -1167,6 +1179,7 @@ class FortranContainer(FortranBase):
             FortranBase.__init__(
                 self,
                 source,
+                parser,
                 parent,
                 inherited_permission,
                 strings,
