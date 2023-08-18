@@ -6,6 +6,7 @@ from ford.sourceform import (
     ParsedType,
     line_to_variables,
     GenericSource,
+    FordParser,
 )
 from ford.fortran_project import find_used_modules
 from ford import ProjectSettings
@@ -29,7 +30,8 @@ def parse_fortran_file(copy_fortran_file):
     def parse_file(data, **kwargs):
         filename = copy_fortran_file(data)
         settings = ProjectSettings(**kwargs)
-        return FortranSourceFile(str(filename), settings)
+        parser = FordParser(settings.extra_vartypes)
+        return FortranSourceFile(str(filename), settings, parser)
 
     return parse_file
 

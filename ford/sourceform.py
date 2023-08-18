@@ -191,342 +191,375 @@ ONLY_RE = re.compile(r"^\s*,\s*only\s*:\s*(?=[^,])", re.IGNORECASE)
 RENAME_RE = re.compile(r"(\w+)\s*=>\s*(\w+)", re.IGNORECASE)
 
 
-def parse_source(self, source):
-    incontains = False
+class FordParser:
+    def __init__(self, extra_vartypes: List[str]):
+        typestr = ""
+        for vtype in extra_vartypes:
+            typestr = typestr + "|" + vtype
+        self.VARIABLE_RE = re.compile(VARIABLE_STRING.format(typestr), re.IGNORECASE)
 
-    # This is a little bit confusing, because `permission` here is sort of
-    # overloaded for "permission for this entity", and "permission for child
-    # entities". For example, the former doesn't apply to modules or programs,
-    # while for procedures _only_ the first applies. For things like types, we
-    # need to keep track of these meanings separately. Also note that
-    # `child_permission` for types can be different for components and bound
-    # procedures, but luckily they cannot be mixed in the source, so we don't
-    # need to actually track `child_permission` separately for them both
-    child_permission = "public" if isinstance(self, FortranType) else self.permission
+    def parse_source(self, entity, source):
+        incontains = False
 
-    blocklevel = 0
-    associations = Associations()
+        # This is a little bit confusing, because `permission` here is sort of
+        # overloaded for "permission for this entity", and "permission for child
+        # entities". For example, the former doesn't apply to modules or programs,
+        # while for procedures _only_ the first applies. For things like types, we
+        # need to keep track of these meanings separately. Also note that
+        # `child_permission` for types can be different for components and bound
+        # procedures, but luckily they cannot be mixed in the source, so we don't
+        # need to actually track `child_permission` separately for them both
+        child_permission = (
+            "public" if isinstance(entity, FortranType) else entity.permission
+        )
 
-    for line in source:
-        if line[0:2] == "!" + self.settings.docmark:
-            self.doc_list.append(line[2:])
-            continue
-        if line.strip() != "":
-            self.num_lines += 1
+        blocklevel = 0
+        associations = Associations()
 
-        # Temporarily replace all strings to make the parsing simpler
-        self.strings = []
-        search_from = 0
-        while quote := QUOTES_RE.search(line[search_from:]):
-            self.strings.append(quote.group())
-            line = line[0:search_from] + QUOTES_RE.sub(
-                f'"{len(self.strings) - 1}"', line[search_from:], count=1
-            )
-            search_from += QUOTES_RE.search(line[search_from:]).end(0)
+        for line in source:
+            if line[0:2] == "!" + entity.settings.docmark:
+                entity.doc_list.append(line[2:])
+                continue
+            if line.strip() != "":
+                entity.num_lines += 1
 
-        # Cache the lowercased line
-        line_lower = line.lower()
+            # Temporarily replace all strings to make the parsing simpler
+            entity.strings = []
+            search_from = 0
+            while quote := QUOTES_RE.search(line[search_from:]):
+                entity.strings.append(quote.group())
+                line = line[0:search_from] + QUOTES_RE.sub(
+                    f'"{len(entity.strings) - 1}"', line[search_from:], count=1
+                )
+                search_from += QUOTES_RE.search(line[search_from:]).end(0)
 
-        if self.settings.lower:
-            line = line_lower
+            # Cache the lowercased line
+            line_lower = line.lower()
 
-        # Check the various possibilities for what is on this line
-        if line_lower == "contains":
-            if not incontains and isinstance(self, _can_have_contains):
-                incontains = True
-                if isinstance(self, FortranType):
-                    child_permission = "public"
-            elif incontains:
-                self.print_error(line, "Multiple CONTAINS statements present")
-            else:
-                self.print_error(line, "Unexpected CONTAINS statement")
-        elif line_lower in ["public", "private", "protected"]:
-            child_permission = line_lower
-            if not isinstance(self, FortranType):
-                self.permission = line_lower
-        elif line_lower == "sequence":
-            if type(self) == FortranType:
-                self.sequence = True
-        elif FORMAT_RE.match(line):
-            # There's nothing interesting for us in a format statement
-            continue
-        elif (match := ATTRIB_RE.match(line)) and blocklevel == 0:
-            attr = match.group(1).lower().replace(" ", "")
-            if len(attr) >= 4 and attr[0:4].lower() == "bind":
-                attr = attr.replace(",", ", ")
-            if hasattr(self, "attr_dict"):
-                if attr == "data":
-                    pass
-                elif attr in ["dimension", "allocatable", "pointer"]:
-                    names = ford.utils.paren_split(",", match.group(2))
-                    for name in names:
-                        name = name.strip().lower()
-                        try:
-                            open_parenthesis = name.index("(")
-                            var_name = name[:open_parenthesis]
-                            dimensions = name[open_parenthesis:]
-                        except ValueError:
-                            var_name = name
-                            dimensions = ""
+            if entity.settings.lower:
+                line = line_lower
 
-                        self.attr_dict[var_name].append(attr + dimensions)
+            # Check the various possibilities for what is on this line
+            if line_lower == "contains":
+                if not incontains and isinstance(entity, _can_have_contains):
+                    incontains = True
+                    if isinstance(entity, FortranType):
+                        child_permission = "public"
+                elif incontains:
+                    entity.print_error(line, "Multiple CONTAINS statements present")
                 else:
-                    stmnt = match.group(2)
-                    if attr == "parameter":
-                        stmnt = stmnt[1:-1].strip()
-                    names = ford.utils.paren_split(",", stmnt)
-                    search_from = 0
-                    while QUOTES_RE.search(attr[search_from:]):
-                        num = int(QUOTES_RE.search(attr[search_from:]).group()[1:-1])
-                        attr = attr[0:search_from] + QUOTES_RE.sub(
-                            self.strings[num], attr[search_from:], count=1
-                        )
-                        search_from += QUOTES_RE.search(attr[search_from:]).end(0)
-                    for name in names:
+                    entity.print_error(line, "Unexpected CONTAINS statement")
+            elif line_lower in ["public", "private", "protected"]:
+                child_permission = line_lower
+                if not isinstance(entity, FortranType):
+                    entity.permission = line_lower
+            elif line_lower == "sequence":
+                if type(entity) == FortranType:
+                    entity.sequence = True
+            elif FORMAT_RE.match(line):
+                # There's nothing interesting for us in a format statement
+                continue
+            elif (match := ATTRIB_RE.match(line)) and blocklevel == 0:
+                attr = match.group(1).lower().replace(" ", "")
+                if len(attr) >= 4 and attr[0:4].lower() == "bind":
+                    attr = attr.replace(",", ", ")
+                if hasattr(entity, "attr_dict"):
+                    if attr == "data":
+                        pass
+                    elif attr in ["dimension", "allocatable", "pointer"]:
+                        names = ford.utils.paren_split(",", match.group(2))
+                        for name in names:
+                            name = name.strip().lower()
+                            try:
+                                open_parenthesis = name.index("(")
+                                var_name = name[:open_parenthesis]
+                                dimensions = name[open_parenthesis:]
+                            except ValueError:
+                                var_name = name
+                                dimensions = ""
+
+                            entity.attr_dict[var_name].append(attr + dimensions)
+                    else:
+                        stmnt = match.group(2)
                         if attr == "parameter":
-                            split = ford.utils.paren_split("=", name)
-                            name = split[0].strip().lower()
-                            self.param_dict[name] = split[1]
-                        name = name.strip().lower()
-                        self.attr_dict[name].append(attr)
-
-            elif attr.lower() == "data" and self.obj == "sourcefile":
-                # TODO: This is just a fix to keep FORD from crashing on
-                # encountering a block data structure. At some point I
-                # should actually implement support for them.
-                continue
-            else:
-                self.print_error(line, f"Unexpected {attr.upper()} statement")
-
-        elif match := END_RE.match(line):
-            if isinstance(self, FortranSourceFile):
-                self.print_error(
-                    line,
-                    "END statement outside of any nesting",
-                    describe_object=False,
-                )
-            endtype = match.group(1)
-            if endtype and endtype.lower() == "block":
-                blocklevel -= 1
-            elif endtype and endtype.lower() == "associate":
-                associations.remove_last_batch()
-            elif blocklevel == 0:
-                self._cleanup()
-                return
-
-        elif (match := MODPROC_RE.match(line)) and (
-            match["module"] or isinstance(self, FortranInterface)
-        ):
-            if isinstance(self, FortranInterface):
-                # Module procedure in an INTERFACE
-                self.modprocs.extend(get_mod_procs(source, match["names"], self))
-            elif isinstance(self, FortranModule):
-                # Module procedure implementing an interface in a SUBMODULE
-                self.modprocedures.append(
-                    FortranModuleProcedureImplementation(
-                        source, match, self, self.permission
-                    )
-                )
-                self.num_lines += self.modprocedures[-1].num_lines - 1
-            else:
-                self.print_error(line, "Unexpected MODULE PROCEDURE")
-
-        elif match := BLOCK_DATA_RE.match(line):
-            if hasattr(self, "blockdata"):
-                self.blockdata.append(FortranBlockData(source, match, self))
-                self.num_lines += self.blockdata[-1].num_lines - 1
-            else:
-                self.print_error(line, "Unexpected BLOCK DATA")
-        elif BLOCK_RE.match(line):
-            blocklevel += 1
-        elif match := ASSOCIATE_RE.match(line):
-            # Associations 'call' the rhs of the => operator
-            self._add_procedure_calls(line, associations)
-
-            # Register the associations
-            assoc_batch = paren_split(",", strip_paren(match["associations"])[0])
-            associations.add_batch(assoc_batch)
-
-        elif match := MODULE_RE.match(line):
-            if hasattr(self, "modules"):
-                self.modules.append(FortranModule(source, match, self))
-                self.num_lines += self.modules[-1].num_lines - 1
-            else:
-                self.print_error(line, "Unexpected MODULE")
-
-        elif match := SUBMODULE_RE.match(line):
-            if hasattr(self, "submodules"):
-                self.submodules.append(FortranSubmodule(source, match, self))
-                self.num_lines += self.submodules[-1].num_lines - 1
-            else:
-                self.print_error(line, "Unexpected SUBMODULE")
-
-        elif match := PROGRAM_RE.match(line):
-            if hasattr(self, "programs"):
-                self.programs.append(FortranProgram(source, match, self))
-                self.num_lines += self.programs[-1].num_lines - 1
-            else:
-                self.print_error(line, "Unexpected PROGRAM")
-            if len(self.programs) > 1:
-                self.print_error(
-                    line,
-                    "Multiple PROGRAM units in same source file",
-                    describe_object=False,
-                )
-
-        elif match := SUBROUTINE_RE.match(line):
-            if isinstance(self, FortranCodeUnit) and not incontains:
-                self.print_error(line, "Unexpected SUBROUTINE")
-            elif hasattr(self, "subroutines"):
-                self.subroutines.append(
-                    FortranSubroutine(source, match, self, self.permission)
-                )
-                self.num_lines += self.subroutines[-1].num_lines - 1
-            else:
-                self.print_error(line, "Unexpected SUBROUTINE")
-
-        elif match := NAMELIST_RE.match(line):
-            if hasattr(self, "namelists"):
-                self.namelists.append(
-                    FortranNamelist(source, match, self, self.permission)
-                )
-            else:
-                self.print_error(line, "Unexpected NAMELIST")
-
-        elif match := FUNCTION_RE.match(line):
-            if isinstance(self, FortranCodeUnit) and not incontains:
-                self.print_error(line, "Unexpected FUNCTION")
-            elif hasattr(self, "functions"):
-                self.functions.append(
-                    FortranFunction(source, match, self, self.permission)
-                )
-                self.num_lines += self.functions[-1].num_lines - 1
-            else:
-                self.print_error(line, "Unexpected FUNCTION")
-
-        elif (match := TYPE_RE.match(line)) and blocklevel == 0:
-            if hasattr(self, "types"):
-                self.types.append(FortranType(source, match, self, self.permission))
-                self.num_lines += self.types[-1].num_lines - 1
-            else:
-                self.print_error(line, "Unexpected derived TYPE")
-
-        elif (match := INTERFACE_RE.match(line)) and blocklevel == 0:
-            if hasattr(self, "interfaces"):
-                intr = FortranInterface(source, match, self, self.permission)
-                self.num_lines += intr.num_lines - 1
-                if intr.abstract:
-                    self.absinterfaces.extend(intr.contents)
-                elif intr.generic:
-                    self.interfaces.append(intr)
-                else:
-                    self.interfaces.extend(intr.contents)
-            else:
-                self.print_error(line, "Unexpected INTERFACE")
-
-        elif (match := ENUM_RE.match(line)) and blocklevel == 0:
-            if hasattr(self, "enums"):
-                self.enums.append(FortranEnum(source, match, self, self.permission))
-                self.num_lines += self.enums[-1].num_lines - 1
-            else:
-                self.print_error(line, "Unexpected ENUM")
-
-        elif (match := BOUNDPROC_RE.match(line)) and incontains:
-            if not hasattr(self, "boundprocs"):
-                self.print_error(line, "Unexpected type-bound procedure")
-                continue
-
-            names = match["names"].split(",")
-            # Generic procedures or single name
-            if match["generic"].lower() == "generic" or len(names) == 1:
-                self.boundprocs.append(
-                    FortranBoundProcedure(source, match, self, child_permission)
-                )
-                continue
-
-            # For multiple procedures, parse each one as if it
-            # were on a line by itself
-            for bind in reversed(names):
-                pseudo_line = BOUNDPROC_RE.match(line[: match.start("names")] + bind)
-                self.boundprocs.append(
-                    FortranBoundProcedure(source, pseudo_line, self, child_permission)
-                )
-
-        elif match := COMMON_RE.match(line):
-            if hasattr(self, "common"):
-                split = COMMON_SPLIT_RE.split(line)
-                if len(split) > 1:
-                    for i in range(len(split) // 2):
-                        pseudo_line = (
-                            split[0]
-                            + " "
-                            + split[2 * i + 1]
-                            + " "
-                            + split[2 * i + 2].strip()
-                        )
-                        if pseudo_line[-1] == ",":
-                            pseudo_line = pseudo_line[:-1]
-                        self.common.append(
-                            FortranCommon(
-                                source,
-                                COMMON_RE.match(pseudo_line),
-                                self,
-                                "public",
+                            stmnt = stmnt[1:-1].strip()
+                        names = ford.utils.paren_split(",", stmnt)
+                        search_from = 0
+                        while QUOTES_RE.search(attr[search_from:]):
+                            num = int(
+                                QUOTES_RE.search(attr[search_from:]).group()[1:-1]
                             )
-                        )
-                    for i in range(len(split) // 2):
-                        self.common[-i - 1].doc_list = self.common[
-                            -len(split) // 2 + 1
-                        ].doc_list
+                            attr = attr[0:search_from] + QUOTES_RE.sub(
+                                entity.strings[num], attr[search_from:], count=1
+                            )
+                            search_from += QUOTES_RE.search(attr[search_from:]).end(0)
+                        for name in names:
+                            if attr == "parameter":
+                                split = ford.utils.paren_split("=", name)
+                                name = split[0].strip().lower()
+                                entity.param_dict[name] = split[1]
+                            name = name.strip().lower()
+                            entity.attr_dict[name].append(attr)
+
+                elif attr.lower() == "data" and entity.obj == "sourcefile":
+                    # TODO: This is just a fix to keep FORD from crashing on
+                    # encountering a block data structure. At some point I
+                    # should actually implement support for them.
+                    continue
                 else:
-                    self.common.append(FortranCommon(source, match, self, "public"))
-            else:
-                self.print_error(line, "Unexpected COMMON statement")
+                    entity.print_error(line, f"Unexpected {attr.upper()} statement")
 
-        elif (match := FINAL_RE.match(line)) and incontains:
-            if hasattr(self, "finalprocs"):
-                procedures = SPLIT_RE.split(match.group(1).strip())
-                finprocs = [FortranFinalProc(proc, self) for proc in procedures[:-1]]
-                finprocs.append(FortranFinalProc(procedures[-1], self, source))
-                self.finalprocs.extend(finprocs)
-            else:
-                self.print_error(line, "Unexpected finalization procedure")
+            elif match := END_RE.match(line):
+                if isinstance(entity, FortranSourceFile):
+                    entity.print_error(
+                        line,
+                        "END statement outside of any nesting",
+                        describe_object=False,
+                    )
+                endtype = match.group(1)
+                if endtype and endtype.lower() == "block":
+                    blocklevel -= 1
+                elif endtype and endtype.lower() == "associate":
+                    associations.remove_last_batch()
+                elif blocklevel == 0:
+                    entity._cleanup()
+                    return
 
-        elif VARIABLE_RE.match(line) and blocklevel == 0:
-            if hasattr(self, "variables"):
-                self.variables.extend(
-                    line_to_variables(source, line, child_permission, self)
-                )
-            else:
-                self.print_error(line, "Unexpected variable")
+            elif (match := MODPROC_RE.match(line)) and (
+                match["module"] or isinstance(entity, FortranInterface)
+            ):
+                if isinstance(entity, FortranInterface):
+                    # Module procedure in an INTERFACE
+                    entity.modprocs.extend(
+                        get_mod_procs(source, match["names"], entity)
+                    )
+                elif isinstance(entity, FortranModule):
+                    # Module procedure implementing an interface in a SUBMODULE
+                    entity.modprocedures.append(
+                        FortranModuleProcedureImplementation(
+                            self, source, match, entity, entity.permission
+                        )
+                    )
+                    entity.num_lines += entity.modprocedures[-1].num_lines - 1
+                else:
+                    entity.print_error(line, "Unexpected MODULE PROCEDURE")
 
-        elif match := USE_RE.match(line):
-            if hasattr(self, "uses"):
-                self.uses.append(list(match.groups()))
-            else:
-                self.print_error(line, "Unexpected USE statement")
+            elif match := BLOCK_DATA_RE.match(line):
+                if hasattr(entity, "blockdata"):
+                    entity.blockdata.append(
+                        FortranBlockData(self, source, match, entity)
+                    )
+                    entity.num_lines += entity.blockdata[-1].num_lines - 1
+                else:
+                    entity.print_error(line, "Unexpected BLOCK DATA")
+            elif BLOCK_RE.match(line):
+                blocklevel += 1
+            elif match := ASSOCIATE_RE.match(line):
+                # Associations 'call' the rhs of the => operator
+                entity._add_procedure_calls(line, associations)
 
-        elif ARITH_GOTO_RE.search(line):
-            # Arithmetic GOTOs look a little like function references: "goto
-            # (1, 2, 3) i". We don't do anything with these, but we do need
-            # to disambiguate them from function calls
-            continue
+                # Register the associations
+                assoc_batch = paren_split(",", strip_paren(match["associations"])[0])
+                associations.add_batch(assoc_batch)
 
-        elif (call_match := CALL_RE.search(line)) or (
-            subcall_match := SUBCALL_RE.search(line)
-        ):
-            if not hasattr(self, "calls") and call_match:
-                # Not raising an error here as too much possibility that something
-                # has been misidentified as a function call
+            elif match := MODULE_RE.match(line):
+                if hasattr(entity, "modules"):
+                    entity.modules.append(FortranModule(self, source, match, entity))
+                    entity.num_lines += entity.modules[-1].num_lines - 1
+                else:
+                    entity.print_error(line, "Unexpected MODULE")
+
+            elif match := SUBMODULE_RE.match(line):
+                if hasattr(entity, "submodules"):
+                    entity.submodules.append(
+                        FortranSubmodule(self, source, match, entity)
+                    )
+                    entity.num_lines += entity.submodules[-1].num_lines - 1
+                else:
+                    entity.print_error(line, "Unexpected SUBMODULE")
+
+            elif match := PROGRAM_RE.match(line):
+                if hasattr(entity, "programs"):
+                    entity.programs.append(FortranProgram(self, source, match, entity))
+                    entity.num_lines += entity.programs[-1].num_lines - 1
+                else:
+                    entity.print_error(line, "Unexpected PROGRAM")
+                if len(entity.programs) > 1:
+                    entity.print_error(
+                        line,
+                        "Multiple PROGRAM units in same source file",
+                        describe_object=False,
+                    )
+
+            elif match := SUBROUTINE_RE.match(line):
+                if isinstance(entity, FortranCodeUnit) and not incontains:
+                    entity.print_error(line, "Unexpected SUBROUTINE")
+                elif hasattr(entity, "subroutines"):
+                    entity.subroutines.append(
+                        FortranSubroutine(
+                            self, source, match, entity, entity.permission
+                        )
+                    )
+                    entity.num_lines += entity.subroutines[-1].num_lines - 1
+                else:
+                    entity.print_error(line, "Unexpected SUBROUTINE")
+
+            elif match := NAMELIST_RE.match(line):
+                if hasattr(entity, "namelists"):
+                    entity.namelists.append(
+                        FortranNamelist(source, match, entity, entity.permission)
+                    )
+                else:
+                    entity.print_error(line, "Unexpected NAMELIST")
+
+            elif match := FUNCTION_RE.match(line):
+                if isinstance(entity, FortranCodeUnit) and not incontains:
+                    entity.print_error(line, "Unexpected FUNCTION")
+                elif hasattr(entity, "functions"):
+                    entity.functions.append(
+                        FortranFunction(self, source, match, entity, entity.permission)
+                    )
+                    entity.num_lines += entity.functions[-1].num_lines - 1
+                else:
+                    entity.print_error(line, "Unexpected FUNCTION")
+
+            elif (match := TYPE_RE.match(line)) and blocklevel == 0:
+                if hasattr(entity, "types"):
+                    entity.types.append(
+                        FortranType(self, source, match, entity, entity.permission)
+                    )
+                    entity.num_lines += entity.types[-1].num_lines - 1
+                else:
+                    entity.print_error(line, "Unexpected derived TYPE")
+
+            elif (match := INTERFACE_RE.match(line)) and blocklevel == 0:
+                if hasattr(entity, "interfaces"):
+                    intr = FortranInterface(
+                        self, source, match, entity, entity.permission
+                    )
+                    entity.num_lines += intr.num_lines - 1
+                    if intr.abstract:
+                        entity.absinterfaces.extend(intr.contents)
+                    elif intr.generic:
+                        entity.interfaces.append(intr)
+                    else:
+                        entity.interfaces.extend(intr.contents)
+                else:
+                    entity.print_error(line, "Unexpected INTERFACE")
+
+            elif (match := ENUM_RE.match(line)) and blocklevel == 0:
+                if hasattr(entity, "enums"):
+                    entity.enums.append(
+                        FortranEnum(self, source, match, entity, entity.permission)
+                    )
+                    entity.num_lines += entity.enums[-1].num_lines - 1
+                else:
+                    entity.print_error(line, "Unexpected ENUM")
+
+            elif (match := BOUNDPROC_RE.match(line)) and incontains:
+                if not hasattr(entity, "boundprocs"):
+                    entity.print_error(line, "Unexpected type-bound procedure")
+                    continue
+
+                names = match["names"].split(",")
+                # Generic procedures or single name
+                if match["generic"].lower() == "generic" or len(names) == 1:
+                    entity.boundprocs.append(
+                        FortranBoundProcedure(source, match, entity, child_permission)
+                    )
+                    continue
+
+                # For multiple procedures, parse each one as if it
+                # were on a line by itself
+                for bind in reversed(names):
+                    pseudo_line = BOUNDPROC_RE.match(
+                        line[: match.start("names")] + bind
+                    )
+                    entity.boundprocs.append(
+                        FortranBoundProcedure(
+                            source, pseudo_line, entity, child_permission
+                        )
+                    )
+
+            elif match := COMMON_RE.match(line):
+                if hasattr(entity, "common"):
+                    split = COMMON_SPLIT_RE.split(line)
+                    if len(split) > 1:
+                        for i in range(len(split) // 2):
+                            pseudo_line = (
+                                split[0]
+                                + " "
+                                + split[2 * i + 1]
+                                + " "
+                                + split[2 * i + 2].strip()
+                            )
+                            if pseudo_line[-1] == ",":
+                                pseudo_line = pseudo_line[:-1]
+                            entity.common.append(
+                                FortranCommon(
+                                    source,
+                                    COMMON_RE.match(pseudo_line),
+                                    entity,
+                                    "public",
+                                )
+                            )
+                        for i in range(len(split) // 2):
+                            entity.common[-i - 1].doc_list = entity.common[
+                                -len(split) // 2 + 1
+                            ].doc_list
+                    else:
+                        entity.common.append(
+                            FortranCommon(self, source, match, entity, "public")
+                        )
+                else:
+                    entity.print_error(line, "Unexpected COMMON statement")
+
+            elif (match := FINAL_RE.match(line)) and incontains:
+                if hasattr(entity, "finalprocs"):
+                    procedures = SPLIT_RE.split(match.group(1).strip())
+                    finprocs = [
+                        FortranFinalProc(proc, entity) for proc in procedures[:-1]
+                    ]
+                    finprocs.append(FortranFinalProc(procedures[-1], entity, source))
+                    entity.finalprocs.extend(finprocs)
+                else:
+                    entity.print_error(line, "Unexpected finalization procedure")
+
+            elif self.VARIABLE_RE.match(line) and blocklevel == 0:
+                if hasattr(entity, "variables"):
+                    entity.variables.extend(
+                        line_to_variables(source, line, child_permission, entity)
+                    )
+                else:
+                    entity.print_error(line, "Unexpected variable")
+
+            elif match := USE_RE.match(line):
+                if hasattr(entity, "uses"):
+                    entity.uses.append(list(match.groups()))
+                else:
+                    entity.print_error(line, "Unexpected USE statement")
+
+            elif ARITH_GOTO_RE.search(line):
+                # Arithmetic GOTOs look a little like function references: "goto
+                # (1, 2, 3) i". We don't do anything with these, but we do need
+                # to disambiguate them from function calls
                 continue
-            if not hasattr(self, "calls") and subcall_match:
-                self.print_error(line, "Unexpected procedure call")
-                continue
 
-            self._add_procedure_calls(line, associations)
+            elif (call_match := CALL_RE.search(line)) or (
+                subcall_match := SUBCALL_RE.search(line)
+            ):
+                if not hasattr(entity, "calls") and call_match:
+                    # Not raising an error here as too much possibility that something
+                    # has been misidentified as a function call
+                    continue
+                if not hasattr(entity, "calls") and subcall_match:
+                    entity.print_error(line, "Unexpected procedure call")
+                    continue
 
-    if not isinstance(self, FortranSourceFile):
-        raise Exception("File ended while still nested.")
+                entity._add_procedure_calls(line, associations)
+
+        if not isinstance(entity, FortranSourceFile):
+            raise Exception("File ended while still nested.")
 
 
 base_url = ""
@@ -1061,7 +1094,13 @@ class FortranContainer(FortranBase):
     """
 
     def __init__(
-        self, source, first_line, parent=None, inherited_permission="public", strings=[]
+        self,
+        parser,
+        source,
+        first_line,
+        parent=None,
+        inherited_permission="public",
+        strings=[],
     ):
         self.num_lines = 0
         if not isinstance(self, FortranSourceFile):
@@ -1073,12 +1112,7 @@ class FortranContainer(FortranBase):
         if type(self) is FortranSubmodule:
             self.permission = "private"
 
-        typestr = ""
-        for vtype in self.settings.extra_vartypes:
-            typestr = typestr + "|" + vtype
-        self.VARIABLE_RE = re.compile(VARIABLE_STRING.format(typestr), re.IGNORECASE)
-
-        parse_source(self, source)
+        parser.parse_source(self, source)
 
     def _add_procedure_calls(
         self, line: str, associations: Associations = Associations()
@@ -1527,6 +1561,7 @@ class FortranSourceFile(FortranContainer):
         self,
         filepath: str,
         settings: ProjectSettings,
+        parser,
         preprocessor=None,
         fixed: bool = False,
         **kwargs,
@@ -1569,7 +1604,7 @@ class FortranSourceFile(FortranContainer):
             settings.encoding,
         )
 
-        super().__init__(source, "")
+        super().__init__(parser, source, "")
         self.read_metadata()
         self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
         lexer = FortranFixedLexer() if self.fixed else FortranLexer()

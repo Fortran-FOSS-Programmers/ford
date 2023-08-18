@@ -33,6 +33,7 @@ from ford.console import warn
 from ford.external_project import load_external_modules
 from ford.utils import ProgressBar
 from ford.sourceform import (
+    FordParser,
     _find_in_list,
     FortranBase,
     FortranBlockData,
@@ -164,6 +165,8 @@ class Project:
         self.extVariables: List[ExternalVariable] = []
         self.namelists: List[FortranNamelist] = []
 
+        parser = FordParser(settings.extra_vartypes)
+
         # Get all files within topdir, recursively
 
         for filename in (
@@ -176,7 +179,7 @@ class Project:
             fortran_extensions = self.extensions + self.fixed_extensions
             try:
                 if extension in fortran_extensions:
-                    self._fortran_file(extension, filename, settings)
+                    self._fortran_file(parser, extension, filename, settings)
                 elif extension in self.extra_filetypes:
                     self.extra_files.append(GenericSource(filename, settings))
             except Exception as e:
@@ -189,7 +192,7 @@ class Project:
                 continue
 
     def _fortran_file(
-        self, extension: str, filename: PathLike, settings: ProjectSettings
+        self, parser, extension: str, filename: PathLike, settings: ProjectSettings
     ):
         if extension in settings.fpp_extensions:
             preprocessor = settings.preprocessor.split()
@@ -199,6 +202,7 @@ class Project:
         new_file = FortranSourceFile(
             str(filename),
             settings,
+            parser,
             preprocessor,
             extension in self.fixed_extensions,
             incl_src=settings.incl_src,
