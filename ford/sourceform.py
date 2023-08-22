@@ -2043,9 +2043,12 @@ class FortranNamelist(FortranBase):
     """
 
     def _initialize(self, **kwargs) -> None:
-        self.variables = [
-            variable.strip().lower() for variable in kwargs["vars"].split(",")
-        ]
+        if isinstance(kwargs["vars"], str):
+            self.variables = [
+                variable.strip().lower() for variable in kwargs["vars"].split(",")
+            ]
+        else:
+            self.variables = kwargs["vars"]
         self.name = kwargs["name"]
         self.visible = True
 

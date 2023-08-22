@@ -22,8 +22,17 @@ def test_tree_sitter_parser():
           !! variable postdoc
       end type
     contains
-        pure integer function bar(x) result(y)
-          integer, intent(in) :: x
+        pure integer function bar(x, a, b) result(y)
+          integer, intent(in) :: x, a, b
+          real :: zing, zang, zong
+          namelist /ben/ zing, zang, zong
+
+          contains
+            pure function ziff(z)
+              real :: ziff, z
+              complex:: fa, ba, ga
+              namelist /zaff/ fa, ba, ga
+            end function ziff
         end function bar
     end module foo
     """
@@ -43,5 +52,15 @@ def test_tree_sitter_parser():
 
     functions = fortran_file.modules[0].functions
     assert len(functions) == 1
-    assert functions[0].name == "bar"
-    assert functions[0].retvar == "y"
+    function = functions[0]
+    assert function.name == "bar"
+    retvar = function.retvar
+    assert retvar.name == "y"
+    assert retvar.full_type == "integer"
+    arg_names = sorted(arg.name for arg in function.args)
+    assert arg_names == sorted(["x", "a", "b"])
+
+    assert len(function.namelists) == 1
+    assert function.namelists[0].name == "ben"
+
+    assert len(function.functions) == 1
