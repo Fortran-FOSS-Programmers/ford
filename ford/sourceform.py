@@ -513,13 +513,25 @@ class FordParser:
             entity.print_error(line, "Unexpected SUBROUTINE")
             return
 
+        attributes, _ = _list_of_procedure_attributes(match["attributes"])
+
+        arguments = match["arguments"]
+        args = (
+            [arg for arg in SPLIT_RE.split(arguments[1:-1].strip()) if arg]
+            if arguments
+            else []
+        )
+
         entity.subroutines.append(
             FortranSubroutine(
                 self,
                 source,
                 entity,
                 entity.permission,
-                **match.groupdict(),
+                name=match["name"],
+                attributes=attributes,
+                arguments=args,
+                bindC=match["bindC"],
             )
         )
         entity.num_lines += entity.subroutines[-1].num_lines - 1
@@ -535,13 +547,29 @@ class FordParser:
             entity.print_error(line, "Unexpected FUNCTION")
             return
 
+        name = match["name"]
+        attributes, result_type = _list_of_procedure_attributes(match["attributes"])
+        result_name = match["result"] or name
+
+        arguments = match["arguments"]
+        args = (
+            [arg for arg in SPLIT_RE.split(arguments[1:-1].strip()) if arg]
+            if arguments
+            else []
+        )
+
         entity.functions.append(
             FortranFunction(
                 self,
                 source,
                 entity,
                 entity.permission,
-                **match.groupdict(),
+                attributes=attributes,
+                name=name,
+                arguments=args,
+                bindC=match["bindC"],
+                result_name=result_name,
+                result_type=result_type,
             )
         )
         entity.num_lines += entity.functions[-1].num_lines - 1
@@ -1963,25 +1991,19 @@ class FortranProcedure(FortranCodeUnit):
     def _procedure_initialize(
         self,
         name: str,
-        arguments: Optional[str],
-        attributes: Optional[str],
+        arguments: List[str],
+        attributes: List[str],
         bindC: Optional[str],
         **kwargs,
-    ) -> str:
+    ):
         self.name = name
-        self.attribs, attribstr = _list_of_procedure_attributes(attributes)
+        self.attribs = attributes
         self.mp = False
-        self.module = "module" in self.attribs
+        self.module: bool = "module" in attributes
 
-        self.args = []
-        if arguments:
-            # Empty argument lists will contain the empty string, so we need to remove it
-            self.args = [arg for arg in SPLIT_RE.split(arguments[1:-1].strip()) if arg]
-
+        self.args = arguments
         self._parse_bind_C(bindC)
         self._common_initialize()
-
-        return attribstr
 
     def _parse_bind_C(self, bind_C_text: Optional[str]):
         """Parses a `bind(...)` attribute"""
@@ -2098,12 +2120,12 @@ class FortranFunction(FortranProcedure):
     proctype = "Function"
 
     def _initialize(self, **kwargs) -> None:
-        attribstr = self._procedure_initialize(**kwargs)
-        self.retvar = kwargs["result"] or self.name
+        self._procedure_initialize(**kwargs)
+        self.retvar = kwargs["result_name"] or self.name
 
-        with suppress(ValueError):
+        with suppress(ValueError, TypeError):
             parsed_type = parse_type(
-                attribstr, self.strings, self.settings.extra_vartypes
+                kwargs["result_type"], self.strings, self.settings.extra_vartypes
             )
             self.retvar = FortranVariable(
                 name=self.retvar,
