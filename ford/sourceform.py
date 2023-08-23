@@ -594,15 +594,40 @@ class FordParser:
         if not hasattr(entity, "types"):
             entity.print_error(line, "Unexpected derived TYPE")
             return
+
+        type_attributes = []
+        type_extends = None
+        type_permission = entity.permission
+        type_parameters = []
+
+        if attributes := match["attributes"]:
+            attribstr = attributes[1:].strip()
+            attriblist = SPLIT_RE.split(attribstr.strip())
+            for attrib in attriblist:
+                attrib_lower = attrib.strip().lower()
+                if extends := EXTENDS_RE.search(attrib):
+                    type_extends = extends["base"]
+                elif attrib_lower in ["public", "private"]:
+                    type_permission = attrib_lower
+                elif attrib_lower == "external":
+                    type_attributes.append("external")
+                else:
+                    type_attributes.append(attrib.strip())
+
+        if parameters := match["parameters"]:
+            paramstr = parameters.strip()
+            type_parameters = SPLIT_RE.split(paramstr)
+
         entity.types.append(
             FortranType(
                 self,
                 source,
                 entity,
-                entity.permission,
+                inherited_permission=type_permission,
                 name=match["name"],
-                attributes=match["attributes"],
-                parameters=match["parameters"],
+                attributes=type_attributes,
+                parameters=type_parameters,
+                extends=type_extends,
             )
         )
         entity.num_lines += entity.types[-1].num_lines - 1
@@ -2218,26 +2243,9 @@ class FortranType(FortranContainer):
 
     def _initialize(self, **kwargs) -> None:
         self.name = kwargs["name"]
-        self.extends = None
-        self.attribs = []
-        if attributes := kwargs.get("attributes", None):
-            attribstr = attributes[1:].strip()
-            attriblist = SPLIT_RE.split(attribstr.strip())
-            for attrib in attriblist:
-                attrib_lower = attrib.strip().lower()
-                if extends := EXTENDS_RE.search(attrib):
-                    self.extends = extends["base"]
-                elif attrib_lower in ["public", "private"]:
-                    self.permission = attrib_lower
-                elif attrib_lower == "external":
-                    self.attribs.append("external")
-                else:
-                    self.attribs.append(attrib.strip())
-        if parameters := kwargs.get("parameters", None):
-            paramstr = parameters.strip()
-            self.parameters = SPLIT_RE.split(paramstr)
-        else:
-            self.parameters = []
+        self.extends = kwargs["extends"]
+        self.attribs = kwargs.get("attributes", [])
+        self.parameters = kwargs.get("parameters", None)
         self.sequence = False
         self.variables: List[FortranVariable] = []
         self.boundprocs: List[FortranBoundProcedure] = []
