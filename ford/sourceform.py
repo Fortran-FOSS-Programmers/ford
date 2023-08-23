@@ -150,7 +150,7 @@ INTERFACE_RE = re.compile(
 )
 BOUNDPROC_RE = re.compile(
     r"""^(?P<generic>generic|procedure)\s*  # Required keyword
-    (?P<prototype>\([^()]*\))?\s*           # Optional interface name
+    (?:\((?P<prototype>[^()]*)\)\s*)?       # Optional interface name
     (?:,\s*(?P<attributes>\w[^:]*))?        # Optional list of attributes
     (?:\s*::)?\s*                           # Optional double-colon
     (?P<names>\w.*)$                        # Required name(s)
@@ -673,41 +673,55 @@ class FordParser:
             entity.print_error(line, "Unexpected type-bound procedure")
             return
 
-        names = match["names"].split(",")
-        attributes = match["attributes"]
-        generic = match["generic"].lower()
+        attributes = paren_split(",", match["attributes"] or "")
+        generic = match["generic"].lower() == "generic"
         prototype = match["prototype"]
+        permission = child_permission
+        deferred = False
 
-        # Generic procedures or single name
-        if generic == "generic" or len(names) == 1:
+        proc_attributes = []
+
+        for attribute in attributes:
+            attribute = attribute.strip().lower()
+            if not attribute:
+                continue
+
+            if attribute in ["public", "private"]:
+                permission = attribute
+            elif attribute == "deferred":
+                deferred = True
+            else:
+                proc_attributes.append(attribute)
+
+        def find_bindings(line: str) -> Tuple[str, List[str]]:
+            """Get the bound name and what it points to"""
+            split = POINTS_TO_RE.split(line)
+            name = split[0].strip()
+            binds = SPLIT_RE.split(split[1]) if len(split) > 1 else (name,)
+            return name, [bind.strip() for bind in binds]
+
+        # Slight complication here: for generic bound procedures, we
+        # want to make a single instance for the bound name and all
+        # its bindings. For non-generic bound procedures, we want to
+        # make a new instance for each name that appears in the
+        # declaration. To reduce duplication, we make a list of the
+        # whole generic declaration
+        names = [match["names"]] if generic else match["names"].split(",")
+
+        for bind in reversed(names):
+            name, bindings = find_bindings(bind)
             entity.boundprocs.append(
                 FortranBoundProcedure(
                     source,
                     self,
-                    entity,
-                    child_permission,
-                    names=match["names"],
-                    attributes=attributes,
+                    name=name,
+                    bindings=bindings,
+                    parent=entity,
+                    inherited_permission=permission,
+                    attributes=proc_attributes,
                     generic=generic,
                     prototype=prototype,
-                )
-            )
-            return
-
-        # For multiple procedures, parse each one as if it
-        # were on a line by itself
-        for bind in reversed(names):
-            pseudo_line = BOUNDPROC_RE.match(line[: match.start("names")] + bind)
-            entity.boundprocs.append(
-                FortranBoundProcedure(
-                    source,
-                    pseudo_line,
-                    entity,
-                    child_permission,
-                    names=match["names"],
-                    attributes=attributes,
-                    generic=generic,
-                    prototype=prototype,
+                    deferred=deferred,
                 )
             )
 
@@ -1866,7 +1880,9 @@ class FortranSourceFile(FortranContainer):
             self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
             lexer = FortranFixedLexer() if self.fixed else FortranLexer()
             self.src = highlight(
-                self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl codehilite")
+                self.raw_src,
+                lexer,
+                HtmlFormatter(lineanchors="ln", cssclass="hl codehilite"),
             )
         except Exception:
             pass
@@ -2677,35 +2693,16 @@ class FortranBoundProcedure(FortranBase):
     """
 
     def _initialize(self, **kwargs) -> None:
-        self.attribs: List[str] = []
-        self.deferred = False
-        """Is a deferred procedure"""
+        self.name: str = kwargs["name"]
+        self.attribs: list = kwargs["attributes"]
+        self.generic: bool = kwargs["generic"]
+        self.proto = kwargs["prototype"]
+        self.bindings: List[Union[str, FortranProcedure, FortranBoundProcedure]] = (
+            kwargs["bindings"]
+        )
+        self.deferred: bool = kwargs["deferred"]
         self.protomatch = False
         """Prototype has been matched to procedure"""
-
-        for attribute in ford.utils.paren_split(",", kwargs["attributes"] or ""):
-            attribute = attribute.strip().lower()
-            if not attribute:
-                continue
-
-            if attribute in ["public", "private"]:
-                self.permission = attribute
-            elif attribute == "deferred":
-                self.deferred = True
-            else:
-                self.attribs.append(attribute)
-
-        split = POINTS_TO_RE.split(kwargs["names"])
-        self.name = split[0].strip()
-        self.generic = kwargs["generic"].lower() == "generic"
-        self.proto = kwargs["prototype"]
-        if self.proto:
-            self.proto = self.proto[1:-1].strip()
-
-        binds = SPLIT_RE.split(split[1]) if len(split) > 1 else (self.name,)
-        self.bindings: List[Union[str, FortranProcedure, FortranBoundProcedure]] = [
-            bind.strip() for bind in binds
-        ]
 
     @property
     def binding_type(self) -> str:
