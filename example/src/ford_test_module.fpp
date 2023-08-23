@@ -2,8 +2,9 @@ module test_module
   implicit none
 
   interface
+    !! Docstring on the interface block itself
     module subroutine check()
-      !! Docstring on the interface
+      !! Docstring on the subroutine's interface
     end subroutine check
   end interface
 
