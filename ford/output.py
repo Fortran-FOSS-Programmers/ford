@@ -110,7 +110,7 @@ class Documentation:
         else:
             graphparent = ""
 
-        print("Creating HTML documentation... ", end="")
+        print("  Creating HTML documentation... ", end="")
         html_time_start = time.time()
         try:
             PageFactory = Union[Type, Callable]
@@ -220,7 +220,6 @@ class Documentation:
 
     def writeout(self) -> None:
         out_dir: pathlib.Path = self.data["output_dir"]
-        print(f"Writing documentation to '{out_dir}'...")
         # Remove any existing file/directory. This avoids errors coming from
         # `shutils.copytree` for Python < 3.8, where we can't explicitly ignore them
         if out_dir.is_file():
@@ -286,7 +285,7 @@ class Documentation:
             chain(self.docs, self.lists, self.pagetree, [self.index, self.search])
         )
         for page in (bar := ProgressBar("Writing files", items)):
-            bar.set_current(page.outfile)
+            bar.set_current(os.path.relpath(page.outfile))
             page.writeout()
 
         print(f"\nBrowse the generated documentation: file://{out_dir}/index.html")

@@ -302,7 +302,7 @@ class ProgressBar:
         self._iterable = iterable
         self._progress = Progress(
             SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
+            TextColumn("[progress.description]{task.description:21}"),
             BarColumn(),
             TaskProgressColumn(),
             MofNCompleteColumn(),
