@@ -393,7 +393,7 @@ class FortranBase:
 
         self._set_display()
 
-    def markdown(self, md: MetaMarkdown, project: Project):
+    def markdown(self, md: MetaMarkdown):
         """
         Process the documentation with Markdown to produce HTML.
         """
@@ -1548,18 +1548,18 @@ class FortranSourceFile(FortranContainer):
             self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
         )
 
-    def markdown(self, md, project):
+    def markdown(self, md):
         """Process the documentation with Markdown to produce HTML, and then
         process all the entities in this file
 
         """
 
-        super().markdown(md, project)
+        super().markdown(md)
 
         for item in self._to_be_markdowned:
             # TODO: skip anything that isn't going to be displayed?
             if isinstance(item, FortranBase) and not hasattr(item, "external_url"):
-                item.markdown(md, project)
+                item.markdown(md)
 
 
 class FortranModule(FortranCodeUnit):

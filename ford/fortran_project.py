@@ -417,7 +417,7 @@ class Project:
         if self.settings.warn:
             print()
         for src in self.allfiles:
-            src.markdown(md, self)
+            src.markdown(md)
 
     def find(
         self,
