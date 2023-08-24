@@ -28,6 +28,7 @@ import os
 from pathlib import Path
 from typing import List, Optional, Sequence
 from textwrap import dedent
+from ford.console import warn
 from ford.utils import meta_preprocessor, ProgressBar
 from ford.settings import EntitySettings
 
@@ -121,7 +122,7 @@ def get_page_tree(
     index_file = topdir / "index.md"
 
     if not index_file.exists():
-        print(f"Warning: '{index_file}' does not exist")
+        warn(f"'{index_file}' does not exist")
         return None
 
     if progress is not None:
@@ -130,7 +131,7 @@ def get_page_tree(
     try:
         node = PageNode(md, index_file, proj_copy_subdir, parent, encoding)
     except Exception as e:
-        print(f"Warning: Error parsing {index_file.relative_to('.')}.\n\t{e.args[0]}")
+        warn(f"Error parsing {index_file.relative_to('.')}.\n\t{e.args[0]}")
         return None
 
     filelist = sorted(os.listdir(topdir))
@@ -171,7 +172,7 @@ def get_page_tree(
                     PageNode(md, filename, proj_copy_subdir, node, encoding)
                 )
             except ValueError as e:
-                print(f"Warning: Error parsing '{filename}'.\n\t{e.args[0]}")
+                warn(f"Error parsing '{filename}'.\n\t{e.args[0]}")
                 continue
         else:
             node.files.append(name)

@@ -32,6 +32,7 @@ from io import StringIO, TextIOWrapper
 
 import os.path
 
+from ford.console import warn
 from ford.fixed2free2 import convertToFree
 from ford._typing import PathLike
 
@@ -172,15 +173,15 @@ class FortranReader:
                     preprocessor, encoding=encoding, check=True, capture_output=True
                 )
                 if out.stderr:
-                    print(
+                    warn(
                         f"Warning when preprocessing {filename}:\n{command}\n{out.stderr}"
                     )
                 self.reader = StringIO(out.stdout)
             except subprocess.CalledProcessError as err:
-                print(
-                    f"Warning: error when preprocessing {filename}:\n{command}\n{err.stderr}"
+                warn(
+                    f"error when preprocessing {filename}:\n{command}\n{err.stderr}\n"
+                    "Reverting to unpreprocessed file"
                 )
-                print("Reverting to unpreprocessed file")
                 self.reader = open(filename, "r", encoding=encoding)
         else:
             self.reader = open(filename, "r", encoding=encoding)
@@ -383,7 +384,7 @@ class FortranReader:
         else:
             msg = f'Can not find include file "{name}"'
             if name.endswith(".h"):
-                print("WARNING:", msg)
+                warn(msg)
                 # undo pop and return
                 self.pending = [curpending] + self.pending
                 return

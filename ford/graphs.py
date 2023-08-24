@@ -31,12 +31,12 @@ import os
 import pathlib
 import re
 from typing import Dict, Iterable, List, Optional, Set, Tuple, Type, Union, cast
-import warnings
 
 from graphviz import Digraph, ExecutableNotFound
 from graphviz import version as graphviz_version
 from tqdm.contrib.concurrent import process_map
 
+from ford.console import warn
 from ford.utils import traverse, ProgressBar
 
 from ford.sourceform import (
@@ -887,21 +887,17 @@ class FortranGraph:
 
         # Do not render overly large graphs.
         if len(self.added) > self.max_nodes and self.warn:
-            warnings.warn(
-                f"Warning: Not showing graph {self.ident} as it would exceed the maximal number of {self.max_nodes} nodes"
+            warn(
+                f"Not showing graph {self.ident} as it would exceed the maximal number of {self.max_nodes} nodes"
             )
             return ""
         # Do not render incomplete graphs.
         if len(self.added) < len(self.root) and self.warn:
-            warnings.warn(
-                f"Warning: Not showing graph {self.ident} as it would be incomplete"
-            )
+            warn(f"Not showing graph {self.ident} as it would be incomplete")
             return ""
 
         if self.truncated > 0 and self.warn:
-            warnings.warn(
-                f"Warning: Graph {self.ident} is truncated after {self.truncated} hops"
-            )
+            warn(f"Graph {self.ident} is truncated after {self.truncated} hops")
 
         if graph_as_table:
             rettext = self._make_graph_as_table()

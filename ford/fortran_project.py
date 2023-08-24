@@ -29,6 +29,7 @@ from typing import List, Optional, Union, Dict
 from pathlib import Path
 from fnmatch import fnmatch
 
+from ford.console import warn
 from ford.external_project import load_external_modules
 from ford.utils import ProgressBar
 import ford.sourceform
@@ -127,8 +128,8 @@ def find_all_files(settings: ProjectSettings) -> List[Path]:
             and "*" not in exclude
         ):
             glob_exclude = f"**/{exclude}"
-            print(
-                f"Warning: exclude file '{exclude}' is not relative to any source directories, all matching files will be excluded.\n"
+            warn(
+                f"exclude file '{exclude}' is not relative to any source directories, all matching files will be excluded.\n"
                 f"To suppress this warning please change it to '{glob_exclude}' in your settings file"
             )
             settings.exclude[i] = glob_exclude
@@ -195,7 +196,7 @@ class Project:
                 if not settings.dbg:
                     raise e
 
-                print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
+                warn(f"Error parsing {relative_path}.\n\t{e.args[0]}")
                 continue
 
     def _fortran_file(
@@ -252,7 +253,7 @@ class Project:
 
     def warn(self, message):
         if self.settings.warn:
-            print(f"Warning: {message}")
+            warn(f"{message}")
 
     @property
     def allfiles(self):

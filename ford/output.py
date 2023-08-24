@@ -34,6 +34,7 @@ from typing import List, Union, Callable, Type, Tuple
 
 import jinja2
 
+from ford.console import warn
 import ford.sourceform
 import ford.tipue_search
 from ford.utils import ProgressBar
@@ -102,9 +103,7 @@ class Documentation:
         self.index = IndexPage(self.data, project, proj_docs)
         self.search = SearchPage(self.data, project)
         if not graphviz_installed and settings.graph:
-            print(
-                "Warning: Will not be able to generate graphs. Graphviz not installed."
-            )
+            warn("Will not be able to generate graphs. Graphviz not installed.")
         if settings.relative:
             graphparent = "../"
         else:
@@ -258,9 +257,7 @@ class Documentation:
         try:
             copytree(self.data["media_dir"], out_dir / "media")
         except OSError as e:
-            print(
-                f"Warning: error copying media directory {self.data['media_dir']}, {e}"
-            )
+            warn(f"error copying media directory {self.data['media_dir']}, {e}")
         except KeyError:
             pass
 
@@ -560,16 +557,14 @@ class PagetreePage(BasePage):
             try:
                 copytree(item_path, to_path / item)
             except Exception as e:
-                print(
-                    f"Warning: could not copy directory '{item_path}'. Error: {e.args[0]}"
-                )
+                warn(f"could not copy directory '{item_path}'. Error: {e.args[0]}")
 
         for item in self.obj.files:
             item_path = from_path / item
             try:
                 shutil.copy(item_path, to_path)
             except Exception as e:
-                print(f"Warning: could not copy file '{item_path}'. Error: {e.args[0]}")
+                warn(f"could not copy file '{item_path}'. Error: {e.args[0]}")
 
 
 def copytree(src: pathlib.Path, dst: pathlib.Path) -> None:

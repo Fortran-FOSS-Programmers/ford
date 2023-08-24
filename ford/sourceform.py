@@ -52,6 +52,7 @@ from pygments import highlight
 from pygments.lexers import FortranLexer, FortranFixedLexer, guess_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
+from ford.console import warn
 from ford.reader import FortranReader
 import ford.utils
 from ford.intrinsics import INTRINSICS
@@ -387,9 +388,7 @@ class FortranBase:
         else:
             if self.settings.warn and self.obj not in ("sourcefile", "genericsource"):
                 # TODO: Add ability to print line number where this item is in file
-                print(
-                    f"Warning: Undocumented {self.obj} '{self.name}' in file '{self.filename}'"
-                )
+                warn(f"Undocumented {self.obj} '{self.name}' in file '{self.filename}'")
 
         self._set_display()
 
@@ -431,8 +430,8 @@ class FortranBase:
             else:
                 self.src = ""
                 if self.settings.warn:
-                    print(
-                        f"Warning: Could not extract source code for {self.obj} '{self.name}' in file '{self.filename}'"
+                    warn(
+                        f"Could not extract source code for {self.obj} '{self.name}' in file '{self.filename}'"
                     )
 
     def sort_components(self) -> None:
@@ -2621,8 +2620,8 @@ class FortranSpoof:
         self.parent = parent
         self.obj = obj
         if self.parent.settings.warn:
-            print(
-                f"Warning: {self.obj} '{self.name}' in {self.parent.obj} '{self.parent.name}' could not be matched to "
+            warn(
+                f"{self.obj} '{self.name}' in {self.parent.obj} '{self.parent.name}' could not be matched to "
                 f"corresponding item in code (file {self.filename})"
             )
 

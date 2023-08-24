@@ -41,6 +41,8 @@ from rich.progress import (
     TaskProgressColumn,
 )
 
+from ford.console import console
+
 
 def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
     """
@@ -309,6 +311,7 @@ class ProgressBar:
             TimeRemainingColumn(),
             TimeElapsedColumn(),
             TextColumn("{task.fields[current]}"),
+            console=console,
         )
 
         self._progress.start()

@@ -7,6 +7,7 @@ import re
 from xml.etree.ElementTree import Element
 from contextlib import suppress
 
+from ford.console import warn
 from ford.md_environ import EnvironExtension
 from ford.md_admonition import AdmonitionExtension
 from ford._typing import PathLike
@@ -148,8 +149,8 @@ class FordLinkProcessor(InlineProcessor):
         # Could resolve full parent::child, so just try to find parent instead
         if m["child_name"] and item is None:
             parent_name = name
-            print(
-                f"Warning: Could not substitute link {m.group()}. "
+            warn(
+                f"Could not substitute link {m.group()}. "
                 f'"{m["child_name"]}" not found in "{parent_name}", linking to page for "{parent_name}" instead'
             )
             item = self.project.find(name, m["entity"])
@@ -158,7 +159,7 @@ class FordLinkProcessor(InlineProcessor):
 
         # Nothing found, so give a blank link
         if item is None:
-            print(f"Warning: Could not substitute link {m.group()}. '{name}' not found")
+            warn(f"Could not substitute link {m.group()}. '{name}' not found")
             link.text = name
             return link
 

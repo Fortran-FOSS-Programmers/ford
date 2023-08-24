@@ -1,4 +1,3 @@
-import warnings
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from itertools import combinations
@@ -22,6 +21,7 @@ from markdown_include.include import (  # type: ignore[import]
 )
 
 from ford._typing import PathLike
+from ford.console import warn
 from ford.utils import meta_preprocessor, normalise_path, str_to_bool
 
 try:
@@ -301,11 +301,10 @@ def load_markdown_settings(
     # Workaround for file inclusion in metadata
     for option, value in settings.items():
         if isinstance(value, str) and MD_INCLUDE_RE.match(value):
-            warnings.warn(
+            warn(
                 "Including other files in project file metadata is deprecated and "
                 "will stop working in a future release.\n"
                 f"    {option}: {value}",
-                FutureWarning,
             )
             md_base_dir = settings.get("md_base_dir", directory)
             configs = MarkdownInclude({"base_path": str(md_base_dir)}).getConfigs()
@@ -326,7 +325,7 @@ def convert_types_from_metapreprocessor(cls: Type, settings: Dict[str, Any]):
         try:
             default_type = field_types[key]
         except KeyError:
-            warnings.warn(f"Ignoring unknown Ford metadata key {key!r}")
+            warn(f"Ignoring unknown Ford metadata key {key!r}")
             keys_to_drop.append(key)
             continue
 
