@@ -279,7 +279,10 @@ class Documentation:
                 mathjax_path / os.path.basename(self.data["mathjax_config"]),
             )
 
-        for p in chain(self.docs, self.lists, self.pagetree, [self.index, self.search]):
+        items = list(
+            chain(self.docs, self.lists, self.pagetree, [self.index, self.search])
+        )
+        for p in tqdm(items, desc="Writing files"):
             p.writeout()
 
         print(f"\nBrowse the generated documentation: file://{out_dir}/index.html")
