@@ -25,9 +25,10 @@
 import os
 import toposort
 from itertools import chain, product
-from typing import List, Optional, Union, Dict, Iterable
+from typing import List, Optional, Union, Dict
 from pathlib import Path
 from fnmatch import fnmatch
+from tqdm import tqdm
 
 from ford.external_project import load_external_modules
 import ford.utils
@@ -412,12 +413,16 @@ class Project:
         """
         Process the documentation with Markdown to produce HTML.
         """
-        print("\nProcessing documentation comments...")
         ford.sourceform.set_base_url(base_url)
         if self.settings.warn:
             print()
+
+        items = []
         for src in self.allfiles:
-            src.markdown(md)
+            items.extend(src.markdownable_items)
+
+        for item in tqdm(items, desc="Processing documentation comments"):
+            item.markdown(md)
 
     def find(
         self,

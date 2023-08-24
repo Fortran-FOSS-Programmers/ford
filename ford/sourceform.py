@@ -1548,18 +1548,16 @@ class FortranSourceFile(FortranContainer):
             self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
         )
 
-    def markdown(self, md):
-        """Process the documentation with Markdown to produce HTML, and then
-        process all the entities in this file
-
-        """
-
-        super().markdown(md)
+    @property
+    def markdownable_items(self):
+        items = [self]
 
         for item in self._to_be_markdowned:
             # TODO: skip anything that isn't going to be displayed?
             if isinstance(item, FortranBase) and not hasattr(item, "external_url"):
-                item.markdown(md)
+                items.append(item)
+
+        return items
 
 
 class FortranModule(FortranCodeUnit):
@@ -2714,6 +2712,10 @@ class GenericSource(FortranBase):
         self.parse_file(settings.encoding)
 
         self.read_metadata()
+
+    @property
+    def markdownable_items(self):
+        return [self]
 
     @staticmethod
     def _docmark_alt(settings: ProjectSettings) -> str:
