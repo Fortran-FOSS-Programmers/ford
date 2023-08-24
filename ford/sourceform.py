@@ -2176,6 +2176,12 @@ class FortranInterface(FortranContainer):
             contents.append(FortranModuleProcedureInterface(proc, self, self.doc_list))
         self.contents = contents
 
+    def get_dir(self) -> Optional[str]:
+        # Unnamed interfaces don't have separate pages
+        if self.name:
+            return super().get_dir()
+        return None
+
 
 class FortranModuleProcedureInterface(FortranInterface):
     """The interface part of a `FortranModuleProcedureImplementation`
