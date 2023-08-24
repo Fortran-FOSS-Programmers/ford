@@ -178,9 +178,11 @@ class Project:
         self.namelists: List[FortranNamelist] = []
 
         # Get all files within topdir, recursively
-        for filename in find_all_files(settings):
+        for filename in (
+            progress := tqdm(find_all_files(settings), desc="Parsing files")
+        ):
             relative_path = os.path.relpath(filename)
-            print(f"Reading file {relative_path}")
+            progress.set_postfix_str(relative_path)
 
             extension = str(filename.suffix)[1:]  # Don't include the initial '.'
             fortran_extensions = self.extensions + self.fixed_extensions
