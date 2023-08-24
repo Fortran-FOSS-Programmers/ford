@@ -270,8 +270,6 @@ class Project:
         Associates various constructs with each other.
         """
 
-        print("Correlating information from different parts of your project...")
-
         non_local_mods = INTRINSIC_MODS.copy()
         for item in self.settings.extra_mods:
             if not item:
@@ -409,7 +407,6 @@ class Project:
         self.absint_lines = sum_lines(self.absinterfaces)
         self.prog_lines = sum_lines(self.programs)
         self.block_lines = sum_lines(self.blockdata)
-        print()
 
     def markdown(self, md, base_url=".."):
         """

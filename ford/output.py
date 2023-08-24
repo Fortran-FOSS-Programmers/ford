@@ -29,6 +29,7 @@ import shutil
 import traceback
 from itertools import chain
 import pathlib
+import time
 from typing import List, Union, Callable, Type, Tuple
 
 import jinja2
@@ -110,7 +111,9 @@ class Documentation:
             graphparent = "../"
         else:
             graphparent = ""
-        print("Creating HTML documentation...")
+
+        print("Creating HTML documentation... ", end="")
+        html_time_start = time.time()
         try:
             PageFactory = Union[Type, Callable]
 
@@ -163,6 +166,9 @@ class Documentation:
                 sys.exit("Error encountered.")
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
+
+        html_time_end = time.time()
+        print(f"done in {html_time_end - html_time_start:5.3f}s")
 
         self.graphs = GraphManager(
             self.data.get("graph_dir", ""),

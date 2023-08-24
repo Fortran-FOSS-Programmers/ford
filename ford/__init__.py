@@ -32,6 +32,7 @@ import os
 import pathlib
 import subprocess
 from datetime import datetime
+import time
 from typing import Tuple
 from textwrap import dedent
 
@@ -410,7 +411,12 @@ def main(proj_data: ProjectSettings, proj_docs: str):
         sys.exit(1)
 
     base_url = ".." if proj_data.relative else proj_data.project_url
+
+    print("\nCorrelating information from different parts of your project...", end="")
+    correlate_time_start = time.time()
     project.correlate()
+    correlate_time_end = time.time()
+    print(f" done in {correlate_time_end - correlate_time_start:5.3f}s\n")
 
     # Setup Markdown object with any user-specified extensions
     aliases = copy.copy(proj_data.alias)
