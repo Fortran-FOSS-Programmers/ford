@@ -28,10 +28,9 @@ from itertools import chain, product
 from typing import List, Optional, Union, Dict
 from pathlib import Path
 from fnmatch import fnmatch
-from tqdm import tqdm
 
 from ford.external_project import load_external_modules
-import ford.utils
+from ford.utils import ProgressBar
 import ford.sourceform
 from ford.sourceform import (
     _find_in_list,
@@ -178,11 +177,12 @@ class Project:
         self.namelists: List[FortranNamelist] = []
 
         # Get all files within topdir, recursively
+
         for filename in (
-            progress := tqdm(find_all_files(settings), desc="Parsing files")
+            progress := ProgressBar("Parsing files", find_all_files(settings))
         ):
             relative_path = os.path.relpath(filename)
-            progress.set_postfix_str(relative_path)
+            progress.set_current(relative_path)
 
             extension = str(filename.suffix)[1:]  # Don't include the initial '.'
             fortran_extensions = self.extensions + self.fixed_extensions
@@ -420,7 +420,8 @@ class Project:
         for src in self.allfiles:
             items.extend(src.markdownable_items)
 
-        for item in tqdm(items, desc="Processing documentation comments"):
+        for item in (bar := ProgressBar("Processing comments", items)):
+            bar.set_current(item.name)
             item.markdown(md)
 
     def find(

@@ -25,10 +25,21 @@
 import re
 import os.path
 import pathlib
-from typing import Dict, Union, List, Any, Tuple
+from types import TracebackType
+from typing import Dict, Union, List, Any, Tuple, Optional, Sequence, cast, Sized, Type
 from io import StringIO
 import itertools
 from collections import defaultdict
+from rich.progress import (
+    Progress,
+    BarColumn,
+    TextColumn,
+    SpinnerColumn,
+    MofNCompleteColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+    TaskProgressColumn,
+)
 
 
 def get_parens(line: str, retlevel: int = 0, retblevel: int = 0) -> str:
@@ -253,3 +264,77 @@ def meta_preprocessor(lines: Union[str, List[str]]) -> Tuple[Dict[str, Any], Lis
                 lines.insert(0, line)
                 break  # no meta data - done
     return meta, lines
+
+
+class ProgressBar:
+    """Progress bar that can be used to wrap an iterable and include
+    the current item in the bar, or used as a context manager if not
+    using a simple iterable
+
+    An example::
+
+        for item in (bar := ProgressBar("Processing items", items)):
+            bar.set_current(item.name)
+            item.do_work()
+
+    Arguments
+    ---------
+    description:
+        Description of task
+    iterable:
+        Collection to iterate over
+    total:
+        Can be used if length of iterable is not known at start
+
+    """
+
+    def __init__(
+        self,
+        description: str,
+        iterable: Optional[Sequence] = None,
+        total: Optional[int] = None,
+    ):
+        if total is None and hasattr(iterable, "__len__"):
+            self._total: Optional[int] = len(cast(Sized, iterable))
+        else:
+            self._total = total
+
+        self._iterable = iterable
+        self._progress = Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            MofNCompleteColumn(),
+            TimeRemainingColumn(),
+            TimeElapsedColumn(),
+            TextColumn("{task.fields[current]}"),
+        )
+
+        self._progress.start()
+        self._main_task = self._progress.add_task(
+            description, total=self._total, current="--"
+        )
+
+    def set_current(self, current: str):
+        """Set name of current item"""
+        self._progress.update(self._main_task, advance=1, current=current)
+
+    def __iter__(self):
+        try:
+            for item in self._iterable:
+                yield item
+        finally:
+            self._progress.__exit__(None, None, None)
+
+    def __enter__(self):
+        self._progress.__enter__()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        self._progress.__exit__(exc_type, exc_val, exc_tb)

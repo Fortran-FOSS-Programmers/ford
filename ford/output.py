@@ -34,11 +34,9 @@ from typing import List, Union, Callable, Type, Tuple
 
 import jinja2
 
-from tqdm import tqdm
-
 import ford.sourceform
 import ford.tipue_search
-import ford.utils
+from ford.utils import ProgressBar
 from ford.graphs import graphviz_installed, GraphManager
 from ford.settings import ProjectSettings, EntitySettings
 
@@ -212,14 +210,13 @@ class Documentation:
                 self.index.html, "index.html", EntitySettings(category="home")
             )
             jobs = len(self.docs) + len(self.pagetree)
-            for p in tqdm(
-                chain(self.docs, self.pagetree),
-                total=jobs,
-                unit="",
-                desc="Creating search index",
+            for page in (
+                bar := ProgressBar(
+                    "Creating search index", chain(self.docs, self.pagetree), total=jobs
+                )
             ):
-                self.tipue.create_node(p.html, p.loc, p.meta)
-            print()
+                bar.set_current(page.loc)
+                self.tipue.create_node(page.html, page.loc, page.meta)
 
     def writeout(self) -> None:
         out_dir: pathlib.Path = self.data["output_dir"]
@@ -288,8 +285,9 @@ class Documentation:
         items = list(
             chain(self.docs, self.lists, self.pagetree, [self.index, self.search])
         )
-        for p in tqdm(items, desc="Writing files"):
-            p.writeout()
+        for page in (bar := ProgressBar("Writing files", items)):
+            bar.set_current(page.outfile)
+            page.writeout()
 
         print(f"\nBrowse the generated documentation: file://{out_dir}/index.html")
 

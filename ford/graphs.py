@@ -35,10 +35,9 @@ import warnings
 
 from graphviz import Digraph, ExecutableNotFound
 from graphviz import version as graphviz_version
-from tqdm import tqdm
 from tqdm.contrib.concurrent import process_map
 
-import ford.utils
+from ford.utils import traverse, ProgressBar
 
 from ford.sourceform import (
     ExternalBoundProcedure,
@@ -1369,7 +1368,9 @@ class GraphManager:
 
     def graph_all(self):
         """Create all graphs"""
-        for obj in tqdm(sorted(self.graph_objs), unit="", desc="Generating graphs"):
+
+        for obj in (bar := ProgressBar("Generating graphs", sorted(self.graph_objs))):
+            bar.set_current(obj.name)
             if is_module(obj):
                 obj.usesgraph = UsesGraph(obj, self.data)
                 obj.usedbygraph = UsedByGraph(obj, self.data)
@@ -1391,7 +1392,7 @@ class GraphManager:
                 obj.usesgraph = UsesGraph(obj, self.data)
                 self.procedures.add(obj)
                 # regester internal procedures
-                for p in ford.utils.traverse(obj, ["subroutines", "functions"]):
+                for p in traverse(obj, ["subroutines", "functions"]):
                     self.internal_procedures.add(p) if getattr(
                         p, "visible", False
                     ) else None
