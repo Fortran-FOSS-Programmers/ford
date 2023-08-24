@@ -28,7 +28,7 @@ import os
 from pathlib import Path
 from typing import List, Optional, Sequence
 from textwrap import dedent
-from ford.utils import meta_preprocessor
+from ford.utils import meta_preprocessor, ProgressBar
 from ford.settings import EntitySettings
 
 
@@ -47,7 +47,6 @@ class PageNode:
         parent: Optional[PageNode],
         encoding: str = "utf-8",
     ):
-        print(f"Reading page {os.path.relpath(path)}")
         meta, text = meta_preprocessor(dedent(Path(path).read_text(encoding)))
         self.meta = EntitySettings.from_markdown_metadata(meta)
 
@@ -107,6 +106,7 @@ def get_page_tree(
     topdir: os.PathLike,
     proj_copy_subdir: Sequence[os.PathLike],
     md,
+    progress: Optional[ProgressBar] = None,
     parent=None,
     encoding: str = "utf-8",
 ):
@@ -124,6 +124,8 @@ def get_page_tree(
         print(f"Warning: '{index_file}' does not exist")
         return None
 
+    if progress is not None:
+        progress.set_current(os.path.relpath(index_file))
     # process index.md
     try:
         node = PageNode(md, index_file, proj_copy_subdir, parent, encoding)
@@ -147,6 +149,8 @@ def get_page_tree(
             continue
 
         filename = topdir / name
+        if progress is not None:
+            progress.set_current(os.path.relpath(filename))
 
         if not filename.exists():
             raise ValueError(f"Requested page file '{filename}' does not exist")
@@ -156,7 +160,9 @@ def get_page_tree(
             if parent and name in parent.copy_subdir:
                 continue
 
-            if subnode := get_page_tree(filename, proj_copy_subdir, md, node, encoding):
+            if subnode := get_page_tree(
+                filename, proj_copy_subdir, md, progress, node, encoding
+            ):
                 node.subpages.append(subnode)
         elif filename.suffix == ".md":
             # process subpages

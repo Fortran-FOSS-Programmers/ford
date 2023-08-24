@@ -45,7 +45,7 @@ from ford.external_project import dump_modules
 import ford.fortran_project
 import ford.sourceform
 import ford.output
-import ford.utils
+from ford.utils import ProgressBar
 from ford._typing import PathLike
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
@@ -442,13 +442,15 @@ def main(proj_data: ProjectSettings, proj_docs: str):
 
     # Process any pages
     if proj_data.page_dir is not None:
-        page_tree = get_page_tree(
-            pathlib.Path(proj_data.page_dir),
-            proj_data.copy_subdir,
-            md,
-            encoding=proj_data.encoding,
-        )
-        print()
+        total_files = len(list(proj_data.page_dir.glob("**/*.md")))
+        with ProgressBar("Processing pages", total=total_files) as progress:
+            page_tree = get_page_tree(
+                proj_data.page_dir,
+                proj_data.copy_subdir,
+                md,
+                encoding=proj_data.encoding,
+                progress=progress,
+            )
     else:
         page_tree = None
 
