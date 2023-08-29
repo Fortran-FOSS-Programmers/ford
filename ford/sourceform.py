@@ -52,6 +52,7 @@ from pygments import highlight
 from pygments.lexers import FortranLexer, FortranFixedLexer, guess_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
+from ford.console import warn
 from ford.reader import FortranReader
 import ford.utils
 from ford.intrinsics import INTRINSICS
@@ -387,13 +388,11 @@ class FortranBase:
         else:
             if self.settings.warn and self.obj not in ("sourcefile", "genericsource"):
                 # TODO: Add ability to print line number where this item is in file
-                print(
-                    f"Warning: Undocumented {self.obj} '{self.name}' in file '{self.filename}'"
-                )
+                warn(f"Undocumented {self.obj} '{self.name}' in file '{self.filename}'")
 
         self._set_display()
 
-    def markdown(self, md: MetaMarkdown, project: Project):
+    def markdown(self, md: MetaMarkdown):
         """
         Process the documentation with Markdown to produce HTML.
         """
@@ -431,8 +430,8 @@ class FortranBase:
             else:
                 self.src = ""
                 if self.settings.warn:
-                    print(
-                        f"Warning: Could not extract source code for {self.obj} '{self.name}' in file '{self.filename}'"
+                    warn(
+                        f"Could not extract source code for {self.obj} '{self.name}' in file '{self.filename}'"
                     )
 
     def sort_components(self) -> None:
@@ -1548,18 +1547,16 @@ class FortranSourceFile(FortranContainer):
             self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
         )
 
-    def markdown(self, md, project):
-        """Process the documentation with Markdown to produce HTML, and then
-        process all the entities in this file
-
-        """
-
-        super().markdown(md, project)
+    @property
+    def markdownable_items(self):
+        items = [self]
 
         for item in self._to_be_markdowned:
             # TODO: skip anything that isn't going to be displayed?
             if isinstance(item, FortranBase) and not hasattr(item, "external_url"):
-                item.markdown(md, project)
+                items.append(item)
+
+        return items
 
 
 class FortranModule(FortranCodeUnit):
@@ -2629,8 +2626,8 @@ class FortranSpoof:
         self.parent = parent
         self.obj = obj
         if self.parent.settings.warn:
-            print(
-                f"Warning: {self.obj} '{self.name}' in {self.parent.obj} '{self.parent.name}' could not be matched to "
+            warn(
+                f"{self.obj} '{self.name}' in {self.parent.obj} '{self.parent.name}' could not be matched to "
                 f"corresponding item in code (file {self.filename})"
             )
 
@@ -2720,6 +2717,10 @@ class GenericSource(FortranBase):
         self.parse_file(settings.encoding)
 
         self.read_metadata()
+
+    @property
+    def markdownable_items(self):
+        return [self]
 
     @staticmethod
     def _docmark_alt(settings: ProjectSettings) -> str:

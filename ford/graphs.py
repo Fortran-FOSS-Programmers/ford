@@ -31,14 +31,13 @@ import os
 import pathlib
 import re
 from typing import Dict, Iterable, List, Optional, Set, Tuple, Type, Union, cast
-import warnings
 
 from graphviz import Digraph, ExecutableNotFound
 from graphviz import version as graphviz_version
-from tqdm import tqdm
 from tqdm.contrib.concurrent import process_map
 
-import ford.utils
+from ford.console import warn
+from ford.utils import traverse, ProgressBar
 
 from ford.sourceform import (
     ExternalBoundProcedure,
@@ -888,21 +887,17 @@ class FortranGraph:
 
         # Do not render overly large graphs.
         if len(self.added) > self.max_nodes and self.warn:
-            warnings.warn(
-                f"Warning: Not showing graph {self.ident} as it would exceed the maximal number of {self.max_nodes} nodes"
+            warn(
+                f"Not showing graph {self.ident} as it would exceed the maximal number of {self.max_nodes} nodes"
             )
             return ""
         # Do not render incomplete graphs.
         if len(self.added) < len(self.root) and self.warn:
-            warnings.warn(
-                f"Warning: Not showing graph {self.ident} as it would be incomplete"
-            )
+            warn(f"Not showing graph {self.ident} as it would be incomplete")
             return ""
 
         if self.truncated > 0 and self.warn:
-            warnings.warn(
-                f"Warning: Graph {self.ident} is truncated after {self.truncated} hops"
-            )
+            warn(f"Graph {self.ident} is truncated after {self.truncated} hops")
 
         if graph_as_table:
             rettext = self._make_graph_as_table()
@@ -1369,7 +1364,9 @@ class GraphManager:
 
     def graph_all(self):
         """Create all graphs"""
-        for obj in tqdm(sorted(self.graph_objs), unit="", desc="Generating graphs"):
+
+        for obj in (bar := ProgressBar("Generating graphs", sorted(self.graph_objs))):
+            bar.set_current(obj.name)
             if is_module(obj):
                 obj.usesgraph = UsesGraph(obj, self.data)
                 obj.usedbygraph = UsedByGraph(obj, self.data)
@@ -1391,7 +1388,7 @@ class GraphManager:
                 obj.usesgraph = UsesGraph(obj, self.data)
                 self.procedures.add(obj)
                 # regester internal procedures
-                for p in ford.utils.traverse(obj, ["subroutines", "functions"]):
+                for p in traverse(obj, ["subroutines", "functions"]):
                     self.internal_procedures.add(p) if getattr(
                         p, "visible", False
                     ) else None

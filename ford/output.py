@@ -29,15 +29,15 @@ import shutil
 import traceback
 from itertools import chain
 import pathlib
+import time
 from typing import List, Union, Callable, Type, Tuple
 
 import jinja2
 
-from tqdm import tqdm
-
+from ford.console import warn
 import ford.sourceform
 import ford.tipue_search
-import ford.utils
+from ford.utils import ProgressBar
 from ford.graphs import graphviz_installed, GraphManager
 from ford.settings import ProjectSettings, EntitySettings
 
@@ -103,14 +103,14 @@ class Documentation:
         self.index = IndexPage(self.data, project, proj_docs)
         self.search = SearchPage(self.data, project)
         if not graphviz_installed and settings.graph:
-            print(
-                "Warning: Will not be able to generate graphs. Graphviz not installed."
-            )
+            warn("Will not be able to generate graphs. Graphviz not installed.")
         if settings.relative:
             graphparent = "../"
         else:
             graphparent = ""
-        print("Creating HTML documentation...")
+
+        print("  Creating HTML documentation... ", end="")
+        html_time_start = time.time()
         try:
             PageFactory = Union[Type, Callable]
 
@@ -164,6 +164,9 @@ class Documentation:
             else:
                 sys.exit('Error encountered. Run with "--debug" flag for traceback.')
 
+        html_time_end = time.time()
+        print(f"done in {html_time_end - html_time_start:5.3f}s")
+
         self.graphs = GraphManager(
             self.data.get("graph_dir", ""),
             graphparent,
@@ -206,18 +209,16 @@ class Documentation:
                 self.index.html, "index.html", EntitySettings(category="home")
             )
             jobs = len(self.docs) + len(self.pagetree)
-            for p in tqdm(
-                chain(self.docs, self.pagetree),
-                total=jobs,
-                unit="",
-                desc="Creating search index",
+            for page in (
+                bar := ProgressBar(
+                    "Creating search index", chain(self.docs, self.pagetree), total=jobs
+                )
             ):
-                self.tipue.create_node(p.html, p.loc, p.meta)
-            print()
+                bar.set_current(page.loc)
+                self.tipue.create_node(page.html, page.loc, page.meta)
 
     def writeout(self) -> None:
         out_dir: pathlib.Path = self.data["output_dir"]
-        print(f"Writing documentation to '{out_dir}'...")
         # Remove any existing file/directory. This avoids errors coming from
         # `shutils.copytree` for Python < 3.8, where we can't explicitly ignore them
         if out_dir.is_file():
@@ -256,9 +257,7 @@ class Documentation:
         try:
             copytree(self.data["media_dir"], out_dir / "media")
         except OSError as e:
-            print(
-                f"Warning: error copying media directory {self.data['media_dir']}, {e}"
-            )
+            warn(f"error copying media directory {self.data['media_dir']}, {e}")
         except KeyError:
             pass
 
@@ -279,8 +278,12 @@ class Documentation:
                 mathjax_path / os.path.basename(self.data["mathjax_config"]),
             )
 
-        for p in chain(self.docs, self.lists, self.pagetree, [self.index, self.search]):
-            p.writeout()
+        items = list(
+            chain(self.docs, self.lists, self.pagetree, [self.index, self.search])
+        )
+        for page in (bar := ProgressBar("Writing files", items)):
+            bar.set_current(os.path.relpath(page.outfile))
+            page.writeout()
 
         print(f"\nBrowse the generated documentation: file://{out_dir}/index.html")
 
@@ -554,16 +557,14 @@ class PagetreePage(BasePage):
             try:
                 copytree(item_path, to_path / item)
             except Exception as e:
-                print(
-                    f"Warning: could not copy directory '{item_path}'. Error: {e.args[0]}"
-                )
+                warn(f"could not copy directory '{item_path}'. Error: {e.args[0]}")
 
         for item in self.obj.files:
             item_path = from_path / item
             try:
                 shutil.copy(item_path, to_path)
             except Exception as e:
-                print(f"Warning: could not copy file '{item_path}'. Error: {e.args[0]}")
+                warn(f"could not copy file '{item_path}'. Error: {e.args[0]}")
 
 
 def copytree(src: pathlib.Path, dst: pathlib.Path) -> None:

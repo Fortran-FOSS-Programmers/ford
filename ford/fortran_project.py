@@ -25,12 +25,13 @@
 import os
 import toposort
 from itertools import chain, product
-from typing import List, Optional, Union, Dict, Iterable
+from typing import List, Optional, Union, Dict
 from pathlib import Path
 from fnmatch import fnmatch
 
+from ford.console import warn
 from ford.external_project import load_external_modules
-import ford.utils
+from ford.utils import ProgressBar
 import ford.sourceform
 from ford.sourceform import (
     _find_in_list,
@@ -127,8 +128,8 @@ def find_all_files(settings: ProjectSettings) -> List[Path]:
             and "*" not in exclude
         ):
             glob_exclude = f"**/{exclude}"
-            print(
-                f"Warning: exclude file '{exclude}' is not relative to any source directories, all matching files will be excluded.\n"
+            warn(
+                f"exclude file '{exclude}' is not relative to any source directories, all matching files will be excluded.\n"
                 f"To suppress this warning please change it to '{glob_exclude}' in your settings file"
             )
             settings.exclude[i] = glob_exclude
@@ -177,9 +178,12 @@ class Project:
         self.namelists: List[FortranNamelist] = []
 
         # Get all files within topdir, recursively
-        for filename in find_all_files(settings):
+
+        for filename in (
+            progress := ProgressBar("Parsing files", find_all_files(settings))
+        ):
             relative_path = os.path.relpath(filename)
-            print(f"Reading file {relative_path}")
+            progress.set_current(relative_path)
 
             extension = str(filename.suffix)[1:]  # Don't include the initial '.'
             fortran_extensions = self.extensions + self.fixed_extensions
@@ -192,7 +196,7 @@ class Project:
                 if not settings.dbg:
                     raise e
 
-                print(f"Warning: Error parsing {relative_path}.\n\t{e.args[0]}")
+                warn(f"Error parsing {relative_path}.\n\t{e.args[0]}")
                 continue
 
     def _fortran_file(
@@ -249,7 +253,7 @@ class Project:
 
     def warn(self, message):
         if self.settings.warn:
-            print(f"Warning: {message}")
+            warn(f"{message}")
 
     @property
     def allfiles(self):
@@ -266,8 +270,6 @@ class Project:
         """
         Associates various constructs with each other.
         """
-
-        print("Correlating information from different parts of your project...")
 
         non_local_mods = INTRINSIC_MODS.copy()
         for item in self.settings.extra_mods:
@@ -406,18 +408,22 @@ class Project:
         self.absint_lines = sum_lines(self.absinterfaces)
         self.prog_lines = sum_lines(self.programs)
         self.block_lines = sum_lines(self.blockdata)
-        print()
 
     def markdown(self, md, base_url=".."):
         """
         Process the documentation with Markdown to produce HTML.
         """
-        print("\nProcessing documentation comments...")
         ford.sourceform.set_base_url(base_url)
         if self.settings.warn:
             print()
+
+        items = []
         for src in self.allfiles:
-            src.markdown(md, self)
+            items.extend(src.markdownable_items)
+
+        for item in (bar := ProgressBar("Processing comments", items)):
+            bar.set_current(item.name)
+            item.markdown(md)
 
     def find(
         self,

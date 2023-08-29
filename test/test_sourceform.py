@@ -1370,7 +1370,7 @@ def test_markdown_header_bug286(parse_fortran_file):
     md = MetaMarkdown()
 
     subroutine = fortran_file.modules[0].subroutines[0]
-    subroutine.markdown(md, None)
+    subroutine.markdown(md)
 
     assert subroutine.doc.startswith("<h2>My Header</h2>")
 
@@ -1395,7 +1395,7 @@ def test_markdown_codeblocks_bug286(parse_fortran_file):
     md = MetaMarkdown()
 
     subroutine = fortran_file.modules[0].subroutines[0]
-    subroutine.markdown(md, None)
+    subroutine.markdown(md)
 
     assert "<code>printSquare(4)" in subroutine.doc
     assert "<div" in subroutine.doc
@@ -1422,7 +1422,7 @@ def test_markdown_meta_reset(parse_fortran_file):
     fortran_file = parse_fortran_file(data)
     md = MetaMarkdown()
     module = fortran_file.modules[0]
-    module.markdown(md, None)
+    module.markdown(md)
     assert module.meta.version == "0.1.0"
     assert module.subroutines[0].meta.author == "Test name"
     assert module.subroutines[1].meta.author is None
@@ -1471,7 +1471,7 @@ def test_markdown_source_meta(parse_fortran_file):
 
     fortran_file = parse_fortran_file(data)
     subroutine = fortran_file.subroutines[0]
-    subroutine.markdown(md, None)
+    subroutine.markdown(md)
 
     assert subroutine.meta.source is True
     assert "with_source" in subroutine.src
@@ -1489,7 +1489,7 @@ def test_markdown_source_settings(parse_fortran_file):
     md = MetaMarkdown()
     fortran_file = parse_fortran_file(data, source=True)
     subroutine = fortran_file.subroutines[0]
-    subroutine.markdown(md, None)
+    subroutine.markdown(md)
 
     assert subroutine.meta.source is True
     assert "with_source" in subroutine.src
