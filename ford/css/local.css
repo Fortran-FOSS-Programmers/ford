@@ -292,3 +292,7 @@ td, th {
     padding-left: 10px;
     padding-right: 10px;
 }
+
+.nav > .nav {
+    margin-left: 16px;
+}
