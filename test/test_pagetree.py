@@ -1,6 +1,5 @@
 from ford.pagetree import get_page_tree
-
-from markdown import Markdown
+from ford._markdown import MetaMarkdown
 
 from textwrap import dedent
 from locale import getpreferredencoding
@@ -37,9 +36,9 @@ def test_footnotes_on_one_page(tmp_path):
             )
         )
 
-    md = Markdown(extensions=["markdown.extensions.meta", "markdown.extensions.extra"])
+    md = MetaMarkdown()
     result_dir = tmp_path / "result"
-    nodes = get_page_tree(tmp_path, result_dir, md)
+    nodes = get_page_tree(tmp_path, result_dir, tmp_path / "doc", md)
 
     assert len(nodes.subpages) == 2
     assert "This is the footnote on page A" in nodes.subpages[0].contents
@@ -77,9 +76,9 @@ def test_footnotes_on_one_page_parse_failure(tmp_path):
             )
         )
 
-    md = Markdown(extensions=["markdown.extensions.meta", "markdown.extensions.extra"])
+    md = MetaMarkdown()
     result_dir = tmp_path / "result"
-    nodes = get_page_tree(tmp_path, result_dir, md)
+    nodes = get_page_tree(tmp_path, result_dir, tmp_path / "doc", md)
 
     assert len(nodes.subpages) == 1
     assert "This is the footnote on page A" not in nodes.subpages[0].contents
@@ -108,8 +107,8 @@ def test_non_utf8_encoding(tmp_path):
             ).encode(encoding)
         )
 
-    md = Markdown(extensions=["markdown.extensions.meta", "markdown.extensions.extra"])
+    md = MetaMarkdown()
     result_dir = tmp_path / "result"
-    nodes = get_page_tree(tmp_path, result_dir, md, encoding=encoding)
+    nodes = get_page_tree(tmp_path, result_dir, tmp_path / "doc", md, encoding=encoding)
 
     assert "本文档是" in nodes.contents

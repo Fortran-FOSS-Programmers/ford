@@ -68,9 +68,6 @@ def test_settings_type_conversion_from_markdown():
     assert settings.alias == {
         "a": "b",
         "c": "d",
-        "url": ".",
-        "media": "media",
-        "page": "page",
     }
     assert settings.extra_filetypes == {
         "cpp": ExtraFileType("cpp", "//"),
@@ -110,9 +107,6 @@ def test_settings_from_toml():
     assert settings.alias == {
         "a": "b",
         "c": "d",
-        "url": ".",
-        "media": "media",
-        "page": "page",
     }
     assert settings.extra_filetypes == {
         "cpp": ExtraFileType("cpp", "//"),
