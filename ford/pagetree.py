@@ -136,7 +136,7 @@ def get_page_tree(
     try:
         node = PageNode(md, index_file, output_dir, proj_copy_subdir, parent, encoding)
     except Exception as e:
-        warn(f"Error parsing {index_file.relative_to('.')}.\n\t{e.args[0]}")
+        warn(f"Error parsing {index_file.relative_to(topdir)}.\n\t{e.args[0]}")
         return None
 
     filelist = sorted(os.listdir(topdir))
