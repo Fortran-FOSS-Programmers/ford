@@ -384,7 +384,7 @@ class FortranBase:
                     self.doc_list.insert(0, "")
 
             meta, self.doc_list = ford.utils.meta_preprocessor(self.doc_list)
-            self.meta.update(meta)
+            self.meta.update(meta, f"{self.filename}:{self.name}")
         else:
             if self.settings.warn and self.obj not in ("sourcefile", "genericsource"):
                 # TODO: Add ability to print line number where this item is in file

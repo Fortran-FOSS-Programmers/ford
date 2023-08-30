@@ -33,7 +33,7 @@ import pathlib
 import subprocess
 from datetime import datetime
 import time
-from typing import Tuple
+from typing import Tuple, Optional
 from textwrap import dedent
 
 try:
@@ -133,7 +133,7 @@ def initialize():
 
     proj_docs = args.project_file.read()
     directory = os.path.dirname(args.project_file.name)
-    proj_docs, proj_data = load_settings(proj_docs, directory)
+    proj_docs, proj_data = load_settings(proj_docs, directory, args.project_file.name)
 
     return parse_arguments(vars(args), proj_docs, proj_data, directory)
 
@@ -286,7 +286,9 @@ def get_command_line_arguments() -> argparse.Namespace:
 
 
 def load_settings(
-    proj_docs: str, directory: PathLike = pathlib.Path(".")
+    proj_docs: str,
+    directory: PathLike = pathlib.Path("."),
+    filename: Optional[str] = None,
 ) -> Tuple[str, ProjectSettings]:
     """Load Ford settings from ``fpm.toml`` if present, or from
     metadata in supplied project file1
@@ -310,7 +312,7 @@ def load_settings(
     proj_data = load_toml_settings(directory)
 
     if proj_data is None:
-        proj_data, proj_docs = load_markdown_settings(directory, proj_docs)
+        proj_data, proj_docs = load_markdown_settings(directory, proj_docs, filename)
 
     return proj_docs, proj_data
 
