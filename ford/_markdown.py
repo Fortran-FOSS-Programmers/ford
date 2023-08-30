@@ -179,6 +179,16 @@ class FordLinkProcessor(InlineProcessor):
     def getCompiledRegExp(self):
         return self.LINK_RE
 
+    @property
+    def warn_prefix(self) -> str:
+        if context := self.md.current_context:
+            return f"In '{context.filename}:{context.name}': "
+
+        if self.md.current_path:
+            return f"In file '{relpath(self.md.current_path)}': "
+
+        return ""
+
     def convert_link(self, m: re.Match):
         item = None
         name = m["name"]
@@ -203,7 +213,7 @@ class FordLinkProcessor(InlineProcessor):
         if m["child_name"] and item is None:
             parent_name = name
             warn(
-                f"Could not substitute link {m.group()}. "
+                f"{self.warn_prefix}Could not substitute link {m.group()}, "
                 f'"{m["child_name"]}" not found in "{parent_name}", linking to page for "{parent_name}" instead'
             )
             item = self.project.find(name, m["entity"])
@@ -212,7 +222,9 @@ class FordLinkProcessor(InlineProcessor):
 
         # Nothing found, so give a blank link
         if item is None:
-            warn(f"Could not substitute link {m.group()}. '{name}' not found")
+            warn(
+                f"{self.warn_prefix}Could not substitute link {m.group()}, '{name}' not found"
+            )
             link.text = name
             return link
 
