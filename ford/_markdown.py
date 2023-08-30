@@ -244,7 +244,7 @@ class RelativeLinksTreeProcessor(Treeprocessor):
     md: MetaMarkdown
 
     def __init__(self, md: MetaMarkdown, base_url: Path):
-        self.base_url = base_url
+        self.base_url = base_url.resolve()
         super().__init__(md)
 
     def run(self, root: Element):
@@ -254,7 +254,7 @@ class RelativeLinksTreeProcessor(Treeprocessor):
         for link in root.iter("a"):
             if "href" not in link.attrib:
                 continue
-            link_path = Path(link.attrib["href"])
+            link_path = Path(link.attrib["href"]).resolve()
             # FIXME: In py3.9, this can be Path.is_relative_to
             if self.base_url in link_path.parents:
                 link.attrib["href"] = relpath(link_path, self.md.current_path)

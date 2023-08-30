@@ -87,7 +87,7 @@ class PageNode:
             self.topnode = self
 
         output_path = output_dir / "page" / self.path.parent
-        self.contents = md.reset().convert("\n".join(text), path=output_path)
+        self.contents = md.reset().convert("\n".join(text), path=output_path.resolve())
 
     @property
     def path(self):
