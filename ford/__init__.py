@@ -424,7 +424,7 @@ def main(proj_data: ProjectSettings, proj_docs: str):
     url_path = pathlib.Path(proj_data.project_url)
     aliases.update(
         {
-            "url": proj_data.project_url,
+            "url": str(url_path),
             "media": str(url_path / "media"),
             "page": str(url_path / "page"),
         }
