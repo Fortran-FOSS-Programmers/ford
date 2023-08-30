@@ -462,13 +462,27 @@ def test_static_pages(example_project):
 
     subpage_names = [link.text for link in subpage_links]
     # Note that order matters here, so no `sorted`!
-    expected_subpage_names = ["Notes", "First page", "Second page", "Yet Another Page"]
+    expected_subpage_names = [
+        "Notes",
+        "First page",
+        "Second page",
+        "Subdirectories",
+        "Subpage in subdirectory",
+        "Yet Another Page",
+    ]
     assert subpage_names == expected_subpage_names, "subpages"
 
     subpage_paths = [pathlib.Path(link["href"]) for link in subpage_links]
     expected_subpage_paths = [
         pathlib.Path(f"../page/{link}.html")
-        for link in ("index", "subpage2", "subpage1", "subpage3")
+        for link in (
+            "index",
+            "subpage2",
+            "subpage1",
+            "subdir/index",
+            "subdir/subsubpage",
+            "subpage3",
+        )
     ]
     assert subpage_paths == expected_subpage_paths, "ordered_subpages"
 
@@ -493,3 +507,11 @@ def test_namelist_page(example_project):
     expected_variables = sorted(["input", "module_level_variable", "local_variable"])
 
     assert variables == expected_variables
+
+
+def test_linking_to_page_alias_from_nested_page(example_project):
+    path, _ = example_project
+    subsubpage = read_html(path / "page/subdir/subsubpage.html")
+
+    link = subsubpage.find("a", string=re.compile("such as"))
+    assert link["href"] == "../subpage1.html"

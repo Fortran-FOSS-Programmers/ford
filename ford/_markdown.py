@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from markdown import Markdown, Extension
 from markdown.inlinepatterns import InlineProcessor
+from markdown.treeprocessors import Treeprocessor
 from typing import Dict, List, Union, Optional, TYPE_CHECKING
 import re
 from xml.etree.ElementTree import Element
 from contextlib import suppress
+from pathlib import Path
+from os.path import relpath
 
 from ford.console import warn
 from ford.md_environ import EnvironExtension
@@ -18,7 +21,27 @@ if TYPE_CHECKING:
 
 
 class MetaMarkdown(Markdown):
-    """Helper subclass that captures our defaults"""
+    """Helper subclass that captures our defaults
+
+    Parameters
+    ----------
+    md_base :
+        Base path for md_include extension
+    extensions :
+        List of markdown extension names or instances
+    extension_configs :
+        Dictionary of markdown extension config settings
+    aliases :
+        Dictionary of text aliases
+    project :
+        Ford project instance
+    relative :
+        Should internal URLs be relative
+    base_url :
+        Base/project URL for relative links (required if
+        ``relative`` is True)
+
+    """
 
     def __init__(
         self,
@@ -26,8 +49,12 @@ class MetaMarkdown(Markdown):
         extensions: Optional[List[Union[str, Extension]]] = None,
         extension_configs: Optional[Dict[str, Dict]] = None,
         aliases: Optional[Dict[str, str]] = None,
-        project=None,
+        project: Optional[Project] = None,
+        relative: bool = False,
+        base_url: Optional[PathLike] = None,
     ):
+        """make thing"""
+
         default_extensions: List[Union[str, Extension]] = [
             "markdown_include.include",
             "markdown.extensions.codehilite",
@@ -43,6 +70,11 @@ class MetaMarkdown(Markdown):
         if project is not None:
             default_extensions.append(FordLinkExtension(project=project))
 
+        if relative:
+            if base_url is None:
+                raise ValueError("Expected path for base_url, got None")
+            default_extensions.append(RelativeLinksExtension(base_url=base_url))
+
         if extensions is None:
             extensions = []
 
@@ -56,13 +88,34 @@ class MetaMarkdown(Markdown):
         )
 
         self.current_context: Optional[FortranBase] = None
+        self.current_path: Optional[Path] = None
 
     def reset(self):
         self.current_context = None
+        self.current_path = None
         return super().reset()
 
-    def convert(self, source: str, context: Optional[FortranBase] = None):
+    def convert(
+        self,
+        source: str,
+        context: Optional[FortranBase] = None,
+        path: Optional[Path] = None,
+    ):
+        """Convert from markdown to HTML
+
+        Parameters
+        ----------
+        source : str
+            Text to convert
+        context : Optional[FortranBase]
+            Current Ford object being processed
+        path : Optional[Path]
+            Current (output) path of page being processed
+
+        """
+
         self.current_context = context
+        self.current_path = path
         return super().convert(source)
 
 
@@ -182,4 +235,47 @@ class FordLinkExtension(Extension):
         project = self.getConfig("project")
         md.inlinePatterns.register(
             FordLinkProcessor(md, project=project), "ford_links", 174
+        )
+
+
+class RelativeLinksTreeProcessor(Treeprocessor):
+    """Modify link URLs to be relative to the given base URL"""
+
+    md: MetaMarkdown
+
+    def __init__(self, md: MetaMarkdown, base_url: Path):
+        self.base_url = base_url.resolve()
+        super().__init__(md)
+
+    def _fix_attrib(self, tag: Element, attrib: str):
+        if attrib not in tag.attrib:
+            return
+
+        tag_path = Path(tag.attrib[attrib]).resolve()
+        # FIXME: In py3.9, this can be Path.is_relative_to
+        if self.base_url in tag_path.parents:
+            tag.attrib[attrib] = relpath(tag_path, self.md.current_path)
+
+    def run(self, root: Element):
+        if self.md.current_path is None:
+            return
+
+        for link in root.iter("a"):
+            self._fix_attrib(link, "href")
+
+        for link in root.iter("img"):
+            self._fix_attrib(link, "src")
+
+
+class RelativeLinksExtension(Extension):
+    """Markdown extension to register `RelativeLinksTreeProcessor`"""
+
+    def __init__(self, **kwargs):
+        self.config = {"base_url": [kwargs["base_url"], "Base URL of project"]}
+        super().__init__(**kwargs)
+
+    def extendMarkdown(self, md: MetaMarkdown):  # type: ignore[override]
+        base_url: Path = self.getConfig("base_url")
+        md.treeprocessors.register(
+            RelativeLinksTreeProcessor(md, base_url=base_url), "relative_links", 5
         )

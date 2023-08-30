@@ -31,6 +31,7 @@ from textwrap import dedent
 from ford.console import warn
 from ford.utils import meta_preprocessor, ProgressBar
 from ford.settings import EntitySettings
+from ford._markdown import MetaMarkdown
 
 
 class PageNode:
@@ -42,8 +43,9 @@ class PageNode:
 
     def __init__(
         self,
-        md,
+        md: MetaMarkdown,
         path: Path,
+        output_dir: Path,
         proj_copy_subdir: Sequence[os.PathLike],
         parent: Optional[PageNode],
         encoding: str = "utf-8",
@@ -70,7 +72,6 @@ class PageNode:
         #   project settings
         self.copy_subdir = self.meta.copy_subdir or proj_copy_subdir
         self.parent = parent
-        self.contents = md.reset().convert("\n".join(text))
         self.subpages: List[PageNode] = []
         self.files: List[os.PathLike] = []
         self.filename = Path(path.stem)
@@ -84,6 +85,9 @@ class PageNode:
             self.topdir = path.parent
             self.location = Path()
             self.topnode = self
+
+        output_path = output_dir / "page" / self.path.parent
+        self.contents = md.reset().convert("\n".join(text), path=output_path.resolve())
 
     @property
     def path(self):
@@ -106,7 +110,8 @@ class PageNode:
 def get_page_tree(
     topdir: os.PathLike,
     proj_copy_subdir: Sequence[os.PathLike],
-    md,
+    output_dir: Path,
+    md: MetaMarkdown,
     progress: Optional[ProgressBar] = None,
     parent=None,
     encoding: str = "utf-8",
@@ -129,9 +134,9 @@ def get_page_tree(
         progress.set_current(os.path.relpath(index_file))
     # process index.md
     try:
-        node = PageNode(md, index_file, proj_copy_subdir, parent, encoding)
+        node = PageNode(md, index_file, output_dir, proj_copy_subdir, parent, encoding)
     except Exception as e:
-        warn(f"Error parsing {index_file.relative_to('.')}.\n\t{e.args[0]}")
+        warn(f"Error parsing {index_file.relative_to(topdir)}.\n\t{e.args[0]}")
         return None
 
     filelist = sorted(os.listdir(topdir))
@@ -162,14 +167,14 @@ def get_page_tree(
                 continue
 
             if subnode := get_page_tree(
-                filename, proj_copy_subdir, md, progress, node, encoding
+                filename, proj_copy_subdir, output_dir, md, progress, node, encoding
             ):
                 node.subpages.append(subnode)
         elif filename.suffix == ".md":
             # process subpages
             try:
                 node.subpages.append(
-                    PageNode(md, filename, proj_copy_subdir, node, encoding)
+                    PageNode(md, filename, output_dir, proj_copy_subdir, node, encoding)
                 )
             except ValueError as e:
                 warn(f"Error parsing '{filename}'.\n\t{e.args[0]}")

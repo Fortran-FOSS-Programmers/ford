@@ -187,7 +187,7 @@ def normalise_path(
     base_dir: pathlib.Path, path: Union[str, pathlib.Path]
 ) -> pathlib.Path:
     """Tidy up path, making it absolute, relative to base_dir"""
-    return (base_dir / os.path.expandvars(path)).absolute()
+    return (base_dir / os.path.expandvars(path)).absolute().resolve()
 
 
 def traverse(root, attrs) -> list:

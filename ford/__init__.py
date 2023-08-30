@@ -421,11 +421,22 @@ def main(proj_data: ProjectSettings, proj_docs: str):
     # Setup Markdown object with any user-specified extensions
     aliases = copy.copy(proj_data.alias)
     aliases.update(proj_data.external)
+    url_path = pathlib.Path(proj_data.project_url)
+    aliases.update(
+        {
+            "url": str(url_path),
+            "media": str(url_path / "media"),
+            "page": str(url_path / "page"),
+        }
+    )
+
     md = MetaMarkdown(
         proj_data.md_base_dir,
         extensions=proj_data.md_extensions,
         aliases=aliases,
         project=project,
+        relative=proj_data.relative,
+        base_url=proj_data.project_url,
     )
 
     # Convert the documentation from Markdown to HTML
@@ -447,6 +458,7 @@ def main(proj_data: ProjectSettings, proj_docs: str):
             page_tree = get_page_tree(
                 proj_data.page_dir,
                 proj_data.copy_subdir,
+                proj_data.output_dir,
                 md,
                 encoding=proj_data.encoding,
                 progress=progress,

@@ -203,19 +203,6 @@ class ProjectSettings:
         self.extensions = list(set(self.extensions) | set(self.fpp_extensions))
         self.exclude_dir.append(self.output_dir)
 
-        if self.relative:
-            self.project_url = "."
-
-        # Define some core macros
-        url_path = Path(self.project_url)
-        self.alias.update(
-            {
-                "url": self.project_url,
-                "media": str(url_path / "media"),
-                "page": str(url_path / "page"),
-            }
-        )
-
         # Check that none of the docmarks are the same
         docmarks = ["docmark", "predocmark", "docmark_alt", "predocmark_alt"]
         for first, second in combinations(docmarks, 2):
@@ -267,6 +254,9 @@ class ProjectSettings:
 
             if is_same_type(default_type, Path):
                 setattr(self, key, normalise_path(directory, value))
+
+        if self.relative:
+            self.project_url = self.output_dir
 
 
 def load_toml_settings(directory: PathLike) -> Optional[ProjectSettings]:

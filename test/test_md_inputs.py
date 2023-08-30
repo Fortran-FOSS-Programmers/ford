@@ -110,7 +110,7 @@ def test_default_aliases(
 
     html_dir = tmp_path / "doc"
     index_text = get_main_body_text(html_dir, "index.html")
-    media_dir = pathlib.Path("./media")
+    media_dir = html_dir / "media"
     expected_index_text = [
         f"Test: The project media url should be {media_dir}",
     ]

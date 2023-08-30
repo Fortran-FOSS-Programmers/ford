@@ -33,19 +33,17 @@
     {% if pages.subpages %}
       <div class="col-3">
         <div class="card card-body bg-light" id="sidebar-toc">
-          <ul class="nav flex-column">
+          <ul class="nav flex-column align-items">
             <li class="nav-item">
               <a class="nav-link{% if pages==page %} active disabled{% endif %}" href="{{ pages.url}}">{{ pages.title }}</a>
             </li>
           </ul>
           <hr>
-          <nav class="nav flex-column">
+          <nav class="nav nav-pills flex-column">
             {% for subpage in pages.subpages recursive %}
-              <li class-"nav-item">
-                <a class="nav-link{% if subpage==page %} active disabled{% endif %}" href="{{ subpage.url}}">{{ subpage.title }}</a>
-              </li>
+              <a class="nav-link{% if subpage==page %} active disabled{% endif %}" href="{{ subpage.url}}">{{ subpage.title }}</a>
               {% if subpage.subpages %}
-                <nav class="nav flex-column">
+                <nav class="nav nav-pills flex-column">
                   {{ loop(subpage.subpages) }}
                 </nav>
               {% endif %}
