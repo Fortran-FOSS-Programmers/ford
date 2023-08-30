@@ -247,17 +247,24 @@ class RelativeLinksTreeProcessor(Treeprocessor):
         self.base_url = base_url.resolve()
         super().__init__(md)
 
+    def _fix_attrib(self, tag: Element, attrib: str):
+        if attrib not in tag.attrib:
+            return
+
+        tag_path = Path(tag.attrib[attrib]).resolve()
+        # FIXME: In py3.9, this can be Path.is_relative_to
+        if self.base_url in tag_path.parents:
+            tag.attrib[attrib] = relpath(tag_path, self.md.current_path)
+
     def run(self, root: Element):
         if self.md.current_path is None:
             return
 
         for link in root.iter("a"):
-            if "href" not in link.attrib:
-                continue
-            link_path = Path(link.attrib["href"]).resolve()
-            # FIXME: In py3.9, this can be Path.is_relative_to
-            if self.base_url in link_path.parents:
-                link.attrib["href"] = relpath(link_path, self.md.current_path)
+            self._fix_attrib(link, "href")
+
+        for link in root.iter("img"):
+            self._fix_attrib(link, "src")
 
 
 class RelativeLinksExtension(Extension):
