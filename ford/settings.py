@@ -227,8 +227,8 @@ class ProjectSettings:
                 }
 
     @classmethod
-    def from_markdown_metadata(cls, meta: Dict[str, Any]):
-        return cls(**convert_types_from_metapreprocessor(cls, meta))
+    def from_markdown_metadata(cls, meta: Dict[str, Any], parent: Optional[str] = None):
+        return cls(**convert_types_from_metapreprocessor(cls, meta, parent))
 
     def normalise_paths(self, directory=None):
         if directory is None:
@@ -283,10 +283,10 @@ def load_toml_settings(directory: PathLike) -> Optional[ProjectSettings]:
 
 
 def load_markdown_settings(
-    directory: PathLike, project_file: str
+    directory: PathLike, project_file: str, filename: Optional[str] = None
 ) -> Tuple[ProjectSettings, str]:
     settings, project_lines = meta_preprocessor(project_file)
-    settings = convert_types_from_metapreprocessor(ProjectSettings, settings)
+    settings = convert_types_from_metapreprocessor(ProjectSettings, settings, filename)
 
     # Workaround for file inclusion in metadata
     for option, value in settings.items():
@@ -304,7 +304,9 @@ def load_markdown_settings(
     return ProjectSettings.from_markdown_metadata(settings), "\n".join(project_lines)
 
 
-def convert_types_from_metapreprocessor(cls: Type, settings: Dict[str, Any]):
+def convert_types_from_metapreprocessor(
+    cls: Type, settings: Dict[str, Any], parent: Optional[str] = None
+):
     """Convert a dict's value's types to be consistent with a given dataclass"""
 
     field_types = get_type_hints(cls)
@@ -315,7 +317,8 @@ def convert_types_from_metapreprocessor(cls: Type, settings: Dict[str, Any]):
         try:
             default_type = field_types[key]
         except KeyError:
-            warn(f"Ignoring unknown Ford metadata key {key!r}")
+            prefix = f"In '{parent}': " if parent is not None else ""
+            warn(f"{prefix}Ignoring unknown Ford metadata key {key!r}")
             keys_to_drop.append(key)
             continue
 
@@ -399,8 +402,8 @@ class EntitySettings:
     version: Optional[str] = None
 
     @classmethod
-    def from_markdown_metadata(cls, meta: Dict[str, Any]):
-        return cls(**convert_types_from_metapreprocessor(cls, meta))
+    def from_markdown_metadata(cls, meta: Dict[str, Any], parent: Optional[str] = None):
+        return cls(**convert_types_from_metapreprocessor(cls, meta, parent))
 
     @classmethod
     def from_project_settings(cls, project_settings: ProjectSettings):
@@ -413,11 +416,11 @@ class EntitySettings:
             source=project_settings.source,
         )
 
-    def update(self, metadata: Dict[str, Any]) -> None:
+    def update(self, metadata: Dict[str, Any], parent: Optional[str] = None) -> None:
         """Update self with values from a dict"""
         current_settings = asdict(self)
         current_settings.update(
-            convert_types_from_metapreprocessor(type(self), metadata)
+            convert_types_from_metapreprocessor(type(self), metadata, parent)
         )
         for key, value in current_settings.items():
             setattr(self, key, value)

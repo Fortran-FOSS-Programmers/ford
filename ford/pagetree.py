@@ -51,7 +51,7 @@ class PageNode:
         encoding: str = "utf-8",
     ):
         meta, text = meta_preprocessor(dedent(Path(path).read_text(encoding)))
-        self.meta = EntitySettings.from_markdown_metadata(meta)
+        self.meta = EntitySettings.from_markdown_metadata(meta, path.stem)
 
         if self.meta.title is None:
             raise ValueError(f"Page '{path}' has no title metadata")
