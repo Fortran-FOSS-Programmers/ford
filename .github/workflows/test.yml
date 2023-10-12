@@ -48,7 +48,7 @@ jobs:
               echo 'RUN dnf clean all'
               echo 'COPY ford ford'
               echo 'WORKDIR /ford'
-              echo 'RUN python -m pip install --upgrade pip'
+              echo 'RUN python3 -m pip install --upgrade pip'
               echo 'RUN pip install .[tests]'
               echo 'RUN pytest -vv'
           } > podmanfile
