@@ -50,6 +50,6 @@ jobs:
               echo 'WORKDIR /ford'
               echo 'RUN python3 -m pip install --upgrade pip'
               echo 'RUN pip install .[tests]'
-              echo 'RUN pytest -vv'
+              echo 'RUN python3 -m pytest -vv'
           } > podmanfile
           podman build --tag fedorarawhidetest -f ./podmanfile
