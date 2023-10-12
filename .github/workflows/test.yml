@@ -24,3 +24,32 @@ jobs:
     - name: Test with pytest
       run: |
         pytest -vv
+        
+  fedoratest:
+    name: fedora
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Setup Podman
+        run: |
+          sudo apt update
+          sudo apt-get -y install podman
+          podman pull fedora:rawhide
+      - name: Get source
+        uses: actions/checkout@v3
+        with:
+          path: 'ford'
+      - name: Create container and run tests
+        run: |
+          {
+              echo 'FROM fedora:rawhide'
+              echo 'RUN dnf -y update'
+              echo 'RUN dnf -y install python3-devel python3-pip python3-graphviz'
+              echo 'RUN dnf clean all'
+              echo 'COPY ford ford'
+              echo 'WORKDIR /ford'
+              echo 'RUN python -m pip install --upgrade pip'
+              echo 'RUN pip install .[tests]'
+              echo 'RUN pytest -vv'
+          } > podmanfile
+          podman build --tag fedorarawhidetest -f ./podmanfile
