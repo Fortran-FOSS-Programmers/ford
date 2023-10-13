@@ -84,7 +84,9 @@
       <section>
         <h2>Type-Bound Procedures</h2>
         {% for bp in dtype.boundprocs %}
-          {{ macros.bound_info(bp) }}
+          <div class="row">
+            {{ macros.bound_info(bp) }}
+          </div>
         {% endfor %}
       </section>
     {% endif %}
