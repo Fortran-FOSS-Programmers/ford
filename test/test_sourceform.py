@@ -2131,3 +2131,52 @@ def test_generic_source(tmp_path):
     ]
 
     assert source.doc_list == expected_docs
+
+
+def test_type_bound_procedure_formatting(parse_fortran_file):
+    data = """\
+    module ford_example_type_mod
+      type, abstract, public :: example_type
+      contains
+        procedure :: say_hello => example_type_say
+        procedure, private, nopass :: say_int
+        procedure, private, nopass :: say_real
+        generic :: say_number => say_int, say_real
+        procedure(say_interface), deferred :: say
+        final :: example_type_finalise
+      end type example_type
+
+      interface
+        subroutine say_interface(self)
+          import say_type_base
+          class(say_type_base), intent(inout) :: self
+        end subroutine say_interface
+      end interface
+
+    contains
+
+      subroutine example_type_say(self)
+        class(example_type), intent(inout) :: self
+      end subroutine example_type_say
+
+      subroutine example_type_finalise(self)
+        type(example_type), intent(inout) :: self
+      end subroutine example_type_finalise
+
+      subroutine say_int(int)
+        integer, intent(in) :: int
+      end subroutine say_int
+
+      subroutine say_real(r)
+        real, intent(in) :: r
+      end subroutine say_real
+    end module ford_example_type_mod
+    """
+
+    example_type = parse_fortran_file(data).modules[0].types[0]
+
+    assert example_type.boundprocs[0].full_declaration == "procedure, public"
+    assert example_type.boundprocs[1].full_declaration == "procedure, private, nopass"
+    assert example_type.boundprocs[2].full_declaration == "procedure, private, nopass"
+    assert example_type.boundprocs[3].full_declaration == "generic, public"
+    assert example_type.boundprocs[4].full_declaration == "procedure(say_interface), public, deferred"

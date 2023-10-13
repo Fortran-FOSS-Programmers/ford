@@ -320,11 +320,25 @@
   {% endif %}
 {% endmacro %}
 
+
+{% macro bound_declaration(tb, link_name=False) %}
+  {# Type-bound procedure declaration and bindings #}
+  {{ tb.full_declaration }} ::
+  <strong>{% if link_name %}{{ tb }}{% else %}{{ tb.name }}{% endif %}</strong>
+  {%- if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {{ tb.bindings | join(", ") }}{% endif %}
+  {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
+{% endmacro %}
+
+
 {% macro bound_info(tb) %}
-  <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="{{ tb.anchor }}"></span><h3>{% if tb.generic -%}generic,{% else %}procedure{% if tb.proto -%}({% if not tb.protomatch or tb.proto.visible -%}{{ tb.proto }}{% else %}{{ tb.proto.name }}{%- endif %}){%- endif %},{%- endif %} {{ tb.permission }}{% if tb.deferred -%}, deferred{%- endif %}{% if tb.attribs -%}, {% for attrib in tb.attribs -%}{{ attrib }}{% if not loop.last -%}, {% endif %}{%- endfor %}{%- endif %} :: <strong>{{ tb.name }}</strong> {% if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {% for bind in tb.bindings -%}{% if not bind.parent or bind.visible %}{{ bind }}{% else %}{{ bind.name }}{% endif %}{% if not loop.last -%}, {% endif %}{%- endfor %}{% endif %} {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
+  <div class="card mt-3">
+    <div class="card-header codesum">
+      <span class="anchor" id="{{ tb.anchor }}"></span>
+      <h3>
+        {{ bound_declaration(tb) }}
         {{ deprecated(tb) }}
-    </h3></div>
+      </h3>
+    </div>
     {% if tb.doc or meta_list(tb.meta)|trim|length is more_than_one %}
       <div class="card-body">
         {{ meta_list(tb.meta) }}
@@ -552,24 +566,7 @@
           <tbody>
             {% for tb in dtype.boundprocs %}
               <tr>
-                <td>
-                  {% if tb.generic -%}
-                    generic,
-                  {% else %}
-                    procedure
-                    {% if tb.proto -%}
-                      ({% if not tb.protomatch -%}{{ tb.proto }}{% else %}{{ tb.proto.name }}{%- endif %})
-                    {%- endif %}
-                    ,
-                  {%- endif %}
-                  {{ tb.permission }}
-                  {% if tb.attribs -%}, {{ tb.attribs|join(", ") }}{%- endif %}
-                  :: <strong>{{ tb }}</strong>
-                  {% if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} =>
-                    {{ tb.bindings|join(", ") }}
-                  {% endif %}
-                  {% if tb.bindings|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
-                </td>
+                <td>{{ bound_declaration(tb, link_name=True) }}</td>
                 <td>{{ tb | meta('summary') }}</td>
               </tr>
               {% endfor %}

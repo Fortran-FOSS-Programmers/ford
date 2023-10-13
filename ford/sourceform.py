@@ -2380,12 +2380,13 @@ class FortranBoundProcedure(FortranBase):
         """Prototype has been matched to procedure"""
 
         for attribute in ford.utils.paren_split(",", line["attributes"] or ""):
-            attribute = attribute.strip()
-            # Preserve original capitalisation -- TODO: needed?
-            attribute_lower = attribute.lower()
-            if attribute_lower in ["public", "private"]:
-                self.permission = attribute_lower
-            elif attribute_lower == "deferred":
+            attribute = attribute.strip().lower()
+            if not attribute:
+                continue
+
+            if attribute in ["public", "private"]:
+                self.permission = attribute
+            elif attribute == "deferred":
                 self.deferred = True
             else:
                 self.attribs.append(attribute)
@@ -2415,6 +2416,17 @@ class FortranBoundProcedure(FortranBase):
             return f"procedure({self.proto.name})"
 
         return f"procedure({self.proto})"
+
+    @property
+    def full_declaration(self) -> str:
+        """String representation of the full declaration line"""
+
+        attribute_parts = copy.copy(self.attribs)
+        attribute_parts.insert(0, self.permission)
+        if self.deferred:
+            attribute_parts.insert(1, "deferred")
+        attributes = ", ".join(attribute_parts)
+        return f"{self.binding_type}, {attributes}"
 
     def correlate(self, project):
         self.all_procs = self.parent.all_procs
