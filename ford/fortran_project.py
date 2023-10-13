@@ -61,15 +61,15 @@ from ford._typing import PathLike
 
 
 INTRINSIC_MODS = {
-    "iso_fortran_env": '<a href="http://fortranwiki.org/fortran/show/iso_fortran_env">iso_fortran_env</a>',
-    "iso_c_binding": '<a href="http://fortranwiki.org/fortran/show/iso_c_binding">iso_c_binding</a>',
-    "ieee_arithmetic": '<a href="http://fortranwiki.org/fortran/show/ieee_arithmetic">ieee_arithmetic</a>',
-    "ieee_exceptions": '<a href="http://fortranwiki.org/fortran/show/IEEE+arithmetic">ieee_exceptions</a>',
-    "ieee_features": '<a href="http://fortranwiki.org/fortran/show/IEEE+arithmetic">ieee_features</a>',
-    "openacc": '<a href="https://www.openacc.org/sites/default/files/inline-images/Specification/OpenACC.3.0.pdf#page=85">openacc</a>',
-    "omp_lib": '<a href="https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003">omp_lib</a>',
-    "mpi": '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node410.htm">mpi</a>',
-    "mpi_f08": '<a href="http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node409.htm">mpi_f08</a>',
+    "iso_fortran_env": "http://fortranwiki.org/fortran/show/iso_fortran_env",
+    "iso_c_binding": "http://fortranwiki.org/fortran/show/iso_c_binding",
+    "ieee_arithmetic": "http://fortranwiki.org/fortran/show/ieee_arithmetic",
+    "ieee_exceptions": "http://fortranwiki.org/fortran/show/IEEE+arithmetic",
+    "ieee_features": "http://fortranwiki.org/fortran/show/IEEE+arithmetic",
+    "openacc": "https://www.openacc.org/sites/default/files/inline-images/Specification/OpenACC.3.0.pdf#page=85",
+    "omp_lib": "https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003",
+    "mpi": "http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node410.htm",
+    "mpi_f08": "http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node409.htm",
 }
 
 
