@@ -2375,6 +2375,9 @@ class FortranBoundProcedure(FortranBase):
     def _initialize(self, line: re.Match) -> None:
         self.attribs: List[str] = []
         self.deferred = False
+        """Is a deferred procedure"""
+        self.protomatch = False
+        """Prototype has been matched to procedure"""
 
         for attribute in ford.utils.paren_split(",", line["attributes"] or ""):
             attribute = attribute.strip()
@@ -2399,9 +2402,23 @@ class FortranBoundProcedure(FortranBase):
             bind.strip() for bind in binds
         ]
 
+    @property
+    def binding_type(self) -> str:
+        """String representation of binding type"""
+        if self.generic:
+            return "generic"
+
+        if not self.proto:
+            return "procedure"
+
+        if self.protomatch and not self.proto.visible:
+            return f"procedure({self.proto.name})"
+
+        return f"procedure({self.proto})"
+
     def correlate(self, project):
         self.all_procs = self.parent.all_procs
-        self.protomatch = False
+
         if self.proto:
             proto_lower = self.proto.lower()
             if proto_lower in self.all_procs:
