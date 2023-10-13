@@ -2040,14 +2040,9 @@ class FortranType(FortranContainer):
         # Get total num_lines, including implementations
         for proc in self.finalprocs:
             self.num_lines_all += proc.procedure.num_lines
+
         for proc in self.boundprocs:
-            for bind in proc.bindings:
-                if isinstance(bind, FortranProcedure):
-                    self.num_lines_all += bind.num_lines
-                elif isinstance(bind, FortranBoundProcedure):
-                    for b in bind.bindings:
-                        if isinstance(b, FortranProcedure):
-                            self.num_lines_all += b.num_lines
+            self.num_lines_all += proc.num_lines
 
     def prune(self):
         """
@@ -2427,6 +2422,14 @@ class FortranBoundProcedure(FortranBase):
             attribute_parts.insert(1, "deferred")
         attributes = ", ".join(attribute_parts)
         return f"{self.binding_type}, {attributes}"
+
+    @property
+    def num_lines(self) -> int:
+        result = 0
+        for binding in self.bindings:
+            if isinstance(binding, FortranProcedure):
+                result += binding.num_lines
+        return result
 
     def correlate(self, project):
         self.all_procs = self.parent.all_procs
