@@ -487,8 +487,7 @@ preprocessor
 The preproccessor command to use on files with extensions in `fpp_extensions
 <option-fpp_extensions>`. Can include flags as needed. Preprocessor macros and
 include paths specified in the project file will automatically be appended using
-the CPP interface, which is fairly standard. (*default*:
-``cpp -traditional-cpp -E -D__GFORTRAN__``)
+the CPP interface, which is fairly standard. (*default*: ``pcpp -D__GFORTRAN__``)
 
 Documentation Markers
 ---------------------

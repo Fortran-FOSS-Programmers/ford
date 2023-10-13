@@ -157,7 +157,7 @@ class ProjectSettings:
     predocmark: str = ">"
     predocmark_alt: str = "|"
     preprocess: bool = True
-    preprocessor: str = "cpp -traditional-cpp -E -D__GFORTRAN__"
+    preprocessor: str = "pcpp -D__GFORTRAN__"
     print_creation_date: bool = False
     privacy_policy_url: Optional[str] = None
     proc_internals: bool = False
