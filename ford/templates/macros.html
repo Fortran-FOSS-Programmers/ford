@@ -303,7 +303,8 @@
   {% if proc.parent and proc.visible %}
     {{ meta_list(proc.meta) }}
   {% endif %}
-  {{ proc.doc }}
+
+  {{ docstring(proc, False) }}
 
   {{ header(4, small) }}Arguments{{ close_header(4, small) }}
   {% if proc.args|length %}
@@ -342,7 +343,7 @@
     {% if tb.doc or meta_list(tb.meta)|trim|length is more_than_one %}
       <div class="card-body">
         {{ meta_list(tb.meta) }}
-        {{ tb.doc }}
+        {{ docstring(tb) }}
       </div>
     {% endif %}
     <ul class="list-group">
@@ -474,11 +475,11 @@
     </div>
     <div class="card-body">
       {{ meta_list(proc.meta) }}
-      {{ proc.doc }}
+      {{ docstring(proc) }}
     </div>
     <ul class="list-group">
       <li class="list-group-item">
-        {{ proc_summary(proc.procedure, title=True, full_docstring=True) }}
+        {{ proc_summary(proc.procedure, title=True, full_docstring=False) }}
       </li>
     </ul>
   </div>
