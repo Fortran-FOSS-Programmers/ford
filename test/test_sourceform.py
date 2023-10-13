@@ -2179,7 +2179,10 @@ def test_type_bound_procedure_formatting(parse_fortran_file):
     assert example_type.boundprocs[1].full_declaration == "procedure, private, nopass"
     assert example_type.boundprocs[2].full_declaration == "procedure, private, nopass"
     assert example_type.boundprocs[3].full_declaration == "generic, public"
-    assert example_type.boundprocs[4].full_declaration == "procedure(say_interface), public, deferred"
+    assert (
+        example_type.boundprocs[4].full_declaration
+        == "procedure(say_interface), public, deferred"
+    )
 
 
 def test_type_num_lines(parse_fortran_file):
