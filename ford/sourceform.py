@@ -2393,13 +2393,11 @@ class FortranBoundProcedure(FortranBase):
         self.proto = line["prototype"]
         if self.proto:
             self.proto = self.proto[1:-1].strip()
-        self.bindings: List[Union[str, FortranProcedure, FortranBoundProcedure]] = []
-        if len(split) > 1:
-            binds = self.SPLIT_RE.split(split[1])
-            for bind in binds:
-                self.bindings.append(bind.strip())
-        else:
-            self.bindings.append(self.name)
+
+        binds = self.SPLIT_RE.split(split[1]) if len(split) > 1 else (self.name,)
+        self.bindings: List[Union[str, FortranProcedure, FortranBoundProcedure]] = [
+            bind.strip() for bind in binds
+        ]
 
     def correlate(self, project):
         self.all_procs = self.parent.all_procs
