@@ -44,7 +44,7 @@ jobs:
           {
               echo 'FROM fedora:rawhide'
               echo 'RUN dnf -y update'
-              echo 'RUN dnf -y install git python3-devel python3-pip python3-graphviz'
+              echo 'RUN dnf -y install gcc-gfortran git python3-devel python3-pip python3-graphviz'
               echo 'RUN dnf clean all'
               echo 'COPY ford ford'
               echo 'WORKDIR /ford'
