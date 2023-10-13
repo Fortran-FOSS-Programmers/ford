@@ -104,9 +104,10 @@ parsing them for documentation. This behaviour can `be disabled
 <option-preprocess>` or `different extensions <option-fpp_extensions>`
 can be specified, if desired. Note that any syntax-highlighted source
 code which is displayed in the output will be shown in its
-non-preprocessed form. The default preprocessor is CPP in legacy mode
-(the same as used by gfortran), but arbitrary preprocessors may be
-specified.
+non-preprocessed form. The default preprocessor is `pcpp
+<https://github.com/ned14/pcpp>`_, which is a C preprocessor
+implemented in Python, but you can `customise this command
+<option-preprocessor>`.
 
 Markdown
 --------
