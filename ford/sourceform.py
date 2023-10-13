@@ -2040,14 +2040,9 @@ class FortranType(FortranContainer):
         # Get total num_lines, including implementations
         for proc in self.finalprocs:
             self.num_lines_all += proc.procedure.num_lines
+
         for proc in self.boundprocs:
-            for bind in proc.bindings:
-                if isinstance(bind, FortranProcedure):
-                    self.num_lines_all += bind.num_lines
-                elif isinstance(bind, FortranBoundProcedure):
-                    for b in bind.bindings:
-                        if isinstance(b, FortranProcedure):
-                            self.num_lines_all += b.num_lines
+            self.num_lines_all += proc.num_lines
 
     def prune(self):
         """
@@ -2375,14 +2370,18 @@ class FortranBoundProcedure(FortranBase):
     def _initialize(self, line: re.Match) -> None:
         self.attribs: List[str] = []
         self.deferred = False
+        """Is a deferred procedure"""
+        self.protomatch = False
+        """Prototype has been matched to procedure"""
 
         for attribute in ford.utils.paren_split(",", line["attributes"] or ""):
-            attribute = attribute.strip()
-            # Preserve original capitalisation -- TODO: needed?
-            attribute_lower = attribute.lower()
-            if attribute_lower in ["public", "private"]:
-                self.permission = attribute_lower
-            elif attribute_lower == "deferred":
+            attribute = attribute.strip().lower()
+            if not attribute:
+                continue
+
+            if attribute in ["public", "private"]:
+                self.permission = attribute
+            elif attribute == "deferred":
                 self.deferred = True
             else:
                 self.attribs.append(attribute)
@@ -2393,17 +2392,48 @@ class FortranBoundProcedure(FortranBase):
         self.proto = line["prototype"]
         if self.proto:
             self.proto = self.proto[1:-1].strip()
-        self.bindings: List[Union[str, FortranProcedure, FortranBoundProcedure]] = []
-        if len(split) > 1:
-            binds = self.SPLIT_RE.split(split[1])
-            for bind in binds:
-                self.bindings.append(bind.strip())
-        else:
-            self.bindings.append(self.name)
+
+        binds = self.SPLIT_RE.split(split[1]) if len(split) > 1 else (self.name,)
+        self.bindings: List[Union[str, FortranProcedure, FortranBoundProcedure]] = [
+            bind.strip() for bind in binds
+        ]
+
+    @property
+    def binding_type(self) -> str:
+        """String representation of binding type"""
+        if self.generic:
+            return "generic"
+
+        if not self.proto:
+            return "procedure"
+
+        if self.protomatch and not self.proto.visible:
+            return f"procedure({self.proto.name})"
+
+        return f"procedure({self.proto})"
+
+    @property
+    def full_declaration(self) -> str:
+        """String representation of the full declaration line"""
+
+        attribute_parts = copy.copy(self.attribs)
+        attribute_parts.insert(0, self.permission)
+        if self.deferred:
+            attribute_parts.insert(1, "deferred")
+        attributes = ", ".join(attribute_parts)
+        return f"{self.binding_type}, {attributes}"
+
+    @property
+    def num_lines(self) -> int:
+        result = 0
+        for binding in self.bindings:
+            if isinstance(binding, FortranProcedure):
+                result += binding.num_lines
+        return result
 
     def correlate(self, project):
         self.all_procs = self.parent.all_procs
-        self.protomatch = False
+
         if self.proto:
             proto_lower = self.proto.lower()
             if proto_lower in self.all_procs:

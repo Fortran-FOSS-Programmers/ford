@@ -114,11 +114,11 @@
               {% endif %}
             </ul>
             {% if search %}
-              <form action="{{ project_url }}/search.html" class="navbar-form navbar-right" role="search">
-                <div class="form-group">
-                  <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
-                </div>
-              </form>
+              <div class="d-flex align-items-end flex-grow-1">
+                <form action="{{ project_url }}/search.html" role="search" class="ms-auto">
+                  <input type="text" class="form-control" aria-label="Search" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+                </form>
+              </div>
             {% endif %}
           </div><!--/.nav-collapse -->
         </div>

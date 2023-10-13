@@ -5,6 +5,14 @@ module ford_example_type_mod
   implicit none
 
   private
+  public :: say_interface
+
+  type, abstract, public :: say_type_base
+    !! An abstract base type that has a deferred `say` function
+  contains
+    procedure(say_interface), deferred :: say
+    !! Deferred type-bound procedure with a procedure prototype
+  end type say_type_base
 
   type, public :: example_type
     !! Some type that can say hello.
@@ -26,6 +34,11 @@ module ford_example_type_mod
     !! rendered on the [[example_type]] page.
     !!
     !! This binding has more documentation beyond the summary
+    procedure, private, nopass :: say_int
+    procedure, private, nopass :: say_real
+    generic :: say_number => say_int, say_real
+    !! This generic type-bound procedure has two bindings
+
     final :: example_type_finalise
     !! This is the finaliser, called when the instance is destroyed.
     !!
@@ -39,6 +52,14 @@ module ford_example_type_mod
     !! the procedure list, but should appear in the type page
     module procedure make_new_type
   end interface example_type
+
+  interface
+    subroutine say_interface(self)
+      !! Abstract interface for 'say' functions
+      import say_type_base
+      class(say_type_base), intent(inout) :: self
+    end subroutine say_interface
+  end interface
 
 contains
 
@@ -68,5 +89,17 @@ contains
     call self%say_hello()
     write(*, '(a, " says goodbye")') self%name
   end subroutine example_type_finalise
+
+  subroutine say_int(int)
+    !! Prints an integer
+    integer, intent(in) :: int
+    write(*, '(i0)') int
+  end subroutine say_int
+
+  subroutine say_real(r)
+    !! Prints a real
+    real, intent(in) :: r
+    write(*, '(g0)') r
+  end subroutine say_real
 
 end module ford_example_type_mod

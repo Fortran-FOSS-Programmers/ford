@@ -177,7 +177,7 @@ def test_types_links(example_index):
     types_box = index.find(ANY_TEXT, string="Derived Types").parent
     types_list = sorted([f.text for f in types_box("li")])
 
-    assert types_list == sorted(["bar", "foo", "example_type"])
+    assert types_list == sorted(["bar", "foo", "example_type", "say_type_base"])
 
 
 def test_types_type_bound_procedure(example_project):
