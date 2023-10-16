@@ -60,19 +60,6 @@ from ford.settings import ProjectSettings
 from ford._typing import PathLike
 
 
-INTRINSIC_MODS = {
-    "iso_fortran_env": "http://fortranwiki.org/fortran/show/iso_fortran_env",
-    "iso_c_binding": "http://fortranwiki.org/fortran/show/iso_c_binding",
-    "ieee_arithmetic": "http://fortranwiki.org/fortran/show/ieee_arithmetic",
-    "ieee_exceptions": "http://fortranwiki.org/fortran/show/IEEE+arithmetic",
-    "ieee_features": "http://fortranwiki.org/fortran/show/IEEE+arithmetic",
-    "openacc": "https://www.openacc.org/sites/default/files/inline-images/Specification/OpenACC.3.0.pdf#page=85",
-    "omp_lib": "https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003",
-    "mpi": "http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node410.htm",
-    "mpi_f08": "http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node409.htm",
-}
-
-
 LINK_TYPES = {
     "module": "modules",
     "extmodule": "extModules",
@@ -271,23 +258,11 @@ class Project:
         Associates various constructs with each other.
         """
 
-        non_local_mods = INTRINSIC_MODS.copy()
-        for item in self.settings.extra_mods:
-            if not item:
-                continue
-            try:
-                name, url = item.split(":", 1)
-            except ValueError:
-                raise ValueError(
-                    f"Could not parse 'extra_mods' item in project settings: '{item}'\n"
-                    "Expected something of the form 'module_name: http://link.to/module'"
-                )
-            name = name.strip()
-            url = url.strip().strip(r"\"'").strip()
-            non_local_mods[name.lower()] = f'<a href="{url}">{name}</a>'
-
         self.extModules.extend(
-            [ExternalModule(name, url) for name, url in non_local_mods.items()]
+            [
+                ExternalModule(name, url)
+                for name, url in self.settings.extra_mods.items()
+            ]
         )
 
         # load external FORD FortranModules

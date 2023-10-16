@@ -844,20 +844,41 @@ modules will be linked to using ``extra_mods``.
 extra_mods
 ^^^^^^^^^^
 
-A list of modules (and their external documentation) which are not
-included in the project. An entry takes the form ``module_name:url``
-where ``module_name`` is its name as it would appear in a ``use``
-statement, and ``url`` is the location of its documentation. Any entity
-which uses this module will provide a link to the external documentation
-in the same way that it would provide a link to the documentation of a
-module in the project.
+A list of modules (and their external documentation) which are not included in
+the project. For the markdown metadata, an entry takes the form
+``module_name:url`` where ``module_name`` is its name as it would appear in a
+``use`` statement, and ``url`` is the location of its documentation. For TOML
+options, use a table with ``module_name = "url"`` as the key-value pairs. Any
+entity which uses this module will provide a link to the external documentation
+in the same way that it would provide a link to the documentation of a module in
+the project.
+
+.. tab:: fpm.toml
+
+   .. code:: toml
+
+      # As an inline table:
+      extra_mods = { example_mod = "https://example.com" }
+
+      # Or you might find it easier as a separate table:
+      [extra.ford.extra_mods]
+      iso_fortran_env = "https://gcc.gnu.org/onlinedocs/gfortran/ISO_005fFORTRAN_005fENV.html"
+      example_mod = "https://example.com"
+
+.. tab:: Markdown metadata
+
+   .. code:: yaml
+
+      extra_mods: iso_fortran_env: "https://gcc.gnu.org/onlinedocs/gfortran/ISO_005fFORTRAN_005fENV.html"
+            example_mod: https://example.com
+
 
 .. _option-extra_vartypes:
 
 extra_vartypes
 ^^^^^^^^^^^^^^
 
-Any extra types of variables which FORD should look for. This can be
+A list of extra types of variables which FORD should look for. This can be
 useful when using, for example, the PETSc library.
 
 .. _option-hide_undoc:
@@ -911,9 +932,9 @@ page. (*default*: 10)
 md_extensions
 ^^^^^^^^^^^^^
 
-The name of any Markdown extensions which you wish to be used when
-parsing your documentation. For example, ``markdown.extensions.toc``. Note
-that Markdown-Extra, CodeHilite, and Meta-Data are loaded by default.
+List of Markdown extensions which you wish to be used when parsing your
+documentation. For example, ``markdown.extensions.toc``. Note that
+Markdown-Extra, CodeHilite, and Meta-Data are loaded by default.
 
 .. _option-print_creation_date:
 
