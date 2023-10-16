@@ -32,6 +32,27 @@ except ModuleNotFoundError:
 
 FAVICON_PATH = Path("favicon.png")
 
+INTRINSIC_MODS = {
+    "iso_fortran_env": "http://fortranwiki.org/fortran/show/iso_fortran_env",
+    "iso_c_binding": "http://fortranwiki.org/fortran/show/iso_c_binding",
+    "ieee_arithmetic": "http://fortranwiki.org/fortran/show/ieee_arithmetic",
+    "ieee_exceptions": "http://fortranwiki.org/fortran/show/IEEE+arithmetic",
+    "ieee_features": "http://fortranwiki.org/fortran/show/IEEE+arithmetic",
+    "openacc": "https://www.openacc.org/sites/default/files/inline-images/Specification/OpenACC.3.0.pdf#page=85",
+    "omp_lib": "https://www.openmp.org/spec-html/5.1/openmpch3.html#x156-1890003",
+    "mpi": "http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node410.htm",
+    "mpi_f08": "http://www.mpi-forum.org/docs/mpi-3.1/mpi31-report/node409.htm",
+}
+
+# Mapping from key to separator for settings that are dicts. Required
+# due to the legacy format
+OPTION_SEPARATORS = {
+    "alias": "=",
+    "external": "=",
+    "extra_mods": ":",
+    "extra_vartypes": ":",
+}
+
 
 def default_cpus() -> int:
     try:
@@ -121,7 +142,7 @@ class ProjectSettings:
     external: Dict[str, str] = field(default_factory=dict)
     externalize: bool = False
     extra_filetypes: Dict[str, ExtraFileType] = field(default_factory=dict)
-    extra_mods: list = field(default_factory=list)
+    extra_mods: Dict[str, str] = field(default_factory=dict)
     extra_vartypes: list = field(default_factory=list)
     facebook: Optional[str] = None
     favicon: Path = FAVICON_PATH
@@ -202,6 +223,7 @@ class ProjectSettings:
         self.display = [item.lower() for item in self.display]
         self.extensions = list(set(self.extensions) | set(self.fpp_extensions))
         self.exclude_dir.append(self.output_dir)
+        self.extra_mods.update(INTRINSIC_MODS)
 
         # Check that none of the docmarks are the same
         docmarks = ["docmark", "predocmark", "docmark_alt", "predocmark_alt"]
@@ -279,6 +301,7 @@ def load_toml_settings(directory: PathLike) -> Optional[ProjectSettings]:
     if "ford" not in settings["extra"]:
         return None
 
+    print(f"Reading Ford options from {filename.absolute()}")
     return ProjectSettings(**settings["extra"]["ford"])
 
 
@@ -347,7 +370,8 @@ def convert_types_from_metapreprocessor(
                     file_type.extension: file_type for file_type in file_types
                 }
             else:
-                settings[key] = _parse_to_dict(value, name=key)
+                sep = OPTION_SEPARATORS[key]
+                settings[key] = _parse_to_dict(value, name=key, sep=sep)
 
     for key in keys_to_drop:
         settings.pop(key)
@@ -355,7 +379,7 @@ def convert_types_from_metapreprocessor(
     return settings
 
 
-def _parse_to_dict(string_list: List[str], name: str) -> Dict[str, str]:
+def _parse_to_dict(string_list: List[str], name: str, sep: str) -> Dict[str, str]:
     """Parse a list of strings of form "key = value" into a dict
 
     Parameters
@@ -364,17 +388,23 @@ def _parse_to_dict(string_list: List[str], name: str) -> Dict[str, str]:
         List of strings to parse
     name : str
         Name in parent settings object, only used for error message
+    sep: str
+        Separator between key and value
 
     """
 
     result = {}
     for string in string_list:
         try:
-            key, value = string.split("=", 1)
+            key, value = string.split(sep, 1)
         except ValueError:
             raise RuntimeError(
-                f"Error setting option {name!r}: expected '=' in {string!r}"
+                f"Error setting option {name!r}: expected '{sep}' in {string!r}"
             )
+
+        # Remove extraneous quotes for the URL options
+        if sep == ":":
+            value.strip().strip(r"\"'")
 
         result[key.strip()] = value.strip()
     return result

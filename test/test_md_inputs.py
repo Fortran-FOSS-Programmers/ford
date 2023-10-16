@@ -1,5 +1,4 @@
 import pathlib
-import os.path
 import re
 import sys
 from typing import List, Optional
@@ -64,7 +63,7 @@ def test_extra_mods_intrinsic(
     preprocess: false
     """
     # Initial value of intrinsic mods
-    old_intrinsic_mods = ford.fortran_project.INTRINSIC_MODS.copy()
+    old_intrinsic_mods = ford.settings.INTRINSIC_MODS.copy()
 
     # set up project data
     copy_fortran_file(data)
@@ -73,7 +72,7 @@ def test_extra_mods_intrinsic(
     run_ford(monkeypatch, md_file)
 
     # Check that the module level variable has not been changed
-    assert ford.fortran_project.INTRINSIC_MODS == old_intrinsic_mods
+    assert ford.settings.INTRINSIC_MODS == old_intrinsic_mods
 
 
 def get_main_body_text(html_dir: pathlib.Path, filename: str) -> List[str]:

@@ -1,6 +1,7 @@
 program ford_test_program
   !! Simple Fortran program to demonstrate the usage of FORD and to test its installation
   use iso_fortran_env, only: output_unit, real64
+  use json_module
   implicit none
   real (real64) :: global_pi = acos(-1)
   !! a global variable, initialized to the value of pi

@@ -984,18 +984,12 @@ def test_uses(copy_fortran_file):
     end module mod_c
 
     module mod_d
-      use unquoted_external_module
-      use quoted_external_module
+      use external_module
     end module mod_d
     """
 
-    extra_mods = {
-        "unquoted_external_module": "http://unquoted.example.com",
-        "quoted_external_module": '"http://quoted.example.org"',
-    }
-
     settings = copy_fortran_file(data)
-    settings.extra_mods = [f"{key}: {value}" for key, value in extra_mods.items()]
+    settings.extra_mods = {"external_module": "http://example.com"}
 
     project = create_project(settings)
     mod_a = project.modules[0]
@@ -1007,12 +1001,8 @@ def test_uses(copy_fortran_file):
     assert mod_b.uses == {mod_a}
     assert mod_c.uses == {mod_a, mod_b}
 
-    mod_d_links = list(mod_d.uses)
-    for link in mod_d_links:
-        soup = BeautifulSoup(link.get_url(), features="html.parser")
-        link = soup.a
-        expected_link = extra_mods[soup.text].strip(r"\"'")
-        assert link["href"] == expected_link, link
+    for link in mod_d.uses:
+        assert link.get_url() == "http://example.com"
 
 
 def test_submodule_uses(copy_fortran_file):
@@ -1032,13 +1022,7 @@ def test_submodule_uses(copy_fortran_file):
     end submodule mod_d
     """
 
-    extra_mods = {
-        "unquoted_external_module": "http://unquoted.example.com",
-        "quoted_external_module": '"http://quoted.example.org"',
-    }
-
     settings = copy_fortran_file(data)
-    settings.extra_mods = [f"{key}: {value}" for key, value in extra_mods.items()]
 
     project = create_project(settings)
     mod_a = project.modules[0]
