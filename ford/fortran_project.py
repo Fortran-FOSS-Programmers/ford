@@ -259,7 +259,10 @@ class Project:
         """
 
         self.extModules.extend(
-            [ExternalModule(name, url) for name, url in self.settings.extra_mods.items()]
+            [
+                ExternalModule(name, url)
+                for name, url in self.settings.extra_mods.items()
+            ]
         )
 
         # load external FORD FortranModules
