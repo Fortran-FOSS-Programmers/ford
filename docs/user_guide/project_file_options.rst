@@ -4,41 +4,97 @@
  Project File Options
 ======================
 
-You can specify various options and information for your project in the
-metadata of your project file. Quoting from the `Markdown
-Meta-Data <https://python-markdown.github.io/extensions/meta_data/>`__
-page (and not intending to give an example of the metadata fields
-supported by FORD):
+You can specify various options and information for your project in one of two
+ways:
+
+1. with a metadata block at the top of the project file;
+2. in the ``extra.ford`` table of your `fpm.toml
+   <https://fpm.fortran-lang.org>`_ file (*new in version 7.0*).
+
+.. _sec-fpm-toml:
+
+``fpm.toml`` File
+-----------------
+
+If you specify options in a ``fpm.toml`` file, you will still need a project
+file for the front page of your documentation. The main benefit of using ``fpm.toml``
+is the improved semantics from the `TOML <https://toml.io/en/>`_ format, making
+it easier to write lists and dicts (arrays and tables in TOML), as well as
+supporting comments.
+
+Ford options should appear in the ``[extra.ford]`` table:
+
+.. code:: TOML
+
+   [extra.ford]
+   project = "My Project"
+
+   # TOML allows comments, which is handy
+   summary = """
+   Splitting your summary over multiple lines
+   is much easier in TOML.
+
+   It also allows blank lines in multi-line strings.
+   """
+
+   preprocess = true
+   display = ["public", "protected"]
+   max_frontpage_items = 4
+   # An array of inline tables:
+   extra_filetypes = [
+     { extension = "cpp", comment = "//" },
+     { extension = "sh", comment = "#", lexer = "bash" },
+     { extension = "py", comment = "#", lexer = "python" },
+   ]
+
+
+If an ``fpm.toml`` file with the ``[extra.ford]`` table exists in the same
+directory where you run ``ford``, it will be automatically used and any metadata
+block in the project file will be ignored.
+
+Markdown metadata
+-----------------
+
+Specifying options via the metadata block in the project file uses the same
+syntax as the `Markdown Meta-Data
+<https://python-markdown.github.io/extensions/meta_data/>`__ extension, and
+consists of a single block at the top of the file, and ends with either a single
+blank line or triple-dashes ``---``.
 
 Metadata consists of a series of keywords and values defined at the
 beginning of a markdown document like this:
 
 .. code:: text
 
-   Title:   My Document
-   Summary: A brief description of my document.
-   Authors: Waylan Limberg
-            John Doe
-   Date:    October 2, 2007
-   blank-value:
-   base_url: http://example.com
+   ---
+   project: My Project
+   summary: This is a summary of the project
+       split over multiple lines (without any
+       blank lines!)
+   preprocess: true
+   display: public
+            protected
+   max_frontpage_items: 4
+   extra_filetypes: cpp //
+       sh # bash
+       py # python
+   ---
 
    This is the first paragraph of the document.
 
-The keywords are case-insensitive and may consist of letters,
-numbers, underscores and dashes and must end with a colon. The values
-consist of anything following the colon on the line and may even be
-blank.
+The keywords are case-insensitive and may consist of letters, numbers,
+underscores and dashes and must end with a colon. The values consist of anything
+following the colon on the line and may even be blank.
 
-If a line is indented by 4 or more spaces, that line is assumed to be
-an additional line of the value for the previous keyword. A keyword
-may have as many lines as desired (note that these **must** be
-spaces and not tabs).
+If a line is indented by 4 or more spaces, that line is assumed to be an
+additional line of the value for the previous keyword. A keyword may have as
+many lines as desired -- note that these **must** be spaces and not tabs. Also
+note that you cannot have any blank lines in a list item or they will be
+interpreted as closing the metadata block.
 
-The first blank line ends all metadata for the document. Therefore,
-the first line of a document must not be blank. All metadata is
-stripped from the document prior to any further processing by
-Markdown.
+The first blank line ends all metadata for the document. Therefore, the first
+line of a document must not be blank. All metadata is stripped from the document
+prior to any further processing by Markdown.
 
 Project file options will be overriden by `command line options
 <sec-command-line-options>` .See `./example/example-project-file.md
@@ -48,27 +104,27 @@ for a sample project file.
 Except where noted, all paths in options are interpreted relative to the path of
 the project file.
 
-*N.B.!*: Markdown comments must not appear within the meta data section!
-Typical markdown commenting strategies may be used within the markdown
-body of the project file, BUT NOT WITHIN THE META-DATA SECTION! After
-declaring metadata HTML block comments of the form
+.. note::
 
-.. code:: html
+   Markdown comments must not appear within the meta data section!
+   Typical markdown commenting strategies may be used within the markdown
+   body of the project file, BUT NOT WITHIN THE META-DATA SECTION! After
+   declaring metadata HTML block comments of the form
 
-   <!-- This is a multi line
-   comment!
+   .. code:: html
 
-   wow
-   -->
+      <!-- This is a multi line
+      comment!
 
-or markdown phony link comments may be used:
+      wow
+      -->
 
-.. code:: markdown
+   or markdown phony link comments may be used:
 
-   [comment 1 goes here, this will declare a phony link target. Just make sure not to reference the null anchor]:#
+   .. code:: markdown
 
-The options which can be specified in the metadata are listed below.
-Defaults are included in the description, if they exist.
+      [comment 1 goes here, this will declare a phony link target. Just make sure not to reference the null anchor]:#
+
 
 Project Information
 -------------------
@@ -888,7 +944,7 @@ show_proc_parent
 ^^^^^^^^^^^^^^^^
 
 If ``true`` then the parent module of a procedure will be displayed in
-the graphs as follows: parent::procedure. 
+the graphs as follows: parent::procedure.
 (*default:* ``false``)
 
 Output
