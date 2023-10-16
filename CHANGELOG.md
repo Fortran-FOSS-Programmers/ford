@@ -6,6 +6,171 @@
 
 - It is no longer possible to include other files in the project file metadata
 
+**Changes:**
+
+- Use a table for `extra_mods` in TOML config [\#574][https://github.com/Fortran-FOSS-Programmers/ford/pull/574] ([ZedThree][https://github.com/ZedThree])
+- Update docs for setting options in `fpm.toml` [\#573][https://github.com/Fortran-FOSS-Programmers/ford/pull/573] ([ZedThree][https://github.com/ZedThree])
+- Fix links to intrinsic mods [\#572][https://github.com/Fortran-FOSS-Programmers/ford/pull/572] ([ZedThree][https://github.com/ZedThree])
+- Fix some display issues for type bound procedures [\#571][https://github.com/Fortran-FOSS-Programmers/ford/pull/571] ([ZedThree][https://github.com/ZedThree])
+- Switch default preprocessor to `pcpp` [\#570][https://github.com/Fortran-FOSS-Programmers/ford/pull/570] ([ZedThree][https://github.com/ZedThree])
+- Bump minimum required version of Jinja2 [\#568][https://github.com/Fortran-FOSS-Programmers/ford/pull/568] ([ZedThree][https://github.com/ZedThree])
+- Give some context in more warnings [\#563][https://github.com/Fortran-FOSS-Programmers/ford/pull/563] ([ZedThree][https://github.com/ZedThree])
+- Fix relative urls on nested pages from expanded aliases  [\#562][https://github.com/Fortran-FOSS-Programmers/ford/pull/562] ([ZedThree][https://github.com/ZedThree])
+- More and fancier progress bars using `rich` [\#561][https://github.com/Fortran-FOSS-Programmers/ford/pull/561] ([ZedThree][https://github.com/ZedThree])
+- Fix for docstrings on unnamed interface blocks [\#560][https://github.com/Fortran-FOSS-Programmers/ford/pull/560] ([ZedThree][https://github.com/ZedThree])
+- Add option to specify any project setting on the command line [\#559][https://github.com/Fortran-FOSS-Programmers/ford/pull/559] ([ZedThree][https://github.com/ZedThree])
+- Improve `exclude` and `exclude_dir` options [\#558][https://github.com/Fortran-FOSS-Programmers/ford/pull/558] ([ZedThree][https://github.com/ZedThree])
+- Specify `extra_filetypes` as a dict in toml settings files [\#557][https://github.com/Fortran-FOSS-Programmers/ford/pull/557] ([ZedThree][https://github.com/ZedThree])
+- Fix bugs in new admonitions [\#556][https://github.com/Fortran-FOSS-Programmers/ford/pull/556] ([ZedThree][https://github.com/ZedThree])
+- Resolve Ford links in context of current entity [\#555][https://github.com/Fortran-FOSS-Programmers/ford/pull/555] ([ZedThree][https://github.com/ZedThree])
+- Convert `sub_links` to markdown extension [\#554][https://github.com/Fortran-FOSS-Programmers/ford/pull/554] ([ZedThree][https://github.com/ZedThree])
+- Convert `sub_macros` to a markdown extension [\#553][https://github.com/Fortran-FOSS-Programmers/ford/pull/553] ([ZedThree][https://github.com/ZedThree])
+- Delay applying markdown conversion till after correlate step [\#552][https://github.com/Fortran-FOSS-Programmers/ford/pull/552] ([ZedThree][https://github.com/ZedThree])
+- Convert settings to a dataclass [\#551][https://github.com/Fortran-FOSS-Programmers/ford/pull/551] ([ZedThree][https://github.com/ZedThree])
+- External project refactor [\#550][https://github.com/Fortran-FOSS-Programmers/ford/pull/550] ([ZedThree][https://github.com/ZedThree])
+- Upgrade to bootstrap 5.3 [\#548][https://github.com/Fortran-FOSS-Programmers/ford/pull/548] ([ZedThree][https://github.com/ZedThree])
+- Use settings from `extra.ford` in `fpm.toml` file if it exists [\#547][https://github.com/Fortran-FOSS-Programmers/ford/pull/547] ([umbrella1989][https://github.com/umbrella1989])
+- Fix more tests on windows [\#543][https://github.com/Fortran-FOSS-Programmers/ford/pull/543] ([MEJ2235][https://github.com/MEJ2235])
+- Pull out metapreprocessor [\#542][https://github.com/Fortran-FOSS-Programmers/ford/pull/542] ([MEJ2235][https://github.com/MEJ2235])
+- Add support for namelists [\#541][https://github.com/Fortran-FOSS-Programmers/ford/pull/541] ([kpb510][https://github.com/kpb510])
+- Handle notes, etc. with MD admonitions (replaces #410) [\#540][https://github.com/Fortran-FOSS-Programmers/ford/pull/540] ([ZedThree][https://github.com/ZedThree])
+- Include type-bound procedures in call graphs if binding not visible  [\#539][https://github.com/Fortran-FOSS-Programmers/ford/pull/539] ([ZedThree][https://github.com/ZedThree])
+- Relax version on pygments [\#537][https://github.com/Fortran-FOSS-Programmers/ford/pull/537] ([dschwoerer][https://github.com/dschwoerer])
+- Make calls recognize associations [\#536][https://github.com/Fortran-FOSS-Programmers/ford/pull/536] ([JosephWood2001][https://github.com/JosephWood2001])
+- Fix some issues in docs [\#534][https://github.com/Fortran-FOSS-Programmers/ford/pull/534] ([ZedThree][https://github.com/ZedThree])
+- Fix some tests for Windows [\#533][https://github.com/Fortran-FOSS-Programmers/ford/pull/533] ([ZedThree][https://github.com/ZedThree])
+- Fix missing labels on codeunits [\#532][https://github.com/Fortran-FOSS-Programmers/ford/pull/532] ([JosephWood2001][https://github.com/JosephWood2001])
+- fix issues in PR#528 [\#531][https://github.com/Fortran-FOSS-Programmers/ford/pull/531] ([JosephWood2001][https://github.com/JosephWood2001])
+- Fix call chains [\#529][https://github.com/Fortran-FOSS-Programmers/ford/pull/529] ([JosephWood2001][https://github.com/JosephWood2001])
+- Add more type hinting, and some general tidy up [\#528][https://github.com/Fortran-FOSS-Programmers/ford/pull/528] ([ZedThree][https://github.com/ZedThree])
+- Adding HTML escaping of initial values [\#527][https://github.com/Fortran-FOSS-Programmers/ford/pull/527] ([interkosmos][https://github.com/interkosmos])
+- Try to give a more helpful error message when parsing has failed [\#526][https://github.com/Fortran-FOSS-Programmers/ford/pull/526] ([ZedThree][https://github.com/ZedThree])
+- Fix call chain parsing for some edge cases [\#525][https://github.com/Fortran-FOSS-Programmers/ford/pull/525] ([JosephWood2001][https://github.com/JosephWood2001])
+- Add procedure binding calls to call graph [\#524][https://github.com/Fortran-FOSS-Programmers/ford/pull/524] ([JosephWood2001][https://github.com/JosephWood2001])
+- Refactor static pages code; Ensure static pages are read with project `encoding` [\#521][https://github.com/Fortran-FOSS-Programmers/ford/pull/521] ([ZedThree][https://github.com/ZedThree])
+- calls to variables within a type no longer get added to call graph [\#520][https://github.com/Fortran-FOSS-Programmers/ford/pull/520] ([JosephWood2001][https://github.com/JosephWood2001])
+- fix internal procedure's calls not showing up in call graphs [\#514][https://github.com/Fortran-FOSS-Programmers/ford/pull/514] ([JosephWood2001][https://github.com/JosephWood2001])
+- pyproject.toml: fix setuptools warnings [\#513][https://github.com/Fortran-FOSS-Programmers/ford/pull/513] ([band-a-prend][https://github.com/band-a-prend])
+
+## [v6.2.5](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.2.5) (2023-05-05)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.2.4...v6.2.5)
+
+- Make double-colon in bound procedure declaration optional [\#512][https://github.com/Fortran-FOSS-Programmers/ford/pull/512] ([ZedThree][https://github.com/ZedThree])
+- Some minor refactoring [\#511][https://github.com/Fortran-FOSS-Programmers/ford/pull/511] ([ZedThree][https://github.com/ZedThree])
+- Fix `bind` names for subroutines, and pull out common base class for procedures [\#510][https://github.com/Fortran-FOSS-Programmers/ford/pull/510] ([ZedThree][https://github.com/ZedThree])
+- add typebound procedures to call graph, and show the bound type on procedures' page [\#509][https://github.com/Fortran-FOSS-Programmers/ford/pull/509] ([JosephWood2001][https://github.com/JosephWood2001])
+
+## [v6.2.4](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.2.4) (2023-04-05)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.2.3...v6.2.4)
+
+- Fix displaying graphs as tables [\#503][https://github.com/Fortran-FOSS-Programmers/ford/pull/503] ([ZedThree][https://github.com/ZedThree])
+
+## [v6.2.3](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.2.3) (2023-04-03)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.2.2...v6.2.3)
+
+- Fixed broken link to Meta-Data reference [\#498][https://github.com/Fortran-FOSS-Programmers/ford/pull/498] ([blaylockbk][https://github.com/blaylockbk])
+- Add `show_proc_parent` option for graphs [\#497][https://github.com/Fortran-FOSS-Programmers/ford/pull/497] ([JosephWood2001][https://github.com/JosephWood2001])
+- Fix for max_frontpage_items [\#496][https://github.com/Fortran-FOSS-Programmers/ford/pull/496] ([RMShur][https://github.com/RMShur])
+
+## [v6.2.2](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.2.2) (2023-03-24)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.2.1...v6.2.2)
+
+- Fix graphs for recursive procedures [\#495][https://github.com/Fortran-FOSS-Programmers/ford/pull/495] ([ZedThree][https://github.com/ZedThree])
+- Try to be much more consistent about handling `str` in graphs [\#494][https://github.com/Fortran-FOSS-Programmers/ford/pull/494] ([ZedThree][https://github.com/ZedThree])
+
+## [v6.2.1](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.2.1) (2023-03-22)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.2.0...v6.2.1)
+
+- Add regression test against collection of repos [\#490][https://github.com/Fortran-FOSS-Programmers/ford/pull/490] ([ZedThree][https://github.com/ZedThree])
+- Fix parsing character declarations when `len=` is not present [\#489][https://github.com/Fortran-FOSS-Programmers/ford/pull/489] ([ZedThree][https://github.com/ZedThree])
+- Fix some regressions in graphs [\#488][https://github.com/Fortran-FOSS-Programmers/ford/pull/488] ([ZedThree][https://github.com/ZedThree])
+- doc: add total PyPI download badge [\#486][https://github.com/Fortran-FOSS-Programmers/ford/pull/486] ([scivision][https://github.com/scivision])
+
+## [v6.2.0](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.2.0) (2023-03-16)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.17...v6.2.0)
+
+- Convert setup.cfg to pyproject.toml [\#485][https://github.com/Fortran-FOSS-Programmers/ford/pull/485] ([ZedThree][https://github.com/ZedThree])
+- Graphs refactor [\#484][https://github.com/Fortran-FOSS-Programmers/ford/pull/484] ([ZedThree][https://github.com/ZedThree])
+- Fix `block data` output class [\#480][https://github.com/Fortran-FOSS-Programmers/ford/pull/480] ([ZedThree][https://github.com/ZedThree])
+- Handle procedure pointers and dummy procedures in interface blocks [\#479][https://github.com/Fortran-FOSS-Programmers/ford/pull/479] ([ZedThree][https://github.com/ZedThree])
+- Fix setuptools deprecation warnings [\#474][https://github.com/Fortran-FOSS-Programmers/ford/pull/474] ([band-a-prend][https://github.com/band-a-prend])
+- Fix tests for Python 3.11 [\#467][https://github.com/Fortran-FOSS-Programmers/ford/pull/467] ([ZedThree][https://github.com/ZedThree])
+- Fix command line option docs [\#465][https://github.com/Fortran-FOSS-Programmers/ford/pull/465] ([ZedThree][https://github.com/ZedThree])
+- Drop support for Python 3.7 [\#453][https://github.com/Fortran-FOSS-Programmers/ford/pull/453] ([ZedThree][https://github.com/ZedThree])
+
+## [v6.1.17](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.17) (2022-11-22)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.16...v6.1.17)
+
+- Some fixes for module procedures [\#463][https://github.com/Fortran-FOSS-Programmers/ford/pull/463] ([ZedThree][https://github.com/ZedThree])
+- Revert adding default values to CLI interface [\#462][https://github.com/Fortran-FOSS-Programmers/ford/pull/462] ([ZedThree][https://github.com/ZedThree])
+- Docs: rst fixes for LaTeX syntax [\#460][https://github.com/Fortran-FOSS-Programmers/ford/pull/460] ([Meax5qiu][https://github.com/Meax5qiu])
+- Fix `src_dir` command line option [\#459][https://github.com/Fortran-FOSS-Programmers/ford/pull/459] ([ZedThree][https://github.com/ZedThree])
+- Fix doc summaries for types; other minor bugs [\#457][https://github.com/Fortran-FOSS-Programmers/ford/pull/457] ([ZedThree][https://github.com/ZedThree])
+- Add Sphinx docs and Readthedocs website [\#454][https://github.com/Fortran-FOSS-Programmers/ford/pull/454] ([ZedThree][https://github.com/ZedThree])
+- Refactor jinja macros [\#452][https://github.com/Fortran-FOSS-Programmers/ford/pull/452] ([ZedThree][https://github.com/ZedThree])
+
+## [v6.1.16](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.16) (2022-10-05)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.15...v6.1.16)
+
+- Fix type-bound procedure docs not showing full docstring [\#451][https://github.com/Fortran-FOSS-Programmers/ford/pull/451] ([ZedThree][https://github.com/ZedThree])
+- read project file with utf8 encoding [\#448][https://github.com/Fortran-FOSS-Programmers/ford/pull/448] ([St-Maxwell][https://github.com/St-Maxwell])
+
+## [v6.1.15](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.15) (2022-07-25)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.14...v6.1.15)
+
+- Fix bad attribute rename [\#444][https://github.com/Fortran-FOSS-Programmers/ford/pull/444] ([ZedThree][https://github.com/ZedThree])
+
+## [v6.1.14](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.14) (2022-07-21)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.13...v6.1.14)
+
+- Tidy `fortran_project.correlate` and fix some minor bugs [\#442][https://github.com/Fortran-FOSS-Programmers/ford/pull/442] ([ZedThree][https://github.com/ZedThree])
+- Better error messages when parsing [\#441][https://github.com/Fortran-FOSS-Programmers/ford/pull/441] ([ZedThree][https://github.com/ZedThree])
+- Fix quoted URLs in `extra_mods` input not being removed [\#439][https://github.com/Fortran-FOSS-Programmers/ford/pull/439] ([ZedThree][https://github.com/ZedThree])
+- Pin dependencies; bump required `markdown-include` version [\#438][https://github.com/Fortran-FOSS-Programmers/ford/pull/438] ([ZedThree][https://github.com/ZedThree])
+- Added `-g`/`--graph` argument to command parser. [\#435][https://github.com/Fortran-FOSS-Programmers/ford/pull/435] ([lizzyd710][https://github.com/lizzyd710])
+
+## [v6.1.13](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.13) (2022-07-01)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.12...v6.1.13)
+
+- Small tidying up of graph modules [\#434][https://github.com/Fortran-FOSS-Programmers/ford/pull/434] ([ZedThree][https://github.com/ZedThree])
+- Fix hang when creating graphs during writing documentation [\#433][https://github.com/Fortran-FOSS-Programmers/ford/pull/433] ([ZedThree][https://github.com/ZedThree])
+- Update README with spack installation and badge [\#430][https://github.com/Fortran-FOSS-Programmers/ford/pull/430] ([lizzyd710][https://github.com/lizzyd710])
+
+## [v6.1.12](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.12) (2022-06-16)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.11...v6.1.12)
+
+- Only fall back to unpreprocessed file if preprocessing fails [\#426][https://github.com/Fortran-FOSS-Programmers/ford/pull/426] ([ZedThree][https://github.com/ZedThree])
+- Fix filtering public entities not lowercasing name [\#425][https://github.com/Fortran-FOSS-Programmers/ford/pull/425] ([ZedThree][https://github.com/ZedThree])
+- External: Fix extending external types with [\#420][https://github.com/Fortran-FOSS-Programmers/ford/pull/420] ([haraldkl][https://github.com/haraldkl])
+- Minor refactoring of `output.py` [\#419][https://github.com/Fortran-FOSS-Programmers/ford/pull/419] ([ZedThree][https://github.com/ZedThree])
+- External projects: Actually return the generated object in dict2obj [\#418][https://github.com/Fortran-FOSS-Programmers/ford/pull/418] ([haraldkl][https://github.com/haraldkl])
+- Do not fail on existing MathJax-config directory [\#415][https://github.com/Fortran-FOSS-Programmers/ford/pull/415] ([Meax5qiu][https://github.com/Meax5qiu])
+
+## [v6.1.11](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.11) (2022-04-04)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.10...v6.1.11)
+
+- Fix change to `exclude` behaviour [\#408][https://github.com/Fortran-FOSS-Programmers/ford/pull/408] ([ZedThree][https://github.com/ZedThree])
+- Fix bad conversion to `str` in `sort: type-alpha` [\#401][https://github.com/Fortran-FOSS-Programmers/ford/pull/401] ([ZedThree][https://github.com/ZedThree])
+
+## [v6.1.10](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.10) (2022-03-14)
+
+[Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.9...v6.1.10)
+
+- Fix for `FortranVariable` sharing references to lists [\#400][https://github.com/Fortran-FOSS-Programmers/ford/pull/400] ([ZedThree][https://github.com/ZedThree])
+
 ## [v6.1.9](https://github.com/Fortran-FOSS-Programmers/ford/tree/v6.1.9) (2022-03-14)
 
 [Full Changelog](https://github.com/Fortran-FOSS-Programmers/ford/compare/v6.1.8...v6.1.9)
