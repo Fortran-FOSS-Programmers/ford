@@ -24,6 +24,10 @@ Here's a simple project file, ``my_project.md``
 
     This is my Fortran project!
 
+.. versionadded:: 7.0
+   If you use `fpm <https://fpm.fortran-lang.org>`_, you can also
+   specify project metadata in your `fpm.toml file <sec-fpm-toml>`!
+
 We'll also need some Fortran source code to document. By default, FORD
 looks for ``.f90`` files (along with `other extensions
 <option-extensions>`) in ``./src`` -- this is relative to where you

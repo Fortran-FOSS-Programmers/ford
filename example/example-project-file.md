@@ -1,5 +1,7 @@
 ---
 project: Example Project
+summary: This is a short example project
+    that demonstrates many of Ford's features
 src_dir: ./src
 output_dir: ./doc
 project_github: https://github.com/cmacmackin/futility

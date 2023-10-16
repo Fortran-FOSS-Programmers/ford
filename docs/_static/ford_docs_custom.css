@@ -1,0 +1,4 @@
+/* Fixes issue with using sphinx-inline-tabs with sphinx-book-theme */
+.tab-content.docutils.container {
+    width: 100%;
+}

@@ -26,6 +26,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx_argparse_cli",
+    "sphinx_inline_tabs",
 ]
 
 # Napoleon settings
@@ -53,6 +54,7 @@ highlight_language = "fortran"
 
 html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
+html_css_files = ["ford_docs_custom.css"]
 
 html_context = {
     "github_user": "Fortran-FOSS-Programmers",
