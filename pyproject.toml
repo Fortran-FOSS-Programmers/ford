@@ -55,6 +55,7 @@ docs = [
      "sphinx_autodoc_typehints >= 1.19",
      "sphinx-book-theme >= 0.4.0rc1",
      "sphinx-argparse-cli >= 1.10.0",
+     "sphinx-inline-tabs",
 ]
 tests = [
       "pytest >= 3.3.0",

@@ -52,6 +52,9 @@ If an ``fpm.toml`` file with the ``[extra.ford]`` table exists in the same
 directory where you run ``ford``, it will be automatically used and any metadata
 block in the project file will be ignored.
 
+.. note:: If you use LaTeX in an option value, you probably want to use literal
+          strings with single quotes to avoid errors about "Unknown escape character"
+
 Markdown metadata
 -----------------
 
@@ -64,7 +67,7 @@ blank line or triple-dashes ``---``.
 Metadata consists of a series of keywords and values defined at the
 beginning of a markdown document like this:
 
-.. code:: text
+.. code:: yaml
 
    ---
    project: My Project
@@ -124,6 +127,41 @@ the project file.
    .. code:: markdown
 
       [comment 1 goes here, this will declare a phony link target. Just make sure not to reference the null anchor]:#
+
+
+Unless stated, most options are plain strings:
+
+.. tab:: fpm.toml
+
+   .. code:: toml
+
+      doc_license = "by-sa"
+
+.. tab:: Markdown metadata
+
+   .. code:: yaml
+
+      doc_license: by-sa
+
+If an option is a list, it can take multiple values. Note that for
+markdown-metadata, each value must be on its own line and indented by at least
+four spaces:
+
+.. tab:: fpm.toml
+
+   .. code:: toml
+
+      macro = [
+        "HAS_DECREMENT",
+        "DIMENSION=3",
+      ]
+
+.. tab:: Markdown metadata
+
+   .. code:: yaml
+
+      macro: HAS_DECREMENT
+          DIMENSION=3
 
 
 Project Information
@@ -368,11 +406,26 @@ A list of subdirectories to copy verbatim into the generated documentation. See
 exclude_dir
 ^^^^^^^^^^^
 
-Directories whose contents should not be included in documentation. Each
-excluded directory must be on its own line. Provide the relative path to
-directory from the top level project file. Can be a glob pattern, for example
-``**/test*``, which will match any directory that starts with ``test``
-anywhere in the source directory tree.
+List of directories whose contents should not be included in
+documentation. Provide the relative path to directory from the top level project
+file. Can be a glob pattern, for example ``**/test*``, which will match any
+directory that starts with ``test`` anywhere in the source directory tree.
+
+.. tab:: fpm.toml
+
+   .. code:: toml
+
+      exclude_dir = [
+        "**/test*",
+        "src/internal",
+      ]
+
+.. tab:: Markdown metadata
+
+   .. code:: text
+
+      exclude_dir: **/test*
+          src/internal
 
 .. _option-include:
 
@@ -382,7 +435,7 @@ include
 Directories in which the C preprocessor searches for any
 ``#include``\ ed files, such as headers. These directories will also be
 searched for files loaded using Fortran’s intrinsic ``include``
-statement. Each directory must appear on its own line.
+statement.
 
 .. _option-media_dir:
 
@@ -416,9 +469,9 @@ pages within the documentation. See `sec-writing-pages` for details.
 src_dir
 ^^^^^^^
 
-The directories where the source-files are to be found for this project.
-These must not be a subdirectory of the output_dir (see below). Multiple
-directories can be listed, each on their own line. (*default:* ./src)
+List of directories where the source-files are to be found for this project.
+These must not be a subdirectory of the `option-output_dir` (see
+below). (*default:* ``["./src"]``)
 
 Source File Settings
 --------------------
@@ -437,12 +490,11 @@ The text encoding to use when opening source files (*default*: ``utf-8``)
 exclude
 ^^^^^^^
 
-Source files which should not be included in documentation. Each
-excluded file must be on its own line. This should either be a relative path
-that includes one of the source directories, or a glob pattern. For example,
-``src/not_this.f90`` to exclude a specific file, or ``**/test_*.f90`` to
-exclude any ``.f90`` files that start with ``test_`` anywhere in any of the
-source directories.
+List of source files which should not be included in documentation. This should
+either be a relative path that includes one of the source directories, or a glob
+pattern. For example, ``src/not_this.f90`` to exclude a specific file, or
+``**/test_*.f90`` to exclude any ``.f90`` files that start with ``test_``
+anywhere in any of the source directories.
 
 .. deprecated:: 7.0.0
    In earlier versions, ``not_this.f90`` would exclude any file called
@@ -450,43 +502,98 @@ source directories.
    and should be changed to either a relative path (``src/not_this.f90``) or
    a glob pattern (``**/not_this.f90``)
 
+
+.. tab:: fpm.toml
+
+   .. code:: toml
+
+      exclude = [
+        "**/test_*.F90",
+        "src/generated_file.f90",
+      ]
+
+.. tab:: Markdown metadata
+
+   .. code:: text
+
+      exclude: **/test_*.F90
+          src/generated_file.f90
+
+
 .. _option-extensions:
 
 extensions
 ^^^^^^^^^^
 
-File extensions which will be read by FORD for documentation. Each
-extension must be on its own line. These extensions are only for
-free-form code; see `option-fixed_extensions` for fixed-form
-extensions. (*default:* f90, f95, f03, f08, f15, F90, F95, F03, F08,
-F15)
+List of file extensions (without the dot) which will be read by FORD for
+documentation. These extensions are only for free-form code; see
+`option-fixed_extensions` for fixed-form extensions. (*default:* f90, f95, f03,
+f08, f15, F90, F95, F03, F08, F15)
+
+.. tab:: fpm.toml
+
+   .. code:: toml
+
+      extensions = ["f90", "f", "F90", "F"]
+
+.. tab:: Markdown metadata
+
+   .. code:: yaml
+
+      extensions: f90
+          f
+          F90
+          F
 
 .. _option-extra_filetypes:
 
 extra_filetypes
 ^^^^^^^^^^^^^^^
 
-Non-Fortran source files from which documentation should be extracted
-(see `non-fortran-source-files`). Multiple values may be provided,
-each on its own line. Each entry should consist of the extension of
-the file-type to be documented, a space, and then the character(s)
-designating a comment within such a file. Only single-line comments
-are supported.
+List of non-Fortran filetypes from which documentation should be extracted (see
+`non-fortran-source-files`).
 
-*Experimental:* You may optionally specify the `Pygments
-lexer <http://pygments.org/docs/lexers/>`__ to use when applying
-syntax-highlighting to the file, as an additional argument after the
-comment character. This should take the form of the module being
-imported relative to ``pygments.lexer``. E.g. ``fortran.FortranLexer``
-or ``c_cpp.CLexer``. This feature should not be considered stable and
-the behaviour may change in future releases.
+*Experimental:* You may optionally specify the `Pygments lexer
+<http://pygments.org/docs/lexers/>`__ to use when applying syntax-highlighting
+to the file, as an additional argument after the comment character. This should
+take the form of the module being imported relative to ``pygments.lexer``,
+e.g. ``fortran.FortranLexer`` or ``c_cpp.CLexer``. This feature should not be
+considered stable and the behaviour may change in future releases. If you don't
+supply this, pygments will guess which lexer to use based the file extension and
+some lexical analysis.
+
+For TOML config files, this should be a list of tables with required keys
+``extension`` and ``comment``, and an optional ``lexer``.
+
+For Markdown metadata config, each entry must be on its own line and should
+consist of the filetype extension, a space, and then the character(s)
+designating a comment. Only single-line comments are supported.
+
+.. tab:: fpm.toml
+
+   .. code:: toml
+
+      extra_filetypes = [
+        { extension = "cpp", comment = "//" },
+        { extension = "sh", comment = "#", lexer = "bash" },
+        { extension = "py", comment = "#", lexer = "python" },
+      ]
+
+.. tab:: Markdown metadata
+
+   .. code:: yaml
+
+      extra_filetypes: cpp //
+          sh # bash
+          py # python
+
 
 .. _option-fixed_extensions:
 
 fixed_extensions
 ^^^^^^^^^^^^^^^^
 
-File extensions which will be read by FORD for documentation, with the
+List of file extensions which will be read by FORD for documentation, with the
 files containing fixed-form code. (*default*: f, for, F, FOR)
 
 .. _option-fixed_length_limit:
@@ -521,9 +628,24 @@ F03, F08, F15, F, FOR)
 macro
 ^^^^^
 
-Macros to be provided to the C preprocessor when applying it to source
-files. Can take the form ``mac-name`` or ``mac-name=mac-value``. Each
-macro must appear on its own line.
+List of macros to be provided to the C preprocessor when applying it to source
+files. Can take the form ``mac-name`` or ``mac-name=mac-value``.
+
+.. tab:: fpm.toml
+
+   .. code:: toml
+
+      macro = [
+        "HAS_DECREMENT",
+        "DIMENSION=3",
+      ]
+
+.. tab:: Markdown metadata
+
+   .. code:: yaml
+
+      macro: HAS_DECREMENT
+          DIMENSION=3
 
 .. _option-preprocess:
 
@@ -625,11 +747,28 @@ List of aliases in the form ``key = replacement``. In the documentation
 ``|key|`` can then be used as shorthand for ``replacement``. For
 example:
 
+.. tab:: fpm.toml
+
+   .. code:: toml
+
+      # As an in-line table (note that this has to all be on one line!)
+      alias = {ford = "FORD (the Fortran documentation generator", euler = '\exp(i \pi) + 1 = 0'}
+
+      # Or as a separate table:
+      [extra.ford.alias]
+      ford = "FORD (the Fortran documentation generator"
+      euler = '\exp(i \pi) + 1 = 0'
+
+.. tab:: Markdown metadata
+
+   .. code:: yaml
+
+      alias: ford = FORD (the Fortran documentation generator)
+             euler = \exp(i \pi) + 1 = 0
+
+and the markdown:
+
 .. code:: markdown
-
-   alias: ford = FORD (the Fortran documentation generator)
-          euler = \exp(i \pi) + 1 = 0
-
 
    This code uses |ford|.
    Did you know Euler's identity is $$|euler|$$?
@@ -641,8 +780,11 @@ becomes:
    This software uses FORD (the Fortran documentation generator).
    Did you know Euler's identity is $$\exp(i \pi) + 1 = 0$$?
 
-Three aliases are pre-defined: ``|url|`` for the project URL,
-``|media|`` for the media directory and ``|page|`` for the ``page_dir``.
+Three aliases are pre-defined:
+
+- ``|url|`` for the project URL,
+- ``|media|`` for the media directory, and
+- ``|page|`` for the ``page_dir``.
 
 Note:
 '''''
@@ -674,15 +816,13 @@ appearance of the output.
 display
 ^^^^^^^
 
-How much documentation should be printed. Options are ‘public’,
-‘private’, ‘protected’, or any combination of those three. Each choice
-must be on its own line. If ‘none’ is present, then nothing will be
-displayed other than the programs, modules, and procedures contained
-within source files (i.e. procedures within modules will not be
-displayed). These choice can be overridden for a specific item using
-the `documentation meta data <metadata-display>`, and those settings
-will be inherited by any items they contain. (*default:* ‘public’ and
-‘protected’)
+How much documentation should be printed. Options are ‘public’, ‘private’,
+‘protected’, or any combination of those three. If ‘none’ is present, then
+nothing will be displayed other than the programs, modules, and procedures
+contained within source files (that is, procedures within modules will not be
+displayed). These choice can be overridden for a specific item using the
+`documentation meta data <metadata-display>`, and those settings will be
+inherited by any items they contain. (*default:* ‘public’ and ‘protected’)
 
 .. _option-external:
 
@@ -718,8 +858,7 @@ extra_vartypes
 ^^^^^^^^^^^^^^
 
 Any extra types of variables which FORD should look for. This can be
-useful when using, for example, the PETSc library. Each variable type
-must be on its own line.
+useful when using, for example, the PETSc library.
 
 .. _option-hide_undoc:
 
