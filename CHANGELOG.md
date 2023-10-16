@@ -5,6 +5,7 @@
 **Breaking changes:**
 
 - It is no longer possible to include other files in the project file metadata
+- The Bootstrap CSS framework has been updated to 5.3, which might break project's custom CSS
 
 **Changes:**
 
