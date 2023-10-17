@@ -1544,7 +1544,9 @@ class FortranSourceFile(FortranContainer):
         self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
         lexer = FortranFixedLexer() if self.fixed else FortranLexer()
         self.src = highlight(
-            self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl codehilite")
+            self.raw_src,
+            lexer,
+            HtmlFormatter(lineanchors="ln", cssclass="hl codehilite"),
         )
 
     @property
@@ -2704,7 +2706,9 @@ class GenericSource(FortranBase):
 
             lexer = getattr(pygments.lexers, extra_filetypes.lexer)
         self.src = highlight(
-            self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl codehilite")
+            self.raw_src,
+            lexer,
+            HtmlFormatter(lineanchors="ln", cssclass="hl codehilite"),
         )
 
         self.comment = extra_filetypes.comment
