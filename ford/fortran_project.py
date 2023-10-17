@@ -25,7 +25,7 @@
 import os
 import toposort
 from itertools import chain, product
-from typing import List, Optional, Union, Dict
+from typing import List, Optional, Union, Dict, Set
 from pathlib import Path
 from fnmatch import fnmatch
 
@@ -84,7 +84,7 @@ LINK_TYPES = {
 }
 
 
-def find_all_files(settings: ProjectSettings) -> List[Path]:
+def find_all_files(settings: ProjectSettings) -> Set[Path]:
     """Returns a list of all selected files below a set of directories"""
 
     file_extensions = chain(
@@ -94,16 +94,16 @@ def find_all_files(settings: ProjectSettings) -> List[Path]:
     )
 
     # Get initial list of all files in all source directories
-    src_files: List[Path] = []
+    src_files: Set[Path] = set()
 
     for src_dir, extension in product(settings.src_dir, file_extensions):
-        src_files.extend(Path(src_dir).glob(f"**/*.{extension}"))
+        src_files.update(Path(src_dir).glob(f"**/*.{extension}"))
 
     # Remove files under excluded directories
     for exclude_dir in settings.exclude_dir:
-        src_files = [
+        src_files = {
             src for src in src_files if not fnmatch(str(src), f"{exclude_dir}/*")
-        ]
+        }
 
     bottom_level_dirs = [src_dir.name for src_dir in settings.src_dir]
     # First, let's check if the files are relative paths or not
@@ -122,9 +122,9 @@ def find_all_files(settings: ProjectSettings) -> List[Path]:
             settings.exclude[i] = glob_exclude
 
     for exclude in settings.exclude:
-        src_files = [
+        src_files = {
             src for src in src_files if not fnmatch(os.path.relpath(src), exclude)
-        ]
+        }
 
     return src_files
 

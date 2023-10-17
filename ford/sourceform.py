@@ -426,7 +426,11 @@ class FortranBase:
                 re.IGNORECASE | re.DOTALL | re.MULTILINE,
             )
             if match := regex.search(self.source_file.raw_src):
-                self.src = highlight(match.group(), FortranLexer(), HtmlFormatter())
+                self.src = highlight(
+                    match.group(),
+                    FortranLexer(),
+                    HtmlFormatter(cssclass="hl codehilite"),
+                )
             else:
                 self.src = ""
                 if self.settings.warn:
@@ -1544,7 +1548,9 @@ class FortranSourceFile(FortranContainer):
         self.raw_src = pathlib.Path(self.path).read_text(encoding=settings.encoding)
         lexer = FortranFixedLexer() if self.fixed else FortranLexer()
         self.src = highlight(
-            self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
+            self.raw_src,
+            lexer,
+            HtmlFormatter(lineanchors="ln", cssclass="hl codehilite"),
         )
 
     @property
@@ -2704,7 +2710,9 @@ class GenericSource(FortranBase):
 
             lexer = getattr(pygments.lexers, extra_filetypes.lexer)
         self.src = highlight(
-            self.raw_src, lexer, HtmlFormatter(lineanchors="ln", cssclass="hl")
+            self.raw_src,
+            lexer,
+            HtmlFormatter(lineanchors="ln", cssclass="hl codehilite"),
         )
 
         self.comment = extra_filetypes.comment
