@@ -49,7 +49,7 @@
                 <li class="nav-item"><a class="nav-link" href="{{ pages.url }}">{{ pages.title }}</a></li>
               {% endif %}
               {% if incl_src %}
-                {% if project.files|length + project.extra_files|length is more_than_one %}
+                {% if (project.files|length + project.extra_files|length) is more_than_one %}
                   <li class="nav-item">
                     <a class="nav-link" href="{{ project_url }}/lists/files.html">Source Files</a>
                   </li>
