@@ -426,7 +426,11 @@ class FortranBase:
                 re.IGNORECASE | re.DOTALL | re.MULTILINE,
             )
             if match := regex.search(self.source_file.raw_src):
-                self.src = highlight(match.group(), FortranLexer(), HtmlFormatter())
+                self.src = highlight(
+                    match.group(),
+                    FortranLexer(),
+                    HtmlFormatter(cssclass="hl codehilite"),
+                )
             else:
                 self.src = ""
                 if self.settings.warn:
