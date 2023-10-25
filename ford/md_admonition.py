@@ -226,7 +226,8 @@ class AdmonitionPreprocessor(Preprocessor):
                     admonition.end_idx += 1
 
             # Indent any intermediate lines
-            for idx in range(admonition.start_idx + 1, admonition.end_idx + 1):
+            end_line = min(len(lines), admonition.end_idx + 1)
+            for idx in range(admonition.start_idx + 1, end_line):
                 if lines[idx] != "":
                     lines[idx] = self.INDENT + lines[idx]
 
