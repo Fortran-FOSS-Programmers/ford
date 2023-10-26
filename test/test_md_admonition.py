@@ -106,6 +106,24 @@ def test_explicit_end():
     assert soup.div.text.strip() == "Note\nnote text\nsome blank lines\nbefore the end"
 
 
+def test_explicit_end_no_newline():
+    converted = convert(
+        """
+        @note note text
+        some blank lines
+
+
+        before the end
+        @endnote"""
+    )
+
+    soup = BeautifulSoup(converted, features="html.parser")
+    assert len(soup) == 1
+    assert sorted(soup.div["class"]) == ["alert", "alert-info"]
+    assert soup.find(class_="h4").text == "Note"
+    assert soup.div.text.strip() == "Note\nnote text\nsome blank lines\nbefore the end"
+
+
 def test_warning():
     converted = convert(
         """
