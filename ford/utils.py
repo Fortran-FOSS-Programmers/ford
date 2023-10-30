@@ -23,6 +23,7 @@
 #
 
 import re
+import os
 import os.path
 import pathlib
 from types import TracebackType
@@ -301,6 +302,13 @@ class ProgressBar:
         else:
             self._total = total
 
+        # rich `Progress` breaks `pdb` and `breakpoint`, see:
+        # - https://github.com/Textualize/rich/issues/1053
+        # - https://github.com/Textualize/rich/issues/1465
+        # and maintainer seems uninterested in fixing. So, workaround
+        # by setting an env var to disable progress bar entirely
+        disable: bool = bool(os.environ.get("FORD_DEBUGGING", False))
+
         self._iterable = iterable
         self._progress = Progress(
             SpinnerColumn(),
@@ -312,6 +320,7 @@ class ProgressBar:
             TimeElapsedColumn(),
             TextColumn("{task.fields[current]}"),
             console=console,
+            disable=disable,
         )
 
         self._progress.start()
