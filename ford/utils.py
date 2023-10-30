@@ -26,7 +26,7 @@ import re
 import os.path
 import pathlib
 from types import TracebackType
-from typing import Dict, Union, List, Any, Tuple, Optional, Sequence, cast, Sized, Type
+from typing import Dict, Union, List, Any, Tuple, Optional, Iterable, cast, Sized, Type
 from io import StringIO
 import itertools
 from collections import defaultdict
@@ -293,7 +293,7 @@ class ProgressBar:
     def __init__(
         self,
         description: str,
-        iterable: Optional[Sequence] = None,
+        iterable: Optional[Iterable] = None,
         total: Optional[int] = None,
     ):
         if total is None and hasattr(iterable, "__len__"):
