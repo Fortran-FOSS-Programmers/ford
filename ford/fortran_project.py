@@ -238,10 +238,6 @@ class Project:
 
         self.files.append(new_file)
 
-    def warn(self, message):
-        if self.settings.warn:
-            warn(f"{message}")
-
     @property
     def allfiles(self):
         """Instead of duplicating files, it is much more efficient to create the itterator on the fly"""
@@ -298,14 +294,22 @@ class Project:
 
         for mod in self.submodules:
             if type(mod.ancestor_module) is not FortranModule:
-                self.warn(
-                    f"Could not identify ancestor MODULE of SUBMODULE '{mod.name}'. "
+                print("\n")
+                warn(
+                    f"Could not identify ancestor module ('{mod.ancestor_module}') of submodule '{mod.name}' "
+                    f"(in '{mod.filename}').\n"
+                    f"         This is usually because Ford hasn't found '{mod.ancestor_module}' "
+                    "in any of the source directories.\n"
                 )
                 continue
 
             if not isinstance(mod.parent_submodule, (FortranSubmodule, type(None))):
-                self.warn(
-                    f"Could not identify parent SUBMODULE of SUBMODULE '{mod.name}'"
+                print("\n")
+                warn(
+                    f"Could not identify parent submodule ('{mod.parent_submodule}') of submodule '{mod.name}' "
+                    f"(in '{mod.filename}').\n"
+                    f"         This is usually because Ford hasn't found '{mod.parent_submodule}' "
+                    "in any of the source directories.\n"
                 )
 
             mod.deplist = [

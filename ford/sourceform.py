@@ -1584,6 +1584,7 @@ class FortranModule(FortranCodeUnit):
         self.private_list: List[str] = []
         self.protected_list: List[str] = []
         self.visible = True
+        self.deplist: List[FortranModule] = []
 
     def _cleanup(self):
         """Create list of all local procedures. Ones coming from other modules
