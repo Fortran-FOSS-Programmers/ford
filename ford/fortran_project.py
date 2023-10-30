@@ -294,7 +294,6 @@ class Project:
 
         for mod in self.submodules:
             if type(mod.ancestor_module) is not FortranModule:
-                print("\n")
                 warn(
                     f"Could not identify ancestor module ('{mod.ancestor_module}') of submodule '{mod.name}' "
                     f"(in '{mod.filename}').\n"
@@ -304,7 +303,6 @@ class Project:
                 continue
 
             if not isinstance(mod.parent_submodule, (FortranSubmodule, type(None))):
-                print("\n")
                 warn(
                     f"Could not identify parent submodule ('{mod.parent_submodule}') of submodule '{mod.name}' "
                     f"(in '{mod.filename}').\n"
