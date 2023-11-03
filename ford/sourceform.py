@@ -1477,9 +1477,9 @@ class FortranCodeUnit(FortranContainer):
                 context = item
             elif isinstance(item, FortranVariable):
                 type_str = strip_type(item.full_type)
-                if item.parent is None:
+                if not (parent_all_types := getattr(item.parent, "all_types", {})):
                     return None
-                context = item.parent.all_types.get(type_str, None)
+                context = parent_all_types.get(type_str, None)
             else:
                 context = None
 
