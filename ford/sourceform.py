@@ -1450,7 +1450,8 @@ class FortranCodeUnit(FortranContainer):
             # extended type
             extend_type = context
             while extend_type := getattr(extend_type, "extends", None):
-                labels[extend_type.name.lower()] = extend_type
+                name = getattr(extend_type, "name", "").lower()
+                labels[name] = extend_type
             # vars
             labels.update(getattr(context, "all_vars", {}))
             # local vars
