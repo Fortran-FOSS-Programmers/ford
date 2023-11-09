@@ -462,8 +462,8 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
             TYPE(t_unknown_parent)
             call t_unknown_parent%known_method()
             """,
-            ["known_method"]
-        )
+            ["known_method"],
+        ),
     ],
 )
 def test_type_chain_function_and_subroutine_calls(
