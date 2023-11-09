@@ -23,10 +23,11 @@
 #
 
 import re
+import os
 import os.path
 import pathlib
 from types import TracebackType
-from typing import Dict, Union, List, Any, Tuple, Optional, Sequence, cast, Sized, Type
+from typing import Dict, Union, List, Any, Tuple, Optional, Iterable, cast, Sized, Type
 from io import StringIO
 import itertools
 from collections import defaultdict
@@ -293,13 +294,20 @@ class ProgressBar:
     def __init__(
         self,
         description: str,
-        iterable: Optional[Sequence] = None,
+        iterable: Optional[Iterable] = None,
         total: Optional[int] = None,
     ):
         if total is None and hasattr(iterable, "__len__"):
             self._total: Optional[int] = len(cast(Sized, iterable))
         else:
             self._total = total
+
+        # rich `Progress` breaks `pdb` and `breakpoint`, see:
+        # - https://github.com/Textualize/rich/issues/1053
+        # - https://github.com/Textualize/rich/issues/1465
+        # and maintainer seems uninterested in fixing. So, workaround
+        # by setting an env var to disable progress bar entirely
+        disable: bool = bool(os.environ.get("FORD_DEBUGGING", False))
 
         self._iterable = iterable
         self._progress = Progress(
@@ -312,6 +320,7 @@ class ProgressBar:
             TimeElapsedColumn(),
             TextColumn("{task.fields[current]}"),
             console=console,
+            disable=disable,
         )
 
         self._progress.start()

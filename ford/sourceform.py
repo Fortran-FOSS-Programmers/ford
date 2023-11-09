@@ -1450,8 +1450,9 @@ class FortranCodeUnit(FortranContainer):
             # extended type
             extend_type = context
             while extend_type := getattr(extend_type, "extends", None):
-                name = getattr(extend_type, "name", "").lower()
-                labels[name] = extend_type
+                if isinstance(extend_type, str):
+                    break
+                labels[extend_type.name.lower()] = extend_type
             # vars
             labels.update(getattr(context, "all_vars", {}))
             # local vars
@@ -1585,6 +1586,7 @@ class FortranModule(FortranCodeUnit):
         self.private_list: List[str] = []
         self.protected_list: List[str] = []
         self.visible = True
+        self.deplist: List[FortranModule] = []
 
     def _cleanup(self):
         """Create list of all local procedures. Ones coming from other modules
@@ -1983,6 +1985,16 @@ class FortranType(FortranContainer):
         # Match variables as needed (recurse)
         for v in self.variables:
             v.correlate(project)
+
+        if self.extends and isinstance(self.extends, str):
+            warn(
+                f"Could not find base type ('{self.extends}') of derived type '{self.name}' "
+                f"(in '{self.filename}').\n"
+                f"         If '{self.extends}' is defined in an external module, you may be "
+                "able to tell Ford about its documentation\n"
+                "         with the `extra_mods` setting"
+            )
+
         # Get inherited public components
         inherited = [
             var
