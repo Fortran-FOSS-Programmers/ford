@@ -456,6 +456,14 @@ def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
             """,
             ["p_faz", "p_fuz"],
         ),
+        (
+            """
+            USE m_baz, ONLY: t_unknown_parent
+            TYPE(t_unknown_parent)
+            call t_unknown_parent%known_method()
+            """,
+            ["known_method"],
+        ),
     ],
 )
 def test_type_chain_function_and_subroutine_calls(
@@ -501,12 +509,18 @@ def test_type_chain_function_and_subroutine_calls(
 
         USE m_foo, ONLY: t_baz
         USE m_bar, ONLY: t_foo
+        USE unknown_module
         TYPE, EXTENDS(t_foo) :: t_bar
             TYPE(t_baz) :: v_baz
         CONTAINS
             PROCEDURE :: p_bar
             PROCEDURE :: renamed => p_bar
         END TYPE t_bar
+
+        TYPE, EXTENDS(unknown_type) :: t_unknown_parent
+        CONTAINS
+            PROCEDURE, NOPASS :: known_method
+        END TYPE
 
         CONTAINS
 
@@ -517,6 +531,9 @@ def test_type_chain_function_and_subroutine_calls(
         SUBROUTINE p_buz(var_int)
             INTEGER, DIMENSION(2), INTENT(IN) :: var_int
         END SUBROUTINE p_buz
+
+        SUBROUTINE known_method()
+        END SUBROUTINE
 
     END MODULE m_baz
 
