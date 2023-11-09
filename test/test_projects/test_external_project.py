@@ -5,12 +5,31 @@ import pathlib
 import copy
 from urllib.parse import urlparse
 import json
+from typing import Dict, Any
 
 import ford
 
 from bs4 import BeautifulSoup
 import pytest
 
+
+REMOTE_TYPE_JSON: Dict[str, Any] = {
+    "name": "remote_type",
+    "external_url": "./type/remote_type.html",
+    "obj": "type",
+    "extends": None,
+    "variables": [
+        {
+            "name": "cptr",
+            "external_url": "./type/config.html#variable-cptr",
+            "obj": "variable",
+            "vartype": "type",
+            "permission": "public",
+        },
+    ],
+    "boundprocs": [],
+    "permission": "public",
+}
 
 REMOTE_MODULES_JSON = [
     {
@@ -32,7 +51,7 @@ REMOTE_MODULES_JSON = [
             },
         },
         "pub_absints": {},
-        "pub_types": {},
+        "pub_types": {"remote_type": REMOTE_TYPE_JSON},
         "pub_vars": {},
         "functions": [],
         "subroutines": [
@@ -51,7 +70,7 @@ REMOTE_MODULES_JSON = [
         ],
         "interfaces": [],
         "absinterfaces": [],
-        "types": [],
+        "types": [REMOTE_TYPE_JSON],
         "variables": [],
     }
 ]

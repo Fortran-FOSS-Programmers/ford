@@ -1,3 +1,16 @@
+module config_mod
+   use remote_module
+   implicit none
+contains
+
+   function create() result(config)
+      type (remote_type) :: config
+      ! Checks call chain following when using external entities
+      config%cptr%buffer(1:1) = 10
+   end function create
+end module config_mod
+
+
 module myAbort
   use external_module
   type, public, extends(solverAborts_type) :: vel_abortCriteria_type
@@ -39,7 +52,7 @@ program top_level
 
   type, extends(test) :: maintest
     character(len=10) :: label
-  end type
+  end type maintest
 
   call external_sub
   call remote_sub
