@@ -17,7 +17,7 @@ All namelists &ndash; {{ project }}
             <tr>
               <td>{{ namelist | relurl(page_url) }}</td>
               <td>{{ namelist.parent | relurl(page_url) }}</td>
-              <td>{{ namelist | meta('summary') | relurl(page_url) }}</td>
+              <td>{{ namelist | meta('summary') }}</td>
             </tr>
           {% endfor %}
         </tbody>

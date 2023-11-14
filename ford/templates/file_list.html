@@ -14,7 +14,7 @@ All Files &ndash; {{ project }}
 			 {% for src in project.allfiles|sort(attribute='name') %}
 			   <tr>
                  <td>{{ src | relurl(page_url) }}</td>
-                 <td>{{ src | meta('summary') | relurl(page_url) }}</td>
+                 <td>{{ src | meta('summary') }}</td>
                </tr>
 			 {% endfor %}
 			 </tbody></table>

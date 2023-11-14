@@ -432,7 +432,7 @@ class FortranBase:
             self.meta.summary = ""
 
         if self.meta.summary.strip() != self.doc.strip():
-            self.meta.summary += f'<a href="{self.full_url}" class="pull-right"><emph>Read more&hellip;</emph></a>'
+            self.meta.summary += f'<a href="../{self.get_url()}" class="pull-right"><emph>Read more&hellip;</emph></a>'
 
         if self.obj in ["proc", "type", "program"] and self.meta.source:
             obj = getattr(self, "proctype", self.obj).lower()

@@ -223,7 +223,7 @@
             {% endif %}
             <td>
               {% if summary -%}
-                {{ var | meta('summary') | relurl(page_url) }}
+                {{ var | meta('summary') }}
               {% else %}
                 {{ var.doc }}
               {% endif %}
@@ -374,7 +374,7 @@
                 {% if not bind.visible %}
                   {{ meta_list(bind.meta) }}
                 {% endif %}
-                {{ bind | meta('summary') | relurl(page_url) }}
+                {{ bind | meta('summary') }}
               {% endif %}
               {{ binding_summary(bind.procedure) }}
             {% else %}
@@ -441,7 +441,7 @@
     {% if intr.doc or meta_list(intr.meta)|trim %}
       <div class="card-body">
         {{ meta_list(intr.meta) }}
-        {{ intr | meta('summary') | relurl(page_url) }}
+        {{ intr | meta('summary') }}
       </div>
     {% endif %}
     <ul class="list-group">
@@ -511,7 +511,7 @@
       {% if not dtype.visible %}
         {{ meta_list(dtype.meta) }}
       {% endif %}
-      {{ dtype | meta('summary') | relurl(page_url) }}
+      {{ dtype | meta('summary') }}
 
       {% if dtype.variables %}
         <h4>Components</h4>
@@ -556,7 +556,7 @@
             {% for fin in dtype.finalprocs %}
               <tr>
                 <td>final :: <strong>{{ fin.name }}</strong></td>
-                <td>{{ fin | meta('summary') | relurl(page_url) }}</td>
+                <td>{{ fin | meta('summary') }}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -570,7 +570,7 @@
             {% for tb in dtype.boundprocs %}
               <tr>
                 <td>{{ bound_declaration(tb, link_name=True) }}</td>
-                <td>{{ tb | meta('summary') | relurl(page_url) }}</td>
+                <td>{{ tb | meta('summary') }}</td>
               </tr>
               {% endfor %}
           </tbody>
@@ -627,7 +627,7 @@
           {% for var in enum.variables %}
             <tr>
               <td>{{ var.vartype }}</td><td>::</td>
-              <td><strong>{{ var.name }}</strong></td><td> = </td><td>{{ var.initial }}</td><td>{% if summary -%}{{ var | meta('summary') | relurl(page_url) }}{% else %}{{ var.doc }}{% endif %}</td>
+              <td><strong>{{ var.name }}</strong></td><td> = </td><td>{{ var.initial }}</td><td>{% if summary -%}{{ var | meta('summary') }}{% else %}{{ var.doc }}{% endif %}</td>
             </tr>
           {% endfor %}
         </tbody>

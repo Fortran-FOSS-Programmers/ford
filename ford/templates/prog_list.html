@@ -15,7 +15,7 @@ All Programs &ndash; {{ project }}
 			   <tr>
                  <td>{{ prog | relurl(page_url) }}</td>
                  <td>{{ prog.parent | relurl(page_url) }}</td>
-                 <td>{{ prog | meta('summary') | relurl(page_url) }}</td>
+                 <td>{{ prog | meta('summary') }}</td>
                </tr>
 			 {% endfor %}
 			 </tbody></table>

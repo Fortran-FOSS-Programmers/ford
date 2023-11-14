@@ -16,7 +16,7 @@ All Procedures &ndash; {{ project }}
                  <td>{{ proc | relurl(page_url) }}</td>
                  <td>{{ proc.parent | relurl(page_url) }}</td>
                  <td>{{ proc.proctype }}</td>
-                 <td>{{ proc | meta('summary') | relurl(page_url) }}</td>
+                 <td>{{ proc | meta('summary') }}</td>
                </tr>
 			 {% endfor %}
 			 </tbody></table>

@@ -22,7 +22,7 @@ All Modules &ndash; {{ project }}
 			   <tr class="{% if loop.depth == 1 %}{{ row_class.current }}{% else %}{{ row_class.current }} submod{% endif %}">
                  <td>{% for i in range(loop.depth0) -%}&nbsp;&nbsp;&nbsp;{%- endfor %}{{ mod | relurl(page_url) }}</td>
                  <td>{{ mod.parent | relurl(page_url) }}</td>
-                 <td>{{ mod | meta("summary") | relurl(page_url) }}</td>
+                 <td>{{ mod | meta("summary") }}</td>
                </tr>
                {% if mod.descendants %}
                   {{ loop(mod.descendants) }}
