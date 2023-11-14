@@ -39,8 +39,6 @@ class PageNode:
     Object representing a page in a tree of pages and subpages.
     """
 
-    base_url = Path("..")
-
     def __init__(
         self,
         md: MetaMarkdown,
@@ -52,6 +50,7 @@ class PageNode:
     ):
         meta, text = meta_preprocessor(dedent(Path(path).read_text(encoding)))
         self.meta = EntitySettings.from_markdown_metadata(meta, path.stem)
+        self.base_url = Path(md.base_url)
 
         if self.meta.title is None:
             raise ValueError(f"Page '{path}' has no title metadata")
@@ -183,7 +182,3 @@ def get_page_tree(
             node.files.append(name)
 
     return node
-
-
-def set_base_url(url):
-    PageNode.base_url = Path(url)

@@ -46,12 +46,11 @@ class MetaMarkdown(Markdown):
     def __init__(
         self,
         md_base: PathLike = ".",
+        base_url: PathLike = ".",
         extensions: Optional[List[Union[str, Extension]]] = None,
         extension_configs: Optional[Dict[str, Dict]] = None,
         aliases: Optional[Dict[str, str]] = None,
         project: Optional[Project] = None,
-        relative: bool = False,
-        base_url: Optional[PathLike] = None,
     ):
         """make thing"""
 
@@ -70,10 +69,8 @@ class MetaMarkdown(Markdown):
         if project is not None:
             default_extensions.append(FordLinkExtension(project=project))
 
-        if relative:
-            if base_url is None:
-                raise ValueError("Expected path for base_url, got None")
-            default_extensions.append(RelativeLinksExtension(base_url=base_url))
+        self.base_url = Path(base_url)
+        default_extensions.append(RelativeLinksExtension())
 
         if extensions is None:
             extensions = []
@@ -175,6 +172,7 @@ class FordLinkProcessor(InlineProcessor):
     def __init__(self, md: MetaMarkdown, project: Project):  # type: ignore[overrider]
         self.project = project
         self.md: MetaMarkdown = md
+        self.base_url = md.base_url
 
     def getCompiledRegExp(self):
         return self.LINK_RE
@@ -228,7 +226,7 @@ class FordLinkProcessor(InlineProcessor):
             link.text = name
             return link
 
-        link.attrib["href"] = item.get_url()
+        link.attrib["href"] = str(self.base_url / item.get_url())
         link.text = item.name
         return link
 
@@ -255,8 +253,8 @@ class RelativeLinksTreeProcessor(Treeprocessor):
 
     md: MetaMarkdown
 
-    def __init__(self, md: MetaMarkdown, base_url: Path):
-        self.base_url = base_url.resolve()
+    def __init__(self, md: MetaMarkdown):
+        self.base_url = md.base_url.resolve()
         super().__init__(md)
 
     def _fix_attrib(self, tag: Element, attrib: str):
@@ -283,11 +281,7 @@ class RelativeLinksExtension(Extension):
     """Markdown extension to register `RelativeLinksTreeProcessor`"""
 
     def __init__(self, **kwargs):
-        self.config = {"base_url": [kwargs["base_url"], "Base URL of project"]}
         super().__init__(**kwargs)
 
     def extendMarkdown(self, md: MetaMarkdown):  # type: ignore[override]
-        base_url: Path = self.getConfig("base_url")
-        md.treeprocessors.register(
-            RelativeLinksTreeProcessor(md, base_url=base_url), "relative_links", 5
-        )
+        md.treeprocessors.register(RelativeLinksTreeProcessor(md), "relative_links", 5)

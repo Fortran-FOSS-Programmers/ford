@@ -12,7 +12,12 @@ All Procedures &ndash; {{ project }}
 			 <thead><tr><th>Procedure</th><th>Location</th><th>Procedure Type</th><th>Description</th></tr></thead>
 			 <tbody>
 			 {% for proc in project.procedures|sort(attribute='name') %}
-			   <tr><td>{{ proc }}</td><td>{{ proc.parent }}</td><td>{{ proc.proctype }}</td><td>{{ proc | meta('summary') }}</td></tr>
+			   <tr>
+                 <td>{{ proc | relurl(page_url) }}</td>
+                 <td>{{ proc.parent | relurl(page_url) }}</td>
+                 <td>{{ proc.proctype }}</td>
+                 <td>{{ proc | meta('summary') | relurl(page_url) }}</td>
+               </tr>
 			 {% endfor %}
 			 </tbody></table>
              {{ project.callgraph }}

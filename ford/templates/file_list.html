@@ -12,7 +12,10 @@ All Files &ndash; {{ project }}
 			 <thead><tr><th>File</th><th>Description</th></tr></thead>
 			 <tbody>
 			 {% for src in project.allfiles|sort(attribute='name') %}
-			   <tr><td>{{ src }}</td><td>{{ src | meta('summary') }}</td></tr>
+			   <tr>
+                 <td>{{ src | relurl(page_url) }}</td>
+                 <td>{{ src | meta('summary') | relurl(page_url) }}</td>
+               </tr>
 			 {% endfor %}
 			 </tbody></table>
 			 {{ project.filegraph }}

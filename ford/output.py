@@ -32,10 +32,11 @@ import pathlib
 import time
 from typing import List, Union, Callable, Type, Tuple
 
+from bs4 import BeautifulSoup
 import jinja2
 
 from ford.console import warn
-import ford.sourceform
+from ford.sourceform import FortranBase
 import ford.tipue_search
 from ford.utils import ProgressBar
 from ford.graphs import graphviz_installed, GraphManager
@@ -71,8 +72,30 @@ def meta(entity, item):
     return getattr(entity.meta, item, None)
 
 
+def relative_url(entity: Union[FortranBase, str], page_url: pathlib.Path) -> str:
+    """Convert any links with absolute paths to the output directory
+    to relative paths to ``page_url``
+    """
+    if isinstance(entity, str) and "/" not in entity or entity is None:
+        return entity
+
+    # Find first link in `entity` and get the path. If `entity`
+    # doesn't have any links, it might be a URL itself that needs
+    # fixing
+    link_str = str(entity)
+    link = BeautifulSoup(link_str, features="html.parser").a
+    if link is not None:
+        link_path = str(pathlib.Path(str(link["href"])).resolve())
+    else:
+        link_path = link_str
+
+    new_path = os.path.relpath(link_path, page_url.parent)
+    return link_str.replace(link_path, new_path)
+
+
 env.tests["more_than_one"] = is_more_than_one
 env.filters["meta"] = meta
+env.filters["relurl"] = relative_url
 
 USER_WRITABLE_ONLY = 0o755
 
@@ -346,11 +369,7 @@ class ListTopPage(BasePage):
         return self.out_dir / self.list_page
 
     def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = "."
-            ford.sourceform.set_base_url(".")
-            ford.pagetree.set_base_url(".")
-        template = env.get_template(self.list_page)
+        template = env.get_template(self.list_page, globals=dict(page_url=self.outfile))
         return template.render(data, project=proj, proj_docs=obj)
 
 
@@ -376,11 +395,7 @@ class ListPage(BasePage):
         return self.out_dir / "lists" / self.out_page
 
     def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template(self.list_page)
+        template = env.get_template(self.list_page, globals=dict(page_url=self.outfile))
         return template.render(data, project=proj)
 
 
@@ -450,11 +465,7 @@ class DocPage(BasePage):
         return self.out_dir / self.obj.get_dir() / self.object_page
 
     def render(self, data, project, object):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template(self.page_path)
+        template = env.get_template(self.page_path, globals=dict(page_url=self.outfile))
         try:
             return template.render(data, project=project, **{self.payload_key: object})
         except jinja2.exceptions.TemplateError:
@@ -531,17 +542,9 @@ class PagetreePage(BasePage):
         return self.page_dir / self.obj.path
 
     def render(self, data, proj, obj):
-        if data["relative"]:
-            base_url = ("../" * len(obj.hierarchy))[:-1]
-            if obj.filename.stem == "index":
-                if len(obj.hierarchy) > 0:
-                    base_url = base_url + "/.."
-                else:
-                    base_url = ".."
-            ford.sourceform.set_base_url(base_url)
-            ford.pagetree.set_base_url(base_url)
-            data["project_url"] = base_url
-        template = env.get_template("info_page.html")
+        template = env.get_template(
+            "info_page.html", globals=dict(page_url=self.outfile)
+        )
         return template.render(data, page=obj, project=proj, topnode=obj.topnode)
 
     def writeout(self):

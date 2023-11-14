@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 def create_project(settings: ProjectSettings):
     project = Project(settings)
     md = MetaMarkdown(project=project)
-    project.markdown(md, "..")
+    project.markdown(md)
     project.correlate()
     return project
 

@@ -15,7 +15,7 @@ def test_sub_alias_with_equals():
 
 def test_fix_relative_paths(tmp_path):
     base_path = tmp_path / "output"
-    md = MetaMarkdown(relative=True, base_url=tmp_path / "output")
+    md = MetaMarkdown(base_url=tmp_path / "output")
 
     text = f"[link to thing]({base_path / 'thing'})"
     result = md.convert(text, path=base_path / "other")

@@ -1077,17 +1077,17 @@ def test_make_links(copy_fortran_file):
     settings = copy_fortran_file(data)
     project = create_project(settings)
     md = MetaMarkdown(project=project)
-    project.markdown(md, "..")
+    project.markdown(md)
 
     expected_links = {
-        "a": "../module/a.html",
-        "b": "../type/b.html",
-        "c": "../type/b.html#variable-c",
-        "d": "../proc/d.html",
-        "e": "../type/b.html#boundprocedure-e",
-        "f": "../proc/f.html",
-        "g": "../module/a.html#variable-g",
-        "h": "../program/h.html",
+        "a": "module/a.html",
+        "b": "type/b.html",
+        "c": "type/b.html#variable-c",
+        "d": "proc/d.html",
+        "e": "type/b.html#boundprocedure-e",
+        "f": "proc/f.html",
+        "g": "module/a.html#variable-g",
+        "h": "program/h.html",
     }
 
     for item in chain(
@@ -1129,19 +1129,19 @@ def test_link_with_context(copy_fortran_file):
     settings.proc_internals = True
     project = create_project(settings)
     md = MetaMarkdown(project=project)
-    project.markdown(md, "..")
+    project.markdown(md)
 
     expected_links = {
-        "a": "../module/a.html",
-        "b": "../type/b.html",
-        "c": "../type/b.html#variable-c",
-        "d": "../proc/d.html",
-        "e": "../type/b.html#boundprocedure-e",
-        "f": "../proc/d.html#proc-f",
-        "g": "../module/a.html#variable-g",
-        "h": "../program/h.html",
-        "i": "../proc/d.html#variable-i",
-        "x": "../proc/d.html#variable-x",
+        "a": "module/a.html",
+        "b": "type/b.html",
+        "c": "type/b.html#variable-c",
+        "d": "proc/d.html",
+        "e": "type/b.html#boundprocedure-e",
+        "f": "proc/d.html#proc-f",
+        "g": "module/a.html#variable-g",
+        "h": "program/h.html",
+        "i": "proc/d.html#variable-i",
+        "x": "proc/d.html#variable-x",
     }
 
     for item in chain(

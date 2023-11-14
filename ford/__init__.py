@@ -412,8 +412,6 @@ def main(proj_data: ProjectSettings, proj_docs: str):
         )
         sys.exit(1)
 
-    base_url = ".." if proj_data.relative else proj_data.project_url
-
     print("  Correlating information from different parts of your project...")
     correlate_time_start = time.time()
     project.correlate()
@@ -434,20 +432,17 @@ def main(proj_data: ProjectSettings, proj_docs: str):
 
     md = MetaMarkdown(
         proj_data.md_base_dir,
+        base_url=proj_data.project_url,
         extensions=proj_data.md_extensions,
         aliases=aliases,
         project=project,
-        relative=proj_data.relative,
-        base_url=proj_data.project_url,
     )
 
     # Convert the documentation from Markdown to HTML
     proj_docs = md.reset().convert(proj_docs)
-    project.markdown(md, base_url)
+    project.markdown(md)
 
     # Convert summaries and descriptions to HTML
-    if proj_data.relative:
-        ford.sourceform.set_base_url(".")
     if proj_data.summary is not None:
         proj_data.summary = md.convert(proj_data.summary)
     if proj_data.author_description is not None:
