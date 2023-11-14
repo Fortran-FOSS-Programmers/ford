@@ -1256,3 +1256,35 @@ def test_find(copy_fortran_file):
     assert isinstance(prog_foo, FortranProgram)
     mod_foo = project.find("foo", entity="module")
     assert isinstance(mod_foo, FortranModule)
+
+
+def test_links_in_deferred_bound_methods(copy_fortran_file):
+    """Test for issue #591"""
+
+    data = """\
+    module test
+        type, abstract :: foo_t
+            contains
+            !> See [[foo_t]] for more information about [[foo]]
+            procedure(foo_iface), deferred :: foo
+        end type
+        abstract interface
+            subroutine foo_iface(self)
+                import :: foo_t
+                class(foo_t), intent(in) :: self
+            end subroutine
+        end interface
+    end module
+    """
+
+    settings = copy_fortran_file(data)
+    project = create_project(settings)
+    md = MetaMarkdown(settings.md_base_dir, project=project)
+    project.markdown(md)
+
+    docstring = BeautifulSoup(
+        project.modules[0].types[0].boundprocs[0].doc, features="html.parser"
+    )
+    links = {link.text: link["href"] for link in docstring.find_all("a")}
+    assert links["foo_t"].endswith("type/foo_t.html")
+    assert links["foo"].endswith("type/foo_t.html#boundprocedure-foo")

@@ -105,6 +105,10 @@ SUBLINK_TYPES = {
 
 def _find_in_list(collection: Iterable, name: str) -> Optional[FortranBase]:
     for item in collection:
+        # `item` might still be a string if we've not managed to
+        # correlate it for whatever reason, if so skip it
+        if not isinstance(item, FortranBase):
+            continue
         if name == item.name.lower():
             return item
     return None
