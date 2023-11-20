@@ -41,11 +41,7 @@ import pytest
             "",
         ),
         ("https://github.com/jacobwilliams/dvode", "dvode/ford.md", ""),
-        (
-            "https://github.com/jacobwilliams/fortran-csv-module",
-            "fortran-csv-module/fortran-csv-module.md",
-            "",
-        ),
+        ("https://github.com/jacobwilliams/csv-fortran", "csv-fortran/ford.md", ""),
         (
             "https://github.com/jacobwilliams/json-fortran",
             "json-fortran/json-fortran.md",
