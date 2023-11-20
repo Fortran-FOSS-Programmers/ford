@@ -58,6 +58,11 @@ import pytest
         ("https://github.com/szaghi/VTKFortran", "VTKFortran/doc/main_page.md", ""),
         ("https://github.com/toml-f/toml-f", "toml-f/docs.md", ""),
         ("https://github.com/ylikx/forpy", "forpy/forpy_project.md", ""),
+        (
+            "https://github.com/cibinjoseph/C81-Interface",
+            "C81-Interface/ford_input.md",
+            "-p ford_input",
+        ),
         # The following all specify markdown extension config in a
         # non-supported way
         # (
@@ -75,12 +80,6 @@ import pytest
         # ("https://github.com/szaghi/FURY", "FURY/doc/main_page.md", ""),
         # Source files require fypp
         # ("https://github.com/cp2k/dbcsr", "dbcsr/DBCSR.md", "--debug"),
-        # output_dir subdirectory of src_dir, requires manually deleting
-        # (
-        #     "https://github.com/cibinjoseph/C81-Interface",
-        #     "C81-Interface/ford_input.md",
-        #     "-p ford_input",
-        # ),
     ],
 )
 def test_copus(tmp_path, url, config_file, flags):
