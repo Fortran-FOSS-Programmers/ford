@@ -917,17 +917,17 @@ class FortranGraph:
         graph_help_name = f"{self.__class__.__name__}-help-text"
 
         legend_graph = f"""\
-        <div><a type="button" class="graph-help" data-toggle="modal" href="#{graph_help_name}">Help</a></div>
+          <div>
+            <a type="button" class="graph-help" data-bs-toggle="modal" href="#{graph_help_name}">Help</a>
+          </div>
           <div class="modal fade" id="{graph_help_name}" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-lg" role="document">
               <div class="modal-content">
                 <div class="modal-header">
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                  </button>
                   <h4 class="modal-title" id="-graph-help-label">Graph Key</h4>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-              <div class="modal-body">{self._legend} {COLOURED_NOTICE if self.data.coloured_edges else ""}</div>
+                <div class="modal-body">{self._legend} {COLOURED_NOTICE if self.data.coloured_edges else ""}</div>
             </div>
           </div>
         </div>"""
