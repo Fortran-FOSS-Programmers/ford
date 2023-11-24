@@ -1485,6 +1485,7 @@ class GraphManager:
                 args,
                 max_workers=njobs,
                 desc="Writing graphs",
+                chunksize=1,
             )
 
         for graph in [self.usegraph, self.typegraph, self.callgraph, self.filegraph]:
