@@ -50,7 +50,8 @@ from ford._typing import PathLike
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
 from ford.version import __version__
-from ford.settings import ProjectSettings, load_markdown_settings, load_toml_settings
+from ford.settings import ProjectSettings, load_markdown_settings, load_toml_settings, \
+                          convert_types_from_commandarguments
 
 
 __appname__ = "FORD"
@@ -256,8 +257,8 @@ def get_command_line_arguments() -> argparse.Namespace:
     )
     parser.add_argument(
         "--externalize",
-        action="store_const",
-        const="true",
+        action="store_true",
+        default=None,
         help="provide information about Fortran objects in a json database for "
         "other FORD projects to refer to.",
     )
@@ -333,9 +334,7 @@ def parse_arguments(
             setattr(proj_data, key, value)
 
     # Get the default options, and any over-rides, straightened out
-    for key, value in command_line_args.items():
-        if value is not None:
-            setattr(proj_data, key, value)
+    proj_data = convert_types_from_commandarguments(proj_data, command_line_args)
 
     proj_data.normalise_paths(directory)
 
