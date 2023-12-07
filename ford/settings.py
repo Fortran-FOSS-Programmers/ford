@@ -329,7 +329,7 @@ def load_markdown_settings(
 
 def convert_setting(default_type: Type, key: str, value: Any) -> Any:
     """Convert an individual value's type to be consistent with a given dataclass for the
-       given key."""
+    given key."""
 
     if is_same_type(default_type, type(value)):
         # already correct type
@@ -354,9 +354,7 @@ def convert_setting(default_type: Type, key: str, value: Any) -> Any:
 
         if get_args(default_type) == (str, ExtraFileType):
             file_types = [ExtraFileType.from_string(string) for string in resvalue]
-            return {
-                file_type.extension: file_type for file_type in file_types
-            }
+            return {file_type.extension: file_type for file_type in file_types}
         else:
             sep = OPTION_SEPARATORS[key]
             return _parse_to_dict(value, name=key, sep=sep)
@@ -395,7 +393,7 @@ def convert_types_from_commandarguments(
     settings: ProjectSettings, cargs: Dict[str, Any], parent: Optional[str] = None
 ):
     """Convert the cargs dict's value's types to be consistent with a given dataclass
-       if set and override them in settings.
+    if set and override them in settings.
     """
 
     field_types = get_type_hints(type(settings))

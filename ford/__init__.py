@@ -50,8 +50,12 @@ from ford._typing import PathLike
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
 from ford.version import __version__
-from ford.settings import ProjectSettings, load_markdown_settings, load_toml_settings, \
-                          convert_types_from_commandarguments
+from ford.settings import (
+    ProjectSettings,
+    load_markdown_settings,
+    load_toml_settings,
+    convert_types_from_commandarguments,
+)
 
 
 __appname__ = "FORD"
