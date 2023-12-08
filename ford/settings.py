@@ -357,7 +357,7 @@ def convert_setting(default_type: Type, key: str, value: Any) -> Any:
             return {file_type.extension: file_type for file_type in file_types}
         else:
             sep = OPTION_SEPARATORS[key]
-            return _parse_to_dict(value, name=key, sep=sep)
+            return _parse_to_dict(resvalue, name=key, sep=sep)
 
     # Nothing special to do
     return value
