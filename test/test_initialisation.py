@@ -240,3 +240,11 @@ def test_config_option():
     assert data.quiet is True
     assert data.display == ["public"]
     assert data.alias == {"a": "b", "c": "d"}
+
+
+def test_external_links_command_line_arg():
+    data, _ = ford.parse_arguments(
+        {"external": "remote = https://some.link"}, "", ford.ProjectSettings()
+    )
+
+    assert data.external == {"remote": "https://some.link"}
