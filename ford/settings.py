@@ -327,6 +327,42 @@ def load_markdown_settings(
     return ProjectSettings.from_markdown_metadata(settings), "\n".join(project_lines)
 
 
+def convert_setting(default_type: Type, key: str, value: Any) -> Any:
+    """Convert an individual value's type to be consistent with a given dataclass for the
+    given key."""
+
+    if is_same_type(default_type, type(value)):
+        # already correct type
+        return value
+    if is_same_type(default_type, list):
+        return [value]
+    elif is_same_type(default_type, bool):
+        return convert_to_bool(key, value)
+    elif is_same_type(default_type, int):
+        return int(value[0])
+    elif (
+        is_same_type(default_type, str) or is_same_type(default_type, Path)
+    ) and isinstance(value, list):
+        return "\n".join(value)
+    elif (get_origin(default_type) == dict) and not isinstance(value, dict):
+        resvalue = value
+        if isinstance(value, str):
+            resvalue = [value]
+
+        # Get rid of any empty strings
+        resvalue = [v for v in resvalue if v]
+
+        if get_args(default_type) == (str, ExtraFileType):
+            file_types = [ExtraFileType.from_string(string) for string in resvalue]
+            return {file_type.extension: file_type for file_type in file_types}
+        else:
+            sep = OPTION_SEPARATORS[key]
+            return _parse_to_dict(resvalue, name=key, sep=sep)
+
+    # Nothing special to do
+    return value
+
+
 def convert_types_from_metapreprocessor(
     cls: Type, settings: Dict[str, Any], parent: Optional[str] = None
 ):
@@ -345,36 +381,29 @@ def convert_types_from_metapreprocessor(
             keys_to_drop.append(key)
             continue
 
-        if is_same_type(default_type, type(value)):
-            continue
-        if is_same_type(default_type, list):
-            settings[key] = [value]
-        elif is_same_type(default_type, bool):
-            settings[key] = convert_to_bool(key, value)
-        elif is_same_type(default_type, int):
-            settings[key] = int(value[0])
-        elif (
-            is_same_type(default_type, str) or is_same_type(default_type, Path)
-        ) and isinstance(value, list):
-            settings[key] = "\n".join(value)
-        elif (get_origin(default_type) == dict) and not isinstance(value, dict):
-            if isinstance(value, str):
-                value = [value]
-
-            # Get rid of any empty strings
-            value = [v for v in value if v]
-
-            if get_args(default_type) == (str, ExtraFileType):
-                file_types = [ExtraFileType.from_string(string) for string in value]
-                settings[key] = {
-                    file_type.extension: file_type for file_type in file_types
-                }
-            else:
-                sep = OPTION_SEPARATORS[key]
-                settings[key] = _parse_to_dict(value, name=key, sep=sep)
+        settings[key] = convert_setting(default_type, key, value)
 
     for key in keys_to_drop:
         settings.pop(key)
+
+    return settings
+
+
+def convert_types_from_commandarguments(
+    settings: ProjectSettings, cargs: Dict[str, Any], parent: Optional[str] = None
+):
+    """Convert the cargs dict's value's types to be consistent with a given dataclass
+    if set and override them in settings.
+    """
+
+    field_types = get_type_hints(type(settings))
+
+    for key, value in cargs.items():
+        if value != None:
+            if key in field_types:
+                setattr(settings, key, convert_setting(field_types[key], key, value))
+            else:
+                setattr(settings, key, value)
 
     return settings
 
