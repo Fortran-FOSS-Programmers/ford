@@ -2939,7 +2939,9 @@ def line_to_variables(source, line, inherit_permission, parent):
             search_from = 0
             while quote := QUOTES_RE.search(initial[search_from:]):
                 num = int(quote.group()[1:-1])
-                string = NBSP_RE.sub("&nbsp;", parent.strings[num])
+                # Replace multiple consecutive spaces with non-breaking spaces
+                # so they don't get combined in the html
+                string = NBSP_RE.sub("\xa0", parent.strings[num])
                 string = string.replace("\\", "\\\\")
                 initial = initial[0:search_from] + QUOTES_RE.sub(
                     string, initial[search_from:], count=1
