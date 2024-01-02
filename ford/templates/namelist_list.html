@@ -15,8 +15,8 @@ All namelists &ndash; {{ project }}
         <tbody>
           {% for namelist in project.namelists | sort(attribute="name") %}
             <tr>
-              <td>{{ namelist | relurl(page_url) }}</td>
-              <td>{{ namelist.parent | relurl(page_url) }}</td>
+              <td>{{ namelist }}</td>
+              <td>{{ namelist.parent }}</td>
               <td>{{ namelist | meta('summary') }}</td>
             </tr>
           {% endfor %}

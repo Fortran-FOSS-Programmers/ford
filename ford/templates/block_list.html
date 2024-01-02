@@ -13,8 +13,8 @@ All Block Data Units &ndash; {{ project }}
 			 <tbody>
 			 {% for block in project.blockdata|sort(attribute='name') %}
 			   <tr>
-                 <td>{{ block | relurl(page_url) }}</td>
-                 <td>{{ block.parent | relurl(page_url) }}</td>
+                 <td>{{ block }}</td>
+                 <td>{{ block.parent }}</td>
                  <td>{{ block | meta('summary') }}</td>
                </tr>
 			 {% endfor %}

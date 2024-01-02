@@ -33,7 +33,7 @@ import time
 from typing import List, Union, Callable, Type, Tuple
 from warnings import simplefilter
 
-from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
+from bs4 import BeautifulSoup
 import jinja2
 
 from ford.console import warn
@@ -50,9 +50,6 @@ env = jinja2.Environment(
     lstrip_blocks=True,
 )
 env.globals["path"] = os.path  # this lets us call path.* in templates
-
-# Ignore bs4 warning about parsing strings that look like filenames
-simplefilter("ignore", MarkupResemblesLocatorWarning)
 
 
 def is_more_than_one(collection):
@@ -76,30 +73,8 @@ def meta(entity, item):
     return getattr(entity.meta, item, None)
 
 
-def relative_url(entity: Union[FortranBase, str], page_url: pathlib.Path) -> str:
-    """Convert any links with absolute paths to the output directory
-    to relative paths to ``page_url``
-    """
-    if isinstance(entity, str) and "/" not in entity or entity is None:
-        return entity
-
-    # Find first link in `entity` and get the path. If `entity`
-    # doesn't have any links, it might be a URL itself that needs
-    # fixing
-    link_str = str(entity)
-    link = BeautifulSoup(link_str, features="html.parser").a
-    if link is not None:
-        link_path = str(pathlib.Path(str(link["href"])).resolve())
-    else:
-        link_path = link_str
-
-    new_path = os.path.relpath(link_path, page_url.parent)
-    return link_str.replace(link_path, new_path)
-
-
 env.tests["more_than_one"] = is_more_than_one
 env.filters["meta"] = meta
-env.filters["relurl"] = relative_url
 
 USER_WRITABLE_ONLY = 0o755
 

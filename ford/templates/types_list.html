@@ -14,9 +14,9 @@ All Types &ndash; {{ project }}
 			 </thead><tbody>
 			 {% for dtype in project.types|sort(attribute='name') %}
 			   <tr>
-                 <td>{{ dtype | relurl(page_url) }}</td>
-                 <td>{{ dtype.parent | relurl(page_url) }}</td>
-                 <td>{{ dtype.extends | relurl(page_url) }}</td>
+                 <td>{{ dtype }}</td>
+                 <td>{{ dtype.parent }}</td>
+                 <td>{{ dtype.extends }}</td>
                  <td>{{ dtype | meta("summary") }}</td>
                </tr>
 			 {% endfor %}

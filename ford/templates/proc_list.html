@@ -13,8 +13,8 @@ All Procedures &ndash; {{ project }}
 			 <tbody>
 			 {% for proc in project.procedures|sort(attribute='name') %}
 			   <tr>
-                 <td>{{ proc | relurl(page_url) }}</td>
-                 <td>{{ proc.parent | relurl(page_url) }}</td>
+                 <td>{{ proc }}</td>
+                 <td>{{ proc.parent }}</td>
                  <td>{{ proc.proctype }}</td>
                  <td>{{ proc | meta('summary') }}</td>
                </tr>

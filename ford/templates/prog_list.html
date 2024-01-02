@@ -13,8 +13,8 @@ All Programs &ndash; {{ project }}
 			 <tbody>
 			 {% for prog in project.programs|sort(attribute='name') %}
 			   <tr>
-                 <td>{{ prog | relurl(page_url) }}</td>
-                 <td>{{ prog.parent | relurl(page_url) }}</td>
+                 <td>{{ prog }}</td>
+                 <td>{{ prog.parent }}</td>
                  <td>{{ prog | meta('summary') }}</td>
                </tr>
 			 {% endfor %}

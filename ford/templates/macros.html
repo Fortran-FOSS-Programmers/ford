@@ -453,10 +453,10 @@
 {% endmacro %}
 
 {% macro proc_line(proc, link=True, proto=False) %}
-  {% if proc.mp %}module procedure {% if not proc.parent or (proc.visible and link) %}{{ page_url }} {{ proc | relurl(page_url) }}{% else %}{{ proc.name }}{% endif %} <small>{% endif -%}
+  {% if proc.mp %}module procedure {% if not proc.parent or (proc.visible and link) %}{{ page_url }} {{ proc }}{% else %}{{ proc.name }}{% endif %} <small>{% endif -%}
   {% if (proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module')) and not proto %}{{ proc.permission }} {% endif -%}
   {{ proc.attribs | join(" ") }} {{ proc.proctype |lower }}
-  {%- if not proc.parent or (proc.visible and link and not proc.mp) %} {{ proc | relurl(page_url) }}{% else %} {{ proc.name }}{% endif -%}
+  {%- if not proc.parent or (proc.visible and link and not proc.mp) %} {{ proc }}{% else %} {{ proc.name }}{% endif -%}
   ({{ proc.args | join(", ") }})
   {%- if proc.proctype|lower == 'function' and proc.name != proc.retvar.name %} result({{ proc.retvar.name }}){% endif -%}
   {% if proc.bindC %} bind({{ proc.bindC }}){% endif %}
@@ -502,7 +502,7 @@
         {%- if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif -%}
         {%- if dtype.sequence %}, sequence {% endif -%}
         {{ dtype.attribs | join(", ") }}
-        {%- if dtype.extends %}, extends({{ dtype.extends | relurl(page_url) }}){% endif -%}&nbsp;::&nbsp;
+        {%- if dtype.extends %}, extends({{ dtype.extends }}){% endif -%}&nbsp;::&nbsp;
         {{ dtype }}
         {{ deprecated(dtype) }}
       </h3>

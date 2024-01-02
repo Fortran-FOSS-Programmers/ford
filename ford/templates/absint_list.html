@@ -14,8 +14,8 @@ All Abstract Interfaces &ndash; {{ project }}
 			 </thead><tbody>
 			 {% for absint in project.absinterfaces|sort(attribute='name') %}
 			   <tr>
-                 <td>{{ absint | relurl(page_url) }}</td>
-                 <td>{{ absint.parent | relurl(page_url) }}</td>
+                 <td>{{ absint }}</td>
+                 <td>{{ absint.parent }}</td>
                  <td>{{ absint.procedure | meta('summary') }}</td>
                </tr>
 			 {% endfor %}
