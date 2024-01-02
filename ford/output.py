@@ -334,18 +334,34 @@ class BasePage:
         self.meta = getattr(obj, "meta", EntitySettings())
         self.out_dir = self.data["output_dir"]
         self.page_dir = self.out_dir / "page"
+        self.relative = data["relative"]
+        self.project_url = str(data["project_url"])
 
     @property
-    def html(self):
+    def html(self) -> str:
         """Wrapper for only doing the rendering on request (drastically reduces memory)"""
         try:
-            return self.render(self.data, self.proj, self.obj)
+            page = self.render(self.data, self.proj, self.obj)
         except Exception as e:
             raise RuntimeError(
                 f"Error rendering '{self.outfile.name}':\n"
                 f'  File "{self.obj.filename}": {self.obj.obj} "{self.obj.name}"\n'
                 f"    {e}"
             )
+
+        if not self.relative:
+            return page
+
+        # If we're using relative links, find all absolute paths in
+        # links and make them relative
+        soup = BeautifulSoup(page, features="html.parser")
+        absolute_links = soup.find_all(
+            href=lambda href: href is not None and href.startswith(self.project_url)
+        )
+        for link in absolute_links:
+            link["href"] = os.path.relpath(link["href"], self.outfile.parent)
+
+        return str(soup)
 
     @property
     def outfile(self) -> pathlib.Path:
