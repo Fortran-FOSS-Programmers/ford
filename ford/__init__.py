@@ -439,7 +439,7 @@ def main(proj_data: ProjectSettings, proj_docs: str):
     )
 
     # Convert the documentation from Markdown to HTML
-    proj_docs = md.reset().convert(proj_docs)
+    proj_docs = md.reset().convert(proj_docs, path=proj_data.project_url)
     project.markdown(md)
 
     # Convert summaries and descriptions to HTML

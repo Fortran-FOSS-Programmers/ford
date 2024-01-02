@@ -35,8 +35,6 @@ class MetaMarkdown(Markdown):
         Dictionary of text aliases
     project :
         Ford project instance
-    relative :
-        Should internal URLs be relative
     base_url :
         Base/project URL for relative links (required if
         ``relative`` is True)
@@ -70,7 +68,8 @@ class MetaMarkdown(Markdown):
             default_extensions.append(FordLinkExtension(project=project))
 
         self.base_url = Path(base_url)
-        default_extensions.append(RelativeLinksExtension())
+        if base_url != ".":
+            default_extensions.append(RelativeLinksExtension())
 
         if extensions is None:
             extensions = []
@@ -112,7 +111,14 @@ class MetaMarkdown(Markdown):
         """
 
         self.current_context = context
-        self.current_path = path
+        if (
+            path is None
+            and context is not None
+            and (url := context.get_url()) is not None
+        ):
+            self.current_path = self.base_url / Path(url).parent
+        else:
+            self.current_path = path
         return super().convert(source)
 
 
@@ -172,7 +178,6 @@ class FordLinkProcessor(InlineProcessor):
     def __init__(self, md: MetaMarkdown, project: Project):  # type: ignore[overrider]
         self.project = project
         self.md: MetaMarkdown = md
-        self.base_url = md.base_url
 
     def getCompiledRegExp(self):
         return self.LINK_RE
@@ -226,7 +231,14 @@ class FordLinkProcessor(InlineProcessor):
             link.text = name
             return link
 
-        link.attrib["href"] = str(self.base_url / item.get_url())
+        if (item_url := item.get_url()) is None:
+            # This is really to keep mypy happy
+            raise RuntimeError(f"Found item {name} but no url")
+
+        # Make sure links are relative to base url
+        full_url = self.md.base_url / item_url
+        rel_url = relpath(full_url, self.md.current_path)
+        link.attrib["href"] = str(rel_url)
         link.text = item.name
         return link
 
