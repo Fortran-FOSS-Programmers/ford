@@ -386,7 +386,9 @@ def test_all_internal_links_resolve(example_project):
             if link.netloc or link.scheme == "mailto" or not link.path:
                 continue
 
-            assert not link.path.startswith("/"), f"absolute path in {a_tag} on page {html}"
+            assert not link.path.startswith(
+                "/"
+            ), f"absolute path in {a_tag} on page {html}"
 
             link_path = (html.parent / link.path).resolve()
             assert link_path.exists(), f"{a_tag} on page {html}"
