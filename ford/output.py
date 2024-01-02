@@ -31,8 +31,9 @@ from itertools import chain
 import pathlib
 import time
 from typing import List, Union, Callable, Type, Tuple
+from warnings import simplefilter
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 import jinja2
 
 from ford.console import warn
@@ -49,6 +50,9 @@ env = jinja2.Environment(
     lstrip_blocks=True,
 )
 env.globals["path"] = os.path  # this lets us call path.* in templates
+
+# Ignore bs4 warning about parsing strings that look like filenames
+simplefilter("ignore", MarkupResemblesLocatorWarning)
 
 
 def is_more_than_one(collection):
