@@ -3,6 +3,7 @@ from __future__ import annotations
 from markdown import Markdown, Extension
 from markdown.inlinepatterns import InlineProcessor
 from markdown.treeprocessors import Treeprocessor
+from markdown.preprocessors import Preprocessor
 from typing import Dict, List, Union, Optional, TYPE_CHECKING
 import re
 from xml.etree.ElementTree import Element
@@ -119,24 +120,28 @@ class MetaMarkdown(Markdown):
         return super().convert(source)
 
 
-ALIAS_RE = r"\|(.+?)\|"
-
-
-class AliasProcessor(InlineProcessor):
+class AliasPreprocessor(Preprocessor):
     """Substitute text aliases of the form ``|foo|`` from a dictionary
     of aliases and their replacements"""
 
-    def __init__(self, pattern: str, md: Markdown, aliases: Dict[str, str]):
+    ALIAS_RE = re.compile(r"\|([^ ].*?[^ ]?)\|")
+
+    def __init__(self, md: Markdown, aliases: Dict[str, str]):
         self.aliases = aliases
-        super().__init__(pattern, md)
 
-    def handleMatch(self, m: re.Match, data: str):  # type: ignore[override]
-        try:
-            sub = self.aliases[m.group(1)]
-        except KeyError:
-            return None, None, None
+        super().__init__(md)
 
-        return sub, m.start(0), m.end(0)
+    def _lookup(self, m: re.Match):
+        """Return alias replacement for match. If not found, return
+        the original text, including pipes
+
+        """
+        return self.aliases.get(m.group(1), f"|{m.group(1)}|")
+
+    def run(self, lines: List[str]) -> List[str]:
+        for line_num, line in enumerate(lines):
+            lines[line_num] = self.ALIAS_RE.sub(self._lookup, line)
+        return lines
 
 
 class AliasExtension(Extension):
@@ -148,8 +153,10 @@ class AliasExtension(Extension):
 
     def extendMarkdown(self, md: Markdown):
         aliases = self.getConfig("aliases")
-        md.inlinePatterns.register(
-            AliasProcessor(ALIAS_RE, md, aliases=aliases), "ford_aliases", 175
+        # Needs to happen before tables to avoid clashes, see
+        # https://github.com/Fortran-FOSS-Programmers/ford/issues/604
+        md.preprocessors.register(
+            AliasPreprocessor(md, aliases=aliases), "ford_aliases", 50
         )
 
 
