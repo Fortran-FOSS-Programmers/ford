@@ -122,6 +122,9 @@ class Documentation:
         # rid of None values
         self.data = {k: v for k, v in asdict(settings).items() if v is not None}
         self.data["pages"] = pagetree
+        # Remove "project_url" so we can set it as a relative path for
+        # each page individually and not have it clobbered by this dict
+        del self.data["project_url"]
         self.lists: List[ListPage] = []
         self.docs = []
         self.njobs = settings.parallel
@@ -335,33 +338,23 @@ class BasePage:
         self.out_dir = self.data["output_dir"]
         self.page_dir = self.out_dir / "page"
         self.relative = data["relative"]
-        self.project_url = str(data["project_url"])
+        self.project_url = (
+            os.path.relpath(proj.settings.project_url, self.outfile.parent)
+            if self.relative
+            else proj.settings.project_url
+        )
 
     @property
     def html(self) -> str:
         """Wrapper for only doing the rendering on request (drastically reduces memory)"""
         try:
-            page = self.render(self.data, self.proj, self.obj)
+            return self.render(self.data, self.proj, self.obj)
         except Exception as e:
             raise RuntimeError(
                 f"Error rendering '{self.outfile.name}':\n"
                 f'  File "{self.obj.filename}": {self.obj.obj} "{self.obj.name}"\n'
                 f"    {e}"
             )
-
-        if not self.relative:
-            return page
-
-        # If we're using relative links, find all absolute paths in
-        # links and make them relative
-        soup = BeautifulSoup(page, features="html.parser")
-        absolute_links = soup.find_all(
-            href=lambda href: href is not None and href.startswith(self.project_url)
-        )
-        for link in absolute_links:
-            link["href"] = os.path.relpath(link["href"], self.outfile.parent)
-
-        return str(soup)
 
     @property
     def outfile(self) -> pathlib.Path:
@@ -389,7 +382,10 @@ class ListTopPage(BasePage):
         return self.out_dir / self.list_page
 
     def render(self, data, proj, obj):
-        template = env.get_template(self.list_page, globals=dict(page_url=self.outfile))
+        template = env.get_template(
+            self.list_page,
+            globals=dict(page_url=self.outfile, project_url=self.project_url),
+        )
         return template.render(data, project=proj, proj_docs=obj)
 
 
@@ -415,7 +411,10 @@ class ListPage(BasePage):
         return self.out_dir / "lists" / self.out_page
 
     def render(self, data, proj, obj):
-        template = env.get_template(self.list_page, globals=dict(page_url=self.outfile))
+        template = env.get_template(
+            self.list_page,
+            globals=dict(page_url=self.outfile, project_url=self.project_url),
+        )
         return template.render(data, project=proj)
 
 
@@ -485,7 +484,10 @@ class DocPage(BasePage):
         return self.out_dir / self.obj.get_dir() / self.object_page
 
     def render(self, data, project, object):
-        template = env.get_template(self.page_path, globals=dict(page_url=self.outfile))
+        template = env.get_template(
+            self.page_path,
+            globals=dict(page_url=self.outfile, project_url=self.project_url),
+        )
         try:
             return template.render(data, project=project, **{self.payload_key: object})
         except jinja2.exceptions.TemplateError:
@@ -563,7 +565,8 @@ class PagetreePage(BasePage):
 
     def render(self, data, proj, obj):
         template = env.get_template(
-            "info_page.html", globals=dict(page_url=self.outfile)
+            "info_page.html",
+            globals=dict(page_url=self.outfile, project_url=self.project_url),
         )
         return template.render(data, page=obj, project=proj, topnode=obj.topnode)
 
