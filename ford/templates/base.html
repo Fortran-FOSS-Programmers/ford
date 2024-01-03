@@ -46,7 +46,7 @@
           <div id="navbar" class="navbar-collapse collapse">
             <ul class="navbar-nav">
               {% if pages %}
-                <li class="nav-item"><a class="nav-link" href="{{ pages.url }}">{{ pages.title }}</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ pages.url | relurl(page_url) }}">{{ pages.title }}</a></li>
               {% endif %}
               {% if incl_src %}
                 {% if (project.files|length + project.extra_files|length) is more_than_one %}

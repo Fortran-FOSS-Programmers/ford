@@ -18,28 +18,34 @@
     </div>
     
     <div class="col-md-9" id='text'>
-      <h2>type{% if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif %}{% for attr in dtype.attributes%}, {{ attr }}{% endfor %}{% if dtype.extends %}, extends({{ dtype.extends }}){% endif %} :: {{ dtype.name }}{% if dtype.sequence%}<br>sequence{% endif %}</h2>
+      <h2>
+        type
+        {%- if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif -%}
+        {{ dtype.attribs | join(", ") }}
+        {%- if dtype.extends %}, extends({{ dtype.extends | relurl(page_url) }}){% endif %} :: {{ dtype.name }}
+        {%- if dtype.sequence%}<br>sequence{% endif -%}
+      </h2>
     {{ dtype.doc }}
     {% if dtype.inherbygraph or dtype.inhergraph %}<br>{% endif %}
     {% if dtype.inhergraph %}
-    <div class="card">
-      <div class="card-header">
-  <h3 class="card-title">Inherits</h3>
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Inherits</h3>
+        </div>
+        <div class="card-body">
+          {{ dtype.inhergraph }}
+        </div>
       </div>
-      <div class="card-body">
-    {{ dtype.inhergraph }}
-      </div>
-    </div>
     {% endif %}
     {% if dtype.inherbygraph %}
-    <div class="card">
-      <div class="card-header">
-  <h3 class="card-title">Inherited by</h3>
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Inherited by</h3>
+        </div>
+        <div class="card-body">
+          {{ dtype.inherbygraph }}
+        </div>
       </div>
-      <div class="card-body">
-     {{ dtype.inherbygraph }}
-      </div>
-    </div>
     {% endif %}
     <br>
 

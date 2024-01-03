@@ -94,7 +94,7 @@
               <h3>Source Files</h3>
               <ul>
                 {%- for src in (project.allfiles|sort(attribute='name'))[:max_length] -%}
-                  <li>{{ src }}</li>
+                  <li>{{ src | relurl(page_url) }}</li>
                 {%- endfor -%}
               </ul>
             </div>
@@ -111,7 +111,7 @@
               <h3>Modules</h3>
               <ul>
                 {%- for mod in (project.modules|sort(attribute='name'))[:max_length] -%}
-                  <li>{{ mod }}</li>
+                  <li>{{ mod | relurl(page_url) }}</li>
                 {%- endfor -%}
               </ul>
             </div>
@@ -128,7 +128,7 @@
               <h3>Procedures</h3>
               <ul>
                 {%- for proc in (project.procedures|sort(attribute='name'))[:max_length] -%}
-                  <li>{{ proc }}</li>
+                  <li>{{ proc | relurl(page_url) }}</li>
                 {%- endfor -%}
               </ul>
             </div>
@@ -145,7 +145,7 @@
               <h3>Derived Types</h3>
               <ul>
                 {%- for dtype in (project.types|sort(attribute='name'))[:max_length] -%}
-                  <li>{{ dtype }}</li>
+                  <li>{{ dtype | relurl(page_url) }}</li>
                 {%- endfor -%}
               </ul>
             </div>

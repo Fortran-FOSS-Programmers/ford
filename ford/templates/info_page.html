@@ -21,7 +21,7 @@
           <nav aria-label="breadcrumb">
             <ol class="breadcrumb justify-content-end mb-0">
               {% for item in page.hierarchy %}
-                <li class="breadcrumb-item">{{ item }}</li>
+                <li class="breadcrumb-item">{{ item | relurl(page_url) }}</li>
               {% endfor %}
               <li class="breadcrumb-item active" aria-current="page">{{ page.title }}</li>
             </ol>

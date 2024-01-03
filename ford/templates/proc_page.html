@@ -28,7 +28,7 @@
 
     {% if procedure.binding %}
     <h3>Type Bound</h3>
-    <p>{{ procedure.binding.parent }}</p>
+    <p>{{ procedure.binding.parent | relurl(page_url) }}</p>
     {% endif %}
 
     <h3>Arguments</h3>
@@ -42,7 +42,7 @@
       <h3>Return Value
         <small>
           <span class="anchor" id="{{ procedure.retvar.anchor }}"></span>
-          {{ procedure.retvar.full_declaration }}
+          {{ procedure.retvar.full_declaration | relurl(page_url) }}
         </small>
       </h3>
       {{ procedure.retvar.doc }}

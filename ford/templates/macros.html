@@ -47,11 +47,11 @@
           <ol class="breadcrumb justify-content-end mb-0">
             {% if incl_src %}
               {% for item in entity.hierarchy %}
-                <li class="breadcrumb-item">{{ item }}</li>
+                <li class="breadcrumb-item">{{ item | relurl(page_url) }}</li>
               {% endfor %}
             {% else %}
               {% for item in entity.hierarchy[1:] %}
-                <li class="breadcrumb-item">{{ item }}</li>
+                <li class="breadcrumb-item">{{ item | relurl(page_url) }}</li>
               {% endfor %}
             {%endif%}
             <li class="breadcrumb-item active" aria-current="page">{{ entity.name }}</li>
@@ -193,7 +193,7 @@
           {% if var.obj == 'variable' %}
             <td>
               <span class="anchor" {% if id %}id="{{ var.anchor }}"{% endif %}></span>
-              {{ var.full_type }}{{ add_comma((intent and var.intent) or var.optional or permission or var.parameter or var.attribs) }}
+              {{ var.full_type | relurl(page_url) }}{{ add_comma((intent and var.intent) or var.optional or permission or var.parameter or var.attribs) }}
             </td>
             {% if intent -%}
               <td>
@@ -286,7 +286,7 @@
   {% if proc.retvar %}
     {{ header(4, small) }}
     Return Value
-    <small>{{ proc.retvar.full_declaration }}</small>
+    <small>{{ proc.retvar.full_declaration | relurl(page_url) }}</small>
     {{ close_header(4, small) }}
     {{ docstring(proc.retvar, full_docstring) }}
   {% endif %}
@@ -317,7 +317,7 @@
   {% if proc.retvar %}
     {{ header(4, small) }}
     Return Value
-    <small>{{ proc.retvar.full_declaration }}</small>
+    <small>{{ proc.retvar.full_declaration | relurl(page_url) }}</small>
     {{ close_header(4, small) }}
     {{ proc.retvar.doc }}
   {% endif %}
@@ -326,8 +326,8 @@
 
 {% macro bound_declaration(tb, link_name=False) %}
   {# Type-bound procedure declaration and bindings #}
-  {{ tb.full_declaration }} ::
-  <strong>{% if link_name %}{{ tb }}{% else %}{{ tb.name }}{% endif %}</strong>
+  {{ tb.full_declaration | relurl(page_url) }} ::
+  <strong>{% if link_name %}{{ tb | relurl(page_url) }}{% else %}{{ tb.name }}{% endif %}</strong>
   {%- if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {{ tb.bindings | join(", ") }}{% endif %}
   {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
 {% endmacro %}
@@ -394,7 +394,7 @@
       <span class="anchor" id="{{ intr.anchor }}"></span>
       <h3>{% if intr.parobj == 'module' and intr.generic %}{{ intr.permission }}{% endif %}
         interface
-        {%- if intr.generic %} {{ intr }} {% endif -%}
+        {%- if intr.generic %} {{ intr | relurl(page_url) }} {% endif -%}
         {{ deprecated(intr) }}
       </h3>
     </div>
@@ -503,7 +503,7 @@
         {%- if dtype.sequence %}, sequence {% endif -%}
         {{ dtype.attribs | join(", ") }}
         {%- if dtype.extends %}, extends({{ dtype.extends | relurl(page_url) }}){% endif -%}&nbsp;::&nbsp;
-        {{ dtype }}
+        {{ dtype | relurl(page_url) }}
         {{ deprecated(dtype) }}
       </h3>
     </div>
@@ -570,7 +570,7 @@
             {% for tb in dtype.boundprocs %}
               <tr>
                 <td>{{ bound_declaration(tb, link_name=True) }}</td>
-                <td>{{ tb | meta('summary') }}</td>
+                <td>{{ tb | meta('summary') | relurl(page_url) }}</td>
               </tr>
               {% endfor %}
           </tbody>
@@ -655,7 +655,7 @@
   <div class="card">
     <div class="card-header codesum">
       <span class="anchor" id="{{ namelist.anchor }}"></span>
-      <h3>Namelist {{ namelist }}</h3>
+      <h3>Namelist {{ namelist | relurl(page_url) }}</h3>
     </div>
     <div class="card-body">
       {{ namelist_summary(namelist, False) }}
@@ -697,7 +697,7 @@
   {% else %}
     <tr id="{{ variable.anchor }}">
       <td><a href="#{{ variable.anchor }}">{{ variable.name }}</a></td>
-      <td>{{ variable.full_type }}</td>
+      <td>{{ variable.full_type | relurl(page_url) }}</td>
       <td>{{ variable.initial | e }}</td>
       <td>{{ docstring(variable, full_docstring) }}</td>
     </tr>
@@ -714,7 +714,7 @@
             <li class="list-group-item">
               <ul class="list-inline">
                 {% for use in obj.uses %}
-                  <li class="list-inline-item">{{ use }}</li>
+                  <li class="list-inline-item">{{ use | relurl(page_url) }}</li>
                 {% endfor %}
               </ul>
             </li>
@@ -723,8 +723,8 @@
             <li class="list-group-item">
               <ul class="list-inline">
                 <li><h5>Ancestors:</h5></li>
-                {% for anc in obj.ancestry %}
-                  <li class="list-inline-item">{{ anc }}</li>
+                {% for ancestor in obj.ancestry %}
+                  <li class="list-inline-item">{{ ancestor | relurl(page_url) }}</li>
                   {% if not loop.last -%}<li>:</li>{%- endif %}
                   {% endfor %}
               </ul>
@@ -752,8 +752,8 @@
             <li class="list-group-item">
               <ul class="list-inline">
                 <li class="list-inline-item"><h5>Descendants:</h5></li>
-                {% for anc in obj.descendants %}
-                  <li class="list-inline-item">{{ anc }}</li>
+                {% for ancestor in obj.descendants %}
+                  <li class="list-inline-item">{{ ancestor | relurl(page_url) }}</li>
                 {% endfor %}
               </ul>
             </li>
