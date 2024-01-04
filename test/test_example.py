@@ -12,6 +12,8 @@ from bs4 import BeautifulSoup
 import pytest
 
 
+pytestmark = pytest.mark.filterwarnings("ignore::bs4.MarkupResemblesLocatorWarning")
+
 HEADINGS = re.compile(r"h[1-4]")
 ANY_TEXT = re.compile(r"h[1-4]|p")
 
