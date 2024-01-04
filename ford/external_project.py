@@ -61,7 +61,7 @@ def obj2dict(intObj):
         return None
     extDict = {
         "name": intObj.name,
-        "external_url": intObj.get_url(),
+        "external_url": f"./{intObj.get_url()}",
         "obj": intObj.obj,
     }
     if hasattr(intObj, "proctype"):

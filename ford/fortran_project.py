@@ -32,7 +32,6 @@ from fnmatch import fnmatch
 from ford.console import warn
 from ford.external_project import load_external_modules
 from ford.utils import ProgressBar
-import ford.sourceform
 from ford.sourceform import (
     _find_in_list,
     FortranBase,
@@ -340,11 +339,6 @@ class Project:
             if not isinstance(container, str):
                 container.prune()
 
-        if self.settings.project_url == ".":
-            url = ".."
-        else:
-            url = self.settings.project_url
-
         # Mapping of various entity containers in code units to the
         # corresponding container in the project
         CONTAINERS = {
@@ -386,11 +380,10 @@ class Project:
         self.prog_lines = sum_lines(self.programs)
         self.block_lines = sum_lines(self.blockdata)
 
-    def markdown(self, md, base_url=".."):
+    def markdown(self, md):
         """
         Process the documentation with Markdown to produce HTML.
         """
-        ford.sourceform.set_base_url(base_url)
         if self.settings.warn:
             print()
 

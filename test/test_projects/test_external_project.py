@@ -138,7 +138,8 @@ def test_external_project(external_project):
     top_level_project, _ = external_project
 
     # Read generated HTML
-    with open(top_level_project / "doc/program/top_level.html", "r") as f:
+    program_dir = top_level_project / "doc/program"
+    with open(program_dir / "top_level.html", "r") as f:
         top_program_html = BeautifulSoup(f.read(), features="html.parser")
 
     # Find links to external modules
@@ -150,7 +151,8 @@ def test_external_project(external_project):
     assert len(links) == 3
     assert "external_module" in links
     local_url = urlparse(links["external_module"])
-    assert pathlib.Path(local_url.path).is_file()
+    local_path = program_dir / local_url.path
+    assert local_path.is_file()
 
     assert "remote_module" in links
     remote_url = urlparse(links["remote_module"])
@@ -163,7 +165,8 @@ def test_procedure_module_use_links_(external_project):
     top_level_project, _ = external_project
 
     # Read generated HTML
-    with open(top_level_project / "doc/proc/abortcriteria_load.html", "r") as f:
+    proc_dir = top_level_project / "doc/proc"
+    with open(proc_dir / "abortcriteria_load.html", "r") as f:
         procedure_html = BeautifulSoup(f.read(), features="html.parser")
 
     # Find links to external modules
@@ -175,4 +178,5 @@ def test_procedure_module_use_links_(external_project):
     assert len(links) == 1
     assert "external_module" in links
     local_url = urlparse(links["external_module"])
-    assert pathlib.Path(local_url.path).is_file()
+    local_path = proc_dir / local_url.path
+    assert local_path.is_file()

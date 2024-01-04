@@ -1,3 +1,5 @@
+<!-- -*- mode: jinja2 -*- -->
+
 {% macro info_bar(entity, incl_src, base_url, line_info) %}
   <div class="container p-2 mb-4 bg-light border rounded-3">
     <div class="row align-items-center justify-content-between" id="info-bar">
@@ -45,11 +47,11 @@
           <ol class="breadcrumb justify-content-end mb-0">
             {% if incl_src %}
               {% for item in entity.hierarchy %}
-                <li class="breadcrumb-item">{{ item }}</li>
+                <li class="breadcrumb-item">{{ item | relurl(page_url) }}</li>
               {% endfor %}
             {% else %}
               {% for item in entity.hierarchy[1:] %}
-                <li class="breadcrumb-item">{{ item }}</li>
+                <li class="breadcrumb-item">{{ item | relurl(page_url) }}</li>
               {% endfor %}
             {%endif%}
             <li class="breadcrumb-item active" aria-current="page">{{ entity.name }}</li>
@@ -83,7 +85,7 @@
               {% set name = item.name if item.name else "<em>unnamed</em>" %}
               {% set anchor = item.anchor %}
             {% endif %}
-            {% set anchor_url = "{}#{}".format(collection_url, anchor) if collection_url else item.get_url() %}
+            {% set anchor_url = "../{}#{}".format(collection_url, anchor) if collection_url else "../{}".format(item.get_url()) %}
             <a class="list-group-item" href="{{ anchor_url }}">{{ name }}</a>
           {% endfor %}
         </div>
@@ -119,7 +121,7 @@
     <div class="card card-primary">
       <div class="card-header text-left"><h3 class="card-title">Source Code</h3></div>
       <div class="list-group">
-        <a class="list-group-item" href="{{ self.get_url() }}#src">{{ self.name }}</a>
+        <a class="list-group-item" href="../{{ self.get_url() }}#src">{{ self.name }}</a>
       </div>
     </div>
   {% endif %}
@@ -191,7 +193,7 @@
           {% if var.obj == 'variable' %}
             <td>
               <span class="anchor" {% if id %}id="{{ var.anchor }}"{% endif %}></span>
-              {{ var.full_type }}{{ add_comma((intent and var.intent) or var.optional or permission or var.parameter or var.attribs) }}
+              {{ var.full_type | relurl(page_url) }}{{ add_comma((intent and var.intent) or var.optional or permission or var.parameter or var.attribs) }}
             </td>
             {% if intent -%}
               <td>
@@ -284,7 +286,7 @@
   {% if proc.retvar %}
     {{ header(4, small) }}
     Return Value
-    <small>{{ proc.retvar.full_declaration }}</small>
+    <small>{{ proc.retvar.full_declaration | relurl(page_url) }}</small>
     {{ close_header(4, small) }}
     {{ docstring(proc.retvar, full_docstring) }}
   {% endif %}
@@ -315,7 +317,7 @@
   {% if proc.retvar %}
     {{ header(4, small) }}
     Return Value
-    <small>{{ proc.retvar.full_declaration }}</small>
+    <small>{{ proc.retvar.full_declaration | relurl(page_url) }}</small>
     {{ close_header(4, small) }}
     {{ proc.retvar.doc }}
   {% endif %}
@@ -324,8 +326,8 @@
 
 {% macro bound_declaration(tb, link_name=False) %}
   {# Type-bound procedure declaration and bindings #}
-  {{ tb.full_declaration }} ::
-  <strong>{% if link_name %}{{ tb }}{% else %}{{ tb.name }}{% endif %}</strong>
+  {{ tb.full_declaration | relurl(page_url) }} ::
+  <strong>{% if link_name %}{{ tb | relurl(page_url) }}{% else %}{{ tb.name }}{% endif %}</strong>
   {%- if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {{ tb.bindings | join(", ") }}{% endif %}
   {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
 {% endmacro %}
@@ -392,7 +394,7 @@
       <span class="anchor" id="{{ intr.anchor }}"></span>
       <h3>{% if intr.parobj == 'module' and intr.generic %}{{ intr.permission }}{% endif %}
         interface
-        {%- if intr.generic %} {{ intr }} {% endif -%}
+        {%- if intr.generic %} {{ intr | relurl(page_url) }} {% endif -%}
         {{ deprecated(intr) }}
       </h3>
     </div>
@@ -451,10 +453,10 @@
 {% endmacro %}
 
 {% macro proc_line(proc, link=True, proto=False) %}
-  {% if proc.mp %}module procedure {% if not proc.parent or (proc.visible and link) %}{{ proc }}{% else %}{{ proc.name }}{% endif %} <small>{% endif -%}
+  {% if proc.mp %}module procedure {% if not proc.parent or (proc.visible and link) %}{{ page_url }} {{ proc | relurl(page_url) }}{% else %}{{ proc.name }}{% endif %} <small>{% endif -%}
   {% if (proc.parobj == 'module' or (proc.parobj == 'interface' and proc.parent.parobj == 'module')) and not proto %}{{ proc.permission }} {% endif -%}
   {{ proc.attribs | join(" ") }} {{ proc.proctype |lower }}
-  {%- if not proc.parent or (proc.visible and link and not proc.mp) %} {{ proc }}{% else %} {{ proc.name }}{% endif -%}
+  {%- if not proc.parent or (proc.visible and link and not proc.mp) %} {{ proc | relurl(page_url) }}{% else %} {{ proc.name }}{% endif -%}
   ({{ proc.args | join(", ") }})
   {%- if proc.proctype|lower == 'function' and proc.name != proc.retvar.name %} result({{ proc.retvar.name }}){% endif -%}
   {% if proc.bindC %} bind({{ proc.bindC }}){% endif %}
@@ -462,7 +464,7 @@
   {{ deprecated(proc) }}
   {% if proc.module and proc.module != True and proc.module.visible %}
     {% set label = "Implementation" if proc.parobj == 'interface' else "Interface" %}
-    <a href='{{ proc.module.get_url() }}'><button type="button" class="btn btn-info depwarn">{{ label }} &rarr;</button></a>
+    <a href="../{{ proc.module.get_url() }}"><button type="button" class="btn btn-info depwarn">{{ label }} &rarr;</button></a>
   {% endif %}
 {% endmacro %}
 
@@ -500,8 +502,8 @@
         {%- if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif -%}
         {%- if dtype.sequence %}, sequence {% endif -%}
         {{ dtype.attribs | join(", ") }}
-        {%- if dtype.extends %}, extends({{ dtype.extends }}){% endif -%}&nbsp;::&nbsp;
-        {{ dtype }}
+        {%- if dtype.extends %}, extends({{ dtype.extends | relurl(page_url) }}){% endif -%}&nbsp;::&nbsp;
+        {{ dtype | relurl(page_url) }}
         {{ deprecated(dtype) }}
       </h3>
     </div>
@@ -568,7 +570,7 @@
             {% for tb in dtype.boundprocs %}
               <tr>
                 <td>{{ bound_declaration(tb, link_name=True) }}</td>
-                <td>{{ tb | meta('summary') }}</td>
+                <td>{{ tb | meta('summary') | relurl(page_url) }}</td>
               </tr>
               {% endfor %}
           </tbody>
@@ -609,7 +611,7 @@
 {% macro common_popover(common) %}
   {%- for item in common.other_uses -%}
     {%- if item != common -%}
-      <a href='{{ item.get_url() }}'>{% if item.parent.name -%}{{ item.parent.name }}{%- else -%}<em>unnamed</em>{%- endif %}</a>
+      <a href="../{{ item.get_url() }}">{% if item.parent.name -%}{{ item.parent.name }}{%- else -%}<em>unnamed</em>{%- endif %}</a>
       ({% if item.parobj == 'proc' -%}{{ item.parent.proctype|lower }}{%- else -%}{{ item.parobj }}{%- endif %})<br>
     {%- endif -%}
   {%- endfor -%}
@@ -641,7 +643,7 @@
 
 {% macro proc_entry(proc) %}
   <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="{{ proc.anchor }}"></span><h3>{{ proc_line(proc) }}</h3></div>
+    <div class="card-header codesum"><span class="anchor" id="{{ proc.anchor }}"></span>{{ honkle }} <h3>{{ proc_line(proc) }}</h3></div>
     <div class="card-body">
       {{ proc_summary(proc,False) }}
     </div>
@@ -653,7 +655,7 @@
   <div class="card">
     <div class="card-header codesum">
       <span class="anchor" id="{{ namelist.anchor }}"></span>
-      <h3>Namelist {{ namelist }}</h3>
+      <h3>Namelist {{ namelist | relurl(page_url) }}</h3>
     </div>
     <div class="card-body">
       {{ namelist_summary(namelist, False) }}
@@ -695,7 +697,7 @@
   {% else %}
     <tr id="{{ variable.anchor }}">
       <td><a href="#{{ variable.anchor }}">{{ variable.name }}</a></td>
-      <td>{{ variable.full_type }}</td>
+      <td>{{ variable.full_type | relurl(page_url) }}</td>
       <td>{{ variable.initial | e }}</td>
       <td>{{ docstring(variable, full_docstring) }}</td>
     </tr>
@@ -712,7 +714,7 @@
             <li class="list-group-item">
               <ul class="list-inline">
                 {% for use in obj.uses %}
-                  <li class="list-inline-item">{{ use }}</li>
+                  <li class="list-inline-item">{{ use | relurl(page_url) }}</li>
                 {% endfor %}
               </ul>
             </li>
@@ -721,8 +723,8 @@
             <li class="list-group-item">
               <ul class="list-inline">
                 <li><h5>Ancestors:</h5></li>
-                {% for anc in obj.ancestry %}
-                  <li class="list-inline-item">{{ anc }}</li>
+                {% for ancestor in obj.ancestry %}
+                  <li class="list-inline-item">{{ ancestor | relurl(page_url) }}</li>
                   {% if not loop.last -%}<li>:</li>{%- endif %}
                   {% endfor %}
               </ul>
@@ -750,8 +752,8 @@
             <li class="list-group-item">
               <ul class="list-inline">
                 <li class="list-inline-item"><h5>Descendants:</h5></li>
-                {% for anc in obj.descendants %}
-                  <li class="list-inline-item">{{ anc }}</li>
+                {% for ancestor in obj.descendants %}
+                  <li class="list-inline-item">{{ ancestor | relurl(page_url) }}</li>
                 {% endfor %}
               </ul>
             </li>

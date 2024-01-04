@@ -1,3 +1,5 @@
+<!-- -*- mode: jinja2 -*- -->
+
 {% extends "base.html" %}
 
 {% block title %}
@@ -12,7 +14,11 @@ All namelists &ndash; {{ project }}
         <thead><tr><th>Namelist</th><th>Location</th><th>Description</th></tr></thead>
         <tbody>
           {% for namelist in project.namelists | sort(attribute="name") %}
-            <tr><td>{{ namelist }}</td><td>{{ namelist.parent }}</td><td>{{ namelist | meta('summary') }}</td></tr>
+            <tr>
+              <td>{{ namelist | relurl(page_url) }}</td>
+              <td>{{ namelist.parent | relurl(page_url) }}</td>
+              <td>{{ namelist | meta('summary') }}</td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>

@@ -31,11 +31,13 @@ from itertools import chain
 import pathlib
 import time
 from typing import List, Union, Callable, Type, Tuple
+from warnings import simplefilter
 
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 import jinja2
 
 from ford.console import warn
-import ford.sourceform
+from ford.sourceform import FortranBase
 import ford.tipue_search
 from ford.utils import ProgressBar
 from ford.graphs import graphviz_installed, GraphManager
@@ -48,6 +50,9 @@ env = jinja2.Environment(
     lstrip_blocks=True,
 )
 env.globals["path"] = os.path  # this lets us call path.* in templates
+
+# Ignore bs4 warning about parsing strings that look like filenames
+simplefilter("ignore", MarkupResemblesLocatorWarning)
 
 
 def is_more_than_one(collection):
@@ -71,8 +76,30 @@ def meta(entity, item):
     return getattr(entity.meta, item, None)
 
 
+def relative_url(entity: Union[FortranBase, str], page_url: pathlib.Path) -> str:
+    """Convert any links with absolute paths to the output directory
+    to relative paths to ``page_url``
+    """
+    if isinstance(entity, str) and "/" not in entity or entity is None:
+        return entity
+
+    # Find first link in `entity` and get the path. If `entity`
+    # doesn't have any links, it might be a URL itself that needs
+    # fixing
+    link_str = str(entity)
+    link = BeautifulSoup(link_str, features="html.parser").a
+    if link is not None:
+        link_path = str(pathlib.Path(str(link["href"])).resolve())
+    else:
+        link_path = link_str
+
+    new_path = os.path.relpath(link_path, page_url.parent)
+    return link_str.replace(link_path, new_path)
+
+
 env.tests["more_than_one"] = is_more_than_one
 env.filters["meta"] = meta
+env.filters["relurl"] = relative_url
 
 USER_WRITABLE_ONLY = 0o755
 
@@ -95,6 +122,9 @@ class Documentation:
         # rid of None values
         self.data = {k: v for k, v in asdict(settings).items() if v is not None}
         self.data["pages"] = pagetree
+        # Remove "project_url" so we can set it as a relative path for
+        # each page individually and not have it clobbered by this dict
+        del self.data["project_url"]
         self.lists: List[ListPage] = []
         self.docs = []
         self.njobs = settings.parallel
@@ -307,9 +337,15 @@ class BasePage:
         self.meta = getattr(obj, "meta", EntitySettings())
         self.out_dir = self.data["output_dir"]
         self.page_dir = self.out_dir / "page"
+        self.relative = data["relative"]
+        self.project_url = (
+            os.path.relpath(proj.settings.project_url, self.outfile.parent)
+            if self.relative
+            else proj.settings.project_url
+        )
 
     @property
-    def html(self):
+    def html(self) -> str:
         """Wrapper for only doing the rendering on request (drastically reduces memory)"""
         try:
             return self.render(self.data, self.proj, self.obj)
@@ -327,6 +363,19 @@ class BasePage:
     def writeout(self) -> None:
         self.outfile.write_bytes(self.html.encode("utf8"))
 
+    @property
+    def template_path(self) -> str:
+        """Path to page template file (relative to 'templates/')"""
+        raise NotImplementedError()
+
+    @property
+    def template(self):
+        """Jinja template loaded from `template_path` with globals set"""
+        return env.get_template(
+            self.template_path,
+            globals=dict(page_url=self.outfile, project_url=self.project_url),
+        )
+
     def render(self, data, proj, obj):
         """
         Get the HTML for the page. This method must be overridden. Arguments
@@ -338,28 +387,19 @@ class BasePage:
 
 class ListTopPage(BasePage):
     @property
-    def list_page(self):
-        raise NotImplementedError("ListTopPage subclass missing 'list_page' property")
-
-    @property
     def outfile(self):
-        return self.out_dir / self.list_page
+        return self.out_dir / self.template_path
 
     def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = "."
-            ford.sourceform.set_base_url(".")
-            ford.pagetree.set_base_url(".")
-        template = env.get_template(self.list_page)
-        return template.render(data, project=proj, proj_docs=obj)
+        return self.template.render(data, project=proj, proj_docs=obj)
 
 
 class IndexPage(ListTopPage):
-    list_page = "index.html"
+    template_path = "index.html"
 
 
 class SearchPage(ListTopPage):
-    list_page = "search.html"
+    template_path = "search.html"
 
 
 class ListPage(BasePage):
@@ -368,70 +408,57 @@ class ListPage(BasePage):
         raise NotImplementedError("ListPage subclass missing 'out_page' property")
 
     @property
-    def list_page(self):
-        raise NotImplementedError("ListPage subclass missing 'list_page' property")
-
-    @property
     def outfile(self):
         return self.out_dir / "lists" / self.out_page
 
     def render(self, data, proj, obj):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template(self.list_page)
-        return template.render(data, project=proj)
+        return self.template.render(data, project=proj)
 
 
 class ProcList(ListPage):
     out_page = "procedures.html"
-    list_page = "proc_list.html"
+    template_path = "proc_list.html"
 
 
 class FileList(ListPage):
     out_page = "files.html"
-    list_page = "file_list.html"
+    template_path = "file_list.html"
 
 
 class ModList(ListPage):
     out_page = "modules.html"
-    list_page = "mod_list.html"
+    template_path = "mod_list.html"
 
 
 class ProgList(ListPage):
     out_page = "programs.html"
-    list_page = "prog_list.html"
+    template_path = "prog_list.html"
 
 
 class TypeList(ListPage):
     out_page = "types.html"
-    list_page = "types_list.html"
+    template_path = "types_list.html"
 
 
 class AbsIntList(ListPage):
     out_page = "absint.html"
-    list_page = "absint_list.html"
+    template_path = "absint_list.html"
 
 
 class BlockList(ListPage):
     out_page = "blockdata.html"
-    list_page = "block_list.html"
+    template_path = "block_list.html"
 
 
 class NamelistList(ListPage):
     out_page = "namelists.html"
-    list_page = "namelist_list.html"
+    template_path = "namelist_list.html"
 
 
 class DocPage(BasePage):
     """
     Abstract class to be inherited by all pages for items in the code.
     """
-
-    @property
-    def page_path(self):
-        raise NotImplementedError("DocPage subclass missing 'page_path'")
 
     @property
     def payload_key(self):
@@ -450,65 +477,62 @@ class DocPage(BasePage):
         return self.out_dir / self.obj.get_dir() / self.object_page
 
     def render(self, data, project, object):
-        if data["relative"]:
-            data["project_url"] = ".."
-            ford.sourceform.set_base_url("..")
-            ford.pagetree.set_base_url("..")
-        template = env.get_template(self.page_path)
         try:
-            return template.render(data, project=project, **{self.payload_key: object})
+            return self.template.render(
+                data, project=project, **{self.payload_key: object}
+            )
         except jinja2.exceptions.TemplateError:
             print(f"Error rendering page '{self.outfile}'")
             raise
 
 
 class FilePage(DocPage):
-    page_path = "file_page.html"
+    template_path = "file_page.html"
     payload_key = "src"
 
 
 class TypePage(DocPage):
-    page_path = "type_page.html"
+    template_path = "type_page.html"
     payload_key = "dtype"
 
 
 class AbsIntPage(DocPage):
-    page_path = "nongenint_page.html"
+    template_path = "nongenint_page.html"
     payload_key = "interface"
 
 
 class ModulePage(DocPage):
-    page_path = "mod_page.html"
+    template_path = "mod_page.html"
     payload_key = "module"
 
 
 class ProgPage(DocPage):
-    page_path = "prog_page.html"
+    template_path = "prog_page.html"
     payload_key = "program"
 
 
 class BlockPage(DocPage):
-    page_path = "block_page.html"
+    template_path = "block_page.html"
     payload_key = "blockdat"
 
 
 class ProcedurePage(DocPage):
-    page_path = "proc_page.html"
+    template_path = "proc_page.html"
     payload_key = "procedure"
 
 
 class GenericInterfacePage(DocPage):
-    page_path = "genint_page.html"
+    template_path = "genint_page.html"
     payload_key = "interface"
 
 
 class InterfacePage(DocPage):
-    page_path = "nongenint_page.html"
+    template_path = "nongenint_page.html"
     payload_key = "interface"
 
 
 class NamelistPage(DocPage):
-    page_path = "namelist_page.html"
+    template_path = "namelist_page.html"
     payload_key = "namelist"
 
 
@@ -522,6 +546,8 @@ def ProcPage(data, proj, obj):
 
 
 class PagetreePage(BasePage):
+    template_path = "info_page.html"
+
     @property
     def loc(self):
         return pathlib.Path("page") / self.obj.path
@@ -531,18 +557,7 @@ class PagetreePage(BasePage):
         return self.page_dir / self.obj.path
 
     def render(self, data, proj, obj):
-        if data["relative"]:
-            base_url = ("../" * len(obj.hierarchy))[:-1]
-            if obj.filename.stem == "index":
-                if len(obj.hierarchy) > 0:
-                    base_url = base_url + "/.."
-                else:
-                    base_url = ".."
-            ford.sourceform.set_base_url(base_url)
-            ford.pagetree.set_base_url(base_url)
-            data["project_url"] = base_url
-        template = env.get_template("info_page.html")
-        return template.render(data, page=obj, project=proj, topnode=obj.topnode)
+        return self.template.render(data, page=obj, project=proj, topnode=obj.topnode)
 
     def writeout(self):
         if self.obj.filename.stem == "index":

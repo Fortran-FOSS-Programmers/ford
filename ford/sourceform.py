@@ -186,9 +186,6 @@ class FortranBase:
     SPLIT_RE = re.compile(r"\s*,\s*", re.IGNORECASE)
     SRC_CAPTURE_STR = r"^[ \t]*([\w(),*: \t]+?[ \t]+)?{0}([\w(),*: \t]+?)?[ \t]+{1}[ \t\n,(].*?end[ \t]*{0}[ \t]+{1}[ \t]*?(!.*?)?$"
 
-    # ~ this regex is not working for the LINK and DOUBLE_LINK types
-
-    base_url = ""
     pretty_obj = {
         "proc": "procedures",
         "type": "derived types",
@@ -227,6 +224,7 @@ class FortranBase:
             self.display = []
             self.settings = ProjectSettings()
 
+        self.base_url = pathlib.Path(self.settings.project_url)
         self.doc_list = read_docstring(source, self.settings.docmark)
         self.hierarchy = self._make_hierarchy()
         self.read_metadata()
@@ -299,27 +297,45 @@ class FortranBase:
 
         return None
 
-    def get_url(self):
+    def get_url(self) -> Optional[str]:
+        """URL of this entity, relative to base URL"""
+
         if hasattr(self, "external_url"):
             return self.external_url
+
         if loc := self.get_dir():
-            return f"{self.base_url}/{loc}/{self.ident}.html"
-        if isinstance(
-            self,
-            (
-                FortranBoundProcedure,
-                FortranCommon,
-                FortranVariable,
-                FortranEnum,
-                FortranFinalProc,
-                FortranProcedure,
-            ),
+            return f"{loc}/{self.ident}.html"
+
+        if (
+            isinstance(
+                self,
+                (
+                    FortranBoundProcedure,
+                    FortranCommon,
+                    FortranVariable,
+                    FortranEnum,
+                    FortranFinalProc,
+                    FortranProcedure,
+                ),
+            )
+            and self.parent is not None
         ):
             if parent_url := self.parent.get_url():
                 if "#" in parent_url:
                     parent_url, _ = parent_url.split("#")
                 return f"{parent_url}#{self.anchor}"
             return None
+        return None
+
+    @property
+    def full_url(self) -> Optional[str]:
+        """URL of this entity, including the base URL"""
+        if hasattr(self, "external_url"):
+            return self.external_url
+
+        if (url := self.get_url()) is not None:
+            return str(self.base_url / url)
+
         return None
 
     def lines_description(self, total, total_all=0, obj=None):
@@ -344,8 +360,7 @@ class FortranBase:
         return f"{self.obj}-{quote(self.ident)}"
 
     def __str__(self):
-        url = self.get_url()
-        if url and getattr(self, "visible", True):
+        if (url := self.full_url) and getattr(self, "visible", True):
             name = self.name or "<em>unnamed</em>"
             return f"<a href='{url}'>{name}</a>"
         return self.name or ""
@@ -411,7 +426,7 @@ class FortranBase:
         )
 
         if self.meta.summary is not None:
-            self.meta.summary = md.convert("\n".join(self.meta.summary))
+            self.meta.summary = md.convert("\n".join(self.meta.summary), context=self)
         elif paragraph := PARA_CAPTURE_RE.search(self.doc):
             # If there is no stand-alone webpage for this item, e.g.
             # an internal routine, make the whole doc blob appear,
@@ -421,7 +436,7 @@ class FortranBase:
             self.meta.summary = ""
 
         if self.meta.summary.strip() != self.doc.strip():
-            self.meta.summary += f'<a href="{self.get_url()}" class="pull-right"><emph>Read more&hellip;</emph></a>'
+            self.meta.summary += f'<a href="../{self.get_url()}" class="pull-right"><emph>Read more&hellip;</emph></a>'
 
         if self.obj in ["proc", "type", "program"] and self.meta.source:
             obj = getattr(self, "proctype", self.obj).lower()
@@ -1517,6 +1532,7 @@ class FortranSourceFile(FortranContainer):
         self.path = filepath.strip()
         self.name = os.path.basename(self.path)
         self.settings = settings
+        self.base_url = pathlib.Path(self.settings.project_url)
         self.fixed = fixed
         self.parent: Optional[FortranContainer] = None
         self.modules: List[FortranModule] = []
@@ -2221,6 +2237,7 @@ class FortranModuleProcedureInterface(FortranInterface):
         self.parent = parent.parent
         self.parobj = self.parent.obj if self.parent else None
         self.settings = parent.settings
+        self.base_url = pathlib.Path(self.settings.project_url)
         self.visible = parent.visible
         self.num_lines = parent.num_lines
         self.doc_list = doc_list
@@ -2250,6 +2267,7 @@ class FortranFinalProc(FortranBase):
         self.parobj = self.parent.obj
         self.display = self.parent.display
         self.settings = self.parent.settings
+        self.base_url = pathlib.Path(self.settings.project_url)
         self.doc_list = read_docstring(source, self.settings.docmark) if source else []
         self.hierarchy = self._make_hierarchy()
         self.read_metadata()
@@ -2292,6 +2310,9 @@ class FortranVariable(FortranBase):
         else:
             self.parobj = None
             self.settings = None
+        self.base_url = pathlib.Path(
+            self.settings.project_url if self.settings else "."
+        )
         self.obj = type(self).__name__[7:].lower()
         self.attribs = copy.copy(attribs)
         self.intent = intent
@@ -2520,6 +2541,9 @@ class FortranModuleProcedureReference(FortranBase):
         else:
             self.parobj = None
             self.settings = None
+        self.base_url = pathlib.Path(
+            self.settings.project_url if self.settings else "."
+        )
         self.name = name
         self.procedure = None
         self.doc_list = []
@@ -2712,6 +2736,7 @@ class GenericSource(FortranBase):
         self.parent = None
         self.hierarchy = []
         self.settings = settings
+        self.base_url = self.settings.project_url
         self.num_lines = 0
         filename = pathlib.Path(filename)
         extra_filetypes = settings.extra_filetypes[str(filename.suffix)[1:]]
@@ -3091,10 +3116,6 @@ def parse_type(
     kind = KIND_RE.match(args)
     kind = kind.group(1) if kind else args
     return ParsedType(vartype, rest, kind=kind)
-
-
-def set_base_url(url: str) -> None:
-    FortranBase.base_url = url
 
 
 def get_mod_procs(

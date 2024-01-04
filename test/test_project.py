@@ -12,6 +12,8 @@ from ford._markdown import MetaMarkdown
 import ford.sourceform
 
 from itertools import chain
+from os.path import relpath
+import pathlib
 
 import pytest
 from bs4 import BeautifulSoup
@@ -1077,17 +1079,17 @@ def test_make_links(copy_fortran_file):
     settings = copy_fortran_file(data)
     project = create_project(settings)
     md = MetaMarkdown(project=project)
-    project.markdown(md, "..")
+    project.markdown(md)
 
     expected_links = {
-        "a": "../module/a.html",
-        "b": "../type/b.html",
-        "c": "../type/b.html#variable-c",
-        "d": "../proc/d.html",
-        "e": "../type/b.html#boundprocedure-e",
-        "f": "../proc/f.html",
-        "g": "../module/a.html#variable-g",
-        "h": "../program/h.html",
+        "a": "module/a.html",
+        "b": "type/b.html",
+        "c": "type/b.html#variable-c",
+        "d": "proc/d.html",
+        "e": "type/b.html#boundprocedure-e",
+        "f": "proc/f.html",
+        "g": "module/a.html#variable-g",
+        "h": "program/h.html",
     }
 
     for item in chain(
@@ -1098,8 +1100,12 @@ def test_make_links(copy_fortran_file):
     ):
         docstring = BeautifulSoup(item.doc, features="html.parser")
         link_locations = {a.string: a.get("href", None) for a in docstring("a")}
+        base_dir = pathlib.Path(item.get_url()).parent
+        expected_links_rel = {
+            k: relpath(v, base_dir) for k, v in expected_links.items()
+        }
 
-        assert link_locations == expected_links, (item, item.name)
+        assert link_locations == expected_links_rel, (item, item.name)
 
 
 def test_link_with_context(copy_fortran_file):
@@ -1129,19 +1135,19 @@ def test_link_with_context(copy_fortran_file):
     settings.proc_internals = True
     project = create_project(settings)
     md = MetaMarkdown(project=project)
-    project.markdown(md, "..")
+    project.markdown(md)
 
     expected_links = {
-        "a": "../module/a.html",
-        "b": "../type/b.html",
-        "c": "../type/b.html#variable-c",
-        "d": "../proc/d.html",
-        "e": "../type/b.html#boundprocedure-e",
-        "f": "../proc/d.html#proc-f",
-        "g": "../module/a.html#variable-g",
-        "h": "../program/h.html",
-        "i": "../proc/d.html#variable-i",
-        "x": "../proc/d.html#variable-x",
+        "a": "module/a.html",
+        "b": "type/b.html",
+        "c": "type/b.html#variable-c",
+        "d": "proc/d.html",
+        "e": "type/b.html#boundprocedure-e",
+        "f": "proc/d.html#proc-f",
+        "g": "module/a.html#variable-g",
+        "h": "program/h.html",
+        "i": "proc/d.html#variable-i",
+        "x": "proc/d.html#variable-x",
     }
 
     for item in chain(
@@ -1154,7 +1160,10 @@ def test_link_with_context(copy_fortran_file):
 
         for link in docstring("a"):
             assert link.string in expected_links, (item, item.name, link)
-            assert link.get("href", None) == expected_links[link.string], (
+            base_dir = pathlib.Path(item.get_url()).parent
+            expected_link = relpath(expected_links[link.string], base_dir)
+
+            assert link.get("href", None) == expected_link, (
                 item,
                 item.name,
                 link.string,
@@ -1280,11 +1289,11 @@ def test_links_in_deferred_bound_methods(copy_fortran_file):
     settings = copy_fortran_file(data)
     project = create_project(settings)
     md = MetaMarkdown(settings.md_base_dir, project=project)
-    project.markdown(md, ".")
+    project.markdown(md)
 
     docstring = BeautifulSoup(
         project.modules[0].types[0].boundprocs[0].doc, features="html.parser"
     )
     links = {link.text: link["href"] for link in docstring.find_all("a")}
-    assert links["foo_t"] == "./type/foo_t.html"
-    assert links["foo"] == "./type/foo_t.html#boundprocedure-foo"
+    assert links["foo_t"].endswith("foo_t.html")
+    assert links["foo"].endswith("foo_t.html#boundprocedure-foo")

@@ -1,3 +1,5 @@
+<!-- -*- mode: jinja2 -*- -->
+
 {% extends "base.html" %}
 {% block title %}
 All Abstract Interfaces &ndash; {{ project }}
@@ -11,7 +13,11 @@ All Abstract Interfaces &ndash; {{ project }}
 			 <tr><th>Abstract Interface</th><th>Location</th><th>Description</th></tr>
 			 </thead><tbody>
 			 {% for absint in project.absinterfaces|sort(attribute='name') %}
-			   <tr><td>{{ absint }}</td><td>{{ absint.parent }}</td><td>{{ absint.procedure | meta('summary') }}</td></tr>
+			   <tr>
+                 <td>{{ absint | relurl(page_url) }}</td>
+                 <td>{{ absint.parent | relurl(page_url) }}</td>
+                 <td>{{ absint.procedure | meta('summary') }}</td>
+               </tr>
 			 {% endfor %}
 			 </tbody></table>
         </div>

@@ -1,3 +1,5 @@
+<!-- -*- mode: jinja2 -*- -->
+
 {% extends "base.html" %}
 {% block title %}{{ page.title }} &ndash; {{ project }}{% endblock title %}
 {% block body %}
@@ -19,7 +21,7 @@
           <nav aria-label="breadcrumb">
             <ol class="breadcrumb justify-content-end mb-0">
               {% for item in page.hierarchy %}
-                <li class="breadcrumb-item">{{ item }}</li>
+                <li class="breadcrumb-item">{{ item | relurl(page_url) }}</li>
               {% endfor %}
               <li class="breadcrumb-item active" aria-current="page">{{ page.title }}</li>
             </ol>
@@ -35,13 +37,13 @@
         <div class="card card-body bg-light" id="sidebar-toc">
           <ul class="nav flex-column align-items">
             <li class="nav-item">
-              <a class="nav-link{% if pages==page %} active disabled{% endif %}" href="{{ pages.url}}">{{ pages.title }}</a>
+              <a class="nav-link{% if pages==page %} active disabled{% endif %}" href="{{ pages.url | relurl(page_url) }}">{{ pages.title }}</a>
             </li>
           </ul>
           <hr>
           <nav class="nav nav-pills flex-column">
             {% for subpage in pages.subpages recursive %}
-              <a class="nav-link{% if subpage==page %} active disabled{% endif %}" href="{{ subpage.url}}">{{ subpage.title }}</a>
+              <a class="nav-link{% if subpage==page %} active disabled{% endif %}" href="{{ subpage.url | relurl(page_url) }}">{{ subpage.title }}</a>
               {% if subpage.subpages %}
                 <nav class="nav nav-pills flex-column">
                   {{ loop(subpage.subpages) }}
