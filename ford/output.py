@@ -363,6 +363,19 @@ class BasePage:
     def writeout(self) -> None:
         self.outfile.write_bytes(self.html.encode("utf8"))
 
+    @property
+    def template_path(self) -> str:
+        """Path to page template file (relative to 'templates/')"""
+        raise NotImplementedError()
+
+    @property
+    def template(self):
+        """Jinja template loaded from `template_path` with globals set"""
+        return env.get_template(
+            self.template_path,
+            globals=dict(page_url=self.outfile, project_url=self.project_url),
+        )
+
     def render(self, data, proj, obj):
         """
         Get the HTML for the page. This method must be overridden. Arguments
@@ -374,27 +387,19 @@ class BasePage:
 
 class ListTopPage(BasePage):
     @property
-    def list_page(self):
-        raise NotImplementedError("ListTopPage subclass missing 'list_page' property")
-
-    @property
     def outfile(self):
-        return self.out_dir / self.list_page
+        return self.out_dir / self.template_path
 
     def render(self, data, proj, obj):
-        template = env.get_template(
-            self.list_page,
-            globals=dict(page_url=self.outfile, project_url=self.project_url),
-        )
-        return template.render(data, project=proj, proj_docs=obj)
+        return self.template.render(data, project=proj, proj_docs=obj)
 
 
 class IndexPage(ListTopPage):
-    list_page = "index.html"
+    template_path = "index.html"
 
 
 class SearchPage(ListTopPage):
-    list_page = "search.html"
+    template_path = "search.html"
 
 
 class ListPage(BasePage):
@@ -403,69 +408,57 @@ class ListPage(BasePage):
         raise NotImplementedError("ListPage subclass missing 'out_page' property")
 
     @property
-    def list_page(self):
-        raise NotImplementedError("ListPage subclass missing 'list_page' property")
-
-    @property
     def outfile(self):
         return self.out_dir / "lists" / self.out_page
 
     def render(self, data, proj, obj):
-        template = env.get_template(
-            self.list_page,
-            globals=dict(page_url=self.outfile, project_url=self.project_url),
-        )
-        return template.render(data, project=proj)
+        return self.template.render(data, project=proj)
 
 
 class ProcList(ListPage):
     out_page = "procedures.html"
-    list_page = "proc_list.html"
+    template_path = "proc_list.html"
 
 
 class FileList(ListPage):
     out_page = "files.html"
-    list_page = "file_list.html"
+    template_path = "file_list.html"
 
 
 class ModList(ListPage):
     out_page = "modules.html"
-    list_page = "mod_list.html"
+    template_path = "mod_list.html"
 
 
 class ProgList(ListPage):
     out_page = "programs.html"
-    list_page = "prog_list.html"
+    template_path = "prog_list.html"
 
 
 class TypeList(ListPage):
     out_page = "types.html"
-    list_page = "types_list.html"
+    template_path = "types_list.html"
 
 
 class AbsIntList(ListPage):
     out_page = "absint.html"
-    list_page = "absint_list.html"
+    template_path = "absint_list.html"
 
 
 class BlockList(ListPage):
     out_page = "blockdata.html"
-    list_page = "block_list.html"
+    template_path = "block_list.html"
 
 
 class NamelistList(ListPage):
     out_page = "namelists.html"
-    list_page = "namelist_list.html"
+    template_path = "namelist_list.html"
 
 
 class DocPage(BasePage):
     """
     Abstract class to be inherited by all pages for items in the code.
     """
-
-    @property
-    def page_path(self):
-        raise NotImplementedError("DocPage subclass missing 'page_path'")
 
     @property
     def payload_key(self):
@@ -484,64 +477,62 @@ class DocPage(BasePage):
         return self.out_dir / self.obj.get_dir() / self.object_page
 
     def render(self, data, project, object):
-        template = env.get_template(
-            self.page_path,
-            globals=dict(page_url=self.outfile, project_url=self.project_url),
-        )
         try:
-            return template.render(data, project=project, **{self.payload_key: object})
+            return self.template.render(
+                data, project=project, **{self.payload_key: object}
+            )
         except jinja2.exceptions.TemplateError:
             print(f"Error rendering page '{self.outfile}'")
             raise
 
 
 class FilePage(DocPage):
-    page_path = "file_page.html"
+    template_path = "file_page.html"
     payload_key = "src"
 
 
 class TypePage(DocPage):
-    page_path = "type_page.html"
+    template_path = "type_page.html"
     payload_key = "dtype"
 
 
 class AbsIntPage(DocPage):
-    page_path = "nongenint_page.html"
+    template_path = "nongenint_page.html"
     payload_key = "interface"
 
 
 class ModulePage(DocPage):
-    page_path = "mod_page.html"
+    template_path = "mod_page.html"
     payload_key = "module"
 
 
 class ProgPage(DocPage):
-    page_path = "prog_page.html"
+    template_path = "prog_page.html"
     payload_key = "program"
 
 
 class BlockPage(DocPage):
-    page_path = "block_page.html"
+    template_path = "block_page.html"
     payload_key = "blockdat"
 
 
 class ProcedurePage(DocPage):
-    page_path = "proc_page.html"
+    template_path = "proc_page.html"
     payload_key = "procedure"
 
 
 class GenericInterfacePage(DocPage):
-    page_path = "genint_page.html"
+    template_path = "genint_page.html"
     payload_key = "interface"
 
 
 class InterfacePage(DocPage):
-    page_path = "nongenint_page.html"
+    template_path = "nongenint_page.html"
     payload_key = "interface"
 
 
 class NamelistPage(DocPage):
-    page_path = "namelist_page.html"
+    template_path = "namelist_page.html"
     payload_key = "namelist"
 
 
@@ -555,6 +546,8 @@ def ProcPage(data, proj, obj):
 
 
 class PagetreePage(BasePage):
+    template_path = "info_page.html"
+
     @property
     def loc(self):
         return pathlib.Path("page") / self.obj.path
@@ -564,11 +557,7 @@ class PagetreePage(BasePage):
         return self.page_dir / self.obj.path
 
     def render(self, data, proj, obj):
-        template = env.get_template(
-            "info_page.html",
-            globals=dict(page_url=self.outfile, project_url=self.project_url),
-        )
-        return template.render(data, page=obj, project=proj, topnode=obj.topnode)
+        return self.template.render(data, page=obj, project=proj, topnode=obj.topnode)
 
     def writeout(self):
         if self.obj.filename.stem == "index":
