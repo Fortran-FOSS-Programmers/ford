@@ -166,7 +166,7 @@ def test_procedure_module_use_links_(external_project):
 
     # Read generated HTML
     proc_dir = top_level_project / "doc/proc"
-    with open(proc_dir/ "abortcriteria_load.html", "r") as f:
+    with open(proc_dir / "abortcriteria_load.html", "r") as f:
         procedure_html = BeautifulSoup(f.read(), features="html.parser")
 
     # Find links to external modules
