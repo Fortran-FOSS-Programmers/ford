@@ -246,6 +246,22 @@ There are three predefined macros:
 You can defined additional custom aliases with the `alias
 <option-alias>` option.
 
+.. note::
+   Because the `markdown syntax for tables
+   <https://python-markdown.github.io/extensions/tables/>`_ also uses
+   pipes, you should ensure there is whitespace around the pipes for
+   tables and **no** whitespace in aliases:
+
+   .. code:: markdown
+
+       | Table Col 1 | Table Col 2 |
+       | ----------- | ----------- |
+       | note spaces | around pipes |
+       | [link](|page|/subpage2.html) | |note_no_space_in_alias| |
+
+   This avoids clashes between the syntax for the two features.
+
+
 .. _writing-links:
 
 Links
