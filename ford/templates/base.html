@@ -98,7 +98,7 @@
                 </li>
               {% elif project.programs|length == 1 %}
                 <li class="nav-item">
-                  <a class="nav-link" href="{{ project.programs[0].get_url() }}">Program</a>
+                  <a class="nav-link" href="{{ project_url }}/{{ project.programs[0].get_url() }}">Program</a>
                 </li>
               {% endif %}
               {% if privacy_policy_url %}
