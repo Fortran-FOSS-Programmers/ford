@@ -178,7 +178,7 @@ class ProjectSettings:
     predocmark: str = ">"
     predocmark_alt: str = "|"
     preprocess: bool = True
-    preprocessor: str = "pcpp -D__GFORTRAN__"
+    preprocessor: str = "pcpp -D__GFORTRAN__ --passthru-comments"
     print_creation_date: bool = False
     privacy_policy_url: Optional[str] = None
     proc_internals: bool = False

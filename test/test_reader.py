@@ -10,6 +10,7 @@ import re
 
 import ford.reader as reader
 from ford.reader import _contains_unterminated_string
+from ford.settings import ProjectSettings
 
 RE_WHITE = re.compile(r"\s+")
 
@@ -204,3 +205,19 @@ def test_preprocessor_warning(copy_fortran_file):
         )
     )
     assert "foo" in lines
+
+
+def test_preprocessor_leaves_urls(copy_fortran_file):
+    """Check preprocessor leaves urls, issue #611"""
+
+    data = """\
+    !! http://www.example.com
+    module foo
+    end
+    """
+    filename = copy_fortran_file(data, ".F90")
+    preprocessor = ProjectSettings().preprocessor.split()
+    lines = "\n".join(
+        list(reader.FortranReader(str(filename), preprocessor=preprocessor))
+    )
+    assert "http://www.example.com" in lines
