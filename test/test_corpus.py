@@ -32,12 +32,12 @@ import pytest
         ("https://github.com/fortran-lang/stdlib", "stdlib/API-doc-FORD-file.md", ""),
         (
             "https://github.com/jacobwilliams/Fortran-Astrodynamics-Toolkit",
-            "Fortran-Astrodynamics-Toolkit/fortran-astrodynamics-toolkit.md",
+            "Fortran-Astrodynamics-Toolkit/ford.md",
             "",
         ),
         (
             "https://github.com/jacobwilliams/bspline-fortran",
-            "bspline-fortran/bspline-fortran.md",
+            "bspline-fortran/ford.md",
             "",
         ),
         ("https://github.com/jacobwilliams/dvode", "dvode/ford.md", ""),
@@ -49,10 +49,10 @@ import pytest
         ),
         (
             "https://github.com/jacobwilliams/pyplot-fortran",
-            "pyplot-fortran/pyplot-fortran.md",
+            "pyplot-fortran/ford.md",
             "",
         ),
-        ("https://github.com/jacobwilliams/quadpack", "quadpack/quadpack.md", ""),
+        ("https://github.com/jacobwilliams/quadpack", "quadpack/ford.md", ""),
         ("https://github.com/szaghi/FLAP", "FLAP/doc/main_page.md", ""),
         ("https://github.com/szaghi/FiNeR", "FiNeR/doc/main_page.md", ""),
         ("https://github.com/szaghi/VTKFortran", "VTKFortran/doc/main_page.md", ""),

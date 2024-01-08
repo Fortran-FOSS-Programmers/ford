@@ -1082,14 +1082,14 @@ def test_make_links(copy_fortran_file):
     project.markdown(md)
 
     expected_links = {
-        "a": "module/a.html",
-        "b": "type/b.html",
-        "c": "type/b.html#variable-c",
-        "d": "proc/d.html",
-        "e": "type/b.html#boundprocedure-e",
-        "f": "proc/f.html",
-        "g": "module/a.html#variable-g",
-        "h": "program/h.html",
+        "a": "../module/a.html",
+        "b": "../type/b.html",
+        "c": "../type/b.html#variable-c",
+        "d": "../proc/d.html",
+        "e": "../type/b.html#boundprocedure-e",
+        "f": "../proc/f.html",
+        "g": "../module/a.html#variable-g",
+        "h": "../program/h.html",
     }
 
     for item in chain(
@@ -1100,12 +1100,8 @@ def test_make_links(copy_fortran_file):
     ):
         docstring = BeautifulSoup(item.doc, features="html.parser")
         link_locations = {a.string: a.get("href", None) for a in docstring("a")}
-        base_dir = pathlib.Path(item.get_url()).parent
-        expected_links_rel = {
-            k: relpath(v, base_dir) for k, v in expected_links.items()
-        }
 
-        assert link_locations == expected_links_rel, (item, item.name)
+        assert link_locations == expected_links, (item, item.name)
 
 
 def test_link_with_context(copy_fortran_file):
@@ -1138,16 +1134,16 @@ def test_link_with_context(copy_fortran_file):
     project.markdown(md)
 
     expected_links = {
-        "a": "module/a.html",
-        "b": "type/b.html",
-        "c": "type/b.html#variable-c",
-        "d": "proc/d.html",
-        "e": "type/b.html#boundprocedure-e",
-        "f": "proc/d.html#proc-f",
-        "g": "module/a.html#variable-g",
-        "h": "program/h.html",
-        "i": "proc/d.html#variable-i",
-        "x": "proc/d.html#variable-x",
+        "a": "../module/a.html",
+        "b": "../type/b.html",
+        "c": "../type/b.html#variable-c",
+        "d": "../proc/d.html",
+        "e": "../type/b.html#boundprocedure-e",
+        "f": "../proc/d.html#proc-f",
+        "g": "../module/a.html#variable-g",
+        "h": "../program/h.html",
+        "i": "../proc/d.html#variable-i",
+        "x": "../proc/d.html#variable-x",
     }
 
     for item in chain(
@@ -1160,8 +1156,7 @@ def test_link_with_context(copy_fortran_file):
 
         for link in docstring("a"):
             assert link.string in expected_links, (item, item.name, link)
-            base_dir = pathlib.Path(item.get_url()).parent
-            expected_link = relpath(expected_links[link.string], base_dir)
+            expected_link = expected_links[link.string]
 
             assert link.get("href", None) == expected_link, (
                 item,

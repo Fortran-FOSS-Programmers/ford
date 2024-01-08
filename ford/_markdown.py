@@ -117,7 +117,15 @@ class MetaMarkdown(Markdown):
             and context is not None
             and (url := context.get_url()) is not None
         ):
-            self.current_path = self.base_url / Path(url).parent
+            # This is a bit of a pain, but when making `[[ford]]` links, we want
+            # the link to be relative to the page the link is from. However, we
+            # use the entity description both on the entity page, and the list
+            # pages, so the same relative url needs to work from both. Luckily
+            # we know the directory layout, so just make a relative link from a
+            # (non-existent) sibling directory
+            self.current_path = (
+                self.base_url / Path(url).parent.parent / "non-existent dir"
+            )
         else:
             self.current_path = path
         return super().convert(source)
