@@ -20,7 +20,7 @@ contains
 
 #ifdef HAS_DECREMENT
   subroutine decrement(x)
-    !! Decrease argument by one
+    !! Decrease argument by one, the opposite of [[increment]]
     !!
     !! Only publicly accessible if `"HAS_DECREMENT"` preprocessor
     !! macro is defined
