@@ -676,7 +676,7 @@ docmark
 ^^^^^^^
 
 The symbol(s) following an exclaimation mark which designates that a
-comment contains documentation. For excample, if the docmark was ``!``,
+comment contains documentation. For example, if the docmark was ``!``,
 comments would then be designated by ``!!``. It should not be the same
 as any other docmark. (*default:* ``!``)
 
@@ -689,7 +689,7 @@ The symbol(s) following an exclaimation mark which designate that the
 following set of comments, until the end of the block, are all
 documentation. This mark needs only to be used at the beginning of the
 block, after which all regular comments will be treated as
-documentation. For excample, if the docmark was ``*``, comments would
+documentation. For example, if the docmark was ``*``, comments would
 then be designated by ``!*``. An example of such a block of
 documentation is provided.
 
@@ -716,7 +716,7 @@ predocmark
 
 The symbol(s) following an exclaimation mark which designates that a
 comment contains documentation preceding the code which it is
-documenting. For excample, if the docmark was ``>``, comments would then
+documenting. For example, if the docmark was ``>``, comments would then
 be designated by ``!>``. It should not be the same as any other docmark.
 (*default:* ``>``)
 
