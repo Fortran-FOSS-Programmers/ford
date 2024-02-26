@@ -1021,7 +1021,7 @@ class FortranGraph:
             if not self.data.coloured_edges:
                 return "#000000"
             (r, g, b) = colorsys.hsv_to_rgb(float(depth) / maxd, 1.0, 1.0)
-            return f"#{int(255 * r)}{int(255 * g)}{int(255 * b)}"
+            return f"#{int(255 * r):02X}{int(255 * g):02X}{int(255 * b):02X}"
 
         for i, node in enumerate(sorted(nodes)):
             colour = rainbowcolour(i, total_len)
