@@ -886,14 +886,17 @@ class FortranGraph:
             return ""
 
         # Do not render overly large graphs.
-        if len(self.added) > self.max_nodes and self.warn:
-            warn(
-                f"Not showing graph {self.ident} as it would exceed the maximal number of {self.max_nodes} nodes"
-            )
+        if len(self.added) > self.max_nodes:
+            if self.warn:
+                warn(
+                    f"Not showing graph {self.ident} as it would exceed the maximal number of {self.max_nodes} nodes"
+                )
             return ""
+
         # Do not render incomplete graphs.
-        if len(self.added) < len(self.root) and self.warn:
-            warn(f"Not showing graph {self.ident} as it would be incomplete")
+        if len(self.added) < len(self.root):
+            if self.warn:
+                warn(f"Not showing graph {self.ident} as it would be incomplete")
             return ""
 
         if self.truncated > 0 and self.warn:
