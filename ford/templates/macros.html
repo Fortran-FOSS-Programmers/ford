@@ -501,7 +501,7 @@
         type
         {%- if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif -%}
         {%- if dtype.sequence %}, sequence {% endif -%}
-        {{ dtype.attribs | join(", ") }}
+        {%- if dtype.attribs %}, {{ dtype.attribs | join(", ") }}{% endif -%}
         {%- if dtype.extends %}, extends({{ dtype.extends | relurl(page_url) }}){% endif -%}&nbsp;::&nbsp;
         {{ dtype | relurl(page_url) }}
         {{ deprecated(dtype) }}

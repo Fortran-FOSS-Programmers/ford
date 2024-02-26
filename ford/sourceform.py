@@ -1962,7 +1962,7 @@ class FortranType(FortranContainer):
     def _initialize(self, line: re.Match) -> None:
         self.name = line.group(2)
         self.extends = None
-        self.attributes = []
+        self.attribs = []
         if line.group(1):
             attribstr = line.group(1)[1:].strip()
             attriblist = self.SPLIT_RE.split(attribstr.strip())
@@ -1973,9 +1973,9 @@ class FortranType(FortranContainer):
                 elif attrib_lower in ["public", "private"]:
                     self.permission = attrib_lower
                 elif attrib_lower == "external":
-                    self.attributes.append("external")
+                    self.attribs.append("external")
                 else:
-                    self.attributes.append(attrib.strip())
+                    self.attribs.append(attrib.strip())
         if line.group(3):
             paramstr = line.group(3).strip()
             self.parameters = self.SPLIT_RE.split(paramstr)
