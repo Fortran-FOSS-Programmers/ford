@@ -2227,3 +2227,14 @@ def test_type_num_lines(parse_fortran_file):
     example_type = module.types[0]
     assert example_type.num_lines == 8
     assert example_type.num_lines_all == 8 + 9
+
+
+def test_associate_array(parse_fortran_file):
+    data = """\
+    subroutine test()
+      associate(phi => [1,2], theta => (/ 3, 4 /))
+      end associate
+    end subroutine test"""
+
+    # Just check we can parse ok
+    parse_fortran_file(data)

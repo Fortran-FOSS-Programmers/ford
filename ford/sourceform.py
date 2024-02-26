@@ -55,6 +55,7 @@ from pygments.formatters import HtmlFormatter
 from ford.console import warn
 from ford.reader import FortranReader
 import ford.utils
+from ford.utils import paren_split, strip_paren
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
 from ford.settings import ProjectSettings, EntitySettings
@@ -892,9 +893,7 @@ class FortranContainer(FortranBase):
                 self._add_procedure_calls(line, associations)
 
                 # Register the associations
-                assoc_batch = ford.utils.strip_paren(match["associations"])[0].split(
-                    ","
-                )
+                assoc_batch = paren_split(",", strip_paren(match["associations"])[0])
                 associations.add_batch(assoc_batch)
 
             elif match := self.MODULE_RE.match(line):
