@@ -2,7 +2,6 @@ import shutil
 import sys
 import os
 import pathlib
-import copy
 from urllib.parse import urlparse
 import json
 from typing import Dict, Any
