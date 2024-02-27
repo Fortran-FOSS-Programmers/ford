@@ -1387,6 +1387,14 @@ class FortranCodeUnit(FortranContainer):
             if item.permission == "public"
         ] + [item for item, attr in self.attr_dict.items() if "public" in attr]
 
+        if self.settings.warn:
+            for item, values in self.attr_dict.items():
+                for value in values:
+                    warn(
+                        f"Unknown entity '{item}' with attribute '{value}' in {self.obj} "
+                        f"'{self.name}' ('{self.filename}')"
+                    )
+
         del self.attr_dict
 
     def prune(self):
