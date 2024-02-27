@@ -342,6 +342,7 @@ class FortranBase:
     def lines_description(self, total, total_all=0, obj=None):
         if not obj:
             obj = self.obj
+        total = total or self.num_lines
         description = f"{float(self.num_lines) / total * 100:4.1f}% of total for {self.pretty_obj[obj]}."
         if total_all:
             description = (
