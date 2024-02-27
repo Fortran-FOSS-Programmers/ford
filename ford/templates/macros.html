@@ -28,8 +28,7 @@
 
           {% if line_info %}
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
-              <a data-bs-toggle="tooltip"
-                 data-bs-placement="bottom" data-html="true"
+              <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
                  title="{{ line_info }}">{{ entity | meta('num_lines') }} statements</a>
             </li>
           {% endif %}
