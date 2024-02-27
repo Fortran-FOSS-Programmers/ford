@@ -1602,8 +1602,6 @@ class FortranModule(FortranCodeUnit):
         del self.calls
         self.descendants: List[FortranSubmodule] = []
         self.modprocedures: List[FortranModuleProcedureImplementation] = []
-        self.private_list: List[str] = []
-        self.protected_list: List[str] = []
         self.visible = True
         self.deplist: List[FortranModule] = []
 
@@ -1676,8 +1674,6 @@ class FortranSubmodule(FortranModule):
         ]
         self.ancestor_module: Union[str, FortranModule] = line["ancestor_module"]
         del self.public_list
-        del self.private_list
-        del self.protected_list
 
     def get_dir(self):
         return "module"
