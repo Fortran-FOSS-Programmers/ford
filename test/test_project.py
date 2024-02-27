@@ -12,8 +12,6 @@ from ford._markdown import MetaMarkdown
 import ford.sourceform
 
 from itertools import chain
-from os.path import relpath
-import pathlib
 
 import pytest
 from bs4 import BeautifulSoup

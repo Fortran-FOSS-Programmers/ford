@@ -521,3 +521,11 @@ def test_linking_to_page_alias_from_nested_page(example_project):
 
     link = subsubpage.find("a", string=re.compile("such as"))
     assert link["href"] == "../subpage1.html"
+
+
+def test_type_attributes(example_project):
+    path, _ = example_project
+    type_page = read_html(path / "type/say_type_base.html")
+
+    def_statement = type_page.find(id="type-def-statement")
+    assert def_statement.text.strip() == "type, public, abstract :: say_type_base"

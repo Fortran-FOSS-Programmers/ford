@@ -399,7 +399,7 @@ def convert_types_from_commandarguments(
     field_types = get_type_hints(type(settings))
 
     for key, value in cargs.items():
-        if value != None:
+        if value is not None:
             if key in field_types:
                 setattr(settings, key, convert_setting(field_types[key], key, value))
             else:

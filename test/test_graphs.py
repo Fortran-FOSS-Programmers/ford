@@ -3,6 +3,7 @@ from ford import ProjectSettings
 from ford.graphs import graphviz_installed, GraphManager
 import ford.sourceform
 from ford._markdown import MetaMarkdown
+from ford.settings import INTRINSIC_MODS
 
 from textwrap import dedent
 from typing import Dict
@@ -458,6 +459,15 @@ def test_graphs(
     legend_nodes = [s.title.text for s in legend.find_all("g", class_="node")]
     assert legend_nodes == expected_legend_nodes + ["This Page's Entity"]
     assert legend.find_all("g", class_="edge") == []
+
+
+def test_external_module_links(make_project_graphs):
+    graphs = make_project_graphs
+
+    soup = BeautifulSoup(str(graphs.usegraph), features="html.parser")
+    iso_fortran_env_node = soup.find(string="iso_fortran_env").parent.parent
+    link = iso_fortran_env_node.a["xlink:href"]
+    assert link == INTRINSIC_MODS["iso_fortran_env"]
 
 
 def test_graphs_as_table(tmp_path):

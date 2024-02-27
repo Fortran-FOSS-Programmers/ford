@@ -55,6 +55,7 @@ from pygments.formatters import HtmlFormatter
 from ford.console import warn
 from ford.reader import FortranReader
 import ford.utils
+from ford.utils import paren_split, strip_paren
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
 from ford.settings import ProjectSettings, EntitySettings
@@ -341,6 +342,7 @@ class FortranBase:
     def lines_description(self, total, total_all=0, obj=None):
         if not obj:
             obj = self.obj
+        total = total or self.num_lines
         description = f"{float(self.num_lines) / total * 100:4.1f}% of total for {self.pretty_obj[obj]}."
         if total_all:
             description = (
@@ -892,9 +894,7 @@ class FortranContainer(FortranBase):
                 self._add_procedure_calls(line, associations)
 
                 # Register the associations
-                assoc_batch = ford.utils.strip_paren(match["associations"])[0].split(
-                    ","
-                )
+                assoc_batch = paren_split(",", strip_paren(match["associations"])[0])
                 associations.add_batch(assoc_batch)
 
             elif match := self.MODULE_RE.match(line):
@@ -1388,6 +1388,14 @@ class FortranCodeUnit(FortranContainer):
             if item.permission == "public"
         ] + [item for item, attr in self.attr_dict.items() if "public" in attr]
 
+        if self.settings.warn:
+            for item, values in self.attr_dict.items():
+                for value in values:
+                    warn(
+                        f"Unknown entity '{item}' with attribute '{value}' in {self.obj} "
+                        f"'{self.name}' ('{self.filename}')"
+                    )
+
         del self.attr_dict
 
     def prune(self):
@@ -1603,8 +1611,6 @@ class FortranModule(FortranCodeUnit):
         del self.calls
         self.descendants: List[FortranSubmodule] = []
         self.modprocedures: List[FortranModuleProcedureImplementation] = []
-        self.private_list: List[str] = []
-        self.protected_list: List[str] = []
         self.visible = True
         self.deplist: List[FortranModule] = []
 
@@ -1677,8 +1683,6 @@ class FortranSubmodule(FortranModule):
         ]
         self.ancestor_module: Union[str, FortranModule] = line["ancestor_module"]
         del self.public_list
-        del self.private_list
-        del self.protected_list
 
     def get_dir(self):
         return "module"
@@ -1962,7 +1966,7 @@ class FortranType(FortranContainer):
     def _initialize(self, line: re.Match) -> None:
         self.name = line.group(2)
         self.extends = None
-        self.attributes = []
+        self.attribs = []
         if line.group(1):
             attribstr = line.group(1)[1:].strip()
             attriblist = self.SPLIT_RE.split(attribstr.strip())
@@ -1973,9 +1977,9 @@ class FortranType(FortranContainer):
                 elif attrib_lower in ["public", "private"]:
                     self.permission = attrib_lower
                 elif attrib_lower == "external":
-                    self.attributes.append("external")
+                    self.attribs.append("external")
                 else:
-                    self.attributes.append(attrib.strip())
+                    self.attribs.append(attrib.strip())
         if line.group(3):
             paramstr = line.group(3).strip()
             self.parameters = self.SPLIT_RE.split(paramstr)
@@ -3268,6 +3272,7 @@ class ExternalSubmodule(FortranSubmodule):
         self.uses = []
         self.parent_submodule = None
         self.ancestor_module = ExternalModule("Parent module")
+        self.external_url = ""
 
 
 class ExternalProgram(FortranProgram):
@@ -3276,6 +3281,7 @@ class ExternalProgram(FortranProgram):
         self.url = ""
         self.uses = []
         self.calls = []
+        self.external_url = ""
 
 
 class ExternalSourceFile(FortranSourceFile):
@@ -3288,3 +3294,4 @@ class ExternalSourceFile(FortranSourceFile):
         self.subroutines = []
         self.programs = []
         self.blockdata = []
+        self.external_url = ""

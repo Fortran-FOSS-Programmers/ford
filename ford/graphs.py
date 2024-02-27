@@ -336,8 +336,7 @@ class BaseNode:
                 ExternalSourceFile,
             ),
         ):
-            self.fromstr = True
-            obj = obj.name
+            obj = str(obj)
 
         self.url = None
         if isinstance(obj, str):
@@ -886,14 +885,17 @@ class FortranGraph:
             return ""
 
         # Do not render overly large graphs.
-        if len(self.added) > self.max_nodes and self.warn:
-            warn(
-                f"Not showing graph {self.ident} as it would exceed the maximal number of {self.max_nodes} nodes"
-            )
+        if len(self.added) > self.max_nodes:
+            if self.warn:
+                warn(
+                    f"Not showing graph {self.ident} as it would exceed the maximal number of {self.max_nodes} nodes"
+                )
             return ""
+
         # Do not render incomplete graphs.
-        if len(self.added) < len(self.root) and self.warn:
-            warn(f"Not showing graph {self.ident} as it would be incomplete")
+        if len(self.added) < len(self.root):
+            if self.warn:
+                warn(f"Not showing graph {self.ident} as it would be incomplete")
             return ""
 
         if self.truncated > 0 and self.warn:
@@ -1021,7 +1023,7 @@ class FortranGraph:
             if not self.data.coloured_edges:
                 return "#000000"
             (r, g, b) = colorsys.hsv_to_rgb(float(depth) / maxd, 1.0, 1.0)
-            return f"#{int(255 * r)}{int(255 * g)}{int(255 * b)}"
+            return f"#{int(255 * r):02X}{int(255 * g):02X}{int(255 * b):02X}"
 
         for i, node in enumerate(sorted(nodes)):
             colour = rainbowcolour(i, total_len)
@@ -1389,9 +1391,11 @@ class GraphManager:
                 self.procedures.add(obj)
                 # regester internal procedures
                 for p in traverse(obj, ["subroutines", "functions"]):
-                    self.internal_procedures.add(p) if getattr(
-                        p, "visible", False
-                    ) else None
+                    (
+                        self.internal_procedures.add(p)
+                        if getattr(p, "visible", False)
+                        else None
+                    )
             elif is_program(obj):
                 obj.usesgraph = UsesGraph(obj, self.data)
                 obj.callsgraph = CallsGraph(obj, self.data)

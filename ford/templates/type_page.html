@@ -18,10 +18,10 @@
     </div>
     
     <div class="col-md-9" id='text'>
-      <h2>
+      <h2 id="type-def-statement">
         type
         {%- if dtype.parobj == 'module' %}, {{ dtype.permission }}{% endif -%}
-        {{ dtype.attribs | join(", ") }}
+        {%- if dtype.attribs %}, {{ dtype.attribs | join(", ") }}{% endif -%}
         {%- if dtype.extends %}, extends({{ dtype.extends | relurl(page_url) }}){% endif %} :: {{ dtype.name }}
         {%- if dtype.sequence%}<br>sequence{% endif -%}
       </h2>

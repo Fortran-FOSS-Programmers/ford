@@ -1,4 +1,3 @@
-import copy
 import ford
 import pathlib
 import pytest
