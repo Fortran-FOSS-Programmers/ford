@@ -182,7 +182,9 @@ class Project:
                 if not settings.dbg:
                     raise e
 
-                warn(f"Error parsing {relative_path}.\n\t{e.args if len(e.args) == 0 else e.args[0]}")
+                warn(
+                    f"Error parsing {relative_path}.\n\t{e.args if len(e.args) == 0 else e.args[0]}"
+                )
                 continue
 
     def _fortran_file(

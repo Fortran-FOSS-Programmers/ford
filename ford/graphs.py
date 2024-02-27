@@ -1391,9 +1391,11 @@ class GraphManager:
                 self.procedures.add(obj)
                 # regester internal procedures
                 for p in traverse(obj, ["subroutines", "functions"]):
-                    self.internal_procedures.add(p) if getattr(
-                        p, "visible", False
-                    ) else None
+                    (
+                        self.internal_procedures.add(p)
+                        if getattr(p, "visible", False)
+                        else None
+                    )
             elif is_program(obj):
                 obj.usesgraph = UsesGraph(obj, self.data)
                 obj.callsgraph = CallsGraph(obj, self.data)
