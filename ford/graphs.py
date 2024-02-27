@@ -336,8 +336,7 @@ class BaseNode:
                 ExternalSourceFile,
             ),
         ):
-            self.fromstr = True
-            obj = obj.name
+            obj = str(obj)
 
         self.url = None
         if isinstance(obj, str):

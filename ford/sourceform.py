@@ -3272,6 +3272,7 @@ class ExternalSubmodule(FortranSubmodule):
         self.uses = []
         self.parent_submodule = None
         self.ancestor_module = ExternalModule("Parent module")
+        self.external_url = ""
 
 
 class ExternalProgram(FortranProgram):
@@ -3280,6 +3281,7 @@ class ExternalProgram(FortranProgram):
         self.url = ""
         self.uses = []
         self.calls = []
+        self.external_url = ""
 
 
 class ExternalSourceFile(FortranSourceFile):
@@ -3292,3 +3294,4 @@ class ExternalSourceFile(FortranSourceFile):
         self.subroutines = []
         self.programs = []
         self.blockdata = []
+        self.external_url = ""
