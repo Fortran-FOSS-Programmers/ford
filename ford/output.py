@@ -201,7 +201,6 @@ class Documentation:
             self.data.get("graph_dir", ""),
             graphparent,
             settings.coloured_edges,
-            settings.show_proc_parent,
             save_graphs=bool(self.data.get("graph_dir", False)),
         )
 

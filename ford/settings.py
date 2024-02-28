@@ -194,7 +194,6 @@ class ProjectSettings:
     relative: bool = field(init=False)
     revision: Optional[str] = None
     search: bool = True
-    show_proc_parent: bool = False
     sort: str = "src"
     source: bool = False
     src_dir: List[Path] = field(default_factory=lambda: [Path("./src")])

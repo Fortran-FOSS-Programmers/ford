@@ -135,12 +135,10 @@ class GraphData:
         Path to top of site
     coloured_edges:
         If true, arrows between nodes are coloured, otherwise they are black
-    show_proc_parent:
-        If true, the parent of a procedure is shown in the node label
 
     """
 
-    def __init__(self, parent_dir: str, coloured_edges: bool, show_proc_parent: bool):
+    def __init__(self, parent_dir: str, coloured_edges: bool):
         self.submodules: NodeCollection = {}
         self.modules: NodeCollection = {}
         self.types: NodeCollection = {}
@@ -150,7 +148,6 @@ class GraphData:
         self.blockdata: NodeCollection = {}
         self.parent_dir = parent_dir
         self.coloured_edges = coloured_edges
-        self.show_proc_parent = show_proc_parent
 
     def _get_collection_and_node_type(
         self, obj: FortranEntity
@@ -630,7 +627,7 @@ def _dashed_edge(
 if graphviz_installed:
     # Create the legends for the graphs. These are their own separate graphs,
     # without edges
-    gd = GraphData("", False, False)
+    gd = GraphData(parent_dir="", coloured_edges=False)
 
     # Graph nodes for a bunch of fake entities that we'll use in the legend
     _module = gd.get_node(ExternalModule("Module"))
@@ -1325,9 +1322,6 @@ class GraphManager:
     coloured_edges:
         If true, arrows in graphs use different colours to help
         distinguish them
-    show_proc_parent:
-        If true, show the parent of a procedure in the call graph
-        as part of the label
     save_graphs:
         If true, save graphs as separate files, as well as embedding
         them in the HTML
@@ -1338,7 +1332,6 @@ class GraphManager:
         graphdir: os.PathLike,
         parentdir: str,
         coloured_edges: bool,
-        show_proc_parent: bool,
         save_graphs: bool = False,
     ):
         self.graph_objs: List[FortranContainer] = []
@@ -1356,7 +1349,7 @@ class GraphManager:
         self.typegraph = None
         self.callgraph = None
         self.filegraph = None
-        self.data = GraphData(parentdir, coloured_edges, show_proc_parent)
+        self.data = GraphData(parentdir, coloured_edges)
 
     def register(self, obj: FortranContainer):
         """Register ``obj`` as a node to be used in graphs"""
