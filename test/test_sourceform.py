@@ -2238,3 +2238,21 @@ def test_associate_array(parse_fortran_file):
 
     # Just check we can parse ok
     parse_fortran_file(data)
+
+
+def test_blocks_with_type(parse_fortran_file):
+    data = """\
+    module foo
+    contains
+      subroutine sub1()
+        block
+          type :: t1
+          end type t1
+        end block
+      end subroutine sub1
+    end module foo
+    """
+
+    source = parse_fortran_file(data)
+    module = source.modules[0]
+    assert len(module.subroutines) == 1
