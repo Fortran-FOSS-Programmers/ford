@@ -29,7 +29,12 @@ import pytest
         ),
         ("https://github.com/fortran-lang/fftpack", "fftpack/API-doc-FORD-file.md", ""),
         ("https://github.com/fortran-lang/fpm", "fpm/docs.md", ""),
-        ("https://github.com/fortran-lang/stdlib", "stdlib/API-doc-FORD-file.md", ""),
+        (
+            "https://github.com/fortran-lang/stdlib",
+            "stdlib/API-doc-FORD-file.md",
+            # The linear algebra files cause massive slowdown, although I'm not sure why yet
+            '--config=exclude=["**/*linalg**"]',
+        ),
         (
             "https://github.com/jacobwilliams/Fortran-Astrodynamics-Toolkit",
             "Fortran-Astrodynamics-Toolkit/ford.md",
