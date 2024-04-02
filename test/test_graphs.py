@@ -162,7 +162,10 @@ def make_project_graphs(tmp_path_factory, request):
     project = create_project(settings)
 
     graphs = GraphManager(
-        graphdir="", parentdir="..", coloured_edges=True, show_proc_parent=True
+        graphdir="",
+        parentdir="..",
+        coloured_edges=True,
+        show_proc_parent=proc_internals,
     )
     for entity_list in [
         project.types,
@@ -221,7 +224,7 @@ TYPE_GRAPH_KEY = ["Type"]
                 "c_subsubmod",
                 "iso_fortran_env",
                 "external_mod",
-                "foo::three",
+                "three",
                 "foo",
             ],
             [
@@ -240,22 +243,22 @@ TYPE_GRAPH_KEY = ["Type"]
             {"proc_internals": False},
             ["callgraph"],
             [
-                "c::defined_elsewhere",
-                "c::submod_proc",
-                "c_subsubmod::submod_proc",
-                "c::one",
-                "foo::three",
-                "c::two",
-                "foo::four",
+                "defined_elsewhere",
+                "submod_proc",
+                "submod_proc",
+                "one",
+                "three",
+                "two",
+                "four",
                 "other_sub",
                 "foo",
-                "c::alpha%five",
-                "c::alpha%six",
-                "c::seven",
-                "c::alpha%eight",
-                "c::alpha%nine",
-                "c::alpha%eight_nine",
-                "c::alpha%ten",
+                "alpha%five",
+                "alpha%six",
+                "seven",
+                "alpha%eight",
+                "alpha%nine",
+                "alpha%eight_nine",
+                "alpha%ten",
             ],
             [
                 "proc~three->proc~one",
@@ -369,7 +372,7 @@ TYPE_GRAPH_KEY = ["Type"]
         (
             {"proc_internals": False},
             ["procedures", "two", "callsgraph"],
-            ["c::one", "c::two"],
+            ["one", "two"],
             ["proc~two->proc~one"],
             PROC_GRAPH_KEY,
         ),
@@ -388,14 +391,14 @@ TYPE_GRAPH_KEY = ["Type"]
         (
             {"proc_internals": False},
             ["procedures", "two", "calledbygraph"],
-            ["foo::three", "c::two", "foo"],
+            ["three", "two", "foo"],
             ["proc~three->proc~two", "program~foo->proc~three"],
             PROC_GRAPH_KEY,
         ),
         (
             {"proc_internals": False},
             ["procedures", "three", "usesgraph"],
-            ["external_mod", "foo::three"],
+            ["external_mod", "three"],
             ["proc~three->external_mod"],
             MOD_GRAPH_KEY,
         ),

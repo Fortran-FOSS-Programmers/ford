@@ -471,7 +471,7 @@ class ProcNode(BaseNode):
     def colour(self):
         return ProcNode.COLOURS.get(self.proctype, super().colour)
 
-    def __init__(self, obj, gd, hist=None):
+    def __init__(self, obj, gd: GraphData, hist=None):
         # ToDo: Figure out appropriate way to handle interfaces to routines in submodules.
         self.proctype = getattr(obj, "proctype", "").lower()
         if self.proctype == "" and isinstance(obj, FortranBoundProcedure):
@@ -487,7 +487,7 @@ class ProcNode(BaseNode):
 
         parent_label = ""
         binding_label = ""
-        if parent:
+        if parent and gd.show_proc_parent:
             parent_label = f"{parent.name}::"
         if binder:
             binding_label = f"{binder.name}%"
