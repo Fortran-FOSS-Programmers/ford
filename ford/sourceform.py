@@ -860,7 +860,7 @@ class FortranContainer(FortranBase):
                     blocklevel -= 1
                 elif endtype and endtype.lower() == "associate":
                     associations.remove_last_batch()
-                else:
+                elif blocklevel == 0:
                     self._cleanup()
                     return
 
