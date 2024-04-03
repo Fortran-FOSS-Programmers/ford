@@ -49,18 +49,19 @@ This is a very rough outline of how FORD works internally.
 #. After each file has been parsed, the lists of entities are added to
    the `Project`'s lists of all the entities in the whole project.
 
-#. After all the files have been parsed, the documentation comments are
-   converted from Markdown to HTML, recursively down from the source
-   files. At this point, metadata in the comments is also parsed.
-
 #. Entities defined in other files are now "correlated" with their
    concrete objects. This is done recursively from
    `Project.correlate`, first by finding which modules are ``use``\ d
    by each entity, and then looking up names in the corresponding
    `FortranModule`.
 
-#. Another recursive pass is done of the project to convert internal
-   `links <writing-links>` to actual HTML links using `sub_links`.
+#. After all the files have been parsed, the documentation comments
+   are converted from Markdown to HTML, recursively down from the
+   source files. At this point, metadata in the comments is also
+   parsed. Several markdown extensions, `AliasPreprocessor`,
+   `FordLinkProcessor`, `RelativeLinksTreeProcessor`, handle aliases,
+   links, and absolute to relative link conversion respectively. The
+   `MetaMarkdown` class just wraps constructing the markdown object.
 
 #. The static pages are processed with `get_page_tree`.
 
