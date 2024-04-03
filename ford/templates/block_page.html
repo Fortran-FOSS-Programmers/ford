@@ -22,7 +22,7 @@
     {{ blockdat.doc }}
     <br>
 
-    {% if blockdat.common|length > 0 %}
+    {% if blockdat.common %}
     <section>
       <h2>Common Blocks</h2>
       {% for com in blockdat.common %}
@@ -37,7 +37,7 @@
     </script>
     {% endif %}
 
-    {% if blockdat.variables|length > 0 %}
+    {% if blockdat.variables %}
     <section>
     <h2>Variables</h2>
     {{ macros.variable_list(blockdat.variables) }}
@@ -45,7 +45,7 @@
     <br>
     {% endif %}
     
-    {% if blockdat.types|length > 0 %}
+    {% if blockdat.types %}
     <section>
      <h2>Derived Types</h2>
    {% for type in blockdat.types %}

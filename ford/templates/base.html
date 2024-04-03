@@ -132,7 +132,11 @@
     <footer>
       <div class="container">
         <div class="row justify-content-between">
-          <div class="col"><p>{{ project }} was developed by {{ author }}<br>&copy; {{ year }} {{ license }}
+          <div class="col">
+            <p>
+              {{ project }}
+              {% if author %} was developed by {{ author }}<br>{% endif %}
+              &copy; {{ year }} {{ license }}
               {% if revision %}<br /><small>{{ revision }}</small>{% endif %}</p>
           </div>
           <div class="col">

@@ -33,7 +33,7 @@
      {% endif %}
     {% if program.doc or program.callsgraph %}<br>{% endif %}
 
-     {% if program.common|length > 0 %}
+     {% if program.common %}
      <section>
        <h2>Common Blocks</h2>
        {% for com in program.common %}
@@ -48,7 +48,7 @@
      </script>
      {% endif %}
 
-    {% if program.variables|length > 0 %}
+    {% if program.variables %}
     <section>
     <h2>Variables</h2>
     {{ macros.variable_list(program.variables) }}
@@ -56,7 +56,7 @@
     <br>
     {% endif %}
     
-    {% if program.enums|length > 0 %}
+    {% if program.enums %}
     <section>
     <h2>Enumerations</h2>
     {% for enum in program.enums %}
@@ -66,7 +66,7 @@
     <br>
     {% endif %}
     
-    {% if program.interfaces|length > 0 %}
+    {% if program.interfaces %}
     <section>
    <h2>Interfaces</h2>
    {% for intr in program.interfaces %}
@@ -76,7 +76,7 @@
    <br>
     {% endif %}
     
-    {% if program.absinterfaces|length > 0 %}
+    {% if program.absinterfaces %}
     <section>
    <h2>Abstract Interfaces</h2>
    {% for intr in program.absinterfaces %}
@@ -86,7 +86,7 @@
    <br>
     {% endif %}
 
-    {% if program.types|length > 0 %}
+    {% if program.types %}
     <section>
    <h2>Derived Types</h2>
    {% for type in program.types %}
@@ -96,7 +96,7 @@
    <br>
     {% endif %}
     
-    {% if program.functions|length > 0 %} 
+    {% if program.functions %} 
     <section>
     <h2>Functions</h2>
     {% for proc in program.functions %}
@@ -107,7 +107,7 @@
     {% endif %}
 
 
-    {% if program.subroutines|length > 0 %}
+    {% if program.subroutines %}
     <section>
     <h2>Subroutines</h2>
     {% for proc in program.subroutines %}

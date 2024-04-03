@@ -1,77 +1,68 @@
+{% macro project_link_button(address, name) %}
+  {# Optional button in jumbtron for project link #}
+  {%- if address -%}
+    <a class="btn btn-lg btn-primary" href="{{ address }}" role="button">{{ name }}</a>
+  {%- endif -%}
+{% endmacro %}
+
+{% macro dev_link_button(address, icon) %}
+  {# Optional button in sidebar for developer link #}
+  {%- if address -%}
+    <a class="btn btn-lg btn-primary" href="{{ address }}"><i class="fa {{ icon }} fa-lg"></i></a>
+  {%- endif -%}
+{% endmacro %}
+
 {% extends "base.html" %}
 {% block body %}
-      <!-- Main component for a primary marketing message or call to action -->
-      <div class="p-5 mb-4 bg-light border rounded-3" id="jumbotron">
-        {{ summary }}
-        	 {% if project_github or project_bitbucket or project_gitlab or project_sourceforge or project_website %}
-	<p> Find us on&hellip;</p>
-        <p>
-			 {% if project_github %}
-          <a class="btn btn-lg btn-primary" href="{{ project_github }}" role="button">GitHub</a>
-			 {% endif %}
-			 {% if project_gitlab %}
-          <a class="btn btn-lg btn-primary" href="{{ project_gitlab }}" role="button">The Web</a>
-			 {% endif %}
-			 {% if project_bitbucket %}
-          <a class="btn btn-lg btn-primary" href="{{ project_bitbucket }}" role="button">Bitbucket</a>
-			 {% endif %}
-			 {% if project_sourceforge %}
-          <a class="btn btn-lg btn-primary" href="{{ project_sourceforge }}" role="button">Sourceforge</a>
-			 {% endif %}
-			 {% if project_website %}
-          <a class="btn btn-lg btn-primary" href="{{ project_website }}" role="button">The Web</a>
-			 {% endif %}
-	         {% endif %}
-			 {% if project_download %}
-          <a class="btn btn-lg btn-danger" style="float:right" href="{{ project_download }}" role="button">Download the Source</a>
-			 {% endif %}
-        </p>
-      </div>
+  <!-- Main component for a primary marketing message or call to action -->
+  {% set project_links = project_github or project_bitbucket or project_gitlab or project_sourceforge or project_website %}
+  {% if summary or project_links or project_download %}
+    <div class="p-5 mb-4 bg-light border rounded-3" id="jumbotron">
+      {{ summary }}
+      {% if project_links %}
+        <p> Find us on&hellip;</p>
+      <p>
+        {{ project_link_button(project_github, "GitHub") }}
+        {{ project_link_button(project_gitlab, "Gitlab") }}
+        {{ project_link_button(project_bitbucket, "Bitbucket") }}
+        {{ project_link_button(project_sourceforge, "Sourceforge") }}
+        {{ project_link_button(project_website, "The Web") }}
+      {% endif %}
+      {% if project_download %}
+        <a class="btn btn-lg btn-danger" style="float:right" href="{{ project_download }}" role="button">Download the Source</a>
+      {% endif %}
+      </p>
+    </div>
+  {% endif %}
 
       <div class="row" id='text'>
-		{% set col = "col-md-8" if author else "col-md-12"%}
+        {% set col = "col-md-8" if author else "col-md-12"%}
         <div class={{ col }}>
           <h1>{{ project }}</h1>
           {{ proj_docs }}
         </div>
-		{% if author %}
+        {% if author %}
           <div class="col-md-4">
-	        <div class="card card-body bg-light">
+            <div class="card card-body bg-light">
               {% if author_pic %}
-     		    <img src="{{ author_pic }}" alt="Developer picture" class="card-img-top">
-    		  {% endif %}
+                <img src="{{ author_pic }}" alt="Developer picture" class="card-img-top">
+              {% endif %}
               <h2 class="card-title">Developer Info</h2>
               <h4 class="card-text">{{ author }}</h4>
               <p class="card-text">{{ author_description }}</p>
-			  {% if github or bitbucket or facebook or twitter or google_plus or linkedin or email or website %}
+              {% if github or bitbucket or facebook or twitter or google_plus or linkedin or email or website %}
                 <div class="text-center"><div class="btn-group" role="group">
                     {% if email %}
                       <a class="btn btn-lg btn-primary" href="mailto:{{ email }}"><i class="fa fa-envelope fa-lg"></i></a>
                     {% endif %}
-                    {% if website %}
-                      <a class="btn btn-lg btn-primary" href="{{ website }}"><i class="fa fa-globe fa-lg"></i></a>
-                    {% endif %}
-                    {% if github %}
-                      <a class="btn btn-lg btn-primary" href="{{ github }}"><i class="fa fa-github fa-lg"></i></a>
-                    {% endif %}
-                    {% if gitlab %}
-                      <a class="btn btn-lg btn-primary" href="{{ gitlab }}"><i class="fa fa-gitlab fa-lg"></i></a>
-				    {% endif %}
-				    {% if bitbucket %}
-                      <a class="btn btn-lg btn-primary" href="{{ bitbucket }}"><i class="fa fa-bitbucket fa-lg"></i></a>
-                    {% endif %}
-                    {% if facebook %}
-                      <a class="btn btn-lg btn-primary" href="{{ facebook }}"><i class="fa fa-facebook fa-lg"></i></a>
-				    {% endif %}
-                    {% if google_plus %}
-                      <a class="btn btn-lg btn-primary" href="{{ google_plus }}"><i class="fa fa-google-plus fa-lg"></i></a>
-				    {% endif %}
-                    {% if linkedin %}
-                      <a class="btn btn-lg btn-primary" href="{{ linkedin }}"><i class="fa fa-linkedin fa-lg"></i></a>
-				    {% endif %}
-                    {% if twitter %}
-                      <a class="btn btn-lg btn-primary" href="{{ twitter }}"><i class="fa fa-twitter fa-lg"></i></a>
-				    {% endif %}
+                    {{ dev_link_button(website, "fa-globe") }}
+                    {{ dev_link_button(github, "fa-github") }}
+                    {{ dev_link_button(gitlab, "fa-gitlab") }}
+                    {{ dev_link_button(bitbucket, "fa-bitbucket") }}
+                    {{ dev_link_button(facebook, "fa-facebook") }}
+                    {{ dev_link_button(google_plus, "fa-google-plus") }}
+                    {{ dev_link_button(linkedin, "fa-linkedin") }}
+                    {{ dev_link_button(twitter, "fa-twitter") }}
                 </div></div>
               {% endif %}
             </div>
@@ -80,9 +71,9 @@
       </div>
       {% set count=0 %}
       {% if incl_src %}{% set count = count + 1 %}{% endif %}
-      {% if project.modules|length > 0 %}{% set count = count + 1 %}{% endif %}
-      {% if project.procedures|length > 0 %}{% set count = count + 1 %}{% endif %}
-      {% if project.types|length > 0 %}{% set count = count + 1 %}{% endif %}
+      {% if project.modules %}{% set count = count + 1 %}{% endif %}
+      {% if project.procedures %}{% set count = count + 1 %}{% endif %}
+      {% if project.types %}{% set count = count + 1 %}{% endif %}
       {% set max_length = max_frontpage_items|int %}
       {% if count and max_length %}
         {% set width = (12/count)|int %}
@@ -105,7 +96,7 @@
             </div>
           </div>
           {% endif %}
-          {% if project.modules|length > 0 %}
+          {% if project.modules %}
           <div class="col-xs-6 col-sm-{{ width }}">
             <div>
               <h3>Modules</h3>
@@ -122,7 +113,7 @@
             </div>
           </div>
           {% endif %}
-          {% if project.procedures|length > 0 %}
+          {% if project.procedures %}
           <div class="col-xs-6 col-sm-{{ width }}">
             <div>
               <h3>Procedures</h3>
@@ -139,7 +130,7 @@
             </div>
           </div>
           {% endif %}
-          {% if project.types|length > 0 %}
+          {% if project.types %}
           <div class="col-xs-6 col-sm-{{ width }}">
             <div>
               <h3>Derived Types</h3>
@@ -159,4 +150,3 @@
         </div>
       {% endif %}
 {% endblock body %}
-
