@@ -428,7 +428,7 @@ class Project:
 
         if entity is not None:
             try:
-                collection = getattr(self, LINK_TYPES[entity])
+                collection = getattr(self, LINK_TYPES[entity.lower()])
             except KeyError:
                 raise ValueError(f"Unknown class of entity {entity!r}")
         else:

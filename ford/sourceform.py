@@ -110,7 +110,7 @@ def _find_in_list(collection: Iterable, name: str) -> Optional[FortranBase]:
         # correlate it for whatever reason, if so skip it
         if not isinstance(item, FortranBase):
             continue
-        if name == item.name.lower():
+        if name.lower() == item.name.lower():
             return item
     return None
 
@@ -591,7 +591,7 @@ class FortranBase:
 
         if entity is not None:
             try:
-                collection_name = SUBLINK_TYPES[entity]
+                collection_name = SUBLINK_TYPES[entity.lower()]
             except KeyError:
                 raise ValueError(f"Unknown class of entity {entity!r}")
             if not hasattr(self, collection_name):
