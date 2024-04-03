@@ -32,7 +32,7 @@
     {% endif %}
 
     <h3>Arguments</h3>
-    {% if procedure.args|length > 0 %}
+    {% if procedure.args %}
       {{ macros.variable_list(procedure.args, intent=True) }}
     {% else %}
     <em>None</em>
@@ -72,7 +72,7 @@
      {% endif %}
     <br>
 
-    {% if procedure.common|length > 0 %}
+    {% if procedure.common %}
     <section>
       <h2>Common Blocks</h2>
       {% for com in procedure.common %}
@@ -87,7 +87,7 @@
     </script>
     {% endif %}
 
-    {% if procedure.variables|length > 0 %}
+    {% if procedure.variables %}
     <section>    
       <h2>Variables</h2>
     {{ macros.variable_list(procedure.variables, permission=True) }}
@@ -95,7 +95,7 @@
     <br>
     {% endif %}
     
-    {% if procedure.enums|length > 0 %}
+    {% if procedure.enums %}
     <section>
     <h2>Enumerations</h2>
     {% for enum in procedure.enums %}
@@ -105,7 +105,7 @@
     <br>
     {% endif %}
     
-    {% if procedure.interfaces|length > 0 %}
+    {% if procedure.interfaces %}
   <section> 
      <h2>Interfaces</h2>
    {% for intr in procedure.interfaces %}
@@ -115,7 +115,7 @@
    <br>
     {% endif %}
 
-    {% if procedure.absinterfaces|length > 0 %}
+    {% if procedure.absinterfaces %}
     <section>
    <h2>Abstract Interfaces</h2>
    {% for intr in procedure.absinterfaces %}
@@ -125,7 +125,7 @@
    <br>
     {% endif %}
     
-    {% if procedure.types|length > 0 %}
+    {% if procedure.types %}
     <section>
    <h2>Derived Types</h2>
    {% for type in procedure.types %}
@@ -135,7 +135,7 @@
    <br>
     {% endif %}
     
-    {% if procedure.functions|length > 0 %} 
+    {% if procedure.functions %} 
     <section>
     <h2>Functions</h2>
     {% for proc in procedure.functions %}
@@ -146,7 +146,7 @@
     {% endif %}
 
 
-    {% if procedure.subroutines|length > 0 %}
+    {% if procedure.subroutines %}
     <section>
     <h2>Subroutines</h2>
     {% for proc in procedure.subroutines %}
