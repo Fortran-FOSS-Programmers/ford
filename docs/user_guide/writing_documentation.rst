@@ -45,7 +45,7 @@ the source-code this way. This::
            !! The ammount of pet food (in kilograms) which you have on hand.
        integer, intent(out) :: angry
            !! The number of pets angry because they weren't fed.
-           
+
        !...
        return
    end subroutine feed_pets
@@ -65,7 +65,7 @@ looks better/more readable than::
        real, intent(inout)  :: food
        !! The number of pets angry because they weren't fed.
        integer, intent(out) :: angry
-           
+
        !...
        return
    end subroutine feed_pets
@@ -280,34 +280,72 @@ this is ``[[component(type):item(type)]]``:
    as a type and its public constructor). If multiple items with the
    same name exist and ``type`` is not specified then FORD’s behaviour
    is undefined; it will link to the first of those items which it
-   finds. The available options are “procedure”, “subroutine”,
-   “function”, “proc” (all of which are interchangeable and specify a
-   procedure), “interface”, “absinterface” (both of which are for
-   abstract interfaces), “block” (for the legacy ``block data`` program
-   unit), and “type”, “file”, “module”, and “program” (which are
-   self-explanatory).
+   finds. The available options are:
+
+   - "procedure", "proc", "subroutine", "function" for any kind of
+     procedure defined within the project
+   - "interface", "absinterface" for abstract interfaces
+   - "block" for the legacy ``block data`` construct
+   - "type"
+   - "file"
+   - "module"
+   - "submodule"
+   - "program"
+   - "namelist"
+
+   The majority of these can also be prefixed with "ext" to refer to
+   entities defined in `external projects <option-external>`
 -  ``item`` (optional) specifies an item within ``component`` which is
    to be linked to. The link’s target will be ``item``\ ’s location on
    ``component``\ ’s page. If ``item`` is not present then the colon in
    the link must be omitted.
 -  ``type`` (optional, but ``item`` must also be present) is
    ``item``\ ’s type of Fortran construct. It can be used in the same
-   manner as the component ``type``, but has different options. These
-   are “variable”, “type”, “constructor”, “interface”, “absinterface”
-   (abstract interface), “subroutine”, “function”, “final” (finalization
-   procedure), “bound” (type-bound procedure), “modproc” (module
-   procedure in a generic interface block), and “common”. None of these
-   options are interchangeable. If no description is given then its
-   meaning should be self-explanatory. If you specify an option that can
-   not exist within ``component`` (for example, if ``component`` is a
-   module and ``item`` is “bound”) then a warning message is issued and
-   the link is not generated.
+   manner as the component ``type``, but has different options:
+
+   - "absinterface" for abstract interfaces
+   - "bound" for type-bound procedures
+   - "common" for ``common`` blocks
+   - "constructor" for structure constructor procedures
+   - "final" for finalization procedures
+   - "function"
+   - "interface"
+   - "modproc" for module procedures in generic interfaces
+   - "subroutine"
+   - "type"
+   - "variable"
+
+   None of these options are interchangeable. If you specify an option
+   that can not exist within ``component`` (for example, if
+   ``component`` is a module and ``item`` is “bound”) then a warning
+   message is issued and the link is not generated.
+
+For example, to link to a module called ``my_mod`` you could
+use ``[[my_mod]]`` or ``[[my_mod(module)]]``, while if you wanted to
+refer to a function called ``my_function`` in that module you could
+use any of (from least to most specific):
+
+- ``[[my_function]]``
+- ``[[my_function(function)]]``
+- ``[[my_function(proc)]]``
+- ``[[my_mod:my_function]]``
+- ``[[my_mod(module):my_function]]``
+- ``[[my_mod:my_function(function)]]``
+- ``[[my_mod(module):my_function(function)]]``
 
 If you have an overridden constructor a derived type, then it is
 strongly recommended that you specify ``item`` should you wish to link
 to either of them. Otherwise FORD will not know whether you are
 referring to the derived type itself or the interface for its
 constructor.
+
+.. versionchanged:: 7.0.0
+   Previously, links inside code blocks (with backticks) were
+   resolved, now they are left verbatim, as with all other
+   markup. That is, pre-v7, ```call [[my_subroutine]]``` would be
+   rendered as ``call my_subroutine`` with a link to
+   ``my_subroutine``, while now it will be left as: ``call
+   [[my_subroutine]]``.
 
 .. _non-fortran-source-files:
 

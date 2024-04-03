@@ -61,6 +61,7 @@ from ford._typing import PathLike
 
 LINK_TYPES = {
     "module": "modules",
+    "submodule": "submodules",
     "extmodule": "extModules",
     "type": "types",
     "exttype": "extTypes",

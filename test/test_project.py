@@ -1043,7 +1043,7 @@ def test_submodule_uses(copy_fortran_file):
 
 
 def test_make_links(copy_fortran_file):
-    links = "[[a]] [[b(type)]] [[b:c]] [[a:d]] [[b:e]] [[F(proc)]] [[A:G]] [[H]]"
+    links = "[[a]] [[b(type)]] [[b:c]] [[a:d]] [[b:e]] [[F(proc)]] [[A:G]] [[H]] [[I]]"
 
     data = f"""\
     module a !! {links}
@@ -1073,6 +1073,9 @@ def test_make_links(copy_fortran_file):
 
     program h !! {links}
     end program h
+
+    submodule (a) i !! {links}
+    end submodule i
     """
     settings = copy_fortran_file(data)
     project = create_project(settings)
@@ -1088,6 +1091,7 @@ def test_make_links(copy_fortran_file):
         "f": "../proc/f.html",
         "g": "../module/a.html#variable-g",
         "h": "../program/h.html",
+        "i": "../module/i.html",
     }
 
     for item in chain(
@@ -1106,7 +1110,7 @@ def test_make_links_with_entity_spec(copy_fortran_file):
     links = (
         "[[a(module)]] [[b(type)]] [[b(type):c(variable)]] "
         "[[A(MODULE):D(SUBROUTINE)]] [[B(TYPE):E]] [[F(PROC)]] "
-        "[[A(module):G(variable)]] [[H(program)]]"
+        "[[A(module):G(variable)]] [[H(program)]] [[I(SUBMODULE)]]"
     )
 
     data = f"""\
@@ -1137,6 +1141,9 @@ def test_make_links_with_entity_spec(copy_fortran_file):
 
     program h !! {links}
     end program h
+
+    submodule (a) i !! {links}
+    end submodule i
     """
     settings = copy_fortran_file(data)
     project = create_project(settings)
@@ -1152,6 +1159,7 @@ def test_make_links_with_entity_spec(copy_fortran_file):
         "f": "../proc/f.html",
         "g": "../module/a.html#variable-g",
         "h": "../program/h.html",
+        "i": "../module/i.html",
     }
 
     for item in chain(
@@ -1166,7 +1174,7 @@ def test_make_links_with_entity_spec(copy_fortran_file):
         assert link_locations == expected_links, (item, item.name)
 
 
-def test_link_with_context(copy_fortran_file):
+def test_make_links_with_context(copy_fortran_file):
     data = """\
     module a !! [[g]]
       type b !! [[c]] [[e]] [[g]]
