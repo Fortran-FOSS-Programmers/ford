@@ -1,32 +1,35 @@
 {% extends "base.html" %}
 {% block body %}
-      <!-- Main component for a primary marketing message or call to action -->
-      <div class="p-5 mb-4 bg-light border rounded-3" id="jumbotron">
-        {{ summary }}
-        	 {% if project_github or project_bitbucket or project_gitlab or project_sourceforge or project_website %}
-	<p> Find us on&hellip;</p>
-        <p>
-			 {% if project_github %}
+  <!-- Main component for a primary marketing message or call to action -->
+  {% set project_links = project_github or project_bitbucket or project_gitlab or project_sourceforge or project_website %}
+  {% if summary or project_links or project_download %}
+    <div class="p-5 mb-4 bg-light border rounded-3" id="jumbotron">
+      {{ summary }}
+      {% if project_links %}
+	    <p> Find us on&hellip;</p>
+      <p>
+	    {% if project_github %}
           <a class="btn btn-lg btn-primary" href="{{ project_github }}" role="button">GitHub</a>
-			 {% endif %}
-			 {% if project_gitlab %}
+	    {% endif %}
+	    {% if project_gitlab %}
           <a class="btn btn-lg btn-primary" href="{{ project_gitlab }}" role="button">The Web</a>
-			 {% endif %}
-			 {% if project_bitbucket %}
+	    {% endif %}
+	    {% if project_bitbucket %}
           <a class="btn btn-lg btn-primary" href="{{ project_bitbucket }}" role="button">Bitbucket</a>
-			 {% endif %}
-			 {% if project_sourceforge %}
+	    {% endif %}
+	    {% if project_sourceforge %}
           <a class="btn btn-lg btn-primary" href="{{ project_sourceforge }}" role="button">Sourceforge</a>
-			 {% endif %}
-			 {% if project_website %}
+	    {% endif %}
+	    {% if project_website %}
           <a class="btn btn-lg btn-primary" href="{{ project_website }}" role="button">The Web</a>
-			 {% endif %}
-	         {% endif %}
-			 {% if project_download %}
-          <a class="btn btn-lg btn-danger" style="float:right" href="{{ project_download }}" role="button">Download the Source</a>
-			 {% endif %}
-        </p>
-      </div>
+	    {% endif %}
+	  {% endif %}
+	  {% if project_download %}
+        <a class="btn btn-lg btn-danger" style="float:right" href="{{ project_download }}" role="button">Download the Source</a>
+	  {% endif %}
+      </p>
+    </div>
+  {% endif %}
 
       <div class="row" id='text'>
 		{% set col = "col-md-8" if author else "col-md-12"%}
