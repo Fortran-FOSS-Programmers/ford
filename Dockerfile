@@ -5,7 +5,7 @@ ARG PYTHON_VERSION=3
 ########################################################################
 # Base stage -- update pip
 ########################################################################
-FROM python:${PYTHON_VERSION}-alpine as base
+FROM python:${PYTHON_VERSION}-slim as base
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -25,8 +25,7 @@ FROM base as build
 WORKDIR /build
 
 # FORD installation requires git in order to get version info
-RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
-    apk update && apk add git
+RUN apt-get update && apt-get --no-install-recommends install -y git
 
 # Copy FORD source in
 COPY . .
@@ -46,13 +45,8 @@ FROM base as install
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
 # into this layer.
 
-# Update pip
-RUN --mount=type=cache,target=/root/.cache/pip \
-    python -m pip install --upgrade pip
-
 # Install graphviz
-RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
-    apk update && apk add graphviz
+RUN apt-get update && apt-get --no-install-recommends install -y graphviz
 
 # Install FORD dependencies
 RUN --mount=type=cache,target=/root/.cache/pip \
