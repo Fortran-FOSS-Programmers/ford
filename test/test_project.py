@@ -1362,3 +1362,23 @@ def test_links_in_deferred_bound_methods(copy_fortran_file):
     links = {link.text: link["href"] for link in docstring.find_all("a")}
     assert links["foo_t"].endswith("foo_t.html")
     assert links["foo"].endswith("foo_t.html#boundprocedure-foo")
+
+
+def test_hide_undoc(copy_fortran_file):
+    data = """\
+    module foo
+    contains
+      !> A subroutine with a docstring
+      subroutine with_doc
+      end subroutine with_doc
+
+      subroutine no_doc
+      end subroutine no_doc
+    end module
+    """
+
+    settings = copy_fortran_file(data)
+    settings.hide_undoc = True
+    project = create_project(settings)
+
+    assert len(project.modules[0].subroutines) == 1
