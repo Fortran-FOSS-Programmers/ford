@@ -605,7 +605,7 @@ class FortranBase:
 
     def _should_display(self, item) -> bool:
         """Return True if item should be displayed"""
-        if self.settings.hide_undoc and not len(item.doc_list)>0:
+        if self.settings.hide_undoc and not item.doc_list:
             return False
         return item.permission in self.display
 
