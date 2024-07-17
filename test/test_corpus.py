@@ -14,7 +14,7 @@ import pytest
         (
             "https://bitbucket.org/gyrokinetics/gs2",
             "gs2/docs/docs.config.md",
-            '--macro FCOMPILER=_GFORTRAN_ --macro GIT_HASH="a0efef2c9a499e2516e2bca7cf17e372741b96ea" --macro GIT_HASH_MAKEFILES="84aca9698fb00defc74d38ad6395a557114a9e76" --macro GIT_HASH_UTILS="0c8148c28064f5fc5025a3b1c6fff39d520b1c0b" --macro GIT_VERSION="8.1.2-327-ga0efef2c" --macro GIT_BRANCH="master" --macro MPI --macro ISO_C_BINDING --macro NEW_DIAG --macro FFT=_FFTW3_ --macro NETCDF --macro GK_NETCDF_DEFAULT_COMPRESSION_ON --macro F200X_INTRINSICS --macro SPFUNC=_SPF200X_ --macro GK_HAS_COMPILER_OPTIONS_2008 --macro WITH_EIG --macro HAVE_MPI --macro FORTRAN_NETCDF --macro ISO_C_BINDING -r a0efef2c9a499e2516e2bca7cf17e372741b96ea',  # noqa E501
+            '--macro FCOMPILER=_GFORTRAN_ --macro GIT_HASH="e29e9ab8f2eb8d01292fee68588b8bbed560e00b" --macro GIT_HASH_MAKEFILES="73078bc4547279aae4978c5c3b128bbdcce172a6" --macro GIT_HASH_UTILS="28fddcbb26fb561d28242fa1a44b5c6edca3dc72" --macro GIT_VERSION="8.2.0-2-ge29e9ab8" --macro GIT_BRANCH="master"  --macro MPI --macro NETCDF --macro NEW_DIAG --macro F200X_INTRINSICS --macro SPFUNC=_SPF200X_ --macro GS2_BUILD_TAG="None" -I../externals/utils -I../src/geo -I../externals/neasyf/src -I../src/config_auto_gen -I../src -I../include -r e29e9ab8f2eb8d01292fee68588b8bbed560e00b',  # noqa E501
         ),
         (
             "https://github.com/D3DEnergetic/FIDASIM",
@@ -90,7 +90,9 @@ import pytest
 def test_copus(tmp_path, url, config_file, flags):
     os.chdir(tmp_path)
 
-    subprocess.run(f"git clone --depth=1 {url}", check=True, shell=True)
+    subprocess.run(
+        f"git clone --recurse-submodules --depth=1 {url}", check=True, shell=True
+    )
 
     with pytest.MonkeyPatch.context() as m:
         command = f"ford {flags} {config_file}"
