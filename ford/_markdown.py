@@ -101,11 +101,11 @@ class MetaMarkdown(Markdown):
 
         Parameters
         ----------
-        source : str
+        source:
             Text to convert
-        context : Optional[FortranBase]
+        context:
             Current Ford object being processed
-        path : Optional[Path]
+        path:
             Current (output) path of page being processed
 
         """
@@ -155,7 +155,7 @@ class AliasPreprocessor(Preprocessor):
 
 
 class AliasExtension(Extension):
-    """Markdown extension to register `AliasProcessor`"""
+    """Markdown extension to register `AliasPreprocessor`"""
 
     def __init__(self, **kwargs):
         self.config = {"aliases": [{}, "List of aliases"]}
@@ -257,6 +257,7 @@ class FordLinkProcessor(InlineProcessor):
         return link
 
     def handleMatch(self, m: re.Match, data: str):  # type: ignore[override]
+        """Return the converted match, along with start and end positions"""
         return self.convert_link(m), m.start(0), m.end(0)
 
 

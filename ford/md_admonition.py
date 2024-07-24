@@ -32,6 +32,7 @@ ADMONITION_TYPE = {
     "bug": "danger",
     "history": "history",
 }
+"""Mapping of Ford note types to markdown's admonition types"""
 
 
 class AdmonitionExtension(Extension):
