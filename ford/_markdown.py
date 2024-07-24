@@ -51,7 +51,6 @@ class MetaMarkdown(Markdown):
         aliases: Optional[Dict[str, str]] = None,
         project: Optional[Project] = None,
     ):
-
         default_extensions: List[Union[str, Extension]] = [
             "markdown_include.include",
             "markdown.extensions.codehilite",
