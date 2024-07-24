@@ -344,7 +344,7 @@ def convert_setting(default_type: Type, key: str, value: Any) -> Any:
         is_same_type(default_type, str) or is_same_type(default_type, Path)
     ) and isinstance(value, list):
         return "\n".join(value)
-    elif (get_origin(default_type) == dict) and not isinstance(value, dict):
+    elif (get_origin(default_type) is dict) and not isinstance(value, dict):
         resvalue = value
         if isinstance(value, str):
             resvalue = [value]

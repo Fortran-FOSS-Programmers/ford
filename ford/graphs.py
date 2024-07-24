@@ -1010,8 +1010,8 @@ class FortranGraph:
     def add_nodes(self, nodes, nesting=1):
         """Add nodes and edges to this graph, based on the collection ``nodes``
 
-        Subclasses should implement `_add_node`, and optionally
-        `_extra_attributes`
+        Subclasses should implement `FortranGraph.add_node`, and optionally
+        `FortranGraph.extra_attributes`
 
         """
         hop_nodes = set()  # nodes in this hop
@@ -1028,12 +1028,12 @@ class FortranGraph:
         for i, node in enumerate(sorted(nodes)):
             colour = rainbowcolour(i, total_len)
 
-            self._add_node(hop_nodes, hop_edges, node, colour)
+            self.add_node(hop_nodes, hop_edges, node, colour)
 
         if not self.add_to_graph(hop_nodes, hop_edges, nesting):
             return
 
-        self._extra_attributes()
+        self.extra_attributes()
 
         if self._should_add_nested_nodes:
             self._add_nested_nodes(hop_nodes, nesting)
@@ -1048,7 +1048,7 @@ class FortranGraph:
         else:
             self.truncated = nesting
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         """Add a single node and its edges to this graph, typically by
         iterating over parents/children
 
@@ -1056,7 +1056,7 @@ class FortranGraph:
 
         raise NotImplementedError
 
-    def _extra_attributes(self):
+    def extra_attributes(self):
         """Add any extra attributes to the graph"""
         pass
 
@@ -1066,7 +1066,7 @@ class ModuleGraph(FortranGraph):
 
     _legend = MOD_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         for nu in sorted(node.uses):
             if nu not in self.added:
                 hop_nodes.add(nu)
@@ -1077,7 +1077,7 @@ class ModuleGraph(FortranGraph):
                 hop_nodes.add(node.ancestor)
             hop_edges.append(_solid_edge(node, node.ancestor, colour))
 
-    def _extra_attributes(self):
+    def extra_attributes(self):
         self.dot.attr("graph", size="11.875,1000.0")
 
 
@@ -1087,7 +1087,7 @@ class UsesGraph(FortranGraph):
     _should_add_nested_nodes = True
     _legend = MOD_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         for nu in sorted(node.uses):
             if nu not in self.added:
                 hop_nodes.add(nu)
@@ -1105,7 +1105,7 @@ class UsedByGraph(FortranGraph):
     _should_add_nested_nodes = True
     _legend = MOD_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         for nu in sorted(getattr(node, "used_by", [])):
             if nu not in self.added:
                 hop_nodes.add(nu)
@@ -1121,7 +1121,7 @@ class FileGraph(FortranGraph):
 
     _legend = FILE_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         for ne in sorted(node.efferent):
             if ne not in self.added:
                 hop_nodes.add(ne)
@@ -1134,7 +1134,7 @@ class EfferentGraph(FortranGraph):
     _should_add_nested_nodes = True
     _legend = FILE_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         for ne in sorted(node.efferent):
             if ne not in self.added:
                 hop_nodes.add(ne)
@@ -1147,7 +1147,7 @@ class AfferentGraph(FortranGraph):
     _should_add_nested_nodes = True
     _legend = FILE_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         for na in sorted(node.afferent):
             if na not in self.added:
                 hop_nodes.add(na)
@@ -1159,7 +1159,7 @@ class TypeGraph(FortranGraph):
 
     _legend = TYPE_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         for keys in node.comp_types.keys():
             if keys not in self.added:
                 hop_nodes.add(keys)
@@ -1172,7 +1172,7 @@ class TypeGraph(FortranGraph):
                 hop_nodes.add(node.ancestor)
             hop_edges.append(_solid_edge(node, node.ancestor, colour))
 
-    def _extra_attributes(self):
+    def extra_attributes(self):
         self.dot.attr("graph", size="11.875,1000.0")
 
 
@@ -1182,7 +1182,7 @@ class InheritsGraph(FortranGraph):
     _should_add_nested_nodes = True
     _legend = TYPE_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         for c in node.comp_types:
             if c not in self.added:
                 hop_nodes.add(c)
@@ -1199,7 +1199,7 @@ class InheritedByGraph(FortranGraph):
     _should_add_nested_nodes = True
     _legend = TYPE_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         for c in node.comp_of:
             if c not in self.added:
                 hop_nodes.add(c)
@@ -1219,7 +1219,7 @@ class CallGraph(FortranGraph):
     RANKDIR = "LR"
     _legend = CALL_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         for p in sorted(node.calls):
             if p not in hop_nodes:
                 hop_nodes.add(p)
@@ -1232,7 +1232,7 @@ class CallGraph(FortranGraph):
                 hop_nodes.add(p)
             hop_edges.append(_dashed_edge(node, p, colour))
 
-    def _extra_attributes(self):
+    def extra_attributes(self):
         self.dot.attr("graph", size="11.875,1000.0")
         self.dot.attr("graph", concentrate="false")
 
@@ -1244,7 +1244,7 @@ class CallsGraph(FortranGraph):
     _should_add_nested_nodes = True
     _legend = CALL_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         for p in sorted(node.calls):
             if p not in self.added:
                 hop_nodes.add(p)
@@ -1257,7 +1257,7 @@ class CallsGraph(FortranGraph):
                 hop_nodes.add(p)
             hop_edges.append(_dashed_edge(node, p, colour))
 
-    def _extra_attributes(self):
+    def extra_attributes(self):
         self.dot.attr("graph", concentrate="false")
 
 
@@ -1268,7 +1268,7 @@ class CalledByGraph(FortranGraph):
     _should_add_nested_nodes = True
     _legend = CALL_GRAPH_KEY
 
-    def _add_node(self, hop_nodes, hop_edges, node, colour):
+    def add_node(self, hop_nodes, hop_edges, node, colour):
         if isinstance(node, ProgNode):
             return
         for p in sorted(node.called_by):
@@ -1280,7 +1280,7 @@ class CalledByGraph(FortranGraph):
                 hop_nodes.add(p)
             hop_edges.append(_dashed_edge(p, node, colour))
 
-    def _extra_attributes(self):
+    def extra_attributes(self):
         self.dot.attr("graph", concentrate="false")
 
 

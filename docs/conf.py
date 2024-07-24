@@ -83,4 +83,5 @@ html_theme_options = dict(
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
+    "markdown": ("https://python-markdown.github.io", None),
 }

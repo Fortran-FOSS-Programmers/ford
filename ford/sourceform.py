@@ -2131,7 +2131,7 @@ class FortranEnum(FortranContainer):
 
 
 class FortranInterface(FortranContainer):
-    """An `interface` block, including generic and abstract interfaces
+    """An ``interface`` block, including generic and abstract interfaces
 
     Attributes
     ----------
