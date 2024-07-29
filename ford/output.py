@@ -89,7 +89,12 @@ def relative_url(entity: Union[FortranBase, str], page_url: pathlib.Path) -> str
     link_str = str(entity)
     link = BeautifulSoup(link_str, features="html.parser").a
     if link is not None:
-        link_path = str(pathlib.Path(str(link["href"])).resolve())
+        link_href = str(link["href"])
+        if link_href.startswith("http"):
+            # This is (almost certainly) an external link, so better
+            # be correct already
+            return entity
+        link_path = str(pathlib.Path(link_href).resolve())
     else:
         link_path = link_str
 
