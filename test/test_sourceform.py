@@ -2256,3 +2256,15 @@ def test_blocks_with_type(parse_fortran_file):
     source = parse_fortran_file(data)
     module = source.modules[0]
     assert len(module.subroutines) == 1
+
+
+def test_no_space_after_character_type(parse_fortran_file):
+    data = """\
+    CHARACTER(LEN=250)FUNCTION FirstWord( sString ) RESULT( sRes )
+        CHARACTER(LEN=250)sString
+    END FUNCTION FirstWord
+    """
+
+    source = parse_fortran_file(data)
+    function = source.functions[0]
+    assert function.name.lower() == "firstword"

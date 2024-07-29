@@ -661,7 +661,7 @@ class FortranContainer(FortranBase):
         re.IGNORECASE | re.VERBOSE,
     )
     FUNCTION_RE = re.compile(
-        r"""^(?:(?P<attributes>.+?)\s+)?               # Optional attributes (including type)
+        r"""^(?:(?P<attributes>.+?)\s*)?               # Optional attributes (including type)
         function\s+(?P<name>\w+)\s*                    # Required function name
         (?P<arguments>\([^()]*\))?                     # Required arguments
         (?=(?:.*result\s*\(\s*(?P<result>\w+)\s*\))?)  # Optional result name
