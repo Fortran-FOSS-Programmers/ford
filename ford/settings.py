@@ -104,7 +104,7 @@ class ExtraFileType:
     @classmethod
     def from_string(cls, string: str):
         parts = string.split()
-        if 3 < len(parts) < 2:
+        if not (2 <= len(parts) <= 3):
             raise ValueError(
                 f"Unexpected format for 'extra_filetype': expected 'extension comment [lexer]', got {string!r}"
             )
