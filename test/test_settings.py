@@ -128,3 +128,19 @@ def test_update_entity_settings():
 
     assert settings.source is True
     assert settings.version == expected_version
+
+
+def test_extra_filetype():
+    c = ExtraFileType.from_string("c //")
+    assert c == ExtraFileType("c", "//")
+
+    c_with_lexer = ExtraFileType.from_string("c // c_lexer")
+    assert c_with_lexer == ExtraFileType("c", "//", "c_lexer")
+
+
+def test_extra_filetype_error():
+    with pytest.raises(ValueError):
+        ExtraFileType.from_string("c")
+
+    with pytest.raises(ValueError):
+        ExtraFileType.from_string("c // c lexer")
