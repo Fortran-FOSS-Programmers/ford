@@ -1,15 +1,10 @@
-from ford.tree_sitter_parser import (
-    tree_sitter_parser_available,
-    TreeSitterParser,
-    TreeSitterCursorParser,
-)
+from ford.tree_sitter_parser import TreeSitterParser, TreeSitterCursorParser
 from ford.sourceform import FortranSourceFile
 from ford.settings import ProjectSettings
 
 from textwrap import dedent
 
 import time
-import pytest
 
 
 data = dedent(
@@ -42,7 +37,6 @@ end module foo
 ).encode()
 
 
-@pytest.mark.skipif(not tree_sitter_parser_available, reason="Requires tree-sitter")
 def test_tree_sitter_parser():
     parser = TreeSitterParser()
     tree = parser.parser.parse(data)
@@ -75,7 +69,6 @@ def test_tree_sitter_parser():
     assert len(function.functions) == 1
 
 
-@pytest.mark.skipif(not tree_sitter_parser_available, reason="Requires tree-sitter")
 def test_tree_sitter_cursor_parser():
     parser = TreeSitterCursorParser()
     tree = parser.parser.parse(data)

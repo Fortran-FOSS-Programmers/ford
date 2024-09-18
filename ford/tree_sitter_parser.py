@@ -15,19 +15,15 @@ from ford.sourceform import (
 from typing import List, Optional
 from contextlib import contextmanager
 
-try:
-    import tree_sitter_languages
-    from tree_sitter import Node, Language, TreeCursor
+from tree_sitter import Node, Language, TreeCursor, Parser
+import tree_sitter_fortran
 
-    FREE_FORM_LANGUAGE = tree_sitter_languages.get_language("fortran")
-    FIXED_FORM_LANGUAGE = tree_sitter_languages.get_language("fixed_form_fortran")
+FREE_FORM_LANGUAGE = Language(tree_sitter_fortran.language())
+# FIXME: use correct language when fixed form is on PyPI
+FIXED_FORM_LANGUAGE = Language(tree_sitter_fortran.language())
 
-    FREE_FORM_PARSER = tree_sitter_languages.get_parser("fortran")
-    FIXED_FORM_PARSER = tree_sitter_languages.get_parser("fixed_form_fortran")
-
-    tree_sitter_parser_available = True
-except ImportError:
-    tree_sitter_parser_available = False
+FREE_FORM_PARSER = Parser(FREE_FORM_LANGUAGE)
+FIXED_FORM_PARSER = Parser(FREE_FORM_LANGUAGE)
 
 
 def is_predoc_comment(comment: str, predocmark: str, predocmar_alt: str) -> bool:
@@ -51,7 +47,11 @@ class Query:
         self.query = language.query(query)
 
     def __call__(self, node: Node) -> List[Node]:
-        return [capture for capture, _ in self.query.captures(node)]
+        # This is pretty crude, just collecting all the captures
+        captures = []
+        for capture in self.query.captures(node).values():
+            captures.extend(capture)
+        return captures
 
     def maybe_first(self, node: Node) -> Optional[Node]:
         if capture := self(node):
@@ -254,7 +254,8 @@ class TreeSitterParser:
         attributes = self.function_attributes_query(node)
         name = self._get_name(node)
         arguments = self.procedure_parameters_query.first(node)
-        result = self.function_result_query.maybe_first(node)
+        result_name = self.function_result_query.maybe_first(node)
+        result_type = self.function_result_type_query.maybe_first(node)
         bind = self.language_binding_query.maybe_first(node)
 
         function = FortranFunction(
@@ -263,15 +264,11 @@ class TreeSitterParser:
             parent=parent,
             name=name,
             attributes="\n".join(decode(attr) for attr in attributes),
-            result=maybe_decode(result),
-            arguments=decode(arguments),
+            result_name=maybe_decode(result_name),
+            result_type=maybe_decode(result_type),
+            arguments=[decode(argument) for argument in arguments.named_children],
             bindC=maybe_decode(bind),
         )
-
-        if result_type := self.function_result_type_query.maybe_first(node):
-            function.retvar = FortranVariable(
-                name=function.retvar, parent=function, vartype=decode(result_type)
-            )
 
         function._cleanup()
         return function
@@ -502,9 +499,9 @@ class TreeSitterCursorParser:
         self, parent: FortranContainer, cursor: TreeCursor
     ) -> FortranFunction:
         attributes = []
-        result = None
+        result_name = None
         result_type = None
-        arguments = ""
+        arguments = []
         bindC = None
 
         with descend_one_node(cursor):
@@ -514,9 +511,9 @@ class TreeSitterCursorParser:
                 elif cursor.node.type in ("intrinsic_type", "derived_type"):
                     result_type = decode(cursor.node)
                 elif cursor.node.type == "parameters":
-                    arguments = decode(cursor.node)
+                    arguments = [decode(arg) for arg in cursor.node.named_children]
                 elif cursor.node.type == "function_result":
-                    result = decode(cursor.node.named_children[0])
+                    result_name = decode(cursor.node.named_children[0])
                 elif cursor.node.type == "language_binding":
                     bindC = decode(cursor.node)
 
@@ -529,15 +526,11 @@ class TreeSitterCursorParser:
             parent=parent,
             name=self._get_name(cursor),
             attributes=",".join(attributes),
-            result=result,
+            result_name=result_name,
+            result_type=result_type,
             arguments=arguments,
             bindC=bindC,
         )
-
-        if result_type is not None:
-            function.retvar = FortranVariable(
-                name=function.retvar, parent=function, vartype=result_type
-            )
 
         function._cleanup()
         return function
