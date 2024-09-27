@@ -342,7 +342,7 @@ def parse_arguments(
 
     proj_data.normalise_paths(directory)
 
-    proj_data.creation_date = datetime.now().strftime(proj_data.creation_date)
+    proj_data.creation_date = datetime.now().astimezone().strftime(proj_data.creation_date)
 
     # Make sure no src_dir is contained within output_dir
     for srcdir in proj_data.src_dir:
