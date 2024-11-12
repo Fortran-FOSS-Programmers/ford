@@ -185,7 +185,7 @@ class FortranBase:
 
     POINTS_TO_RE = re.compile(r"\s*=>\s*", re.IGNORECASE)
     SPLIT_RE = re.compile(r"\s*,\s*", re.IGNORECASE)
-    SRC_CAPTURE_STR = r"^[ \t]*([\w(),*: \t]+?[ \t]+)?{0}([\w(),*: \t]+?)?[ \t]+{1}[ \t\n,(].*?end[ \t]*{0}[ \t]+{1}[ \t]*?(!.*?)?$"
+    SRC_CAPTURE_STR = r"^[ \t]*(?:[\w(),*: \t]+?[ \t]+)?{0}(?:[\w(),*: \t]+?)?[ \t]+{1}[ \t\n,(].*?end[ \t]*{0}[ \t]+{1}[ \t]*?(?:!.*?)?$"
 
     pretty_obj = {
         "proc": "procedures",
