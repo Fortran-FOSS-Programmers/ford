@@ -26,10 +26,10 @@
 import sys
 import re
 import ford.utils
-import subprocess
 from typing import List, Optional, Union, Sequence
 from io import StringIO, TextIOWrapper
-
+import subprocess
+from contextlib import redirect_stdout
 import os.path
 
 from ford.console import warn
@@ -157,7 +157,20 @@ class FortranReader:
 
         self.reader: Union[StringIO, TextIOWrapper]
 
-        if preprocessor:
+        if preprocessor == 'pcpp -D__GFORTRAN__ --passthru-comments':
+            # Hacky way to detect if the user hasn't changed from the default
+            # We might just want to check if the first word is pcpp?
+            macros = ["-D" + mac.strip() for mac in filter(None, macros or [])]
+            incdirs = [f"-I{d}" for d in self.inc_dirs]
+            print(f"Preprocessing {filename}")
+            opts = preprocessor.split(' ')
+            opts.extend(macros + incdirs + [filename])
+            local_out = StringIO()
+            from pcpp.pcmd import CmdPreprocessor
+            with redirect_stdout(local_out):
+                _ = CmdPreprocessor(opts)
+            self.reader = StringIO(local_out.getvalue())
+        elif preprocessor:
             # Populate the macro definition and include directory path from
             # the input lists.  To define a macro we prepend '-D' and for an
             # include path we prepend '-I'.  It's important that we do not
