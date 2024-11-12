@@ -158,7 +158,6 @@ class FortranReader:
         self.reader: Union[StringIO, TextIOWrapper]
 
         if preprocessor:
-            preprocessor_command = preprocessor.split(' ')
             # Populate the macro definition and include directory path from
             # the input lists.  To define a macro we prepend '-D' and for an
             # include path we prepend '-I'.  It's important that we do not
@@ -167,7 +166,7 @@ class FortranReader:
             macros = ["-D" + mac.strip() for mac in filter(None, macros or [])]
             incdirs = [f"-I{d}" for d in self.inc_dirs]
             print(f"Preprocessing {filename}")
-            preprocessor_command.extend(macros + incdirs + [filename])
+            preprocessor_command = preprocessor + macros + incdirs + [filename]
             if preprocessor_command[0] == 'pcpp':
                 local_out = StringIO()
                 from pcpp.pcmd import CmdPreprocessor
