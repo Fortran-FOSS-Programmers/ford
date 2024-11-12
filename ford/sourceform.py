@@ -441,7 +441,7 @@ class FortranBase:
 
         if self.obj in ["proc", "type", "program"] and self.meta.source:
             obj = getattr(self, "proctype", self.obj).lower()
-            SRC_CAPTURE_STR = fr"^[ \t]*(?:[\w(),*: \t]+?[ \t]+)?{obj}(?:[\w(),*: \t]+?)?[ \t]+{self.name}[ \t\n,(].*?end[ \t]*{obj}[ \t]+{self.name}[ \t]*?(?:!.*?)?$"
+            SRC_CAPTURE_STR = fr"^[ \t]*(?:[\w(),*: \t]+?[ \t]+)?\b{obj}\b(?:[\w(),*: \t]+?)?[ \t]+\b{self.name}\b[ \t\n,(].*?\bend[ \t]*{obj}\b[ \t]+\b{self.name}\b[ \t]*?(?:!.*?)?$"
             regex = re.compile(
                 SRC_CAPTURE_STR,
                 re.IGNORECASE | re.DOTALL | re.MULTILINE,
