@@ -240,9 +240,9 @@ class Documentation:
         if settings.search:
             url = "" if settings.relative else settings.project_url
             node_generator = ford.tipue_search.Search_Soup_Parser(url)
-            nodes = node_generator.create_node(
+            nodes = [node_generator.create_node(
                 self.index.html, "index.html", EntitySettings(category="home")
-            )
+            )]
 
             tasks = self.docs + self.pagetree
             from functools import partial
