@@ -29,8 +29,8 @@ Current features include:
   code,
 - LaTeX support in documentation using `MathJax
   <https://www.mathjax.org/>`__,
-- searchable documentation, using `Tipue Search
-  <http://www.tipue.com/search/>`__,
+- searchable documentation, using `Lunr Search
+  <https://lunrjs.com>`__,
 - author description and social media (including Github!) links,
 - links to download the source code,
 - links to individual files, both in their raw form or in HTML with
