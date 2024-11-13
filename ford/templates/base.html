@@ -19,14 +19,9 @@
     <link href="{{ project_url }}/css/pygments.css" rel="stylesheet">
     <link href="{{ project_url }}/css/font-awesome.min.css" rel="stylesheet">
     <link href="{{ project_url }}/css/local.css" rel="stylesheet">
-    {% if search|lower == 'true' %}
-      <link  href="{{ project_url }}/tipuesearch/tipuesearch.css" rel="stylesheet">
-    {% endif %}
     {% if css %}
       <link href="{{ project_url }}/css/user.css" rel="stylesheet">
     {% endif %}
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="{{ project_url }}/js/svg-pan-zoom.min.js"></script>
   </head>
 
@@ -171,12 +166,5 @@
           <script src="{{ project_url }}/js/MathJax-config/{{ path.basename(mathjax_config) }}"></script>
         {% endif %}
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-        {% if search|lower == 'true' %}
-          <script src="{{ project_url }}/tipuesearch/tipuesearch_content.js"></script>
-          <script src="{{ project_url }}/tipuesearch/tipuesearch_set.js"></script>
-          <script src="{{ project_url }}/tipuesearch/tipuesearch.js"></script>
-        {% endif %}
-
   </body>
 </html>
