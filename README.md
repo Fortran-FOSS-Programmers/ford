@@ -37,7 +37,7 @@ Current features include:
   arguments, derived types, programs, and modules from the source code.
 - the ability to extract documentation from comments in the source code.
 - LaTeX support in documentation using [MathJax](https://www.mathjax.org/).
-- searchable documentation, using Tipue Search.
+- searchable documentation, using [Lunr Search](https://lunrjs.com).
 - author description and social media (including Github!) links.
 - links to download the source code.
 - links to individual files, both in their raw form or in HTML with syntax

@@ -286,7 +286,7 @@ class Documentation:
         if self.data["graph"]:
             self.graphs.output_graphs(self.njobs)
         if self.data["search"]:
-            copytree(loc / "tipuesearch", out_dir / "tipuesearch")
+            copytree(loc / "search", out_dir / "search")
             self.tipue.print_output()
 
         try:
