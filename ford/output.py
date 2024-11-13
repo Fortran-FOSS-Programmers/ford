@@ -252,6 +252,7 @@ class Documentation:
             extra_nodes = parallel_map(create_node_wrapper_partial,
                                        [(x.html, x.loc, x.meta) for x in tasks],
                                        desc = "Creating search index",
+                                       chunksize = 1,
                                        )
             nodes.extend(extra_nodes)
             self.tipue = ford.tipue_search.Search_JSON_Generator(
