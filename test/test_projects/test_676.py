@@ -12,7 +12,6 @@ from bs4 import BeautifulSoup
 import pytest
 
 
-
 @pytest.fixture(scope="module")
 def monkeymodule(request):
     """pytest won't let us use function-scope fixtures in module-scope
