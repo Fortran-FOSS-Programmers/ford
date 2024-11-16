@@ -37,6 +37,7 @@ ATTRIBUTES = [
     "vartype",
     "permission",
     "generic",
+    "proto",
 ]
 
 # Mapping between entity name and its type
