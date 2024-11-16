@@ -67,11 +67,6 @@ def obj2dict(intObj):
     }
     if hasattr(intObj, "proctype"):
         extDict["proctype"] = intObj.proctype
-    if hasattr(intObj, "extends"):
-        if isinstance(intObj.extends, FortranType):
-            extDict["extends"] = obj2dict(intObj.extends)
-        else:
-            extDict["extends"] = intObj.extends
     for attrib in ATTRIBUTES:
         if not hasattr(intObj, attrib):
             continue
@@ -120,8 +115,6 @@ def dict2obj(project, extDict, url, parent=None, remote: bool = False) -> Fortra
 
     if obj_type == "interface":
         extObj.proctype = extDict["proctype"]
-    elif obj_type == "type":
-        extObj.extends = extDict["extends"]
 
     for key in ATTRIBUTES:
         if key not in extDict:
