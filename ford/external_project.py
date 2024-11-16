@@ -61,6 +61,8 @@ def obj2dict(intObj):
     """
     if hasattr(intObj, "external_url"):
         return None
+    if isinstance(intObj, str):
+        return intObj
     extDict = {
         "name": intObj.name,
         "external_url": f"./{intObj.get_url()}",
@@ -96,6 +98,8 @@ def dict2obj(project, extDict, url, parent=None, remote: bool = False) -> Fortra
     """
     Converts a dictionary to an object and immediately adds it to the project
     """
+    if isinstance(extDict, str):
+        return extDict
     name = extDict["name"]
     if extDict["external_url"]:
         extDict["external_url"] = extDict["external_url"].split("/", 1)[-1]
