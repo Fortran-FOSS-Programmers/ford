@@ -3240,7 +3240,6 @@ class ExternalBoundProcedure(FortranBoundProcedure):
         self.parent = parent
         self.obj = "proc"
         self.bindings = []
-        self.proto = None
 
 
 class ExternalType(FortranType):

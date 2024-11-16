@@ -36,8 +36,9 @@ ATTRIBUTES = [
     "boundprocs",
     "vartype",
     "permission",
+    "deferred",
     "generic",
-    "proto",
+    "attribs",
 ]
 
 # Mapping between entity name and its type
