@@ -38,17 +38,21 @@ def external_project(tmp_path_factory, monkeymodule):
     external_project = path / "base"
     top_level_project = path / "plugin"
 
+    # Generate the individual projects from their common parent
+    # directory, to check that local path definitions are
+    # relative to the project directory, irrespective of the
+    # working directory.
+    os.chdir(path)
+
     # Run FORD in the two projects
     # First project has "externalize: True" and will generate JSON dump
     with monkeymodule.context() as m:
-        os.chdir(external_project)
-        m.setattr(sys, "argv", ["ford", "doc.md"])
+        m.setattr(sys, "argv", ["ford", "base/doc.md"])
         ford.run()
 
     # Second project uses JSON from first to link to external modules
     with monkeymodule.context() as m:
-        os.chdir(top_level_project)
-        m.setattr(sys, "argv", ["ford", "doc.md"])
+        m.setattr(sys, "argv", ["ford", "plugin/doc.md"])
         ford.run()
 
     # Make sure we're in a directory where relative paths won't

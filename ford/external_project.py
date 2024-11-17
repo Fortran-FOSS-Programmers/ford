@@ -172,7 +172,8 @@ def load_external_modules(project):
                     urlopen(urljoin(url, "modules.json")).read().decode("utf8")
                 )
             else:
-                url = pathlib.Path(url).resolve()
+                if not pathlib.Path(url).is_absolute():
+                    url = project.settings.directory.joinpath(url).resolve()
                 extModules = modules_from_local(url)
         except (URLError, json.JSONDecodeError) as error:
             extModules = []
