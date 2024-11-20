@@ -2065,14 +2065,15 @@ class FortranType(FortranContainer):
         self.boundprocs = inherited + self.boundprocs
         # Match up generic type-bound procedures to their particular bindings
         for proc in self.boundprocs:
-            for bp in inherited_generic:
-                if bp.name.lower() == proc.name.lower() and isinstance(
-                    bp, FortranBoundProcedure
-                ):
-                    proc.bindings = bp.bindings + proc.bindings
-                    break
-            if proc.generic:
-                proc.correlate(project)
+            if type(proc) is FortranBoundProcedure:
+                for bp in inherited_generic:
+                    if bp.name.lower() == proc.name.lower() and isinstance(
+                        bp, FortranBoundProcedure
+                    ):
+                        proc.bindings = bp.bindings + proc.bindings
+                        break
+                if proc.generic:
+                    proc.correlate(project)
         # Match finalprocs
         for fp in self.finalprocs:
             fp.correlate(project)
