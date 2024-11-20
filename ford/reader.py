@@ -26,10 +26,10 @@
 import sys
 import re
 import ford.utils
-import subprocess
 from typing import List, Optional, Union, Sequence
 from io import StringIO, TextIOWrapper
-
+import subprocess
+from contextlib import redirect_stdout
 import os.path
 
 from ford.console import warn
@@ -165,24 +165,35 @@ class FortranReader:
             # what is desired; use filter to remove these.
             macros = ["-D" + mac.strip() for mac in filter(None, macros or [])]
             incdirs = [f"-I{d}" for d in self.inc_dirs]
-            preprocessor = preprocessor + macros + incdirs + [filename]
-            command = " ".join(preprocessor)
             print(f"Preprocessing {filename}")
-            try:
-                out = subprocess.run(
-                    preprocessor, encoding=encoding, check=True, capture_output=True
-                )
-                if out.stderr:
-                    warn(
-                        f"Warning when preprocessing {filename}:\n{command}\n{out.stderr}"
+            preprocessor_command = preprocessor + macros + incdirs + [filename]
+            if preprocessor_command[0] == "pcpp":
+                local_out = StringIO()
+                from pcpp.pcmd import CmdPreprocessor
+
+                with redirect_stdout(local_out):
+                    CmdPreprocessor(preprocessor_command)
+                    self.reader = StringIO(local_out.getvalue())
+            else:
+                command = " ".join(preprocessor_command)
+                try:
+                    out = subprocess.run(
+                        preprocessor_command,
+                        encoding=encoding,
+                        check=True,
+                        capture_output=True,
                     )
-                self.reader = StringIO(out.stdout)
-            except subprocess.CalledProcessError as err:
-                warn(
-                    f"error when preprocessing {filename}:\n{command}\n{err.stderr}\n"
-                    "Reverting to unpreprocessed file"
-                )
-                self.reader = open(filename, "r", encoding=encoding)
+                    if out.stderr:
+                        warn(
+                            f"Warning when preprocessing {filename}:\n{command}\n{out.stderr}"
+                        )
+                    self.reader = StringIO(out.stdout)
+                except subprocess.CalledProcessError as err:
+                    warn(
+                        f"error when preprocessing {filename}:\n{command}\n{err.stderr}\n"
+                        "Reverting to unpreprocessed file"
+                    )
+                    self.reader = open(filename, "r", encoding=encoding)
         else:
             self.reader = open(filename, "r", encoding=encoding)
 
