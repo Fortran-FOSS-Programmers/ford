@@ -441,10 +441,16 @@ class FortranBase:
 
         if self.obj in ["proc", "type", "program"] and self.meta.source:
             obj = getattr(self, "proctype", self.obj).lower()
-            SRC_CAPTURE_STR = fr"^(?:[\w(),*: \t]*?)?\b{obj}\b(?:[\w(),*: \t]+?)?[ \t]+\b{self.name}\b[ \t\n,(].*?^[ \t]*\bend[ \t]*{obj}\b[ \t]+\b{self.name}\b[ \t]*?(?:!.*?)?$"
             regex = re.compile(
-                SRC_CAPTURE_STR,
-                re.IGNORECASE | re.DOTALL | re.MULTILINE,
+                fr"""
+                ^(?:[\w(),*: \t]*?)?         # Attributes, function type
+                \b{obj}\b                    # Subroutine/function
+                (?:[\w(),*: \t]+?)?[ \t]+    # Interstitial nonsense
+                \b{self.name}\b[ \t\n,(].*?  # Entity name
+                ^[ \t]*\bend[ \t]*{obj}\b[ \t]+\b{self.name}\b[ \t]*? # End statement
+                (?:!.*?)?$
+                """,
+                re.IGNORECASE | re.DOTALL | re.MULTILINE | re.VERBOSE,
             )
             if match := regex.search(self.source_file.raw_src):
                 self.src = highlight(
