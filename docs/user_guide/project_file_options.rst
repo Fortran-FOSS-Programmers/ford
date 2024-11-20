@@ -427,6 +427,18 @@ directory that starts with ``test`` anywhere in the source directory tree.
       exclude_dir: **/test*
           src/internal
 
+.. _option-html_template_dir:
+
+html_template_dir
+^^^^^^^^^^^^^^^^^
+
+A list of directories to search for HTML templates.
+
+.. caution:: This is an experimental feature!
+
+   You will most likely want to copy-paste the existing templates and
+   modify them. They are not well documented, so use at your own risk!
+
 .. _option-include:
 
 include
