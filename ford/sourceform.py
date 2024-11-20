@@ -185,7 +185,6 @@ class FortranBase:
 
     POINTS_TO_RE = re.compile(r"\s*=>\s*", re.IGNORECASE)
     SPLIT_RE = re.compile(r"\s*,\s*", re.IGNORECASE)
-    SRC_CAPTURE_STR = r"^[ \t]*([\w(),*: \t]+?[ \t]+)?{0}([\w(),*: \t]+?)?[ \t]+{1}[ \t\n,(].*?end[ \t]*{0}[ \t]+{1}[ \t]*?(!.*?)?$"
 
     pretty_obj = {
         "proc": "procedures",
@@ -443,8 +442,15 @@ class FortranBase:
         if self.obj in ["proc", "type", "program"] and self.meta.source:
             obj = getattr(self, "proctype", self.obj).lower()
             regex = re.compile(
-                self.SRC_CAPTURE_STR.format(obj, self.name),
-                re.IGNORECASE | re.DOTALL | re.MULTILINE,
+                fr"""
+                ^(?:[\w(),*: \t]*?)?         # Attributes, function type
+                \b{obj}\b                    # Subroutine/function
+                (?:[\w(),*: \t]+?)?[ \t]+    # Interstitial nonsense
+                \b{self.name}\b[ \t\n,(].*?  # Entity name
+                ^[ \t]*\bend[ \t]*{obj}\b[ \t]+\b{self.name}\b[ \t]*? # End statement
+                (?:!.*?)?$
+                """,
+                re.IGNORECASE | re.DOTALL | re.MULTILINE | re.VERBOSE,
             )
             if match := regex.search(self.source_file.raw_src):
                 self.src = highlight(
