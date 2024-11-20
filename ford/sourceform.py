@@ -442,7 +442,7 @@ class FortranBase:
         if self.obj in ["proc", "type", "program"] and self.meta.source:
             obj = getattr(self, "proctype", self.obj).lower()
             regex = re.compile(
-                fr"""
+                rf"""
                 ^(?:[\w(),*: \t]*?)?         # Attributes, function type
                 \b{obj}\b                    # Subroutine/function
                 (?:[\w(),*: \t]+?)?[ \t]+    # Interstitial nonsense
