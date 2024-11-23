@@ -243,7 +243,7 @@ There are three predefined macros:
 - ``|media|``: the (absolute) path to the `media directory <option-media_dir>`
 - ``|page|``: the `static page directory <option-page_dir>`
 
-You can defined additional custom aliases with the `alias
+You can define additional custom aliases with the `alias
 <option-alias>` option.
 
 .. note::
@@ -260,6 +260,11 @@ You can defined additional custom aliases with the `alias
        | [link](|page|/subpage2.html) | |note_no_space_in_alias| |
 
    This avoids clashes between the syntax for the two features.
+
+
+.. note::
+   An alias can be escaped with a prepended baskslash, such that `|foo|` will
+   be replaced with its alias, while `\|foo|` will be rendered as `|foo|`.
 
 
 .. _writing-links:

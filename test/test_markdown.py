@@ -5,8 +5,24 @@ from textwrap import dedent
 
 def test_sub_alias():
     result = MetaMarkdown(aliases={"a": "b"}).convert("|a|")
-
     assert result == "<p>b</p>"
+
+    result = MetaMarkdown(aliases={"a": "b"}).convert("|undefined|")
+    assert result == "<p>|undefined|</p>"
+
+
+def test_sub_alias_escape():
+    def_alias={"a":"b"}
+
+    result = MetaMarkdown(aliases=def_alias).convert("\|a|")
+    assert result == "<p>|a|</p>"
+
+    result = MetaMarkdown(aliases=def_alias).convert("*|a|")
+    assert result == "<p>*b</p>"
+
+    result = MetaMarkdown(aliases=def_alias).convert("\|undefined|")
+    assert result == "<p>|undefined|</p>"
+
 
 
 def test_sub_alias_with_equals():
