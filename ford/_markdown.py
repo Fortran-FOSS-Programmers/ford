@@ -131,9 +131,14 @@ class MetaMarkdown(Markdown):
 
 class AliasPreprocessor(Preprocessor):
     """Substitute text aliases of the form ``|foo|`` from a dictionary
-    of aliases and their replacements"""
+    of aliases and their replacements.
+    The backslash ``\`` acts as an escape character, aliases of the
+    form ``\|foo|`` will not be replaced, but instead copied verbatim
+    without the preceding backslash.
+    """
 
-    ALIAS_RE = re.compile(r"\|([^ ].*?[^ ]?)\|")
+    # pattern to match alias only if not preceded by `\`
+    ALIAS_RE = re.compile(r"(?<!\\)\|([^ ].*?[^ ]?)\|")
 
     def __init__(self, md: Markdown, aliases: Dict[str, str]):
         self.aliases = aliases
@@ -149,7 +154,11 @@ class AliasPreprocessor(Preprocessor):
 
     def run(self, lines: List[str]) -> List[str]:
         for line_num, line in enumerate(lines):
-            lines[line_num] = self.ALIAS_RE.sub(self._lookup, line)
+            # replace the real aliases
+            line = self.ALIAS_RE.sub(self._lookup, line)
+            # replace the escaped aliases verbatim, without the preceding `\`
+            line = re.sub(r"\\(\|([^ ].*?[^ ]?)\|)", r"\g<1>",line)
+            lines[line_num]=line
         return lines
 
 
