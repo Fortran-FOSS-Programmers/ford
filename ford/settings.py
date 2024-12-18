@@ -161,6 +161,7 @@ class ProjectSettings:
     graph_maxdepth: int = 10000
     graph_maxnodes: int = 1000000000
     hide_undoc: bool = False
+    html_template_dir: List[Path] = field(default_factory=list)
     incl_src: bool = True
     include: List[Path] = field(default_factory=list)
     license: str = ""
