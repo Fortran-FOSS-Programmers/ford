@@ -76,8 +76,6 @@ packages = [
     "ford.fonts",
     "ford.js",
     "ford.templates",
-    "ford.tipuesearch",
-    "ford.tipuesearch.img",
 ]
 
 [tool.setuptools.package-data]
