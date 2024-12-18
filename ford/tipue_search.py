@@ -27,7 +27,7 @@
 Tipue Search
 ============
 
-Serializes generated HTML to JSON that can be used by jQuery plugin - Tipue Search.
+Serializes generated HTML to JSON that can be used by Lunr search
 
 Adapted from the Pelican plugin by Talha Mansoor
 https://github.com/getpelican/pelican-plugins/tree/master/tipue_search
@@ -43,12 +43,9 @@ from urllib.parse import urljoin
 
 from ford.settings import EntitySettings
 
-
-class Tipue_Search_JSON_Generator:
-    def __init__(self, output_path: os.PathLike, project_url: str):
-        self.output_path = pathlib.Path(output_path)
+class Search_Soup_Parser:
+    def __init__(self, project_url: str):
         self.siteurl = project_url
-        self.json_nodes: List[Dict] = []
         self.only_text = SoupStrainer("div", id="text")
         self.only_title = SoupStrainer("title")
 
@@ -85,17 +82,20 @@ class Tipue_Search_JSON_Generator:
         else:
             page_url = loc
 
-        node = {
+        return {
             "title": page_title,
             "text": page_text,
             "tags": page_category,
-            "loc": str(page_url),
+            "url": str(page_url),
         }
 
-        self.json_nodes.append(node)
+class Search_JSON_Generator:
+    def __init__(self, output_path: os.PathLike, nodes: List[Dict]):
+        self.output_path = pathlib.Path(output_path)
+        self.json_nodes = nodes
 
     def print_output(self):
-        path = self.output_path / "tipuesearch" / "tipuesearch_content.js"
+        path = self.output_path / "search" / "search_database.json"
 
         root_node = {"pages": self.json_nodes}
         output = json.dumps(root_node, separators=(",", ":"), ensure_ascii=False)
