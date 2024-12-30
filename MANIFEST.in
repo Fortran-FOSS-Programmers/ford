@@ -1,3 +1,0 @@
-include README.md
-include output-example.png
-recursive-include ford *.css *.js *.html *.svg *.png *.eot *.ttf *.woff *.gif
