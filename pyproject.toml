@@ -73,9 +73,10 @@ ford = "ford:run"
 packages = [
     "ford",
     "ford.css",
-    "ford.fonts",
     "ford.js",
+    "ford.search",
     "ford.templates",
+    "ford.webfonts",
 ]
 
 [tool.setuptools.package-data]
