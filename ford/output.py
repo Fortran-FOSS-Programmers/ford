@@ -107,6 +107,8 @@ env.filters["relurl"] = relative_url
 
 USER_WRITABLE_ONLY = 0o755
 
+def create_node_wrapper(page_data, node_gen = None):
+    return node_gen.create_node(page_data[0], page_data[1], page_data[2])
 
 class Documentation:
     """
@@ -240,20 +242,25 @@ class Documentation:
 
         if settings.search:
             url = "" if settings.relative else settings.project_url
-            self.tipue = ford.tipue_search.Tipue_Search_JSON_Generator(
-                settings.output_dir, url
-            )
-            self.tipue.create_node(
+            node_generator = ford.tipue_search.Search_Soup_Parser(url)
+            nodes = [node_generator.create_node(
                 self.index.html, "index.html", EntitySettings(category="home")
+            )]
+
+            tasks = self.docs + self.pagetree
+            from functools import partial
+            create_node_wrapper_partial = partial(create_node_wrapper,
+                                                  node_gen = node_generator)
+            from tqdm.contrib.concurrent import process_map as parallel_map
+            extra_nodes = parallel_map(create_node_wrapper_partial,
+                                       [(x.html, x.loc, x.meta) for x in tasks],
+                                       desc = "Creating search index",
+                                       chunksize = 1,
+                                       )
+            nodes.extend(extra_nodes)
+            self.tipue = ford.tipue_search.Search_JSON_Generator(
+                settings.output_dir, nodes
             )
-            jobs = len(self.docs) + len(self.pagetree)
-            for page in (
-                bar := ProgressBar(
-                    "Creating search index", chain(self.docs, self.pagetree), total=jobs
-                )
-            ):
-                bar.set_current(page.loc)
-                self.tipue.create_node(page.html, page.loc, page.meta)
 
     def writeout(self) -> None:
         out_dir: pathlib.Path = self.data["output_dir"]
