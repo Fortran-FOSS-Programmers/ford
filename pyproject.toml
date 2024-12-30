@@ -80,7 +80,7 @@ packages = [
 ]
 
 [tool.setuptools.package-data]
-ford = ["config.json", "favicon.png"]
+ford = ["favicon.png"]
 
 [tool.setuptools_scm]
 write_to = "ford/_version.py"
