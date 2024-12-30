@@ -23,6 +23,17 @@
     <link href="{{ project_url }}/css/solid.min.css" rel="stylesheet">
     <link href="{{ project_url }}/css/v4-font-face.min.css" rel="stylesheet">
     <link href="{{ project_url }}/css/v4-shims.min.css" rel="stylesheet">
+    <!-- MathJax -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { equationNumbers: { autoNumber: "AMS" } }
+      });
+    </script>
+    {% if mathjax_config %}
+      <script src="{{ project_url }}/js/MathJax-config/{{ path.basename(mathjax_config) }}"></script>
+    {% endif %}
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js?config=TeX-AMS-MML_HTMLorMML" async
+            integrity="sha256-DViIOMYdwlM/axqoGDPeUyf0urLoHMN4QACBKyB58Uw=" crossorigin="anonymous"></script>
     <!-- Other scripts and stylesheets -->
     <link href="{{ project_url }}/css/local.css" rel="stylesheet">
     <link href="{{ project_url }}/css/pygments.css" rel="stylesheet">
@@ -158,19 +169,5 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
 	    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <!-- MathJax JavaScript
-             ================================================== -->
-             <!-- Placed at the end of the document so the pages load faster -->
-        <script type="text/x-mathjax-config">
-          MathJax.Hub.Config({
-          TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
-          jax: ['input/TeX','input/MathML','output/HTML-CSS'],
-          extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
-          });
-        </script>
-        {% if mathjax_config %}
-          <script src="{{ project_url }}/js/MathJax-config/{{ path.basename(mathjax_config) }}"></script>
-        {% endif %}
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
   </body>
 </html>
