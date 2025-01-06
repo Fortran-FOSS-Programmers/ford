@@ -6,6 +6,25 @@ from textwrap import dedent
 
 import time
 
+import pytest
+
+
+class FakeProject:
+    def __init__(self, procedures=None):
+        self.procedures = procedures or []
+
+
+@pytest.fixture
+def parse_fortran_file_ts(copy_fortran_file):
+    def parse_file(data, **kwargs):
+        filename = copy_fortran_file(data)
+        settings = ProjectSettings(**kwargs)
+        parser = TreeSitterParser()
+        tree = parser.parser.parse(data.encode())
+        return FortranSourceFile(str(filename), settings, parser, source=tree.walk())
+
+    return parse_file
+
 
 data = dedent(
     """
@@ -37,7 +56,7 @@ end module foo
 ).encode()
 
 
-def test_tree_sitter_cursor_parser():
+def test_tree_sitter_parser():
     parser = TreeSitterParser()
     tree = parser.parser.parse(data)
 
@@ -49,6 +68,7 @@ def test_tree_sitter_cursor_parser():
         source=tree.walk(),
     )
     time_end = time.time()
+
     print(f"Cursor based: {time_end - time_start}")
     assert len(fortran_file.modules) == 1
     assert fortran_file.modules[0].name == "foo"
@@ -69,6 +89,14 @@ def test_tree_sitter_cursor_parser():
     assert len(function.functions) == 1
 
 
+def test_very_basic(parse_fortran_file_ts):
+    data = """
+    program foo
+    end program foo
+    """
+
+    fortran_file = parse_fortran_file_ts(data)
+    assert len(fortran_file.programs) == 1
+    assert fortran_file.programs[0].name == "foo"
 if __name__ == "__main__":
     test_tree_sitter_parser()
-    test_tree_sitter_cursor_parser()

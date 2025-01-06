@@ -65,6 +65,7 @@ class Query:
 
         return capture
 
+
 @contextmanager
 def descend_one_node(cursor: TreeCursor) -> TreeCursor:
     cursor.goto_first_child()
@@ -118,78 +119,81 @@ class TreeSitterParser:
         if cursor.node.type == "translation_unit":
             cursor.goto_first_child()
 
+        self._parse_node(entity, cursor)
         while cursor.goto_next_sibling():
-            # print(cursor.node.type, cursor.node.start_point)
-            if cursor.node.type == "program":
-                if not hasattr(entity, "programs"):
-                    self.warn_invalid_node(entity, "programs")
-                    continue
+            self._parse_node(entity, cursor)
 
-                with descend_one_node(cursor) as cursor:
-                    entity.programs.append(self.parse_program(entity, cursor))
+    def _parse_node(self, entity: FortranContainer, cursor: TreeCursor):
+        if cursor.node.type == "program":
+            if not hasattr(entity, "programs"):
+                self.warn_invalid_node(entity, "programs")
+                return
 
-            elif cursor.node.type == "module":
-                if not hasattr(entity, "modules"):
-                    self.warn_invalid_node(entity, "modules")
-                    continue
+            with descend_one_node(cursor) as cursor:
+                entity.programs.append(self.parse_program(entity, cursor))
 
-                with descend_one_node(cursor) as cursor:
-                    entity.modules.append(self.parse_module(entity, cursor))
+        elif cursor.node.type == "module":
+            if not hasattr(entity, "modules"):
+                self.warn_invalid_node(entity, "modules")
+                return
 
-            elif cursor.node.type == "submodule":
-                if not hasattr(entity, "submodules"):
-                    self.warn_invalid_node(entity, "submodules")
-                    continue
+            with descend_one_node(cursor) as cursor:
+                entity.modules.append(self.parse_module(entity, cursor))
 
-                with descend_one_node(cursor) as cursor:
-                    entity.submodules.append(self.parse_submodule(entity, cursor))
+        elif cursor.node.type == "submodule":
+            if not hasattr(entity, "submodules"):
+                self.warn_invalid_node(entity, "submodules")
+                return
 
-            elif cursor.node.type == "internal_procedures":
-                if not isinstance(entity, _can_have_contains):
-                    print(f"{entity.obj} {entity.name!r} can't have functions and that")
+            with descend_one_node(cursor) as cursor:
+                entity.submodules.append(self.parse_submodule(entity, cursor))
 
-                with descend_one_node(cursor) as cursor:
-                    self.parse_source(entity, cursor)
+        elif cursor.node.type == "internal_procedures":
+            if not isinstance(entity, _can_have_contains):
+                print(f"{entity.obj} {entity.name!r} can't have functions and that")
 
-            elif cursor.node.type == "function":
-                if not hasattr(entity, "functions"):
-                    self.warn_invalid_node(entity, "functions")
-                    continue
+            with descend_one_node(cursor) as cursor:
+                self.parse_source(entity, cursor)
 
-                with descend_one_node(cursor) as cursor:
-                    entity.functions.append(self.parse_function(entity, cursor))
+        elif cursor.node.type == "function":
+            if not hasattr(entity, "functions"):
+                self.warn_invalid_node(entity, "functions")
+                return
 
-            elif cursor.node.type == "subroutine":
-                if not hasattr(entity, "subroutines"):
-                    self.warn_invalid_node(entity, "subroutines")
-                    continue
+            with descend_one_node(cursor) as cursor:
+                entity.functions.append(self.parse_function(entity, cursor))
 
-                with descend_one_node(cursor) as cursor:
-                    entity.subroutines.append(self.parse_subroutine(entity, cursor))
+        elif cursor.node.type == "subroutine":
+            if not hasattr(entity, "subroutines"):
+                self.warn_invalid_node(entity, "subroutines")
+                return
 
-            elif cursor.node.type == "variable_declaration":
-                if not hasattr(entity, "variables"):
-                    self.warn_invalid_node(entity, "variables")
-                    continue
+            with descend_one_node(cursor) as cursor:
+                entity.subroutines.append(self.parse_subroutine(entity, cursor))
 
-                with descend_one_node(cursor):
-                    entity.variables.extend(self.parse_variable(entity, cursor))
+        elif cursor.node.type == "variable_declaration":
+            if not hasattr(entity, "variables"):
+                self.warn_invalid_node(entity, "variables")
+                return
 
-            elif cursor.node.type == "namelist_statement":
-                if not hasattr(entity, "namelists"):
-                    self.warn_invalid_node(entity, "namelists")
-                    continue
+            with descend_one_node(cursor):
+                entity.variables.extend(self.parse_variable(entity, cursor))
 
-                with descend_one_node(cursor):
-                    entity.namelists.extend(self.parse_namelist(entity, cursor))
+        elif cursor.node.type == "namelist_statement":
+            if not hasattr(entity, "namelists"):
+                self.warn_invalid_node(entity, "namelists")
+                return
+
+            with descend_one_node(cursor):
+                entity.namelists.extend(self.parse_namelist(entity, cursor))
+
+
 
         # attributes
 
         # block data
 
         # associate
-
-        # namelists
 
         # derived type
 
@@ -202,8 +206,6 @@ class TreeSitterParser:
         # enum
 
         # common
-
-        # variable
 
         # use
 
