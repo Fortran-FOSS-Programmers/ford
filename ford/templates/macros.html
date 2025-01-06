@@ -169,8 +169,10 @@
 
 {% macro deprecated(entity) %}
   {# Add 'Deprecated' warning #}
-  {%- if entity | meta('deprecated') -%}
-    <span class="badge bg-danger depwarn">Deprecated</span>
+  {%- if not entity.external_url -%}
+    {%- if entity | meta('deprecated') -%}
+      <span class="badge bg-danger depwarn">Deprecated</span>
+    {%- endif -%}
   {%- endif -%}
 {% endmacro %}
 
@@ -329,8 +331,12 @@
   {# Type-bound procedure declaration and bindings #}
   {{ tb.full_declaration | relurl(page_url) }} ::
   <strong>{% if link_name %}{{ tb | relurl(page_url) }}{% else %}{{ tb.name }}{% endif %}</strong>
-  {%- if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {{ tb.bindings | join(", ") }}{% endif %}
-  {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
+  {%- if tb.external_url %}
+    (external{% if not link_name %}: {{ tb | relurl(page_url) }}{% endif %})
+  {%- else %}
+    {%- if tb.generic or (tb.name != tb.bindings[0].name and tb.name != tb.bindings[0]) %} => {{ tb.bindings | join(", ") }}{% endif %}
+    {% if tb.binding|length == 1 %}<small>{{ tb.bindings[0].proctype }}</small>{% endif %}
+  {% endif %}
 {% endmacro %}
 
 
@@ -343,48 +349,50 @@
         {{ deprecated(tb) }}
       </h3>
     </div>
-    {% if tb.doc or meta_list(tb.meta)|trim|length is more_than_one %}
-      <div class="card-body">
-        {{ meta_list(tb.meta) }}
-        {{ docstring(tb) }}
-      </div>
-    {% endif %}
-    <ul class="list-group">
-      {% for bind in tb.bindings %}
-        <li class="list-group-item">
-          {% if tb.deferred and tb.protomatch %}
-            {% if tb.proto.obj == 'interface' %}
-              {{ binding_summary(tb.proto.procedure,proto=True) }}
-            {% elif tb.proto.obj == 'procedure' %}
-              {{ binding_summary(tb.proto,proto=True) }}
-            {% endif %}
-          {% elif bind.obj == 'boundprocedure' %}
-            {% if bind.deferred and bind.protomatch %}
-              {% if bind.proto.obj == 'interface' %}
-                {{ binding_summary(bind.proto.procedure,proto=True) }}
-              {% elif bind.proto.obj == 'procedure' %}
-                {{ binding_summary(bind.proto,proto=True) }}
+    {% if not tb.external_url %}
+      {% if tb.doc or meta_list(tb.meta)|trim|length is more_than_one %}
+        <div class="card-body">
+          {{ meta_list(tb.meta) }}
+          {{ docstring(tb) }}
+        </div>
+      {% endif %}
+      <ul class="list-group">
+        {% for bind in tb.bindings %}
+          <li class="list-group-item">
+            {% if tb.deferred and tb.protomatch %}
+              {% if tb.proto.obj == 'interface' %}
+                {{ binding_summary(tb.proto.procedure,proto=True) }}
+              {% elif tb.proto.obj == 'procedure' %}
+                {{ binding_summary(tb.proto,proto=True) }}
               {% endif %}
-            {% else %}
-              {{ binding_summary(bind.bindings[0]) }}
-            {% endif %}
-          {% else %}
-            {% if bind.obj == 'interface' %}
-              <h3>interface {{ deprecated(bind) }}</h3>
-              {% if bind.doc or (meta_list(bind.meta)|trim and not bind.visible) %}
-                {% if not bind.visible %}
-                  {{ meta_list(bind.meta) }}
+            {% elif bind.obj == 'boundprocedure' %}
+              {% if bind.deferred and bind.protomatch %}
+                {% if bind.proto.obj == 'interface' %}
+                  {{ binding_summary(bind.proto.procedure,proto=True) }}
+                {% elif bind.proto.obj == 'procedure' %}
+                  {{ binding_summary(bind.proto,proto=True) }}
                 {% endif %}
-                {{ bind | meta('summary') }}
+              {% else %}
+                {{ binding_summary(bind.bindings[0]) }}
               {% endif %}
-              {{ binding_summary(bind.procedure) }}
             {% else %}
-              {{ binding_summary(bind) }}
+              {% if bind.obj == 'interface' %}
+                <h3>interface {{ deprecated(bind) }}</h3>
+                {% if bind.doc or (meta_list(bind.meta)|trim and not bind.visible) %}
+                  {% if not bind.visible %}
+                    {{ meta_list(bind.meta) }}
+                  {% endif %}
+                  {{ bind | meta('summary') }}
+                {% endif %}
+                {{ binding_summary(bind.procedure) }}
+              {% else %}
+                {{ binding_summary(bind) }}
+              {% endif %}
             {% endif %}
-          {% endif %}
-        </li>
-      {% endfor %}
-    </ul>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
   </div>
 {% endmacro %}
 
@@ -571,7 +579,9 @@
             {% for tb in dtype.boundprocs %}
               <tr>
                 <td>{{ bound_declaration(tb, link_name=True) }}</td>
-                <td>{{ tb | meta('summary') | relurl(page_url) }}</td>
+                {% if not tb.external_url %}
+                  <td>{{ tb | meta('summary') | relurl(page_url) }}</td>
+		{% endif %}
               </tr>
               {% endfor %}
           </tbody>
