@@ -1,6 +1,6 @@
 from ford.sourceform import (
-    FortranBase,
     FortranContainer,
+    FortranEnum,
     FortranModule,
     FortranSubmodule,
     FortranFunction,
@@ -11,6 +11,7 @@ from ford.sourceform import (
     FortranNamelist,
     remove_prefixes,
     _can_have_contains,
+    SPLIT_RE,
 )
 from typing import List, Optional
 from contextlib import contextmanager
@@ -187,15 +188,19 @@ class TreeSitterParser:
             with descend_one_node(cursor):
                 entity.namelists.extend(self.parse_namelist(entity, cursor))
 
+        elif cursor.node.type == "derived_type_definition":
+            if not hasattr(entity, "types"):
+                self.warn_invalid_node(entity, "types")
+                return
 
+            with descend_one_node(cursor):
+                entity.types.append(self.parse_derived_type(entity, cursor))
 
         # attributes
 
         # block data
 
         # associate
-
-        # derived type
 
         # interface
 
@@ -215,10 +220,6 @@ class TreeSitterParser:
         #     return
 
         # if not (contains := self.contains_query.maybe_first(cursor)):
-        #     return
-
-        # if isinstance(entity, FortranType):
-        #     self.parse_derived_type(entity, cursor)
         #     return
 
     def parse_program(
@@ -250,19 +251,31 @@ class TreeSitterParser:
     def parse_associate(self, parent, node):
         pass
 
-    def parse_subroutine(self, parent, node):
-        # attributes = self.function_attributes_query(node)
-        # arguments = self.procedure_parameters_query.first(node)
-        # bind = self.language_binding_query.maybe_first(node)
+    def parse_subroutine(self, parent: FortranContainer, cursor: TreeCursor):
+        attributes = []
+        arguments = []
+        bindC = None
+
+        with descend_one_node(cursor):
+            while True:
+                if cursor.node.type == "procedure_qualifier":
+                    attributes.append(decode(cursor.node))
+                elif cursor.node.type == "parameters":
+                    arguments = [decode(arg) for arg in cursor.node.named_children]
+                elif cursor.node.type == "language_binding":
+                    bindC = decode(cursor.node)
+
+                if not cursor.goto_next_sibling():
+                    break
 
         subroutine = FortranSubroutine(
             self,
-            node,
+            cursor,
             parent=parent,
-            name=self._get_name(node),
-            attributes=[],
-            arguments=[],
-            bindC=None,
+            name=self._get_name(cursor),
+            attributes=",".join(attributes),
+            arguments=arguments,
+            bindC=bindC,
         )
         subroutine._cleanup()
         return subroutine
@@ -358,8 +371,40 @@ class TreeSitterParser:
 
         return namelists
 
-    def parse_derived_type(self, parent, node):
-        pass
+    def parse_derived_type(self, parent: FortranContainer, cursor: TreeCursor):
+
+        type_attributes = []
+        type_extends = None
+        type_permission = parent.permission
+        type_parameters = []
+        name = None
+
+        with descend_one_node(cursor):
+            while cursor.goto_next_sibling():
+                if cursor.node.type == "access_specifier":
+                    type_permission = decode(cursor.node)
+                elif cursor.node.type == "base_type_specifier":
+                    with descend_one_node(cursor):
+                        while cursor.goto_next_sibling():
+                            if cursor.node.type == "identifier":
+                                type_extends = decode(cursor.node)
+                elif cursor.node.type == "type_name":
+                    name = decode(cursor.node)
+                elif cursor.node.type == "derived_type_parameter_list":
+                    type_parameters = SPLIT_RE.split(decode(cursor.node).strip())
+                elif cursor.node.type in ("abstract_specifier", "language_binding"):
+                    type_attributes.append(decode(cursor.node))
+
+        return FortranType(
+            self,
+            cursor,
+            parent,
+            inherited_permission=type_permission,
+            name=name,
+            attributes=type_attributes,
+            parameters=type_parameters,
+            extends=type_extends,
+        )
 
     def parse_interface(self, parent, node):
         pass
@@ -370,5 +415,5 @@ class TreeSitterParser:
     def parse_final_procedure(self, parent, node):
         pass
 
-    def parse_enum(self, parent, node):
-        pass
+    def parse_enum(self, parent: FortranContainer, cursor: TreeCursor):
+        return FortranEnum(self, cursor, parent, parent.permission)

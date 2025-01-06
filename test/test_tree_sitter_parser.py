@@ -98,5 +98,37 @@ def test_very_basic(parse_fortran_file_ts):
     fortran_file = parse_fortran_file_ts(data)
     assert len(fortran_file.programs) == 1
     assert fortran_file.programs[0].name == "foo"
+
+def test_extends(parse_fortran_file_ts):
+    """Check that types can be extended"""
+
+    data = """
+    program foo
+    !! base type
+    type :: base
+    end type base
+
+    !! derived type
+    type, extends(base) :: derived
+    end type
+
+    !! derived type but capitalised
+    type, EXTENDS(base) :: derived_capital
+    end type
+
+    end program foo
+    """
+
+    fortran_type = parse_fortran_file_ts(data)
+
+    assert len(list(fortran_type.children)) == 1
+
+    program = fortran_type.programs[0]
+
+    assert len(program.types) == 3
+    assert program.types[1].extends == "base"
+    assert program.types[2].extends == "base"
+
+
 if __name__ == "__main__":
     test_tree_sitter_parser()
