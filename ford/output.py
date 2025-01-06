@@ -283,7 +283,7 @@ class Documentation:
         ]:
             (out_dir / directory).mkdir(USER_WRITABLE_ONLY)
 
-        for directory in ["css", "fonts", "js"]:
+        for directory in ["css", "js", "webfonts"]:
             copytree(loc / directory, out_dir / directory)
 
         if self.data["graph"]:
