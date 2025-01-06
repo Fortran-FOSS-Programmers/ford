@@ -224,7 +224,7 @@ class TreeSitterParser:
     def parse_program(
         self, parent: FortranContainer, program: TreeCursor
     ) -> FortranProgram:
-        return FortranProgram(self, program, name=self._get_name(program))
+        return FortranProgram(self, program, parent, name=self._get_name(program))
 
     def parse_module(
         self, parent: FortranContainer, module: TreeCursor
