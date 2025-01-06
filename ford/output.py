@@ -119,7 +119,7 @@ class Documentation:
         # Also, in future for other template, we may not need to
         # pass the data obj.
         env.globals["projectData"] = asdict(settings)
-        env.loader=jinja2.FileSystemLoader(
+        env.loader = jinja2.FileSystemLoader(
             settings.html_template_dir + [loc / "templates"]
         )
 

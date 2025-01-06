@@ -12,7 +12,7 @@ def test_sub_alias():
 
 
 def test_sub_alias_escape():
-    def_alias={"a":"b"}
+    def_alias = {"a": "b"}
 
     result = MetaMarkdown(aliases=def_alias).convert("\|a|")
     assert result == "<p>|a|</p>"
@@ -22,7 +22,6 @@ def test_sub_alias_escape():
 
     result = MetaMarkdown(aliases=def_alias).convert("\|undefined|")
     assert result == "<p>|undefined|</p>"
-
 
 
 def test_sub_alias_with_equals():

@@ -43,6 +43,7 @@ from urllib.parse import urljoin
 
 from ford.settings import EntitySettings
 
+
 class Tipue_Search_JSON_Generator:
     def __init__(self, output_path: os.PathLike, project_url: str):
         self.output_path = pathlib.Path(output_path)
