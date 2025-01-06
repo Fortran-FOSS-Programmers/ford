@@ -157,8 +157,8 @@ class AliasPreprocessor(Preprocessor):
             # replace the real aliases
             line = self.ALIAS_RE.sub(self._lookup, line)
             # replace the escaped aliases verbatim, without the preceding `\`
-            line = re.sub(r"\\(\|([^ ].*?[^ ]?)\|)", r"\g<1>",line)
-            lines[line_num]=line
+            line = re.sub(r"\\(\|([^ ].*?[^ ]?)\|)", r"\g<1>", line)
+            lines[line_num] = line
         return lines
 
 
