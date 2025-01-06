@@ -6,29 +6,8 @@ from textwrap import dedent
 
 import time
 
-import pytest
-
-
-class FakeProject:
-    def __init__(self, procedures=None):
-        self.procedures = procedures or []
-
-
-@pytest.fixture
-def parse_fortran_file_ts(copy_fortran_file):
-    def parse_file(data, **kwargs):
-        filename = copy_fortran_file(data)
-        settings = ProjectSettings(**kwargs)
-        parser = TreeSitterParser()
-        tree = parser.parser.parse(data.encode())
-        return FortranSourceFile(str(filename), settings, parser, source=tree.walk())
-
-    return parse_file
-
-
 data = dedent(
     """
-!> predoc
 module foo
 !! post doc
   !> type predoc
@@ -87,47 +66,6 @@ def test_tree_sitter_parser():
     assert function.namelists[0].name == "ben"
 
     assert len(function.functions) == 1
-
-
-def test_very_basic(parse_fortran_file_ts):
-    data = """
-    program foo
-    end program foo
-    """
-
-    fortran_file = parse_fortran_file_ts(data)
-    assert len(fortran_file.programs) == 1
-    assert fortran_file.programs[0].name == "foo"
-
-def test_extends(parse_fortran_file_ts):
-    """Check that types can be extended"""
-
-    data = """
-    program foo
-    !! base type
-    type :: base
-    end type base
-
-    !! derived type
-    type, extends(base) :: derived
-    end type
-
-    !! derived type but capitalised
-    type, EXTENDS(base) :: derived_capital
-    end type
-
-    end program foo
-    """
-
-    fortran_type = parse_fortran_file_ts(data)
-
-    assert len(list(fortran_type.children)) == 1
-
-    program = fortran_type.programs[0]
-
-    assert len(program.types) == 3
-    assert program.types[1].extends == "base"
-    assert program.types[2].extends == "base"
 
 
 if __name__ == "__main__":

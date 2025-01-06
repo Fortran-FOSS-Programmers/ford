@@ -1,3 +1,4 @@
+from ford.tree_sitter_parser import TreeSitterParser
 from ford.sourceform import (
     FortranSourceFile,
     FortranModule,
@@ -29,14 +30,24 @@ class FakeProject:
 def parse_fortran_file(copy_fortran_file):
     def parse_file(data, **kwargs):
         filename = copy_fortran_file(data)
+        use_tree_sitter = kwargs.pop("use_tree_sitter", False)
         settings = ProjectSettings(**kwargs)
-        parser = FordParser(settings.extra_vartypes)
-        return FortranSourceFile(str(filename), settings, parser)
+        if use_tree_sitter:
+            parser = TreeSitterParser()
+            tree = parser.parser.parse(data.encode())
+            source = tree.walk()
+            print(tree.root_node)
+        else:
+            parser = FordParser(settings.extra_vartypes)
+            source = None
+
+        return FortranSourceFile(str(filename), settings, parser, source=source)
 
     return parse_file
 
 
-def test_extends(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_extends(use_tree_sitter, parse_fortran_file):
     """Check that types can be extended"""
 
     data = """\
@@ -56,7 +67,7 @@ def test_extends(parse_fortran_file):
     end program foo
     """
 
-    fortran_type = parse_fortran_file(data)
+    fortran_type = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
 
     assert len(fortran_type.programs) == 1
 
@@ -138,7 +149,8 @@ def test_type_visibility_attributes(parse_fortran_file):
     assert private_private_attr_components.permission == "private"
 
 
-def test_submodule_procedure_contains(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_submodule_procedure_contains(use_tree_sitter, parse_fortran_file):
     """Check that submodule procedures can have 'contains' statements"""
 
     data = """\
@@ -162,7 +174,7 @@ def test_submodule_procedure_contains(parse_fortran_file):
     end submodule
     """
 
-    fortran_type = parse_fortran_file(data)
+    fortran_type = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
 
     assert len(fortran_type.modules) == 1
     assert len(fortran_type.submodules) == 1
@@ -172,10 +184,11 @@ def test_submodule_procedure_contains(parse_fortran_file):
     assert len(module_procedure.subroutines) == 1
 
 
-def test_backslash_in_character_string(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_backslash_in_character_string(use_tree_sitter, parse_fortran_file):
     """Bad escape crash #296"""
 
-    data = r"""\
+    data = r"""
     module test_module
     character(len=*),parameter,public:: q = '(?)'
     character(len=*),parameter,public:: a  = '\a'
@@ -184,7 +197,7 @@ def test_backslash_in_character_string(parse_fortran_file):
     end module test_module
     """
 
-    source = parse_fortran_file(data)
+    source = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     module = source.modules[0]
 
     expected_variables = {"q": r"'(?)'", "a": r"'\a'", "b": r"'\b'", "c": r"'\c'"}
@@ -193,7 +206,8 @@ def test_backslash_in_character_string(parse_fortran_file):
         assert variable.initial == expected_variables[variable.name]
 
 
-def test_sync_images_in_submodule_procedure(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_sync_images_in_submodule_procedure(use_tree_sitter, parse_fortran_file):
     """Crash on sync images inside module procedure in submodule #237"""
 
     data = """\
@@ -213,7 +227,7 @@ def test_sync_images_in_submodule_procedure(parse_fortran_file):
     end submodule
     """
 
-    parse_fortran_file(data)
+    parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
 
 
 def test_function_and_subroutine_call_on_same_line(parse_fortran_file):
@@ -716,7 +730,8 @@ def test_internal_proc_arg_var_call(parse_fortran_file):
     assert calls == []
 
 
-def test_component_access(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_component_access(use_tree_sitter, parse_fortran_file):
     data = """\
     module mod1
         integer :: anotherVar(20)
@@ -758,7 +773,7 @@ def test_component_access(parse_fortran_file):
     end program
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
 
     expected_variables = {"i", "j", "zzz", "Three"}
     actual_variables = {var.name for var in fortran_file.programs[0].variables}
@@ -1125,7 +1140,8 @@ def test_module_procedure_case(parse_fortran_file):
     assert module.interfaces[3].procedure.module
 
 
-def test_submodule_ancestors(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_submodule_ancestors(use_tree_sitter, parse_fortran_file):
     """Check that submodule ancestors and parents are correctly identified"""
 
     data = """\
@@ -1142,7 +1158,7 @@ def test_submodule_ancestors(parse_fortran_file):
     end submodule mod_d
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
 
     mod_b = fortran_file.submodules[0]
     mod_c = fortran_file.submodules[1]
@@ -1371,7 +1387,8 @@ def test_line_to_variable(line, expected_variables):
             assert len(proto_ids) == len(set(proto_ids)), attr
 
 
-def test_markdown_header_bug286(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_markdown_header_bug286(use_tree_sitter, parse_fortran_file):
     """Check that markdown headers work, issue #286"""
     data = """\
     module myModule
@@ -1385,7 +1402,7 @@ def test_markdown_header_bug286(parse_fortran_file):
     end module myModule
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     md = MetaMarkdown()
 
     subroutine = fortran_file.modules[0].subroutines[0]
@@ -1394,7 +1411,8 @@ def test_markdown_header_bug286(parse_fortran_file):
     assert subroutine.doc.startswith("<h2>My Header</h2>")
 
 
-def test_markdown_codeblocks_bug286(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_markdown_codeblocks_bug286(use_tree_sitter, parse_fortran_file):
     """Check that markdown codeblocks work, issue #287"""
     data = """\
     module myModule
@@ -1410,7 +1428,7 @@ def test_markdown_codeblocks_bug286(parse_fortran_file):
     end module myModule
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     md = MetaMarkdown()
 
     subroutine = fortran_file.modules[0].subroutines[0]
@@ -1420,7 +1438,8 @@ def test_markdown_codeblocks_bug286(parse_fortran_file):
     assert "<div" in subroutine.doc
 
 
-def test_markdown_meta_reset(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_markdown_meta_reset(use_tree_sitter, parse_fortran_file):
     """Check that markdown metadata is reset between entities"""
     data = """\
     module myModule
@@ -1438,7 +1457,7 @@ def test_markdown_meta_reset(parse_fortran_file):
     end module myModule
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     md = MetaMarkdown()
     module = fortran_file.modules[0]
     module.markdown(md)
@@ -1475,7 +1494,8 @@ def test_multiline_attributes(parse_fortran_file):
         ), f"Wrong dimension for '{variable}'"
 
 
-def test_markdown_source_meta(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_markdown_source_meta(use_tree_sitter, parse_fortran_file):
     """Check that specifying 'source' in the procedure meta block is processed"""
 
     data = """\
@@ -1488,7 +1508,7 @@ def test_markdown_source_meta(parse_fortran_file):
 
     md = MetaMarkdown()
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     subroutine = fortran_file.subroutines[0]
     subroutine.markdown(md)
 
@@ -1496,7 +1516,8 @@ def test_markdown_source_meta(parse_fortran_file):
     assert "with_source" in subroutine.src
 
 
-def test_markdown_source_settings(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_markdown_source_settings(use_tree_sitter, parse_fortran_file):
     """Check that specifying 'source' in the settings works"""
 
     data = """\
@@ -1506,7 +1527,9 @@ def test_markdown_source_settings(parse_fortran_file):
     """
 
     md = MetaMarkdown()
-    fortran_file = parse_fortran_file(data, source=True)
+    fortran_file = parse_fortran_file(
+        data, source=True, use_tree_sitter=use_tree_sitter
+    )
     subroutine = fortran_file.subroutines[0]
     subroutine.markdown(md)
 
@@ -1561,7 +1584,8 @@ def test_bad_parses(snippet, expected_error, expected_name, parse_fortran_file):
     assert expected_name in e.value.args[0]
 
 
-def test_routine_iterator(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_routine_iterator(use_tree_sitter, parse_fortran_file):
     data = """\
     module foo
       interface
@@ -1607,7 +1631,7 @@ def test_routine_iterator(parse_fortran_file):
     end submodule bar
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
 
     module = fortran_file.modules[0]
     assert sorted([proc.name for proc in module.routines]) == [
@@ -1710,7 +1734,8 @@ def test_type_component_permissions(parse_fortran_file):
         ), f"{ftype.name}::{ftype.boundprocs[1].name}"
 
 
-def test_variable_formatting(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_variable_formatting(use_tree_sitter, parse_fortran_file):
     data = """\
     module foo_m
       character(kind=kind('a'), len=4), dimension(:, :), allocatable :: multidimension_string
@@ -1723,7 +1748,7 @@ def test_variable_formatting(parse_fortran_file):
     end module foo_m
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     fortran_file.modules[0].correlate(FakeProject())
     variable0 = fortran_file.modules[0].variables[0]
     variable1 = fortran_file.modules[0].variables[1]
@@ -1923,49 +1948,53 @@ def test_block_data(parse_fortran_file):
     assert blockdata.variables[0].doc_list[0].strip() == "Variable docstring"
 
 
-def test_subroutine_empty_args(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_subroutine_empty_args(use_tree_sitter, parse_fortran_file):
     data = """\
     subroutine foo (    )
     end subroutine foo
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     subroutine = fortran_file.subroutines[0]
     assert subroutine.args == []
 
 
-def test_subroutine_whitespace(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_subroutine_whitespace(use_tree_sitter, parse_fortran_file):
     data = """\
     subroutine foo (  a,b,    c,d  )
       integer :: a, b, c, d
     end subroutine foo
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     subroutine = fortran_file.subroutines[0]
     arg_names = [arg.name for arg in subroutine.args]
     assert arg_names == ["a", "b", "c", "d"]
 
 
-def test_function_empty_args(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_function_empty_args(use_tree_sitter, parse_fortran_file):
     data = """\
     integer function foo (    )
     end function foo
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     function = fortran_file.functions[0]
     assert function.args == []
 
 
-def test_function_whitespace(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_function_whitespace(use_tree_sitter, parse_fortran_file):
     data = """\
     integer function foo (  a,b,    c,d  )
       integer :: a, b, c, d
     end function foo
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     function = fortran_file.functions[0]
     arg_names = [arg.name for arg in function.args]
     assert arg_names == ["a", "b", "c", "d"]
@@ -2062,7 +2091,8 @@ def test_submodule_procedure_calls(parse_fortran_file):
     assert submodule.modprocedures[0].calls[0] == submodule.functions[0]
 
 
-def test_namelist(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_namelist(use_tree_sitter, parse_fortran_file):
     data = """\
     module mod_a
       integer :: var_a
@@ -2084,7 +2114,7 @@ def test_namelist(parse_fortran_file):
       end subroutine sub
     end program prog
     """
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     namelist = fortran_file.programs[0].subroutines[0].namelists[0]
     assert namelist.name == "namelist_a"
 
@@ -2095,7 +2125,8 @@ def test_namelist(parse_fortran_file):
     assert namelist.doc_list == [" namelist docstring"]
 
 
-def test_namelist_correlate(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_namelist_correlate(use_tree_sitter, parse_fortran_file):
     data = """\
     program prog
       integer :: var_c
@@ -2107,7 +2138,7 @@ def test_namelist_correlate(parse_fortran_file):
       end subroutine sub
     end program prog
     """
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     fortran_file.programs[0].correlate(FakeProject())
     namelist = fortran_file.programs[0].subroutines[0].namelists[0]
     expected_names = sorted(["var_a", "var_b", "var_c"])
@@ -2231,7 +2262,8 @@ def test_type_num_lines(parse_fortran_file):
     assert example_type.num_lines_all == 8 + 9
 
 
-def test_associate_array(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_associate_array(use_tree_sitter, parse_fortran_file):
     data = """\
     subroutine test()
       associate(phi => [1,2], theta => (/ 3, 4 /))
@@ -2239,10 +2271,11 @@ def test_associate_array(parse_fortran_file):
     end subroutine test"""
 
     # Just check we can parse ok
-    parse_fortran_file(data)
+    parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
 
 
-def test_blocks_with_type(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_blocks_with_type(use_tree_sitter, parse_fortran_file):
     data = """\
     module foo
     contains
@@ -2255,19 +2288,20 @@ def test_blocks_with_type(parse_fortran_file):
     end module foo
     """
 
-    source = parse_fortran_file(data)
+    source = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     module = source.modules[0]
     assert len(module.subroutines) == 1
 
 
-def test_no_space_after_character_type(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_no_space_after_character_type(use_tree_sitter, parse_fortran_file):
     data = """\
     CHARACTER(LEN=250)FUNCTION FirstWord( sString ) RESULT( sRes )
         CHARACTER(LEN=250)sString
     END FUNCTION FirstWord
     """
 
-    source = parse_fortran_file(data)
+    source = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     function = source.functions[0]
     assert function.name.lower() == "firstword"
 

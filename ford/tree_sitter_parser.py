@@ -2,6 +2,7 @@ from ford.sourceform import (
     FortranContainer,
     FortranEnum,
     FortranModule,
+    FortranModuleProcedureImplementation,
     FortranSubmodule,
     FortranFunction,
     FortranSubroutine,
@@ -9,10 +10,10 @@ from ford.sourceform import (
     FortranVariable,
     FortranType,
     FortranNamelist,
-    remove_prefixes,
     _can_have_contains,
     SPLIT_RE,
 )
+
 from typing import List, Optional
 from contextlib import contextmanager
 
@@ -91,6 +92,14 @@ class TreeSitterParser:
 
     @staticmethod
     def read_docstring(cursor: TreeCursor, docmark: str) -> List[str]:
+        """Read either the preceeding or following comments if they
+        start with the appropriate docmark.
+
+        TODO: use appropriate docmark from settings
+
+        TODO: read whole blocks that start with the docmark
+
+        """
         comments = []
 
         node = cursor.node
@@ -101,7 +110,7 @@ class TreeSitterParser:
                 break
             comment = prev_sibling.text.decode()
             if is_predoc_comment(comment, "!>", "!*"):
-                comments.append(remove_prefixes(comment, "!>", "!*"))
+                comments.append(comment[2:])
 
         next_sibling = node
         while next_sibling := next_sibling.next_sibling:
@@ -109,7 +118,7 @@ class TreeSitterParser:
                 break
             comment = next_sibling.text.decode()
             if is_doc_comment(comment, "!!", "!<"):
-                comments.append(remove_prefixes(comment, "!!", "!<"))
+                comments.append(comment[2:])
 
         return comments
 
@@ -172,13 +181,20 @@ class TreeSitterParser:
             with descend_one_node(cursor) as cursor:
                 entity.subroutines.append(self.parse_subroutine(entity, cursor))
 
+        elif cursor.node.type == "module_procedure":
+            if not hasattr(entity, "modprocedures"):
+                self.warn_invalid_node(entity, "modprocedures")
+                return
+
+            with descend_one_node(cursor) as cursor:
+                entity.modprocedures.append(self.parse_module_procedure(entity, cursor))
+
         elif cursor.node.type == "variable_declaration":
             if not hasattr(entity, "variables"):
                 self.warn_invalid_node(entity, "variables")
                 return
 
-            with descend_one_node(cursor):
-                entity.variables.extend(self.parse_variable(entity, cursor))
+            entity.variables.extend(self.parse_variable(entity, cursor))
 
         elif cursor.node.type == "namelist_statement":
             if not hasattr(entity, "namelists"):
@@ -240,7 +256,17 @@ class TreeSitterParser:
     def parse_submodule(
         self, parent: FortranContainer, submodule: TreeCursor
     ) -> FortranSubmodule:
-        return FortranSubmodule(self, submodule, name=self._get_name(submodule))
+        ancestor_module = submodule.node.child_by_field_name("ancestor")
+        parent_submod = submodule.node.child_by_field_name("parent")
+
+        return FortranSubmodule(
+            self,
+            submodule,
+            parent,
+            name=self._get_name(submodule),
+            ancestor_module=maybe_decode(ancestor_module),
+            parent_submod=maybe_decode(parent_submod),
+        )
 
     def parse_attributes(self, parent, attributes):
         pass
@@ -251,7 +277,9 @@ class TreeSitterParser:
     def parse_associate(self, parent, node):
         pass
 
-    def parse_subroutine(self, parent: FortranContainer, cursor: TreeCursor):
+    def parse_subroutine(
+        self, parent: FortranContainer, cursor: TreeCursor
+    ) -> FortranSubroutine:
         attributes = []
         arguments = []
         bindC = None
@@ -320,35 +348,74 @@ class TreeSitterParser:
         function._cleanup()
         return function
 
+    def parse_module_procedure(
+        self, parent: FortranContainer, cursor: TreeCursor
+    ) -> FortranModuleProcedureImplementation:
+        attributes = []
+
+        with descend_one_node(cursor):
+            while True:
+                if cursor.node.type == "procedure_qualifier":
+                    attributes.append(decode(cursor.node))
+
+                if not cursor.goto_next_sibling():
+                    break
+
+        subroutine = FortranModuleProcedureImplementation(
+            self,
+            cursor,
+            parent=parent,
+            names=self._get_name(cursor),
+        )
+        subroutine._cleanup()
+        return subroutine
+
     def parse_variable(
         self, parent: FortranContainer, cursor: TreeCursor
     ) -> List[FortranVariable]:
         attributes = []
         vartype = None
-        names = []
 
-        while True:
-            if cursor.node.type in ["intrinsic_type", "derived_type"]:
-                vartype = decode(cursor.node)
-            elif cursor.node.type == "type_qualifier":
-                attributes.append(decode(cursor.node))
-            elif cursor.node.type == "identifier":
-                names.append(decode(cursor.node))
+        with descend_one_node(cursor):
+            while True:
+                if cursor.node.type in ["intrinsic_type", "derived_type"]:
+                    vartype = decode(cursor.node)
+                elif cursor.node.type == "type_qualifier":
+                    attributes.append(decode(cursor.node))
 
-            if not cursor.goto_next_sibling():
-                break
+                if not cursor.goto_next_sibling():
+                    break
 
-        return [
-            FortranVariable(
-                name=name, parent=parent, vartype=vartype, attribs=attributes
+        variables = []
+        for declarator in cursor.node.children_by_field_name("declarator"):
+            initial = None
+            if declarator.type == "identifier":
+                name = decode(declarator)
+            elif declarator.type == "sized_declarator":
+                name = decode(declarator.child(0))
+            elif declarator.type == "init_declarator":
+                name = decode(declarator.child_by_field_name("left"))
+                initial = decode(declarator.child_by_field_name("right"))
+            variables.append(
+                FortranVariable(
+                    name=name,
+                    parent=parent,
+                    vartype=vartype,
+                    attribs=attributes,
+                    initial=initial,
+                )
             )
-            for name in names
-        ]
+
+        return variables
 
     def parse_namelist(
         self, parent: FortranContainer, cursor: TreeCursor
     ) -> List[FortranNamelist]:
         namelists = []
+
+        # We need a cursor on the `namelist` node itself in order to get the
+        # docstring correctly
+        parent_cursor = cursor.node.parent.walk()
 
         while cursor.goto_next_sibling():
             if cursor.node.type != "variable_group":
@@ -363,16 +430,19 @@ class TreeSitterParser:
                         variables.append(decode(cursor.node))
                     if not cursor.goto_next_sibling():
                         break
-                namelists.append(
-                    FortranNamelist(
-                        cursor, self, parent=parent, name=name, vars=variables
-                    )
+            namelists.append(
+                FortranNamelist(
+                    parent_cursor,
+                    self,
+                    parent=parent,
+                    name=name,
+                    vars=variables,
                 )
+            )
 
         return namelists
 
     def parse_derived_type(self, parent: FortranContainer, cursor: TreeCursor):
-
         type_attributes = []
         type_extends = None
         type_permission = parent.permission
