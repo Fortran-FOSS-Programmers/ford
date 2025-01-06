@@ -130,7 +130,7 @@ class MetaMarkdown(Markdown):
 
 
 class AliasPreprocessor(Preprocessor):
-    """Substitute text aliases of the form ``|foo|`` from a dictionary
+    r"""Substitute text aliases of the form ``|foo|`` from a dictionary
     of aliases and their replacements.
     The backslash ``\`` acts as an escape character, aliases of the
     form ``\|foo|`` will not be replaced, but instead copied verbatim
