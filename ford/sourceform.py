@@ -163,8 +163,12 @@ COMMON_RE = re.compile(
 COMMON_SPLIT_RE = re.compile(r"\s*(/\s*\w+\s*/)\s*", re.IGNORECASE)
 FINAL_RE = re.compile(r"^final\s*::\s*(\w.*)", re.IGNORECASE)
 USE_RE = re.compile(
-    r"^use(?:\s*(?:,\s*(?:non_)?intrinsic\s*)?::\s*|\s+)(\w+)\s*($|,.*)",
-    re.IGNORECASE,
+    r"""^use(?:\s*(?:,\s*(?:non_)?intrinsic\s*)?::\s*|\s+) # Preamble
+    (?P<module_name>\w+)\s*
+    (?P<only>,\s*only\s*:\s*)?
+    (?P<rest>.*)
+    """,
+    re.IGNORECASE | re.VERBOSE,
 )
 ARITH_GOTO_RE = re.compile(r"go\s*to\s*\([0-9,\s]+\)", re.IGNORECASE)
 CALL_RE = re.compile(
@@ -198,8 +202,20 @@ NAMELIST_RE = re.compile(
 
 POINTS_TO_RE = re.compile(r"\s*=>\s*", re.IGNORECASE)
 SPLIT_RE = re.compile(r"\s*,\s*", re.IGNORECASE)
-ONLY_RE = re.compile(r"^\s*,\s*only\s*:\s*(?=[^,])", re.IGNORECASE)
-RENAME_RE = re.compile(r"(\w+)\s*=>\s*(\w+)", re.IGNORECASE)
+RENAME_RE = re.compile(r"(?P<alias>\w+)\s*=>\s*(?P<name>\w+)", re.IGNORECASE)
+
+
+@dataclass
+class ModuleUsesItem:
+    name: str
+    alias: str | None = None
+
+
+@dataclass
+class ModuleUses:
+    module: str | FortranModule
+    only: bool
+    items: List[ModuleUsesItem]
 
 
 class FordParser:
@@ -803,7 +819,15 @@ class FordParser:
             entity.print_error(line, "Unexpected USE statement")
             return
 
-        entity.uses.append(list(match.groups()))
+        def extract_item(item: str) -> ModuleUsesItem:
+            item = item.strip()
+            if renamed := RENAME_RE.search(item):
+                return ModuleUsesItem(renamed["name"].lower(), renamed["alias"].lower())
+            return ModuleUsesItem(item.lower())
+
+        only = match["only"] is not None
+        items = [extract_item(item) for item in match["rest"].split(",")]
+        entity.uses.append(ModuleUses(match["module_name"].lower(), only, items))
 
     def parse_call(self, entity: FortranContainer, line, associations: Associations):
         if not hasattr(entity, "calls"):
@@ -1457,7 +1481,7 @@ class FortranCodeUnit(FortranContainer):
         self.param_dict: Dict[str, str] = {}
         self.subroutines: List[FortranSubroutine] = []
         self.types: List[FortranType] = []
-        self.uses: List[List[Union[str, FortranModule]]] = []
+        self.uses: List[ModuleUses] | set[FortranModule] = []
         self.variables: List[FortranVariable] = []
         self.all_procs: Dict[str, Union[FortranProcedure, FortranInterface]] = {}
         self.public_list: List[str] = []
@@ -1540,10 +1564,10 @@ class FortranCodeUnit(FortranContainer):
             }
 
         # Add procedures and types from USED modules to our lists
-        for mod, extra in self.uses:
-            if isinstance(mod, str):
+        for mod in self.uses:
+            if isinstance(mod.module, str):
                 continue
-            procs, absints, types, variables = mod.get_used_entities(extra)
+            procs, absints, types, variables = mod.module.get_used_entities(mod)
             if isinstance(self, FortranModule):
                 self.pub_procs.update(filter_public(procs))
                 self.pub_absints.update(filter_public(absints))
@@ -1553,7 +1577,7 @@ class FortranCodeUnit(FortranContainer):
             self.all_absinterfaces.update(absints)
             self.all_types.update(types)
             self.all_vars.update(variables)
-        self.uses = set([m[0] for m in self.uses])
+        self.uses = set([m.module for m in self.uses])
 
         typelist = {}
         for dtype in self.types:
@@ -1938,41 +1962,36 @@ class FortranModule(FortranCodeUnit):
         self.pub_types = filter_public(self.types)
         self.pub_absints = filter_public(self.absinterfaces)
 
-    def get_used_entities(self, use_specs):
+    def get_used_entities(self, use_specs: ModuleUses):
         """
         Returns the entities which are imported by a use statement. These
         are contained in dicts.
         """
-        if len(use_specs.strip()) == 0:
+        if len(use_specs.items) == 0:
             return (self.pub_procs, self.pub_absints, self.pub_types, self.pub_vars)
 
-        only = bool(ONLY_RE.match(use_specs))
-        use_specs = ONLY_RE.sub("", use_specs)
         # The used names after possible renaming
         used_names = {}
-        for item in map(str.strip, use_specs.split(",")):
-            if match := RENAME_RE.search(item):
-                used_names[match.group(2).lower()] = match.group(1).lower()
-            else:
-                used_names[item.lower()] = item.lower()
+        for item in use_specs.items:
+            used_names[item.name] = item.alias or item.name
 
-        def used_objects(object_type: str, only: bool) -> dict:
+        def used_objects(object_type: str) -> dict:
             """Get the objects that are actually used"""
             result = {}
             object_collection = getattr(self, object_type)
             for name, obj in object_collection.items():
                 name = name.lower()
-                if only:
+                if use_specs.only:
                     if name in used_names:
                         result[used_names[name]] = obj
                 else:
                     result[name] = obj
             return result
 
-        ret_procs = used_objects("pub_procs", only)
-        ret_absints = used_objects("pub_absints", only)
-        ret_types = used_objects("pub_types", only)
-        ret_vars = used_objects("pub_vars", only)
+        ret_procs = used_objects("pub_procs")
+        ret_absints = used_objects("pub_absints")
+        ret_types = used_objects("pub_types")
+        ret_vars = used_objects("pub_vars")
         return (ret_procs, ret_absints, ret_types, ret_vars)
 
 

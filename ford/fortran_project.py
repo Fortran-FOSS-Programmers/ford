@@ -281,7 +281,7 @@ class Project:
             find_used_modules(entity, self.modules, self.submodules, self.extModules)
 
         def get_deps(item):
-            uselist = [m[0] for m in item.uses]
+            uselist = [m.module for m in item.uses]
             interfaceprocs = []
             for intr in getattr(item, "interfaces", []):
                 if hasattr(intr, "procedure"):
@@ -475,12 +475,12 @@ def find_used_modules(
     # Find the modules that this entity uses
     for dependency in entity.uses:
         # Can safely skip if already known
-        if isinstance(dependency[0], FortranModule):
+        if isinstance(dependency.module, FortranModule):
             continue
-        dependency_name = dependency[0].lower()
+        dependency_name = dependency.module.lower()
         for candidate in chain(modules, external_modules):
             if dependency_name == candidate.name.lower():
-                dependency[0] = candidate
+                dependency.module = candidate
                 break
 
     # Find the ancestor of this submodule (if entity is one)

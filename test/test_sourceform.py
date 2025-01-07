@@ -8,6 +8,8 @@ from ford.sourceform import (
     line_to_variables,
     GenericSource,
     FordParser,
+    ModuleUses,
+    ModuleUsesItem,
 )
 from ford.fortran_project import find_used_modules
 from ford import ProjectSettings
@@ -844,7 +846,9 @@ def test_module_get_used_entities_all():
 
     module = FakeModule(mod_procedures, mod_interfaces, mod_types, mod_variables)
 
-    procedures, interfaces, types, variables = module.get_used_entities("")
+    procedures, interfaces, types, variables = module.get_used_entities(
+        ModuleUses("foo", False, [])
+    )
 
     assert procedures == mod_procedures
     assert interfaces == mod_interfaces
@@ -861,7 +865,7 @@ def test_module_get_used_entities_some():
     module = FakeModule(mod_procedures, mod_interfaces, mod_types, mod_variables)
 
     procedures, interfaces, types, variables = module.get_used_entities(
-        ", only: x, subroutine"
+        ModuleUses("foo", True, [ModuleUsesItem("x"), ModuleUsesItem("subroutine")])
     )
 
     assert procedures == mod_procedures
@@ -879,7 +883,9 @@ def test_module_get_used_entities_rename():
     module = FakeModule(mod_procedures, mod_interfaces, mod_types, mod_variables)
 
     procedures, interfaces, types, variables = module.get_used_entities(
-        ", only: x, y => subroutine"
+        ModuleUses(
+            "foo", True, [ModuleUsesItem("x"), ModuleUsesItem("subroutine", "y")]
+        )
     )
 
     assert procedures == {"y": mod_procedures["subroutine"]}
