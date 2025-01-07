@@ -12,6 +12,8 @@ from ford.sourceform import (
     FortranNamelist,
     _can_have_contains,
     SPLIT_RE,
+    ModuleUses,
+    ModuleUsesItem,
 )
 
 from typing import List, Optional
@@ -212,6 +214,14 @@ class TreeSitterParser:
             with descend_one_node(cursor):
                 entity.types.append(self.parse_derived_type(entity, cursor))
 
+        elif cursor.node.type == "use_statement":
+            if not hasattr(entity, "uses"):
+                self.warn_invalid_node(entity, "uses")
+                return
+
+            with descend_one_node(cursor):
+                entity.uses.append(self.parse_use_statement(entity, cursor))
+
         # attributes
 
         # block data
@@ -227,8 +237,6 @@ class TreeSitterParser:
         # enum
 
         # common
-
-        # use
 
         # calls
 
@@ -246,12 +254,14 @@ class TreeSitterParser:
     def parse_module(
         self, parent: FortranContainer, module: TreeCursor
     ) -> FortranModule:
-        return FortranModule(
+        module = FortranModule(
             self,
             module,
             parent=parent,
             name=self._get_name(module),
         )
+        module._cleanup()
+        return module
 
     def parse_submodule(
         self, parent: FortranContainer, submodule: TreeCursor
@@ -487,3 +497,28 @@ class TreeSitterParser:
 
     def parse_enum(self, parent: FortranContainer, cursor: TreeCursor):
         return FortranEnum(self, cursor, parent, parent.permission)
+
+    def parse_use_statement(
+        self, parent: FortranContainer, cursor: TreeCursor
+    ) -> ModuleUses:
+        name = ""
+        items = []
+        only = False
+        while cursor.goto_next_sibling():
+            if cursor.node.type == "module_name":
+                name = decode(cursor.node)
+            elif cursor.node.type == "use_alias":
+                items.append(_from_use_alias(cursor.node))
+            elif cursor.node.type == "included_items":
+                only = True
+                for item in cursor.node.named_children:
+                    if item.type == "use_alias":
+                        items.append(_from_use_alias(item))
+                    else:
+                        items.append(ModuleUsesItem(decode(item)))
+
+        return ModuleUses(name, only, items)
+
+
+def _from_use_alias(use_alias: Node) -> ModuleUsesItem:
+    return ModuleUsesItem(decode(use_alias.child(2)), decode(use_alias.child(0)))

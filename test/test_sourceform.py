@@ -1,15 +1,12 @@
 from ford.tree_sitter_parser import TreeSitterParser
 from ford.sourceform import (
     FortranSourceFile,
-    FortranModule,
     FortranBase,
     parse_type,
     ParsedType,
     line_to_variables,
     GenericSource,
     FordParser,
-    ModuleUses,
-    ModuleUsesItem,
 )
 from ford.fortran_project import find_used_modules
 from ford import ProjectSettings
@@ -828,70 +825,100 @@ def test_enumerator_with_kind(parse_fortran_file):
     assert enum.variables[5].initial == 1
 
 
-class FakeModule(FortranModule):
-    def __init__(
-        self, procedures: dict, interfaces: dict, types: dict, variables: dict
-    ):
-        self.pub_procs = procedures
-        self.pub_absints = interfaces
-        self.pub_types = types
-        self.pub_vars = variables
+USED_ENTITIES_BASE_MODULE = """
+module a
+  type :: mytype
+  end type mytype
+
+  integer :: x
+
+  abstract interface
+    subroutine foo
+    end subroutine foo
+  end interface
+contains
+  subroutine bar
+  end subroutine bar
+end module a
+"""
 
 
-def test_module_get_used_entities_all():
-    mod_procedures = {"subroutine": "some subroutine"}
-    mod_interfaces = {"abstract": "interface"}
-    mod_types = {"mytype": "some type"}
-    mod_variables = {"x": "some var"}
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_module_get_used_entities_all(use_tree_sitter, parse_fortran_file):
+    data = f"""
+    {USED_ENTITIES_BASE_MODULE}
 
-    module = FakeModule(mod_procedures, mod_interfaces, mod_types, mod_variables)
+    module b
+      use a
+    end module b
+    """
 
-    procedures, interfaces, types, variables = module.get_used_entities(
-        ModuleUses("foo", False, [])
-    )
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
+    fp = FakeProject()
+    modules = {module.name: module for module in fortran_file.modules}
+    for module in modules.values():
+        find_used_modules(module, modules.values(), [], [])
 
-    assert procedures == mod_procedures
-    assert interfaces == mod_interfaces
-    assert types == mod_types
-    assert variables == mod_variables
+    # correlation order is important
+    modules["a"].correlate(fp)
+    modules["b"].correlate(fp)
 
-
-def test_module_get_used_entities_some():
-    mod_procedures = {"subroutine": "some subroutine"}
-    mod_interfaces = {"abstract": "interface"}
-    mod_types = {"mytype": "some type"}
-    mod_variables = {"x": "some var", "y": "some other var"}
-
-    module = FakeModule(mod_procedures, mod_interfaces, mod_types, mod_variables)
-
-    procedures, interfaces, types, variables = module.get_used_entities(
-        ModuleUses("foo", True, [ModuleUsesItem("x"), ModuleUsesItem("subroutine")])
-    )
-
-    assert procedures == mod_procedures
-    assert interfaces == {}
-    assert types == {}
-    assert variables == {"x": mod_variables["x"]}
+    assert modules["b"].pub_procs == {"bar": modules["a"].subroutines[0]}
+    assert modules["b"].pub_vars == {"x": modules["a"].variables[0]}
+    assert modules["b"].pub_types == {"mytype": modules["a"].types[0]}
+    assert modules["b"].pub_absints == {"foo": modules["a"].absinterfaces[0]}
 
 
-def test_module_get_used_entities_rename():
-    mod_procedures = {"subroutine": "some subroutine"}
-    mod_interfaces = {"abstract": "interface"}
-    mod_types = {"mytype": "some type"}
-    mod_variables = {"x": "some var", "y": "some other var"}
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_module_get_used_entities_some(use_tree_sitter, parse_fortran_file):
+    data = f"""
+    {USED_ENTITIES_BASE_MODULE}
 
-    module = FakeModule(mod_procedures, mod_interfaces, mod_types, mod_variables)
+    module b
+      use a, only: x, bar
+    end module b
+    """
 
-    procedures, interfaces, types, variables = module.get_used_entities(
-        ModuleUses(
-            "foo", True, [ModuleUsesItem("x"), ModuleUsesItem("subroutine", "y")]
-        )
-    )
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
+    fp = FakeProject()
+    modules = {module.name: module for module in fortran_file.modules}
+    for module in modules.values():
+        find_used_modules(module, modules.values(), [], [])
 
-    assert procedures == {"y": mod_procedures["subroutine"]}
-    assert interfaces == {}
-    assert types == {}
-    assert variables == {"x": mod_variables["x"]}
+    # correlation order is important
+    modules["a"].correlate(fp)
+    modules["b"].correlate(fp)
+
+    assert modules["b"].pub_procs == {"bar": modules["a"].subroutines[0]}
+    assert modules["b"].pub_vars == {"x": modules["a"].variables[0]}
+    assert modules["b"].pub_types == {}
+    assert modules["b"].pub_absints == {}
+
+
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_module_get_used_entities_rename(use_tree_sitter, parse_fortran_file):
+    data = f"""
+    {USED_ENTITIES_BASE_MODULE}
+
+    module b
+      use a, only: x, y => bar
+    end module b
+    """
+
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
+    fp = FakeProject()
+    modules = {module.name: module for module in fortran_file.modules}
+    for module in modules.values():
+        find_used_modules(module, modules.values(), [], [])
+
+    # correlation order is important
+    modules["a"].correlate(fp)
+    modules["b"].correlate(fp)
+
+    assert modules["b"].pub_procs == {"y": modules["a"].subroutines[0]}
+    assert modules["b"].pub_vars == {"x": modules["a"].variables[0]}
+    assert modules["b"].pub_types == {}
+    assert modules["b"].pub_absints == {}
 
 
 def test_module_default_access(parse_fortran_file):
