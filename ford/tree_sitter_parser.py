@@ -131,11 +131,17 @@ class TreeSitterParser:
         if cursor.node.type == "translation_unit":
             cursor.goto_first_child()
 
-        self._parse_node(entity, cursor)
-        while cursor.goto_next_sibling():
-            self._parse_node(entity, cursor)
+        child_permission = (
+            "public" if isinstance(entity, FortranType) else entity.permission
+        )
 
-    def _parse_node(self, entity: FortranContainer, cursor: TreeCursor):
+        self._parse_node(entity, cursor, child_permission)
+        while cursor.goto_next_sibling():
+            self._parse_node(entity, cursor, child_permission)
+
+    def _parse_node(
+        self, entity: FortranContainer, cursor: TreeCursor, child_permission: str
+    ):
         if cursor.node.type == "program":
             if not hasattr(entity, "programs"):
                 self.warn_invalid_node(entity, "programs")
@@ -196,7 +202,9 @@ class TreeSitterParser:
                 self.warn_invalid_node(entity, "variables")
                 return
 
-            entity.variables.extend(self.parse_variable(entity, cursor))
+            entity.variables.extend(
+                self.parse_variable(entity, cursor, child_permission)
+            )
 
         elif cursor.node.type == "namelist_statement":
             if not hasattr(entity, "namelists"):
@@ -221,6 +229,11 @@ class TreeSitterParser:
 
             with descend_one_node(cursor):
                 entity.uses.append(self.parse_use_statement(entity, cursor))
+
+        elif cursor.node.type in ("public_statement", "private_statement"):
+            # This needs to set `child_permission` in the outer scope
+            if not isinstance(entity, FortranType):
+                entity.permission = decode(cursor.node.child(0)).lower()
 
         # attributes
 
@@ -310,6 +323,7 @@ class TreeSitterParser:
             self,
             cursor,
             parent=parent,
+            inherited_permission=parent.permission,
             name=self._get_name(cursor),
             attributes=",".join(attributes),
             arguments=arguments,
@@ -347,6 +361,7 @@ class TreeSitterParser:
             self,
             cursor,
             parent=parent,
+            inherited_permission=parent.permission,
             name=self._get_name(cursor),
             attributes=",".join(attributes),
             result_name=result_name,
@@ -381,17 +396,37 @@ class TreeSitterParser:
         return subroutine
 
     def parse_variable(
-        self, parent: FortranContainer, cursor: TreeCursor
+        self, parent: FortranContainer, cursor: TreeCursor, inherit_permission: str
     ) -> List[FortranVariable]:
         attributes = []
         vartype = None
+        permission = inherit_permission
+        intent = ""
+        optional = False
+        permission = inherit_permission
+        parameter = False
 
         with descend_one_node(cursor):
             while True:
                 if cursor.node.type in ["intrinsic_type", "derived_type"]:
                     vartype = decode(cursor.node)
                 elif cursor.node.type == "type_qualifier":
-                    attributes.append(decode(cursor.node))
+                    # Lowercase and remove whitespace so checking intent is cleaner
+                    tmp_attrib_lower = decode(cursor.node).lower().replace(" ", "")
+                    if tmp_attrib_lower in ["public", "private", "protected"]:
+                        permission = tmp_attrib_lower
+                    elif tmp_attrib_lower == "optional":
+                        optional = True
+                    elif tmp_attrib_lower == "parameter":
+                        parameter = True
+                    elif tmp_attrib_lower == "intent(in)":
+                        intent = "in"
+                    elif tmp_attrib_lower == "intent(out)":
+                        intent = "out"
+                    elif tmp_attrib_lower == "intent(inout)":
+                        intent = "inout"
+                    else:
+                        attributes.append(decode(cursor.node))
 
                 if not cursor.goto_next_sibling():
                     break
@@ -412,6 +447,10 @@ class TreeSitterParser:
                     parent=parent,
                     vartype=vartype,
                     attribs=attributes,
+                    intent=intent,
+                    optional=optional,
+                    permission=permission,
+                    parameter=parameter,
                     initial=initial,
                 )
             )
