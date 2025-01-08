@@ -350,7 +350,8 @@ class TreeSitterParser:
             elif node.type == "parameters":
                 arguments = [decode(arg).lower() for arg in node.named_children]
             elif node.type == "language_binding":
-                bindC = decode(node)
+                # just get bit inside brackets
+                bindC = decode(node)[5:-1]
 
         return FortranSubroutine(
             self,
@@ -382,7 +383,8 @@ class TreeSitterParser:
             elif node.type == "function_result":
                 result_name = decode(node.named_children[0]).lower()
             elif node.type == "language_binding":
-                bindC = decode(node)
+                # just get bit inside brackets
+                bindC = decode(node)[5:-1]
 
         return FortranFunction(
             self,

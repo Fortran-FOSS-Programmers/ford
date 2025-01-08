@@ -2043,25 +2043,27 @@ def test_function_whitespace(use_tree_sitter, parse_fortran_file):
     assert arg_names == ["a", "b", "c", "d"]
 
 
-def test_bind_name_subroutine(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_bind_name_subroutine(use_tree_sitter, parse_fortran_file):
     data = """\
     subroutine init() bind(C, name="c_init")
     end subroutine init
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     subroutine = fortran_file.subroutines[0]
 
     assert subroutine.bindC == 'C, name="c_init"'
 
 
-def test_bind_name_function(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_bind_name_function(use_tree_sitter, parse_fortran_file):
     data = """\
     integer function foo() bind(C, name="c_foo")
     end function foo
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     function = fortran_file.functions[0]
 
     assert function.bindC == 'C, name="c_foo"'

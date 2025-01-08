@@ -546,7 +546,7 @@ class FordParser:
                 name=match["name"],
                 attributes=attributes,
                 arguments=args,
-                bindC=match["bindC"],
+                bindC=self._parse_bind_C(entity, match["bindC"]),
             )
         )
         entity.num_lines += entity.subroutines[-1].num_lines - 1
@@ -582,12 +582,46 @@ class FordParser:
                 attributes=attributes,
                 name=name,
                 arguments=args,
-                bindC=match["bindC"],
+                bindC=self._parse_bind_C(entity, match["bindC"]),
                 result_name=result_name,
                 result_type=result_type,
             )
         )
         entity.num_lines += entity.functions[-1].num_lines - 1
+
+    def _parse_bind_C(
+        self, parent: FortranContainer, bind_C_text: str | None
+    ) -> str | None:
+        """Parses a `bind(...)` attribute"""
+
+        if bind_C_text is None:
+            return None
+
+        # Shouldn't have parentheses in, but just to be safe, let's
+        # remove any
+        if "(" in bind_C_text or ")" in bind_C_text:
+            bind_C_text = ford.utils.get_parens(bind_C_text, -1)
+
+        bindC = bind_C_text
+
+        if parent is None:
+            return bindC
+
+        # Now we have to replace any quoted text that has previously
+        # been removed
+        search_from = 0
+        while quote := QUOTES_RE.search(bindC[search_from:]):
+            num = int(quote.group()[1:-1])
+            bindC = bindC[0:search_from] + QUOTES_RE.sub(
+                parent.strings[num], bindC[search_from:], count=1
+            )
+            if not (next_match := QUOTES_RE.search(bindC[search_from:])):
+                raise ValueError(
+                    f"Unexpected missing quotes in '{bindC[search_from:]}'"
+                )
+            search_from += next_match.end(0)
+
+        return bindC
 
     def parse_namelist(self, entity: FortranContainer, source, line, match: re.Match):
         if not hasattr(entity, "namelists"):
@@ -2062,39 +2096,8 @@ class FortranProcedure(FortranCodeUnit):
         self.module: bool = "module" in attributes
 
         self.args = arguments
-        self._parse_bind_C(bindC)
+        self.bindC = bindC
         self._common_initialize()
-
-    def _parse_bind_C(self, bind_C_text: Optional[str]):
-        """Parses a `bind(...)` attribute"""
-
-        if bind_C_text is None:
-            self.bindC = None
-            return
-
-        # Shouldn't have parentheses in, but just to be safe, let's
-        # remove any
-        if "(" in bind_C_text or ")" in bind_C_text:
-            bind_C_text = ford.utils.get_parens(bind_C_text, -1)
-
-        self.bindC = bind_C_text
-
-        if self.parent is None:
-            return
-
-        # Now we have to replace any quoted text that has previously
-        # been removed
-        search_from = 0
-        while quote := QUOTES_RE.search(self.bindC[search_from:]):
-            num = int(quote.group()[1:-1])
-            self.bindC = self.bindC[0:search_from] + QUOTES_RE.sub(
-                self.parent.strings[num], self.bindC[search_from:], count=1
-            )
-            if not (next_match := QUOTES_RE.search(self.bindC[search_from:])):
-                raise ValueError(
-                    f"Unexpected missing quotes in '{self.bindC[search_from:]}'"
-                )
-            search_from += next_match.end(0)
 
     @property
     def is_interface_procedure(self) -> bool:
