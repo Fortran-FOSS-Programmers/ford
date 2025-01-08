@@ -304,7 +304,6 @@ class FordParser:
                 elif endtype and endtype.lower() == "associate":
                     associations.remove_last_batch()
                 elif blocklevel == 0:
-                    entity._cleanup()
                     return
 
             elif (match := MODPROC_RE.match(line)) and (
@@ -1404,6 +1403,7 @@ class FortranContainer(FortranBase):
             self.permission = "private"
 
         parser.parse_source(self, source)
+        self._cleanup()
 
     def _add_procedure_calls(
         self, line: str, associations: Associations = Associations()
@@ -1452,7 +1452,7 @@ class FortranContainer(FortranBase):
             self.calls.append(call_chain)
 
     def _cleanup(self):
-        raise NotImplementedError()
+        pass
 
     def print_error(self, line, error, describe_object=True) -> None:
         description = f" in {self.obj} '{self.name}'" if describe_object else ""

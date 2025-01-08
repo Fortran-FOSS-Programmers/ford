@@ -285,21 +285,17 @@ class TreeSitterParser:
     def parse_program(
         self, parent: FortranContainer, program: TreeCursor
     ) -> FortranProgram:
-        program = FortranProgram(self, program, parent, name=self._get_name(program))
-        program._cleanup()
-        return program
+        return FortranProgram(self, program, parent, name=self._get_name(program))
 
     def parse_module(
         self, parent: FortranContainer, module: TreeCursor
     ) -> FortranModule:
-        module = FortranModule(
+        return FortranModule(
             self,
             module,
             parent=parent,
             name=self._get_name(module),
         )
-        module._cleanup()
-        return module
 
     def parse_submodule(
         self, parent: FortranContainer, submodule: TreeCursor
@@ -353,7 +349,7 @@ class TreeSitterParser:
             elif node.type == "language_binding":
                 bindC = decode(node)
 
-        subroutine = FortranSubroutine(
+        return FortranSubroutine(
             self,
             cursor,
             parent=parent,
@@ -363,8 +359,6 @@ class TreeSitterParser:
             arguments=arguments,
             bindC=bindC,
         )
-        subroutine._cleanup()
-        return subroutine
 
     def parse_function(
         self, parent: FortranContainer, cursor: TreeCursor
@@ -387,7 +381,7 @@ class TreeSitterParser:
             elif node.type == "language_binding":
                 bindC = decode(node)
 
-        function = FortranFunction(
+        return FortranFunction(
             self,
             cursor,
             parent=parent,
@@ -400,9 +394,6 @@ class TreeSitterParser:
             bindC=bindC,
         )
 
-        function._cleanup()
-        return function
-
     def parse_module_procedure(
         self, parent: FortranContainer, cursor: TreeCursor
     ) -> FortranModuleProcedureImplementation:
@@ -412,14 +403,12 @@ class TreeSitterParser:
             if node.type == "procedure_qualifier":
                 attributes.append(decode(node))
 
-        subroutine = FortranModuleProcedureImplementation(
+        return FortranModuleProcedureImplementation(
             self,
             cursor,
             parent=parent,
             names=self._get_name(cursor),
         )
-        subroutine._cleanup()
-        return subroutine
 
     def parse_variable(
         self, parent: FortranContainer, cursor: TreeCursor, inherit_permission: str
@@ -574,7 +563,6 @@ class TreeSitterParser:
             name=name,
             abstract=abstract,
         )
-        interface._cleanup()
 
         if abstract:
             parent.absinterfaces.extend(interface.contents)
