@@ -33,7 +33,7 @@ def parse_fortran_file(copy_fortran_file):
         settings = ProjectSettings(**kwargs)
         if use_tree_sitter:
             parser = TreeSitterParser()
-            tree = parser.parser.parse(data.encode())
+            tree = parser.parse(data.encode())
             source = tree.walk()
             print(tree.root_node)
         else:

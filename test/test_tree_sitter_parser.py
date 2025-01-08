@@ -37,7 +37,7 @@ end module foo
 
 def test_tree_sitter_parser():
     parser = TreeSitterParser()
-    tree = parser.parser.parse(data)
+    tree = parser.parse(data)
 
     time_start = time.time()
     fortran_file = FortranSourceFile(

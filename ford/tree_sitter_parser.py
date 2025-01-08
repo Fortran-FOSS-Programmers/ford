@@ -22,7 +22,7 @@ from ford.sourceform import (
 from typing import List, Optional, Generator
 from contextlib import contextmanager
 
-from tree_sitter import Node, Language, TreeCursor, Parser
+from tree_sitter import Node, Language, TreeCursor, Parser, Tree
 import tree_sitter_fortran
 
 FREE_FORM_LANGUAGE = Language(tree_sitter_fortran.language())
@@ -99,10 +99,13 @@ class TreeSitterParser:
     def __init__(self, free_form: bool = True, encoding: str = "utf-8"):
         self.encoding = encoding
 
-        self.language = FREE_FORM_LANGUAGE if free_form else FIXED_FORM_LANGUAGE
-        self.parser = FREE_FORM_PARSER if free_form else FIXED_FORM_PARSER
+        self._language = FREE_FORM_LANGUAGE if free_form else FIXED_FORM_LANGUAGE
+        self._parser = FREE_FORM_PARSER if free_form else FIXED_FORM_PARSER
 
-        self.name_query = Query(self.language, "(name) @name")
+        self.name_query = Query(self._language, "(name) @name")
+
+    def parse(self, source: bytes) -> Tree:
+        return self._parser.parse(source)
 
     def _get_name(self, node: TreeCursor):
         name_capture = self.name_query(node.node)[0]
