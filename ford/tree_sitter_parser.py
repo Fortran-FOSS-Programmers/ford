@@ -1,6 +1,8 @@
 from ford.sourceform import (
     FortranContainer,
+    FortranCodeUnit,
     FortranEnum,
+    FortranInterface,
     FortranModule,
     FortranModuleProcedureImplementation,
     FortranSubmodule,
@@ -44,6 +46,10 @@ def decode(node: Node) -> str:
 
 def maybe_decode(node: Optional[Node]) -> Optional[str]:
     return decode(node) if node else None
+
+
+def has_named_child(cursor: TreeCursor, name: str) -> bool:
+    return any(child.type == name for child in cursor.node.named_children)
 
 
 class Query:
@@ -197,7 +203,14 @@ class TreeSitterParser:
             with descend_one_node(cursor) as cursor:
                 entity.modprocedures.append(self.parse_module_procedure(entity, cursor))
 
-        elif cursor.node.type == "variable_declaration":
+        elif cursor.node.type == "interface":
+            if not isinstance(entity, FortranCodeUnit):
+                self.warn_invalid_node(entity, "interfaces")
+
+            with descend_one_node(cursor) as cursor:
+                self.parse_interface(entity, cursor)
+
+        elif cursor.node.type in ("variable_declaration", "procedure_statement"):
             if not hasattr(entity, "variables"):
                 self.warn_invalid_node(entity, "variables")
                 return
@@ -240,8 +253,6 @@ class TreeSitterParser:
         # block data
 
         # associate
-
-        # interface
 
         # boundproc
 
@@ -310,9 +321,11 @@ class TreeSitterParser:
         with descend_one_node(cursor):
             while True:
                 if cursor.node.type == "procedure_qualifier":
-                    attributes.append(decode(cursor.node))
+                    attributes.append(decode(cursor.node).lower())
                 elif cursor.node.type == "parameters":
-                    arguments = [decode(arg) for arg in cursor.node.named_children]
+                    arguments = [
+                        decode(arg).lower() for arg in cursor.node.named_children
+                    ]
                 elif cursor.node.type == "language_binding":
                     bindC = decode(cursor.node)
 
@@ -344,13 +357,15 @@ class TreeSitterParser:
         with descend_one_node(cursor):
             while True:
                 if cursor.node.type == "procedure_qualifier":
-                    attributes.append(decode(cursor.node))
+                    attributes.append(decode(cursor.node).lower())
                 elif cursor.node.type in ("intrinsic_type", "derived_type"):
-                    result_type = decode(cursor.node)
+                    result_type = decode(cursor.node).lower()
                 elif cursor.node.type == "parameters":
-                    arguments = [decode(arg) for arg in cursor.node.named_children]
+                    arguments = [
+                        decode(arg).lower() for arg in cursor.node.named_children
+                    ]
                 elif cursor.node.type == "function_result":
-                    result_name = decode(cursor.node.named_children[0])
+                    result_name = decode(cursor.node.named_children[0]).lower()
                 elif cursor.node.type == "language_binding":
                     bindC = decode(cursor.node)
 
@@ -399,18 +414,19 @@ class TreeSitterParser:
         self, parent: FortranContainer, cursor: TreeCursor, inherit_permission: str
     ) -> List[FortranVariable]:
         attributes = []
-        vartype = None
         permission = inherit_permission
         intent = ""
         optional = False
         permission = inherit_permission
         parameter = False
 
+        vartype = maybe_decode(cursor.node.child_by_field_name("type"))
+
+        variables = []
+
         with descend_one_node(cursor):
             while True:
-                if cursor.node.type in ["intrinsic_type", "derived_type"]:
-                    vartype = decode(cursor.node)
-                elif cursor.node.type == "type_qualifier":
+                if cursor.node.type == "type_qualifier":
                     # Lowercase and remove whitespace so checking intent is cleaner
                     tmp_attrib_lower = decode(cursor.node).lower().replace(" ", "")
                     if tmp_attrib_lower in ["public", "private", "protected"]:
@@ -428,12 +444,22 @@ class TreeSitterParser:
                     else:
                         attributes.append(decode(cursor.node))
 
+                if cursor.node.type == "method_name":
+                    variables.append(
+                        FortranVariable(
+                            decode(cursor.node),
+                            vartype="procedure",
+                            parent=parent,
+                            attribs=attributes,
+                        )
+                    )
+
                 if not cursor.goto_next_sibling():
                     break
 
-        variables = []
         for declarator in cursor.node.children_by_field_name("declarator"):
             initial = None
+            points = False
             if declarator.type == "identifier":
                 name = decode(declarator)
             elif declarator.type == "sized_declarator":
@@ -441,6 +467,10 @@ class TreeSitterParser:
             elif declarator.type == "init_declarator":
                 name = decode(declarator.child_by_field_name("left"))
                 initial = decode(declarator.child_by_field_name("right"))
+            elif declarator.type == "pointer_init_declarator":
+                name = decode(declarator.child_by_field_name("left"))
+                initial = decode(declarator.child_by_field_name("right"))
+                points = True
             variables.append(
                 FortranVariable(
                     name=name,
@@ -452,6 +482,7 @@ class TreeSitterParser:
                     permission=permission,
                     parameter=parameter,
                     initial=initial,
+                    points=points,
                 )
             )
 
@@ -525,8 +556,29 @@ class TreeSitterParser:
             extends=type_extends,
         )
 
-    def parse_interface(self, parent, node):
-        pass
+    def parse_interface(self, parent: FortranCodeUnit, cursor: TreeCursor):
+        abstract = has_named_child(cursor, "abstract_specifier")
+        name = ""
+        for child in cursor.node.named_children:
+            if child.type in ("name", "assignment", "operator", "defined_io_procedure"):
+                name = decode(child)
+
+        interface = FortranInterface(
+            self,
+            cursor,
+            parent,
+            inherited_permission=parent.permission,
+            name=name,
+            abstract=abstract,
+        )
+        interface._cleanup()
+
+        if abstract:
+            parent.absinterfaces.extend(interface.contents)
+        elif name:
+            parent.interfaces.append(interface)
+        else:
+            parent.interfaces.extend(interface.contents)
 
     def parse_bound_procedure(self, parent, node):
         pass

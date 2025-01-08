@@ -1125,7 +1125,8 @@ def test_module_private_access(parse_fortran_file):
     }
 
 
-def test_module_procedure_case(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_module_procedure_case(use_tree_sitter, parse_fortran_file):
     """Check that submodule procedures in interface blocks are parsed correctly. Issue #353"""
     data = """\
     module a
@@ -1164,7 +1165,7 @@ def test_module_procedure_case(parse_fortran_file):
     end submodule b
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     module = fortran_file.modules[0]
     assert len(module.interfaces) == 4
     assert module.interfaces[0].procedure.module
@@ -1864,7 +1865,8 @@ def test_url(parse_fortran_file):
     )
 
 
-def test_single_character_interface(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_single_character_interface(use_tree_sitter, parse_fortran_file):
     data = """\
     module a
       interface b !! some comment
@@ -1872,12 +1874,13 @@ def test_single_character_interface(parse_fortran_file):
       end interface b
     end module a
     """
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     assert fortran_file.modules[0].interfaces[0].name == "b"
     assert fortran_file.modules[0].interfaces[0].doc_list == [" some comment"]
 
 
-def test_module_procedure_in_module(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_module_procedure_in_module(use_tree_sitter, parse_fortran_file):
     data = """\
     module foo_mod
       interface
@@ -1891,7 +1894,7 @@ def test_module_procedure_in_module(parse_fortran_file):
     end module foo_mod
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     module = fortran_file.modules[0]
     module.correlate(FakeProject())
 
@@ -1903,7 +1906,8 @@ def test_module_procedure_in_module(parse_fortran_file):
     assert modproc.module == interface
 
 
-def test_module_interface_same_name_as_interface(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_module_interface_same_name_as_interface(use_tree_sitter, parse_fortran_file):
     data = """\
     module foo_m
       interface foo
@@ -1918,7 +1922,7 @@ def test_module_interface_same_name_as_interface(parse_fortran_file):
     end module
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     module = fortran_file.modules[0]
     module.correlate(FakeProject())
 
@@ -1929,7 +1933,8 @@ def test_module_interface_same_name_as_interface(parse_fortran_file):
     assert modproc.name == "foo"
 
 
-def test_procedure_pointer(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_procedure_pointer(use_tree_sitter, parse_fortran_file):
     data = """\
     module foo
       abstract interface
@@ -1949,7 +1954,7 @@ def test_procedure_pointer(parse_fortran_file):
     end module
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     module = fortran_file.modules[0]
     module.correlate(FakeProject())
     assert len(module.interfaces[0].modprocs) == 0
