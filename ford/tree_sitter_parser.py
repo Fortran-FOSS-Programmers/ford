@@ -1,4 +1,5 @@
 from ford.sourceform import (
+    FortranBlockData,
     FortranContainer,
     FortranCodeUnit,
     FortranEnum,
@@ -150,138 +151,143 @@ class TreeSitterParser:
             "public" if isinstance(entity, FortranType) else entity.permission
         )
 
-        self._parse_node(entity, cursor, child_permission)
-        while cursor.goto_next_sibling():
-            self._parse_node(entity, cursor, child_permission)
+        while True:
+            if cursor.node.type == "program":
+                if not hasattr(entity, "programs"):
+                    self.warn_invalid_node(entity, "programs")
+                    return
 
-    def _parse_node(
-        self, entity: FortranContainer, cursor: TreeCursor, child_permission: str
-    ):
-        if cursor.node.type == "program":
-            if not hasattr(entity, "programs"):
-                self.warn_invalid_node(entity, "programs")
-                return
+                with descend_one_node(cursor) as cursor:
+                    entity.programs.append(self.parse_program(entity, cursor))
 
-            with descend_one_node(cursor) as cursor:
-                entity.programs.append(self.parse_program(entity, cursor))
+            elif cursor.node.type == "module":
+                if not hasattr(entity, "modules"):
+                    self.warn_invalid_node(entity, "modules")
+                    return
 
-        elif cursor.node.type == "module":
-            if not hasattr(entity, "modules"):
-                self.warn_invalid_node(entity, "modules")
-                return
+                with descend_one_node(cursor) as cursor:
+                    entity.modules.append(self.parse_module(entity, cursor))
 
-            with descend_one_node(cursor) as cursor:
-                entity.modules.append(self.parse_module(entity, cursor))
+            elif cursor.node.type == "submodule":
+                if not hasattr(entity, "submodules"):
+                    self.warn_invalid_node(entity, "submodules")
+                    return
 
-        elif cursor.node.type == "submodule":
-            if not hasattr(entity, "submodules"):
-                self.warn_invalid_node(entity, "submodules")
-                return
+                with descend_one_node(cursor) as cursor:
+                    entity.submodules.append(self.parse_submodule(entity, cursor))
 
-            with descend_one_node(cursor) as cursor:
-                entity.submodules.append(self.parse_submodule(entity, cursor))
+            elif cursor.node.type == "internal_procedures":
+                if not isinstance(entity, _can_have_contains):
+                    print(f"{entity.obj} {entity.name!r} can't have functions and that")
 
-        elif cursor.node.type == "internal_procedures":
-            if not isinstance(entity, _can_have_contains):
-                print(f"{entity.obj} {entity.name!r} can't have functions and that")
+                with descend_one_node(cursor) as cursor:
+                    self.parse_source(entity, cursor)
 
-            with descend_one_node(cursor) as cursor:
-                self.parse_source(entity, cursor)
+            elif cursor.node.type == "function":
+                if not hasattr(entity, "functions"):
+                    self.warn_invalid_node(entity, "functions")
+                    return
 
-        elif cursor.node.type == "function":
-            if not hasattr(entity, "functions"):
-                self.warn_invalid_node(entity, "functions")
-                return
+                with descend_one_node(cursor) as cursor:
+                    entity.functions.append(self.parse_function(entity, cursor))
 
-            with descend_one_node(cursor) as cursor:
-                entity.functions.append(self.parse_function(entity, cursor))
+            elif cursor.node.type == "subroutine":
+                if not hasattr(entity, "subroutines"):
+                    self.warn_invalid_node(entity, "subroutines")
+                    return
 
-        elif cursor.node.type == "subroutine":
-            if not hasattr(entity, "subroutines"):
-                self.warn_invalid_node(entity, "subroutines")
-                return
+                with descend_one_node(cursor) as cursor:
+                    entity.subroutines.append(self.parse_subroutine(entity, cursor))
 
-            with descend_one_node(cursor) as cursor:
-                entity.subroutines.append(self.parse_subroutine(entity, cursor))
+            elif cursor.node.type == "module_procedure":
+                if not hasattr(entity, "modprocedures"):
+                    self.warn_invalid_node(entity, "modprocedures")
+                    return
 
-        elif cursor.node.type == "module_procedure":
-            if not hasattr(entity, "modprocedures"):
-                self.warn_invalid_node(entity, "modprocedures")
-                return
+                with descend_one_node(cursor) as cursor:
+                    entity.modprocedures.append(
+                        self.parse_module_procedure(entity, cursor)
+                    )
 
-            with descend_one_node(cursor) as cursor:
-                entity.modprocedures.append(self.parse_module_procedure(entity, cursor))
+            elif cursor.node.type == "interface":
+                if not isinstance(entity, FortranCodeUnit):
+                    self.warn_invalid_node(entity, "interfaces")
 
-        elif cursor.node.type == "interface":
-            if not isinstance(entity, FortranCodeUnit):
-                self.warn_invalid_node(entity, "interfaces")
+                with descend_one_node(cursor) as cursor:
+                    self.parse_interface(entity, cursor)
 
-            with descend_one_node(cursor) as cursor:
-                self.parse_interface(entity, cursor)
+            elif cursor.node.type in ("variable_declaration", "procedure_statement"):
+                if not hasattr(entity, "variables"):
+                    self.warn_invalid_node(entity, "variables")
+                    return
 
-        elif cursor.node.type in ("variable_declaration", "procedure_statement"):
-            if not hasattr(entity, "variables"):
-                self.warn_invalid_node(entity, "variables")
-                return
+                entity.variables.extend(
+                    self.parse_variable(entity, cursor, child_permission)
+                )
 
-            entity.variables.extend(
-                self.parse_variable(entity, cursor, child_permission)
-            )
+            elif cursor.node.type == "namelist_statement":
+                if not hasattr(entity, "namelists"):
+                    self.warn_invalid_node(entity, "namelists")
+                    return
 
-        elif cursor.node.type == "namelist_statement":
-            if not hasattr(entity, "namelists"):
-                self.warn_invalid_node(entity, "namelists")
-                return
+                with descend_one_node(cursor):
+                    entity.namelists.extend(self.parse_namelist(entity, cursor))
 
-            with descend_one_node(cursor):
-                entity.namelists.extend(self.parse_namelist(entity, cursor))
+            elif cursor.node.type == "derived_type_definition":
+                if not hasattr(entity, "types"):
+                    self.warn_invalid_node(entity, "types")
+                    return
 
-        elif cursor.node.type == "derived_type_definition":
-            if not hasattr(entity, "types"):
-                self.warn_invalid_node(entity, "types")
-                return
+                with descend_one_node(cursor):
+                    entity.types.append(self.parse_derived_type(entity, cursor))
 
-            with descend_one_node(cursor):
-                entity.types.append(self.parse_derived_type(entity, cursor))
+            elif cursor.node.type == "use_statement":
+                if not hasattr(entity, "uses"):
+                    self.warn_invalid_node(entity, "uses")
+                    return
 
-        elif cursor.node.type == "use_statement":
-            if not hasattr(entity, "uses"):
-                self.warn_invalid_node(entity, "uses")
-                return
+                entity.uses.append(self.parse_use_statement(entity, cursor))
 
-            entity.uses.append(self.parse_use_statement(entity, cursor))
+            elif cursor.node.type in ("public_statement", "private_statement"):
+                if cursor.node.named_child_count == 0:
+                    child_permission = decode(cursor.node.child(0)).lower()
+                    if not isinstance(entity, FortranType):
+                        entity.permission = child_permission
+                else:
+                    self.parse_attributes(entity, cursor)
 
-        elif cursor.node.type in ("public_statement", "private_statement"):
-            # This needs to set `child_permission` in the outer scope
-            if not isinstance(entity, FortranType):
-                entity.permission = decode(cursor.node.child(0)).lower()
+            elif cursor.node.type == "variable_modification":
+                self.parse_attributes(entity, cursor)
 
-        # attributes
+            # block data
 
-        # block data
+            # associate
 
-        # associate
+            # boundproc
 
-        # boundproc
+            # finalproc
 
-        # finalproc
+            # enum
 
-        # enum
+            # common
 
-        # common
+            # calls
 
-        # calls
+            # if not isinstance(entity, _can_have_contains):
+            #     return
 
-        # if not isinstance(entity, _can_have_contains):
-        #     return
+            # if not (contains := self.contains_query.maybe_first(cursor)):
+            #     return
 
-        # if not (contains := self.contains_query.maybe_first(cursor)):
-        #     return
+            if not cursor.goto_next_sibling():
+                break
 
     def parse_program(
         self, parent: FortranContainer, program: TreeCursor
     ) -> FortranProgram:
-        return FortranProgram(self, program, parent, name=self._get_name(program))
+        program = FortranProgram(self, program, parent, name=self._get_name(program))
+        program._cleanup()
+        return program
 
     def parse_module(
         self, parent: FortranContainer, module: TreeCursor
@@ -310,8 +316,21 @@ class TreeSitterParser:
             parent_submod=maybe_decode(parent_submod),
         )
 
-    def parse_attributes(self, parent, attributes):
-        pass
+    def parse_attributes(
+        self, parent: FortranCodeUnit | FortranBlockData, cursor: TreeCursor
+    ):
+        attribute = decode(cursor.node.child(0)).lower()
+
+        names = []
+        for node in traverse_children(cursor):
+            if node.type == "identifier":
+                names.append(decode(node).lower())
+            elif node.type == "sized_declarator":
+                names.append(decode(node.child(0)).lower())
+                attribute += decode(node.child(1)).lower()
+
+        for name in names:
+            parent.attr_dict[name].append(attribute)
 
     def parse_block_data(self, parent, node):
         pass

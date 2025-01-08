@@ -77,7 +77,8 @@ def test_extends(use_tree_sitter, parse_fortran_file):
     assert program.types[2].extends == "base"
 
 
-def test_type_visibility_attributes(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_type_visibility_attributes(use_tree_sitter, parse_fortran_file):
     """Check that we can set visibility attributes on types, #388"""
 
     data = """\
@@ -122,7 +123,7 @@ def test_type_visibility_attributes(parse_fortran_file):
     end module default_private
     """
 
-    source = parse_fortran_file(data)
+    source = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     public_no_attrs = source.modules[0].types[0]
     public_public_attr = source.modules[0].types[1]
     public_private_attr = source.modules[0].types[2]
@@ -921,7 +922,8 @@ def test_module_get_used_entities_rename(use_tree_sitter, parse_fortran_file):
     assert modules["b"].pub_absints == {}
 
 
-def test_module_default_access(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_module_default_access(use_tree_sitter, parse_fortran_file):
     data = """\
     module default_access
       ! No access keyword
@@ -957,7 +959,7 @@ def test_module_default_access(parse_fortran_file):
     end module default_access
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     fortran_file.modules[0].correlate(FakeProject())
 
     assert set(fortran_file.modules[0].all_procs.keys()) == {
@@ -989,7 +991,8 @@ def test_module_default_access(parse_fortran_file):
     }
 
 
-def test_module_public_access(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_module_public_access(use_tree_sitter, parse_fortran_file):
     data = """\
     module public_access
       public
@@ -1025,7 +1028,7 @@ def test_module_public_access(parse_fortran_file):
     end module public_access
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     fortran_file.modules[0].correlate(FakeProject())
 
     assert set(fortran_file.modules[0].all_procs.keys()) == {
@@ -1057,7 +1060,8 @@ def test_module_public_access(parse_fortran_file):
     }
 
 
-def test_module_private_access(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_module_private_access(use_tree_sitter, parse_fortran_file):
     data = """\
     module private_access
       private
@@ -1093,7 +1097,7 @@ def test_module_private_access(parse_fortran_file):
     end module private_access
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     fortran_file.modules[0].correlate(FakeProject())
 
     assert set(fortran_file.modules[0].all_procs.keys()) == {
@@ -1500,7 +1504,8 @@ def test_markdown_meta_reset(use_tree_sitter, parse_fortran_file):
     assert module.subroutines[1].meta.author is None
 
 
-def test_multiline_attributes(parse_fortran_file):
+@pytest.mark.parametrize("use_tree_sitter", (False, True))
+def test_multiline_attributes(use_tree_sitter, parse_fortran_file):
     """Check that specifying attributes over multiple lines works"""
 
     data = """\
@@ -1516,7 +1521,7 @@ def test_multiline_attributes(parse_fortran_file):
     end program prog
     """
 
-    fortran_file = parse_fortran_file(data)
+    fortran_file = parse_fortran_file(data, use_tree_sitter=use_tree_sitter)
     prog = fortran_file.programs[0]
 
     for variable in prog.variables:
