@@ -128,6 +128,7 @@ class ProjectSettings:
     creation_date: str = "%Y-%m-%dT%H:%M:%S.%f%z"
     css: Optional[Path] = None
     dbg: bool = True
+    directory: Path = Path.cwd()
     display: List[str] = field(default_factory=lambda: ["public", "protected"])
     doc_license: str = ""
     docmark: str = "!"
@@ -256,14 +257,14 @@ class ProjectSettings:
     def normalise_paths(self, directory=None):
         if directory is None:
             directory = Path.cwd()
-        directory = Path(directory).absolute()
+        self.directory = Path(directory).absolute()
         field_types = get_type_hints(self)
 
         if self.favicon == FAVICON_PATH:
             self.favicon = Path(__file__).parent / FAVICON_PATH
 
         if self.md_base_dir == Path("."):
-            self.md_base_dir = directory
+            self.md_base_dir = self.directory
 
         for key, value in asdict(self).items():
             if value is None:
@@ -273,10 +274,10 @@ class ProjectSettings:
 
             if is_same_type(default_type, List[Path]):
                 value = getattr(self, key)
-                setattr(self, key, [normalise_path(directory, v) for v in value])
+                setattr(self, key, [normalise_path(self.directory, v) for v in value])
 
             if is_same_type(default_type, Path):
-                setattr(self, key, normalise_path(directory, value))
+                setattr(self, key, normalise_path(self.directory, value))
 
         if self.relative:
             self.project_url = self.output_dir

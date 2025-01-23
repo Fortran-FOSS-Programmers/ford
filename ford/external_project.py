@@ -36,7 +36,9 @@ ATTRIBUTES = [
     "boundprocs",
     "vartype",
     "permission",
+    "deferred",
     "generic",
+    "attribs",
 ]
 
 # Mapping between entity name and its type
@@ -59,6 +61,8 @@ def obj2dict(intObj):
     """
     if hasattr(intObj, "external_url"):
         return None
+    if isinstance(intObj, str):
+        return intObj
     extDict = {
         "name": intObj.name,
         "external_url": f"./{intObj.get_url()}",
@@ -66,11 +70,6 @@ def obj2dict(intObj):
     }
     if hasattr(intObj, "proctype"):
         extDict["proctype"] = intObj.proctype
-    if hasattr(intObj, "extends"):
-        if isinstance(intObj.extends, FortranType):
-            extDict["extends"] = obj2dict(intObj.extends)
-        else:
-            extDict["extends"] = intObj.extends
     for attrib in ATTRIBUTES:
         if not hasattr(intObj, attrib):
             continue
@@ -99,6 +98,8 @@ def dict2obj(project, extDict, url, parent=None, remote: bool = False) -> Fortra
     """
     Converts a dictionary to an object and immediately adds it to the project
     """
+    if isinstance(extDict, str):
+        return extDict
     name = extDict["name"]
     if extDict["external_url"]:
         extDict["external_url"] = extDict["external_url"].split("/", 1)[-1]
@@ -119,8 +120,6 @@ def dict2obj(project, extDict, url, parent=None, remote: bool = False) -> Fortra
 
     if obj_type == "interface":
         extObj.proctype = extDict["proctype"]
-    elif obj_type == "type":
-        extObj.extends = extDict["extends"]
 
     for key in ATTRIBUTES:
         if key not in extDict:
@@ -173,7 +172,8 @@ def load_external_modules(project):
                     urlopen(urljoin(url, "modules.json")).read().decode("utf8")
                 )
             else:
-                url = pathlib.Path(url).resolve()
+                if not pathlib.Path(url).is_absolute():
+                    url = project.settings.directory.joinpath(url).resolve()
                 extModules = modules_from_local(url)
         except (URLError, json.JSONDecodeError) as error:
             extModules = []
