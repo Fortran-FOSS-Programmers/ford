@@ -85,6 +85,39 @@ def _match_docmark(
     return docmark.match(line)
 
 
+def preprocess(
+    filename: str,
+    preprocessor: list[str],
+    macros: list[str] | None,
+    encoding: str,
+    inc_dirs: Sequence[PathLike],
+) -> StringIO | None:
+    """Run the preprocessor over the given file"""
+    # Populate the macro definition and include directory path from
+    # the input lists. To define a macro we prepend '-D' and for an
+    # include path we prepend '-I'.  It's important that we do not
+    # prepend to an empty string as 'cpp ... -D file.F90' doesn't do
+    # what is desired; use filter to remove these.
+    macros = ["-D" + mac.strip() for mac in filter(None, macros or [])]
+    incdirs = [f"-I{d}" for d in inc_dirs]
+    preprocessor = preprocessor + macros + incdirs + [filename]
+    command = " ".join(preprocessor)
+    print(f"Preprocessing {filename}")
+    try:
+        out = subprocess.run(
+            preprocessor, encoding=encoding, check=True, capture_output=True
+        )
+        if out.stderr:
+            warn(f"Warning when preprocessing {filename}:\n{command}\n{out.stderr}")
+        return StringIO(out.stdout)
+    except subprocess.CalledProcessError as err:
+        warn(
+            f"error when preprocessing {filename}:\n{command}\n{err.stderr}\n"
+            "Reverting to unpreprocessed file"
+        )
+        return None
+
+
 class FortranReader:
     """
     An iterator which will convert a free-form Fortran source file into
@@ -157,32 +190,12 @@ class FortranReader:
 
         self.reader: Union[StringIO, TextIOWrapper]
 
-        if preprocessor:
-            # Populate the macro definition and include directory path from
-            # the input lists.  To define a macro we prepend '-D' and for an
-            # include path we prepend '-I'.  It's important that we do not
-            # prepend to an empty string as 'cpp ... -D file.F90' doesn't do
-            # what is desired; use filter to remove these.
-            macros = ["-D" + mac.strip() for mac in filter(None, macros or [])]
-            incdirs = [f"-I{d}" for d in self.inc_dirs]
-            preprocessor = preprocessor + macros + incdirs + [filename]
-            command = " ".join(preprocessor)
-            print(f"Preprocessing {filename}")
-            try:
-                out = subprocess.run(
-                    preprocessor, encoding=encoding, check=True, capture_output=True
-                )
-                if out.stderr:
-                    warn(
-                        f"Warning when preprocessing {filename}:\n{command}\n{out.stderr}"
-                    )
-                self.reader = StringIO(out.stdout)
-            except subprocess.CalledProcessError as err:
-                warn(
-                    f"error when preprocessing {filename}:\n{command}\n{err.stderr}\n"
-                    "Reverting to unpreprocessed file"
-                )
-                self.reader = open(filename, "r", encoding=encoding)
+        if preprocessor and (
+            reader := preprocess(
+                filename, preprocessor, macros, encoding, self.inc_dirs
+            )
+        ):
+            self.reader = reader
         else:
             self.reader = open(filename, "r", encoding=encoding)
 
