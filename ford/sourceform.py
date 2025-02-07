@@ -3422,6 +3422,10 @@ class NameSelector:
         self._items = {}
         self._counts = {}
 
+    def reset(self):
+        self._items = {}
+        self._counts = {}
+
     def get_name(self, item):
         """
         Return the name for this item registered with this NameSelector.

@@ -23,10 +23,21 @@ def front_page_list(settings, items):
     return sorted(items)[:max_frontpage_items]
 
 
+def pytest_generate_tests(metafunc):
+    if "example_project" in metafunc.fixturenames:
+        metafunc.parametrize("example_project", (False, True), indirect=True)
+
+
+projects = {}
+
 @pytest.fixture(scope="module")
-def example_project(tmp_path_factory):
+def example_project(tmp_path_factory, request):
+    use_tree_sitter = request.param
+    if use_tree_sitter in projects:
+        return projects[use_tree_sitter]
+
     this_dir = pathlib.Path(__file__).parent
-    tmp_path = tmp_path_factory.getbasetemp() / "example"
+    tmp_path = tmp_path_factory.getbasetemp() / f"example_tree_sitter_{use_tree_sitter}"
     shutil.copytree(this_dir / "../example", tmp_path)
 
     with pytest.MonkeyPatch.context() as m:
@@ -38,10 +49,13 @@ def example_project(tmp_path_factory):
         project_file = f.read()
 
     project_file, project_settings = ford.load_settings(project_file)
+    project_settings.use_tree_sitter = use_tree_sitter
+    ford.sourceform.namelist.reset()
     settings, _ = ford.parse_arguments({}, project_file, project_settings, tmp_path)
 
     doc_path = tmp_path / "doc"
 
+    projects[use_tree_sitter] = (doc_path, settings)
     return doc_path, settings
 
 
