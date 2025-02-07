@@ -42,6 +42,7 @@ from typing import (
     Dict,
     TYPE_CHECKING,
     Iterable,
+    Protocol,
 )
 from itertools import chain
 from urllib.parse import quote
@@ -63,6 +64,14 @@ from ford._typing import PathLike
 
 if TYPE_CHECKING:
     from ford.fortran_project import Project
+
+
+class FortranParser(Protocol):
+    """Protocol for Fortran parser"""
+
+    def parse_source(self, entity: FortranContainer, source): ...
+    @staticmethod
+    def read_docstring(source, docmark: str) -> list[str]: ...
 
 
 VAR_TYPE_STRING = r"^integer|real|double\s*precision|character|complex|double\s*complex|logical|type|class|procedure|enumerator"
@@ -990,7 +999,7 @@ class FortranBase:
     def __init__(
         self,
         source: FortranReader,
-        parser,
+        parser: FortranParser,
         parent: Optional[FortranContainer] = None,
         inherited_permission: str = "public",
         strings: Optional[List[str]] = None,
@@ -1413,16 +1422,19 @@ class FortranContainer(FortranBase):
 
     def __init__(
         self,
-        parser,
+        parser: FortranParser,
         source,
         parent: Optional[FortranContainer] = None,
         inherited_permission: str = "public",
         strings: Optional[List[str]] = None,
+        *,
+        num_lines: Optional[int] = None,
         **kwargs,
     ):
-        self.num_lines = 0
+        self.num_lines = num_lines or 0
         if not isinstance(self, FortranSourceFile):
-            self.num_lines += 1
+            if num_lines is None:
+                self.num_lines += 1
             FortranBase.__init__(
                 self,
                 source,
@@ -1886,7 +1898,7 @@ class FortranSourceFile(FortranContainer):
         self,
         filepath: str,
         settings: ProjectSettings,
-        parser,
+        parser: FortranParser,
         preprocessor=None,
         fixed: bool = False,
         source: Optional[str] = None,
@@ -1916,21 +1928,6 @@ class FortranSourceFile(FortranContainer):
 
         # List of entities that need to have their docstrings converted to markdown
         self._to_be_markdowned: List[FortranBase] = []
-
-        if source is None:
-            source = FortranReader(
-                self.path,
-                settings.docmark,
-                settings.predocmark,
-                settings.docmark_alt,
-                settings.predocmark_alt,
-                fixed,
-                settings.fixed_length_limit,
-                preprocessor,
-                settings.macro,
-                settings.include,
-                settings.encoding,
-            )
 
         super().__init__(parser, source, None)
         self.read_metadata()

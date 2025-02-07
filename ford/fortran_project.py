@@ -28,10 +28,12 @@ from itertools import chain, product
 from typing import List, Optional, Union, Dict, Set
 from pathlib import Path
 from fnmatch import fnmatch
+import re
 
 from ford.console import warn
 from ford.external_project import load_external_modules
 from ford.utils import ProgressBar
+from ford.reader import FortranReader, preprocess
 from ford.sourceform import (
     FordParser,
     _find_in_list,
@@ -57,6 +59,7 @@ from ford.sourceform import (
     FortranProgram,
 )
 from ford.settings import ProjectSettings
+from ford.tree_sitter_parser import TreeSitterParser
 from ford._typing import PathLike
 
 
@@ -130,6 +133,16 @@ def find_all_files(settings: ProjectSettings) -> Set[Path]:
     return src_files
 
 
+FIXED_COMMENTS_RE = re.compile(r"^[^\s#]", re.MULTILINE)
+FIXED_CONTINUE_RE = re.compile(r"\n^     [^\s]", re.MULTILINE)
+
+
+def simple_fixed_to_free(text: bytes, encoding: str) -> bytes:
+    """Absolutely minimal conversion from fixed to free form"""
+    new_string = FIXED_COMMENTS_RE.sub("!", text.decode(encoding))
+    return FIXED_CONTINUE_RE.sub(" &\n     &", new_string).encode(encoding)
+
+
 class Project:
     """
     An object which collects and contains all of the information about the
@@ -165,8 +178,6 @@ class Project:
         self.extVariables: List[ExternalVariable] = []
         self.namelists: List[FortranNamelist] = []
 
-        parser = FordParser(settings.extra_vartypes)
-
         # Get all files within topdir, recursively
 
         for filename in (
@@ -179,7 +190,7 @@ class Project:
             fortran_extensions = self.extensions + self.fixed_extensions
             try:
                 if extension in fortran_extensions:
-                    self._fortran_file(parser, extension, filename, settings)
+                    self._fortran_file(extension, filename, settings)
                 elif extension in self.extra_filetypes:
                     self.extra_files.append(GenericSource(filename, settings))
             except Exception as e:
@@ -192,21 +203,61 @@ class Project:
                 continue
 
     def _fortran_file(
-        self, parser, extension: str, filename: PathLike, settings: ProjectSettings
+        self, extension: str, filename: PathLike, settings: ProjectSettings
     ):
         if extension in settings.fpp_extensions:
             preprocessor = settings.preprocessor.split()
         else:
             preprocessor = None
 
+        fixed = extension in self.fixed_extensions
+
+        if settings.use_tree_sitter:
+            parser = TreeSitterParser()
+            if preprocessor and (
+                out := preprocess(
+                    str(filename),
+                    preprocessor,
+                    settings.macro,
+                    settings.encoding,
+                    settings.include,
+                )
+            ):
+                text = out.getvalue().encode(settings.encoding)
+            else:
+                text = Path(filename).read_bytes()
+
+            if fixed:
+                text = simple_fixed_to_free(text, settings.encoding)
+
+            tree = parser.parse(text)
+            source = tree.walk()
+
+        else:
+            parser = FordParser(settings.extra_vartypes)
+            source = FortranReader(
+                str(filename).strip(),
+                settings.docmark,
+                settings.predocmark,
+                settings.docmark_alt,
+                settings.predocmark_alt,
+                fixed,
+                settings.fixed_length_limit,
+                preprocessor,
+                settings.macro,
+                settings.include,
+                settings.encoding,
+            )
+
         new_file = FortranSourceFile(
             str(filename),
             settings,
-            parser,
-            preprocessor,
-            extension in self.fixed_extensions,
+            parser=parser,
+            preprocessor=preprocessor,
+            fixed=fixed,
             incl_src=settings.incl_src,
             encoding=self.encoding,
+            source=source,
         )
 
         def namelist_check(entity):

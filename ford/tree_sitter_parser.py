@@ -17,6 +17,7 @@ from ford.sourceform import (
     SPLIT_RE,
     ModuleUses,
     ModuleUsesItem,
+    FortranParser,
 )
 
 from typing import List, Optional, Generator
@@ -51,6 +52,11 @@ def maybe_decode(node: Optional[Node]) -> Optional[str]:
 
 def has_named_child(cursor: TreeCursor, name: str) -> bool:
     return any(child.type == name for child in cursor.node.named_children)
+
+
+def num_lines(cursor: TreeCursor) -> int:
+    node = cursor.node.parent or cursor.node
+    return node.end_point.row - node.start_point.row
 
 
 class Query:
@@ -95,7 +101,7 @@ def traverse_children(cursor: TreeCursor) -> Generator[Node, None, None]:
                 break
 
 
-class TreeSitterParser:
+class TreeSitterParser(FortranParser):
     def __init__(self, free_form: bool = True, encoding: str = "utf-8"):
         self.encoding = encoding
 
@@ -148,6 +154,7 @@ class TreeSitterParser:
 
     def parse_source(self, entity: FortranContainer, cursor: TreeCursor):
         if cursor.node.type == "translation_unit":
+            entity.num_lines = num_lines(cursor)
             cursor.goto_first_child()
 
         child_permission = (
@@ -288,7 +295,13 @@ class TreeSitterParser:
     def parse_program(
         self, parent: FortranContainer, program: TreeCursor
     ) -> FortranProgram:
-        return FortranProgram(self, program, parent, name=self._get_name(program))
+        return FortranProgram(
+            self,
+            program,
+            parent,
+            name=self._get_name(program),
+            num_lines=num_lines(program),
+        )
 
     def parse_module(
         self, parent: FortranContainer, module: TreeCursor
@@ -298,6 +311,7 @@ class TreeSitterParser:
             module,
             parent=parent,
             name=self._get_name(module),
+            num_lines=num_lines(module),
         )
 
     def parse_submodule(
@@ -313,6 +327,7 @@ class TreeSitterParser:
             name=self._get_name(submodule),
             ancestor_module=maybe_decode(ancestor_module),
             parent_submod=maybe_decode(parent_submod),
+            num_lines=num_lines(submodule),
         )
 
     def parse_attributes(
@@ -362,6 +377,7 @@ class TreeSitterParser:
             attributes=",".join(attributes),
             arguments=arguments,
             bindC=bindC,
+            num_lines=num_lines(cursor),
         )
 
     def parse_function(
@@ -397,6 +413,7 @@ class TreeSitterParser:
             result_type=result_type,
             arguments=arguments,
             bindC=bindC,
+            num_lines=num_lines(cursor),
         )
 
     def parse_module_procedure(
@@ -413,6 +430,7 @@ class TreeSitterParser:
             cursor,
             parent=parent,
             names=self._get_name(cursor),
+            num_lines=num_lines(cursor),
         )
 
     def parse_variable(
@@ -551,6 +569,7 @@ class TreeSitterParser:
             attributes=type_attributes,
             parameters=type_parameters,
             extends=type_extends,
+            num_lines=num_lines(cursor),
         )
 
     def parse_interface(self, parent: FortranCodeUnit, cursor: TreeCursor):
@@ -567,6 +586,7 @@ class TreeSitterParser:
             inherited_permission=parent.permission,
             name=name,
             abstract=abstract,
+            num_lines=num_lines(cursor),
         )
 
         if abstract:

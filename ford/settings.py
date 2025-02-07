@@ -201,6 +201,7 @@ class ProjectSettings:
     summary: Optional[str] = None
     terms_of_service_url: Optional[str] = None
     twitter: Optional[str] = None
+    use_tree_sitter: bool = False
     version: Optional[str] = None
     warn: bool = False
     website: Optional[str] = None

@@ -1,4 +1,5 @@
 from ford.tree_sitter_parser import TreeSitterParser
+from ford.reader import FortranReader
 from ford.sourceform import (
     FortranSourceFile,
     FortranBase,
@@ -35,10 +36,21 @@ def parse_fortran_file(copy_fortran_file):
             parser = TreeSitterParser()
             tree = parser.parse(data.encode())
             source = tree.walk()
-            print(tree.root_node)
         else:
             parser = FordParser(settings.extra_vartypes)
-            source = None
+            source = FortranReader(
+                str(filename).strip(),
+                docmark=settings.docmark,
+                predocmark=settings.predocmark,
+                docmark_alt=settings.docmark_alt,
+                predocmark_alt=settings.predocmark_alt,
+                length_limit=settings.fixed_length_limit,
+                macros=settings.macro,
+                inc_dirs=settings.include,
+                encoding=settings.encoding,
+                fixed=False,
+                preprocessor=None,
+            )
 
         return FortranSourceFile(str(filename), settings, parser, source=source)
 
