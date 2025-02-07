@@ -30,6 +30,7 @@ def pytest_generate_tests(metafunc):
 
 projects = {}
 
+
 @pytest.fixture(scope="module")
 def example_project(tmp_path_factory, request):
     use_tree_sitter = request.param

@@ -1,5 +1,4 @@
-"""This module just has a big list of the intrinsic functions to save space in sourceform.py
-"""
+"""This module just has a big list of the intrinsic functions to save space in sourceform.py"""
 
 INTRINSICS = [
     "abort",
