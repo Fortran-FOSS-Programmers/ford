@@ -466,16 +466,6 @@ class TreeSitterParser(FortranParser):
                 else:
                     attributes.append(decode(node))
 
-            if node.type == "method_name":
-                variables.append(
-                    FortranVariable(
-                        decode(node),
-                        vartype="procedure",
-                        parent=parent,
-                        attribs=attributes,
-                    )
-                )
-
         for declarator in cursor.node.children_by_field_name("declarator"):
             initial = None
             points = False
@@ -490,6 +480,10 @@ class TreeSitterParser(FortranParser):
                 name = decode(declarator.child_by_field_name("left"))
                 initial = decode(declarator.child_by_field_name("right"))
                 points = True
+            elif declarator.type == "method_name":
+                name = decode(declarator)
+                vartype = "procedure"
+
             variables.append(
                 FortranVariable(
                     name=name,
