@@ -336,7 +336,9 @@ def load_markdown_settings(
             settings[option] = "\n".join(include_preprocessor.run(value.splitlines()))
 
     try:
-        return ProjectSettings.from_markdown_metadata(settings), "\n".join(project_lines)
+        return ProjectSettings.from_markdown_metadata(settings), "\n".join(
+            project_lines
+        )
     except ValueError as e:
         raise ValueError(f"Error parsing settings from '{filename}': {e}")
 
