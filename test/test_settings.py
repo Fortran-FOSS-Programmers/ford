@@ -144,3 +144,21 @@ def test_extra_filetype_error():
 
     with pytest.raises(ValueError):
         ExtraFileType.from_string("c // c lexer")
+
+
+def test_duplicated_fixed_extension():
+    text = dedent(
+        '''\
+    project = "some project"
+    src_dir = "source"
+    summary = """
+    first
+    second"""
+    preprocess = true
+    fpp_extensions = ["fpp", "F90"]
+    fixed_extensions = ["f"]
+    extensions = ["f90", "f"]
+        '''
+    )
+    with pytest.raises(ValueError):
+        ProjectSettings(**tomllib.loads(text))
