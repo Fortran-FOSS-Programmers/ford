@@ -219,6 +219,8 @@ class FordLinkProcessor(InlineProcessor):
         name = m["name"]
 
         def find_child(context):
+            # This is allowed to fail because we might be looking for
+            # "entity" in the wrong context
             with suppress(ValueError):
                 return context.find_child(name, m["entity"])
 
@@ -229,7 +231,12 @@ class FordLinkProcessor(InlineProcessor):
                 item = find_child(parent)
 
             if m["child_name"] and item is not None:
-                item = item.find_child(m["child_name"], m["child_entity"])
+                try:
+                    # This isn't allowed to fail because the user has
+                    # given us all the information required
+                    item = item.find_child(m["child_name"], m["child_entity"])
+                except ValueError as e:
+                    raise ValueError(f"Error when parsing link '{m.group()}': {e}")
 
         if item is None:
             item = self.project.find(**m.groupdict())

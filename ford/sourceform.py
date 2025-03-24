@@ -422,9 +422,14 @@ class FortranBase:
 
         # Remove any common leading whitespace from the docstring
         # so that the markdown conversion is a bit more robust
-        self.doc = md.reset().convert(
-            textwrap.dedent("\n".join(self.doc_list)), context=self
-        )
+        try:
+            self.doc = md.reset().convert(
+                textwrap.dedent("\n".join(self.doc_list)), context=self
+            )
+        except (RuntimeError, ValueError) as e:
+            raise ValueError(
+                f"Error when rendering docstring for {self.obj} '{self.name}' in '{self.filename}':\n    {e}"
+            )
 
         if self.meta.summary is not None:
             self.meta.summary = md.convert("\n".join(self.meta.summary), context=self)
