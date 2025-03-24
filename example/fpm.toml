@@ -1,0 +1,32 @@
+[extra.ford]
+project = "Example Project"
+src_dir = "./src"
+output_dir = "./doc"
+project_github = "https://github.com/cmacmackin/futility"
+project_website = "https://github.com"
+summary = "Some Fortran program which I wrote."
+author = "John Doe"
+author_description = "I program stuff in Fortran."
+github = "https://github.com/cmacmackin"
+email = "john.doe@example.com"
+fpp_extensions = ["fpp"]
+preprocess = "true"
+macro = ["HAS_DECREMENT"]
+predocmark = ">"
+docmark_alt = "#"
+predocmark_alt = "<"
+display = ["public", "protected"]
+source = false
+graph = true
+search = true
+license = "by-nc"
+extra_filetypes = [{extension = "sh", comment="#"}]
+max_frontpage_items = "4"
+exclude = "src/excluded_file.f90"
+exclude_dir = "src/excluded_directory"
+page_dir = "pages"
+
+[extra.ford.extra_mods]
+json_module = "http://jacobwilliams.github.io/json-fortran/"
+futility = "http://cmacmackin.github.io"
+iso_fortran_env = "https://gcc.gnu.org/onlinedocs/gfortran/ISO_005fFORTRAN_005fENV.html"

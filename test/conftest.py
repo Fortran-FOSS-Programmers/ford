@@ -3,6 +3,8 @@ import pathlib
 import pytest
 from textwrap import dedent
 import subprocess
+from contextlib import contextmanager
+import os
 
 # Ford default src folder
 DEFAULT_SRC = "src"
@@ -39,3 +41,11 @@ def gfortran_is_not_installed():
     """Returns False if gfortran is not (detectably) installed"""
     out = subprocess.run("command -v gfortran", shell=True, check=False)
     return out.returncode != 0
+
+
+@contextmanager
+def chdir(directory):
+    oldwd = os.getcwd()
+    os.chdir(directory)
+    yield
+    os.chdir(oldwd)

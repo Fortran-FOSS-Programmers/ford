@@ -13,10 +13,10 @@ class FakeFile:
     name = "test file"
 
 
-def test_quiet_false():
-    _, data = ford.load_settings("quiet: False")
+def test_quiet_false(tmp_path):
+    _, data = ford.load_settings("quiet: False", tmp_path)
     assert data.quiet is False
-    _, data2 = ford.load_settings("quiet: True")
+    _, data2 = ford.load_settings("quiet: True", tmp_path)
     assert data2.quiet is True
 
 
@@ -54,7 +54,7 @@ def test_quiet_command_line():
     assert data.quiet is False
 
 
-def test_list_input():
+def test_list_input(tmp_path):
     """Check that setting a non-list option is turned into a single string"""
 
     settings = """\
@@ -65,7 +65,7 @@ def test_list_input():
              one
              string
     """
-    _, data = ford.load_settings(dedent(settings))
+    _, data = ford.load_settings(dedent(settings), tmp_path)
 
     assert len(data.include) == 2
     assert data.summary == "This\nis\none\nstring"

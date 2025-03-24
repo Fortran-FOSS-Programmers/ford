@@ -11,6 +11,14 @@ ways:
 2. in the ``extra.ford`` table of your `fpm.toml
    <https://fpm.fortran-lang.org>`_ file (*new in version 7.0*).
 
+We recommend using ``fpm.toml`` for Ford settings as it allows comments and the
+syntax is a bit more forgiving. Ford is still run the same way in either case:
+
+.. code:: console
+
+   $ ford <project-file.md>
+
+
 .. _sec-fpm-toml:
 
 ``fpm.toml`` File

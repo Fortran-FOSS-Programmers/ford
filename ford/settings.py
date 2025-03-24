@@ -147,10 +147,12 @@ class ProjectSettings:
     extra_vartypes: list = field(default_factory=list)
     facebook: Optional[str] = None
     favicon: Path = FAVICON_PATH
-    fixed_extensions: list = field(default_factory=lambda: ["f", "for", "F", "FOR"])
+    fixed_extensions: List[str] = field(
+        default_factory=lambda: ["f", "for", "F", "FOR"]
+    )
     fixed_length_limit: bool = True
     force: bool = False
-    fpp_extensions: list = field(
+    fpp_extensions: List[str] = field(
         default_factory=lambda: ["F90", "F95", "F03", "F08", "F15", "F", "FOR"]
     )
     github: Optional[str] = None
@@ -168,11 +170,11 @@ class ProjectSettings:
     license: str = ""
     linkedin: Optional[str] = None
     lower: bool = False
-    macro: list = field(default_factory=list)
+    macro: List[str] = field(default_factory=list)
     mathjax_config: Optional[Path] = None
     max_frontpage_items: int = 10
     md_base_dir: Path = Path(".")
-    md_extensions: list = field(default_factory=list)
+    md_extensions: List[str] = field(default_factory=list)
     media_dir: Optional[Path] = None
     output_dir: Path = Path("./doc")
     page_dir: Optional[Path] = None

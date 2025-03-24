@@ -11,6 +11,7 @@ import ford
 from bs4 import BeautifulSoup
 import pytest
 
+from conftest import chdir
 
 REMOTE_TYPE_JSON: Dict[str, Any] = {
     "name": "remote_type",
@@ -109,8 +110,7 @@ def external_project(tmp_path_factory, monkeymodule):
 
     # Run FORD in the two projects
     # First project has "externalize: True" and will generate JSON dump
-    with monkeymodule.context() as m:
-        os.chdir(external_project)
+    with monkeymodule.context() as m, chdir(external_project):
         m.setattr(sys, "argv", ["ford", "doc.md"])
         ford.run()
 
@@ -118,8 +118,7 @@ def external_project(tmp_path_factory, monkeymodule):
         return MockResponse()
 
     # Second project uses JSON from first to link to external modules
-    with monkeymodule.context() as m:
-        os.chdir(top_level_project)
+    with monkeymodule.context() as m, chdir(top_level_project):
         m.setattr(sys, "argv", ["ford", "doc.md"])
         m.setattr(ford.external_project, "urlopen", mock_open)
         ford.run()
