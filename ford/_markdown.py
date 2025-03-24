@@ -264,9 +264,13 @@ class FordLinkProcessor(InlineProcessor):
             # This is really to keep mypy happy
             raise RuntimeError(f"Found item {name} but no url")
 
-        # Make sure links are relative to base url
-        full_url = self.md.base_url / item_url
-        rel_url = relpath(full_url, self.md.current_path)
+        # Make sure links are relative to base url, unless they are
+        # already absolute (because they're external)
+        if item_url.startswith("http"):
+            rel_url = item_url
+        else:
+            full_url = self.md.base_url / item_url
+            rel_url = relpath(full_url, self.md.current_path)
         link.attrib["href"] = str(rel_url)
         link.text = item.name
         return link
