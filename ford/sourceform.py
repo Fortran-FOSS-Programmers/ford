@@ -3251,6 +3251,9 @@ class ExternalBoundProcedure(FortranBoundProcedure):
         self.parent = parent
         self.obj = "proc"
         self.bindings = []
+        self.attribs = []
+        self.deferred = False
+        self.generic = False
 
 
 class ExternalType(FortranType):
@@ -3262,6 +3265,7 @@ class ExternalType(FortranType):
         self.parent = parent
         self.obj = "type"
         self.boundprocs = []
+        self.variables = []
 
 
 class ExternalVariable(FortranVariable):
