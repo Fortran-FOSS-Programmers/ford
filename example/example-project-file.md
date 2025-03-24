@@ -1,37 +1,3 @@
----
-project: Example Project
-summary: This is a short example project
-    that demonstrates many of Ford's features
-src_dir: ./src
-output_dir: ./doc
-project_github: https://github.com/cmacmackin/futility
-project_website: https://github.com
-summary: Some Fortran program which I wrote.
-author: John Doe
-author_description: I program stuff in Fortran.
-github: https://github.com/cmacmackin
-email: john.doe@example.com
-fpp_extensions: fpp
-preprocess: true
-macro: HAS_DECREMENT
-predocmark: >
-docmark_alt: #
-predocmark_alt: <
-display: public
-         protected
-source: false
-graph: true
-search: true
-extra_mods: json_module: http://jacobwilliams.github.io/json-fortran/
-            futility: http://cmacmackin.github.io
-license: by-nc
-extra_filetypes: sh #
-max_frontpage_items: 4
-exclude: src/excluded_file.f90
-exclude_dir: src/excluded_directory
-page_dir: pages
----
-
 Hi, my name is ${USER}.
 
 This is a project which I wrote. This file will provide the documents. I'm
