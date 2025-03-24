@@ -230,6 +230,10 @@ class ProjectSettings:
                     f"Fixed-form extension '{fixed_extension}' also appears in free-form extension list (`extensions = {self.extensions}`)"
                 )
 
+        for mod in self.extra_mods:
+            if mod in self.external:
+                raise ValueError(f"extra-mod '{mod}' also appears in external mods")
+
         self.display = [item.lower() for item in self.display]
         self.extensions = list(set(self.extensions) | set(self.fpp_extensions))
         self.exclude_dir.append(self.output_dir)
