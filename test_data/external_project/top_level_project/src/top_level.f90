@@ -43,7 +43,8 @@ end module myAbort
 
 program top_level
   !! This program uses a module from some external source, whose
-  !! documentation will be linked to from this documentation
+  !! documentation will be linked to from this documentation.
+  !! This uses [[remote_sub]].
   use external_module
   use remote_module
   use myAbort

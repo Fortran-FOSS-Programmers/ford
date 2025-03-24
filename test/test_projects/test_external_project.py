@@ -179,3 +179,16 @@ def test_procedure_module_use_links_(external_project):
     local_url = urlparse(links["external_module"])
     local_path = proc_dir / local_url.path
     assert local_path.is_file()
+
+
+def test_external_ford_link(external_project):
+    """Test #696 -- malformed [[ford]] links to external entities"""
+
+    top_level_project, _ = external_project
+
+    prog_dir = top_level_project / "doc/program"
+    with open(prog_dir / "top_level.html") as f:
+        prog_html = BeautifulSoup(f.read(), features="html.parser")
+
+    link = prog_html.find("a", string="remote_sub")
+    assert link["href"] == "https://example.com/proc/remote_sub.html"
