@@ -1,6 +1,5 @@
 import shutil
 import sys
-import os
 import pathlib
 import re
 from urllib.parse import urlparse
@@ -10,6 +9,8 @@ from ford.graphs import graphviz_installed
 
 from bs4 import BeautifulSoup
 import pytest
+
+from conftest import chdir
 
 
 pytestmark = pytest.mark.filterwarnings("ignore::bs4.MarkupResemblesLocatorWarning")
@@ -29,15 +30,14 @@ def example_project(tmp_path_factory):
     tmp_path = tmp_path_factory.getbasetemp() / "example"
     shutil.copytree(this_dir / "../example", tmp_path)
 
-    with pytest.MonkeyPatch.context() as m:
-        os.chdir(tmp_path)
+    with pytest.MonkeyPatch.context() as m, chdir(tmp_path):
         m.setattr(sys, "argv", ["ford", "example-project-file.md"])
         ford.run()
 
     with open(tmp_path / "example-project-file.md", "r") as f:
         project_file = f.read()
 
-    project_file, project_settings = ford.load_settings(project_file)
+    project_file, project_settings = ford.load_settings(project_file, tmp_path)
     settings, _ = ford.parse_arguments({}, project_file, project_settings, tmp_path)
 
     doc_path = tmp_path / "doc"
