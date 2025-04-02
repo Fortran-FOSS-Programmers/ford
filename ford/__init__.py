@@ -115,6 +115,18 @@ LICENSES = {
         '<a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/">'
         '<img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>'
     ),
+    "gpl": (
+        '<a rel="license" href="http://www.gnu.org/licenses/gpl">'
+        '<img alt="GNU General Public License" style="border-width:0" src="https://www.gnu.org/graphics/gplv3-88x31.png" /></a>'
+    ),
+    "lgpl": (
+        '<a rel="license" href="http://www.gnu.org/licenses/lgpl">'
+        '<img alt="GNU Lesser General Public License" style="border-width:0" src="https://www.gnu.org/graphics/lgplv3-88x31.png" /></a>'
+    ),
+    "agpl": (
+        '<a rel="license" href="http://www.gnu.org/licenses/agpl">'
+        '<img alt="GNU Affero General Public License" style="border-width:0" src="https://www.gnu.org/graphics/agplv3-88x31.png" /></a>'
+    ),
     "gfdl": '<a rel="license" href="http://www.gnu.org/licenses/old-licenses/fdl-1.2.en.html">GNU Free Documentation License</a>',
     "opl": '<a rel="license" href="http://opencontent.org/openpub/">Open Publication License</a>',
     "pdl": '<a rel="license" href="http://www.openoffice.org/licenses/PDL.html">Public Documentation License</a>',
