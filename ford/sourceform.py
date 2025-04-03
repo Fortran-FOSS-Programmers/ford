@@ -432,7 +432,7 @@ class FortranBase:
             )
 
         if self.meta.summary is not None:
-            self.meta.summary = md.convert("\n".join(self.meta.summary), context=self)
+            self.meta.summary = md.convert(" ".join(self.meta.summary.split()), context=self)
         elif paragraph := PARA_CAPTURE_RE.search(self.doc):
             # If there is no stand-alone webpage for this item, e.g.
             # an internal routine, make the whole doc blob appear,
