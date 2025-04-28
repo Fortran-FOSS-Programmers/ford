@@ -580,10 +580,10 @@
               <tr>
                 <td>{{ bound_declaration(tb, link_name=True) }}</td>
                 {% if not tb.external_url %}
-                  <td>{{ tb | meta('summary') | relurl(page_url) }}</td>
-		{% endif %}
+                  <td>{{ tb | meta('summary') }}</td>
+		        {% endif %}
               </tr>
-              {% endfor %}
+            {% endfor %}
           </tbody>
         </table>
       {% endif %}
