@@ -2268,3 +2268,24 @@ def test_no_space_after_character_type(parse_fortran_file):
     source = parse_fortran_file(data)
     function = source.functions[0]
     assert function.name.lower() == "firstword"
+
+
+def test_summary_handling_bug703(parse_fortran_file):
+    """Check that `summary` works, PR #703"""
+    data = """\
+    !> summary: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+    !>          Fusce ultrices tortor et felis tempus vehicula.
+    !>          Nulla gravida, magna ut pharetra.
+    !>
+    !> Full description
+    module test
+    end module myModule
+    """
+
+    fortran_file = parse_fortran_file(data)
+    md = MetaMarkdown()
+
+    module = fortran_file.modules[0]
+    module.markdown(md)
+
+    assert "Lorem ipsum" in module.meta.summary
