@@ -1,3 +1,6 @@
+!> @param repeat This is a doxygen comment for the name variable repeat
+!> This is a normal doxygen comment
+!> @param global_pi This is a doxygen comment for global pi
 program ford_test_program
   !! Simple Fortran program to demonstrate the usage of FORD and to test its installation
   use iso_fortran_env, only: output_unit, real64

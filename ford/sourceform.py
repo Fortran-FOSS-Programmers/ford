@@ -125,6 +125,32 @@ def read_docstring(source: FortranReader, docmark: str) -> List[str]:
     source.pass_back(line)
     return docstring
 
+def create_doxy_list(line) -> List[dict]:
+    # This creates a list of matching parameters
+    # parameters are stored as a dictionary with name and comment
+    doxymatch = None
+    PARAM_RE = re.compile(r"\s?@param\s([\S]*)\s([\s\S]*)")
+    matches = PARAM_RE.finditer(line)
+    for match in matches:
+        doxymatch = {'name': match.group(1), 'comment': match.group(2)}
+    return doxymatch
+
+def read_doxydocstring(source: List, name_to_match:str) -> List[str]:
+    # This sees if there is a match between a parameter in the program
+    # and a parameter in the doxy_list
+    for param in source:
+        if param['name'].lower() == name_to_match.lower():
+            return param['comment']
+        
+def remove_doxy(source:List) -> List[str]:
+    # This function removes doxygen comments with an @ identifier from main comment blockx.
+    DOXY_RE = re.compile(r"\s?@([\S]*)\s([\S]*)\s([\s\S]*)")
+    ret_list = []
+    for line in source:
+        if not (DOXY_RE.match(line)):
+            ret_list.append(line)
+    return ret_list
+
 
 class Associations:
     """
@@ -173,14 +199,15 @@ class Associations:
             if key in batch:
                 return True
         return False
-
-
+    
+# Global variables are ugly but it works
+doxy_list = [] 
 class FortranBase:
     """
     An object containing the data common to all of the classes used to represent
     Fortran data.
     """
-
+    global doxy_list
     IS_SPOOF = False
 
     POINTS_TO_RE = re.compile(r"\s*=>\s*", re.IGNORECASE)
@@ -226,6 +253,18 @@ class FortranBase:
 
         self.base_url = pathlib.Path(self.settings.project_url)
         self.doc_list = read_docstring(source, self.settings.docmark)
+
+        # For line that has been logged in the doc_list we need to check
+        # If a doxygen comment is on that line
+        # For now, this is just parameters
+
+        for comment in self.doc_list:
+                    if (param := create_doxy_list(comment)):
+                        doxy_list.append(param)
+
+        # Remove all of the doxygen comments from the list to make it clean.
+        self.doc_list = remove_doxy(self.doc_list)
+
         self.hierarchy = self._make_hierarchy()
         self.read_metadata()
 
@@ -731,7 +770,7 @@ class FortranContainer(FortranBase):
     )
 
     def __init__(
-        self, source, first_line, parent=None, inherited_permission="public", strings=[]
+        self, source, first_line, parent=None, inherited_permission="public", strings=[],
     ):
         self.num_lines = 0
         if not isinstance(self, FortranSourceFile):
@@ -764,15 +803,13 @@ class FortranContainer(FortranBase):
         )
 
         blocklevel = 0
-        associations = Associations()
-
+        associations = Associations()            
         for line in source:
             if line[0:2] == "!" + self.settings.docmark:
-                self.doc_list.append(line[2:])
+                self.doc_list.append(line[2:])             
                 continue
             if line.strip() != "":
                 self.num_lines += 1
-
             # Temporarily replace all strings to make the parsing simpler
             self.strings = []
             search_from = 0
@@ -1062,7 +1099,7 @@ class FortranContainer(FortranBase):
             elif self.VARIABLE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "variables"):
                     self.variables.extend(
-                        line_to_variables(source, line, child_permission, self)
+                        line_to_variables(source,doxy_list, line, child_permission, self)
                     )
                 else:
                     self.print_error(line, "Unexpected variable")
@@ -2918,7 +2955,7 @@ def remove_kind_suffix(literal, is_character: bool = False):
     return literal
 
 
-def line_to_variables(source, line, inherit_permission, parent):
+def line_to_variables(source, doxy_list,line, inherit_permission, parent):
     """
     Returns a list of variables declared in the provided line of code. The
     line of code should be provided as a string.
@@ -2988,7 +3025,15 @@ def line_to_variables(source, line, inherit_permission, parent):
                     string, initial[search_from:], count=1
                 )
                 search_from += QUOTES_RE.search(initial[search_from:]).end(0)
-
+        
+        doxydoc = read_doxydocstring(doxy_list, name)
+        # reads the comment matching a given name in the doxy_list
+        if len(doc)> 0 and doxydoc:
+            doc[0] = doc[0] + " " + doxydoc
+            # adds doxygen comments to normal FORD comments
+        elif len(doc) == 0 and doxydoc:
+            doc = doxydoc 
+            # if there are no FORD comments, the doxygen comment is set as the only comment
         varlist.append(
             FortranVariable(
                 name,
