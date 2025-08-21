@@ -52,3 +52,25 @@ def test_meta_preprocessor():
         "key2": ["value2", "value2a"],
         "key3": ["value3"],
     }
+
+def test_doxy_meta_preprocessor():
+    text = dedent(
+        """\
+    @key1 value1
+    @key2 value2
+          value2a
+    @key3 value3
+
+    no more metadata
+    @param Parameter
+    """
+    )
+
+    meta, doc = meta_preprocessor(text)
+
+    assert doc == ["no more metadata", "@param Parameter"]
+    assert meta == {
+        "key1": ["value1"],
+        "key2": ["value2", "value2a"],
+        "key3": ["value3"],
+    }

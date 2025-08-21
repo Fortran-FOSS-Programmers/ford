@@ -1258,6 +1258,7 @@ class FakeParent:
     parent = None
     display: List[str] = field(default_factory=list)
     _to_be_markdowned: List[FortranBase] = field(default_factory=list)
+    doxy_dict = {}
 
 
 def _make_list_str() -> List[str]:
@@ -1789,18 +1790,18 @@ def test_url(parse_fortran_file):
     assert module.variables[0].get_dir() is None
     assert module.enums[0].get_dir() is None
 
-    assert program.full_url.endswith("program/prog_foo.html")
-    assert module.full_url.endswith("module/mod_foo.html")
-    assert submodule.full_url.endswith("module/submod_foo.html")
-    assert program.subroutines[0].full_url.endswith("proc/sub_foo.html")
-    assert program.functions[0].full_url.endswith("proc/func_foo.html")
-    assert module.subroutines[0].full_url.endswith("proc/foo1.html")
-    assert module.interfaces[0].full_url.endswith("interface/inter_foo.html")
+    assert program.full_url.endswith("program\\prog_foo.html")
+    assert module.full_url.endswith("module\\mod_foo.html")
+    assert submodule.full_url.endswith("module\\submod_foo.html")
+    assert program.subroutines[0].full_url.endswith("proc\\sub_foo.html")
+    assert program.functions[0].full_url.endswith("proc\\func_foo.html")
+    assert module.subroutines[0].full_url.endswith("proc\\foo1.html")
+    assert module.interfaces[0].full_url.endswith("interface\\inter_foo.html")
     assert program.variables[0].full_url.endswith(
-        "program/prog_foo.html#variable-int_foo"
+        "program\\prog_foo.html#variable-int_foo"
     )
     assert module.variables[0].full_url.endswith(
-        "module/mod_foo.html#variable-real_foo"
+        "module\\mod_foo.html#variable-real_foo"
     )
 
 
@@ -1816,6 +1817,21 @@ def test_single_character_interface(parse_fortran_file):
     assert fortran_file.modules[0].interfaces[0].name == "b"
     assert fortran_file.modules[0].interfaces[0].doc_list == [" some comment"]
 
+def test_doxygen_parameters(parse_fortran_file):
+    data = """\
+    !> @param stuff some comment
+    !> Normal Comment
+    !> @param stuff_2 Doxygen comment
+    module a
+      integer, intent(in) :: stuff
+      integer, intent(in) :: stuff_2
+      !! FORD comment
+    end module a
+    """
+    fortran_file = parse_fortran_file(data)
+    assert fortran_file.modules[0].doc_list == [" Normal Comment"]
+    assert fortran_file.modules[0].variables[0].doc_list == [" some comment"]
+    assert fortran_file.modules[0].variables[1].doc_list == [" FORD comment Doxygen comment"]
 
 def test_module_procedure_in_module(parse_fortran_file):
     data = """\
