@@ -125,24 +125,16 @@ def read_docstring(source: FortranReader, docmark: str) -> List[str]:
     source.pass_back(line)
     return docstring
 
-def create_doxy_list(line) -> List[dict]:
-    # This creates a list of matching parameters
+def create_doxy_dict(doxy_dict:dict, line:str) -> dict:
+    # This creates a dictionary of parameters
     # parameters are stored as a dictionary with name and comment
-    doxymatch = None
-    PARAM_RE = re.compile(r"\s?@param\s([\S]*)\s([\s\S]*)")
+    PARAM_RE = re.compile(r"\s?@param\s([\S]*)(\s[\s\S]*)")
     matches = PARAM_RE.finditer(line)
     for match in matches:
-        doxymatch = {'name': match.group(1), 'comment': match.group(2)}
-    return doxymatch
-
-def read_doxydocstring(source: List, name_to_match:str) -> List[str]:
-    # This sees if there is a match between a parameter in the program
-    # and a parameter in the doxy_list
-    for param in source:
-        if param['name'].lower() == name_to_match.lower():
-            return param['comment']
+        doxy_dict[match.group(1)] = match.group(2)
+    return doxy_dict
         
-def remove_doxy(source:List) -> List[str]:
+def remove_doxy(source:list) -> List[str]:
     # This function removes doxygen comments with an @ identifier from main comment blockx.
     DOXY_RE = re.compile(r"\s?@([\S]*)\s([\S]*)\s([\s\S]*)")
     ret_list = []
@@ -200,8 +192,7 @@ class Associations:
                 return True
         return False
     
-# Global variables are ugly but it works
-doxy_list = [] 
+
 class FortranBase:
     """
     An object containing the data common to all of the classes used to represent
@@ -234,6 +225,7 @@ class FortranBase:
     ):
         self.name = "unknown"
         self.visible = False
+        self.doxy_dict = {}
         self.permission = inherited_permission.lower()
         self.strings: List[str] = strings or []
 
@@ -253,17 +245,13 @@ class FortranBase:
 
         self.base_url = pathlib.Path(self.settings.project_url)
         self.doc_list = read_docstring(source, self.settings.docmark)
+        #for i in self.doc_list:
+            #print(i)
 
         # For line that has been logged in the doc_list we need to check
         # If a doxygen comment is on that line
         # For now, this is just parameters
-
-        for comment in self.doc_list:
-                    if (param := create_doxy_list(comment)):
-                        doxy_list.append(param)
-
-        # Remove all of the doxygen comments from the list to make it clean.
-        self.doc_list = remove_doxy(self.doc_list)
+       # Remove all of the doxygen comments from the list to make it clean.
 
         self.hierarchy = self._make_hierarchy()
         self.read_metadata()
@@ -440,6 +428,15 @@ class FortranBase:
                 words = self.doc_list[0].split(":")[0].strip()
                 field_names = [field.name for field in fields(EntitySettings)]
                 if words.lower() not in field_names:
+                    self.doc_list.insert(0, "")
+
+            if len(self.doc_list) == 1 and "@" in self.doc_list[0]:
+                meta_identifier = ""
+                for word in self.doc_list[0].split():
+                    if '@' in word and word != "@param":
+                       meta_identifier = word[1:]
+                field_names = [field.name for field in fields(EntitySettings)]
+                if meta_identifier.lower() not in field_names:
                     self.doc_list.insert(0, "")
 
             meta, self.doc_list = ford.utils.meta_preprocessor(self.doc_list)
@@ -808,6 +805,10 @@ class FortranContainer(FortranBase):
             if line[0:2] == "!" + self.settings.docmark:
                 self.doc_list.append(line[2:])             
                 continue
+            # Check if each comment in the doclist for a given subroutine is a doxygen comment
+            for comment in self.doc_list: 
+                self.doxy_dict = create_doxy_dict(self.doxy_dict, comment) # creates the doxygen dictionary entry for a comment if it can
+                self.doc_list = remove_doxy(self.doc_list) # It then removes all of the doxygen comments from the block if there are any, so they don't show up under the subroutine
             if line.strip() != "":
                 self.num_lines += 1
             # Temporarily replace all strings to make the parsing simpler
@@ -1099,7 +1100,7 @@ class FortranContainer(FortranBase):
             elif self.VARIABLE_RE.match(line) and blocklevel == 0:
                 if hasattr(self, "variables"):
                     self.variables.extend(
-                        line_to_variables(source,doxy_list, line, child_permission, self)
+                        line_to_variables(source, line, child_permission, self)
                     )
                 else:
                     self.print_error(line, "Unexpected variable")
@@ -2955,7 +2956,7 @@ def remove_kind_suffix(literal, is_character: bool = False):
     return literal
 
 
-def line_to_variables(source, doxy_list,line, inherit_permission, parent):
+def line_to_variables(source,line, inherit_permission, parent):
     """
     Returns a list of variables declared in the provided line of code. The
     line of code should be provided as a string.
@@ -3025,14 +3026,17 @@ def line_to_variables(source, doxy_list,line, inherit_permission, parent):
                     string, initial[search_from:], count=1
                 )
                 search_from += QUOTES_RE.search(initial[search_from:]).end(0)
-        
-        doxydoc = read_doxydocstring(doxy_list, name)
+        doxy_doc = ""
+        # It gets the parent's, e.g what subroutine a doxygen comment is a part of, doxy_dict
+        # It tries to pop the right element, if it can't it returns None
+        if parent.doxy_dict:
+            doxy_doc += parent.doxy_dict.pop(name, None)
         # reads the comment matching a given name in the doxy_list
-        if len(doc)> 0 and doxydoc:
-            doc[0] = doc[0] + " " + doxydoc
+        if len(doc)> 0 and len(doxy_doc) > 0:
+            doc[0] = doc[0] + doxy_doc
             # adds doxygen comments to normal FORD comments
-        elif len(doc) == 0 and doxydoc:
-            doc = doxydoc 
+        elif len(doc) == 0 and len(doxy_doc) > 0:
+            doc.append(doxy_doc)
             # if there are no FORD comments, the doxygen comment is set as the only comment
         varlist.append(
             FortranVariable(

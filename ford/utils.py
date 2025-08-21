@@ -203,6 +203,7 @@ def traverse(root, attrs) -> list:
 
 # Global Vars
 META_RE = re.compile(r"^[ ]{0,3}(?P<key>[A-Za-z0-9_-]+):\s*(?P<value>.*)")
+DOXY_META_RE = re.compile(r"^[ ]{0,3}@(?P<key>[A-Za-z0-9_-]+)\s+(?P<value>.*)")
 META_MORE_RE = re.compile(r"^[ ]{4,}(?P<value>.*)")
 BEGIN_RE = re.compile(r"^-{3}(\s.*)?")
 END_RE = re.compile(r"^(-{3}|\.{3})(\s.*)?")
@@ -255,17 +256,35 @@ def meta_preprocessor(lines: Union[str, List[str]]) -> Tuple[Dict[str, Any], Lis
         line = lines.pop(0)
         if line.strip() == "" or END_RE.match(line):
             break  # blank line or end of YAML header - done
+
+        # We check for parameters as if we check before we pass it in then the parameter gets removed
+        # from the doc_list. In this implementation, we pass the parameter line back to the doc_list
+        if "@param" in line:
+            lines.insert(0, line)
+            break  # no meta data - done
+
+        # Finds a FORD metadata match and classifies
         if m1 := META_RE.match(line):
             key = m1.group("key").lower().strip()
             value = m1.group("value").strip()
             meta[key].append(value)
+
+        # Finds a doxygen match and classifies        
+        elif m1 := DOXY_META_RE.match(line):
+            key = m1.group("key").lower().strip()
+            value = m1.group("value").strip()
+            meta[key].append(value)
+            
+            
         else:
             if (m2 := META_MORE_RE.match(line)) and key:
                 # Add another line to existing key
                 meta[key].append(m2.group("value").strip())
+            
             else:
                 lines.insert(0, line)
                 break  # no meta data - done
+    
     return meta, lines
 
 

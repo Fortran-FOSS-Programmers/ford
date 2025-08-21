@@ -1,6 +1,7 @@
-!> @param repeat This is a doxygen comment for the name variable repeat
+
 !> This is a normal doxygen comment
 !> @param global_pi This is a doxygen comment for global pi
+!> This should show?
 program ford_test_program
   !! Simple Fortran program to demonstrate the usage of FORD and to test its installation
   use iso_fortran_env, only: output_unit, real64
@@ -22,19 +23,20 @@ program ford_test_program
   call do_stuff(20)
 
 contains
+!> @deprecated true
   subroutine do_foo_stuff(this)
     use test_module, only: increment
     class(foo) :: this
     call increment(this%foo_stuff)
   end subroutine do_foo_stuff
 
+!> @param repeat This is a doxygen comment for the name variable repeat
   subroutine do_stuff(repeat)
     !! source: True
     !!
     !! This is documentation for our subroutine that does stuff and things.
     !! This text is captured by ford
     integer, intent(in) :: repeat
-    !! The number of times to repeatedly do stuff and things
     integer :: i
     !! internal loop counter
 
