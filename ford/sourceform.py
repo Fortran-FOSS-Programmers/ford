@@ -126,8 +126,7 @@ def read_docstring(source: FortranReader, docmark: str) -> List[str]:
     return docstring
 
 def create_doxy_dict(doxy_dict:dict, line:str) -> dict:
-    # This creates a dictionary of parameters
-    # parameters are stored as a dictionary with name and comment
+    # This creates a dictionary of parameters with a name and comment
     PARAM_RE = re.compile(r"\s?@param\s([\S]*)(\s[\s\S]*)")
     matches = PARAM_RE.finditer(line)
     for match in matches:
@@ -135,7 +134,7 @@ def create_doxy_dict(doxy_dict:dict, line:str) -> dict:
     return doxy_dict
         
 def remove_doxy(source:list) -> List[str]:
-    # This function removes doxygen comments with an @ identifier from main comment blockx.
+    # This function removes doxygen comments with an @ identifier from main comment block.
     DOXY_RE = re.compile(r"\s?@([\S]*)\s([\S]*)\s([\s\S]*)")
     ret_list = []
     for line in source:
@@ -245,13 +244,8 @@ class FortranBase:
 
         self.base_url = pathlib.Path(self.settings.project_url)
         self.doc_list = read_docstring(source, self.settings.docmark)
-        #for i in self.doc_list:
-            #print(i)
 
         # For line that has been logged in the doc_list we need to check
-        # If a doxygen comment is on that line
-        # For now, this is just parameters
-       # Remove all of the doxygen comments from the list to make it clean.
 
         self.hierarchy = self._make_hierarchy()
         self.read_metadata()
@@ -436,6 +430,16 @@ class FortranBase:
                     if '@' in word and word != "@param":
                        meta_identifier = word[1:]
                 field_names = [field.name for field in fields(EntitySettings)]
+                ret_string = ""
+                translation_dict = {'@details': '@summary'} #this is the only translation for now
+                for word in self.doc_list[0].split():
+                    if word in translation_dict:
+                        ford_identifier = translation_dict[word]
+                        meta_identifier = ford_identifier
+                        ret_string += ford_identifier + " "
+                    else:
+                        ret_string += word + " "
+                self.doc_list[0] = ret_string
                 if meta_identifier.lower() not in field_names:
                     self.doc_list.insert(0, "")
 
@@ -807,8 +811,8 @@ class FortranContainer(FortranBase):
                 continue
             # Check if each comment in the doclist for a given subroutine is a doxygen comment
             for comment in self.doc_list: 
-                self.doxy_dict = create_doxy_dict(self.doxy_dict, comment) # creates the doxygen dictionary entry for a comment if it can
-                self.doc_list = remove_doxy(self.doc_list) # It then removes all of the doxygen comments from the block if there are any, so they don't show up under the subroutine
+                self.doxy_dict = create_doxy_dict(self.doxy_dict, comment) # creates the doxygen dictionary entry for a comment
+                self.doc_list = remove_doxy(self.doc_list) # It then removes all of the doxygen parameters from the block if there are any, so they don't show up under the subroutine
             if line.strip() != "":
                 self.num_lines += 1
             # Temporarily replace all strings to make the parsing simpler

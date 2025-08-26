@@ -1822,16 +1822,22 @@ def test_doxygen_parameters(parse_fortran_file):
     !> @param stuff some comment
     !> Normal Comment
     !> @param stuff_2 Doxygen comment
+    !> @param stuff_3 Comment should not show
     module a
       integer, intent(in) :: stuff
       integer, intent(in) :: stuff_2
       !! FORD comment
     end module a
+    module b
+      integer, intent(in) :: stuff_3
+      !! Should only capture this comment for stuff_3
+    end module a
     """
     fortran_file = parse_fortran_file(data)
     assert fortran_file.modules[0].doc_list == [" Normal Comment"]
-    assert fortran_file.modules[0].variables[0].doc_list == [" some comment"]
-    assert fortran_file.modules[0].variables[1].doc_list == [" FORD comment Doxygen comment"]
+    assert fortran_file.modules[0].variables[0].doc_list == [" some comment"] # single doxygen comment
+    assert fortran_file.modules[0].variables[1].doc_list == [" FORD comment Doxygen comment"] # doxygen comment and a FORD comment
+    assert fortran_file.modules[1].variables[0].doc_list == [" Should only capture this comment for stuff_3"] # doxygen comments are only shown for comments directly above the subroutine
 
 def test_module_procedure_in_module(parse_fortran_file):
     data = """\
