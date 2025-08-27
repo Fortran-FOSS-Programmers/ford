@@ -254,7 +254,8 @@ class FortranBase:
 
         self.base_url = pathlib.Path(self.settings.project_url)
         self.doc_list = read_docstring(source, self.settings.docmark)
-        self.doc_list = translate_links(self.doc_list) #Translates Doxygen @ see links to [[]]
+        if self.settings.doxygen:
+            self.doc_list = translate_links(self.doc_list) #Translates Doxygen @ see links to [[]]
 
         # For line that has been logged in the doc_list we need to check
 
@@ -433,7 +434,7 @@ class FortranBase:
             #we must translate the doxygen metadata into the ford format
             #@(meta) (content) ---> (meta): (content)
             translation_dict = {'details': 'summary'} #this is the only translation for now
-            if len(self.doc_list) >= 1 and "@" in self.doc_list[0]:
+            if len(self.doc_list) >= 1 and "@" in self.doc_list[0] and self.settings.doxygen:
                 DOXY_META_RE = re.compile(r"\s?@([\S]*)\s([\S\s]*)")
                 if match := DOXY_META_RE.match(self.doc_list[0]):
                     meta_type = match.group(1)
@@ -816,9 +817,10 @@ class FortranContainer(FortranBase):
                 self.doc_list.append(line[2:])             
                 continue
             # Check if each comment in the doclist for a given subroutine is a doxygen comment
-            for comment in self.doc_list: 
-                self.doxy_dict = create_doxy_dict(self.doxy_dict, comment) # creates the doxygen dictionary entry for a comment
-                self.doc_list = remove_doxy(self.doc_list) # It then removes all of the doxygen parameters from the block if there are any, so they don't show up under the subroutine
+            for comment in self.doc_list:
+                if self.settings.doxygen:
+                    self.doxy_dict = create_doxy_dict(self.doxy_dict, comment) # creates the doxygen dictionary entry for a comment
+                    self.doc_list = remove_doxy(self.doc_list) # It then removes all of the doxygen parameters from the block if there are any, so they don't show up under the subroutine
             if line.strip() != "":
                 self.num_lines += 1
             # Temporarily replace all strings to make the parsing simpler

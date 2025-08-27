@@ -132,6 +132,7 @@ class ProjectSettings:
     display: List[str] = field(default_factory=lambda: ["public", "protected"])
     doc_license: str = ""
     docmark: str = "!"
+    doxygen: bool = True
     docmark_alt: str = "*"
     email: Optional[str] = None
     encoding: str = "utf-8"
