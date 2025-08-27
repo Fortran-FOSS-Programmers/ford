@@ -125,6 +125,16 @@ def read_docstring(source: FortranReader, docmark: str) -> List[str]:
     source.pass_back(line)
     return docstring
 
+def translate_links(arr: list) -> list:
+    SEE_RE = re.compile(r"\s?@see\s(\S+)\s([\S\s]*)")
+    for i in range(0, len(arr)):
+        doc = arr[i]
+        if match := SEE_RE.match(doc):
+            name = match.group(1)
+            comment = match.group(2)
+            arr[i] = "[["+name+"]]"+" "+comment
+    return arr
+    
 def create_doxy_dict(doxy_dict:dict, line:str) -> dict:
     # This creates a dictionary of parameters with a name and comment
     PARAM_RE = re.compile(r"\s?@param\s([\S]*)(\s[\s\S]*)")
@@ -244,6 +254,7 @@ class FortranBase:
 
         self.base_url = pathlib.Path(self.settings.project_url)
         self.doc_list = read_docstring(source, self.settings.docmark)
+        self.doc_list = translate_links(self.doc_list) #Translates Doxygen @ see links to [[]]
 
         # For line that has been logged in the doc_list we need to check
 
