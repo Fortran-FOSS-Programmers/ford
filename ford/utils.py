@@ -257,25 +257,12 @@ def meta_preprocessor(lines: Union[str, List[str]]) -> Tuple[Dict[str, Any], Lis
         if line.strip() == "" or END_RE.match(line):
             break  # blank line or end of YAML header - done
 
-        # We check for parameters as if we check before we pass it in then the parameter gets removed
-        # from the doc_list. In this implementation, we pass the parameter line back to the doc_list
-        if "@param" in line:
-            lines.insert(0, line)
-            break  # no meta data - done
-
         # Finds a FORD metadata match and classifies
         if m1 := META_RE.match(line):
             key = m1.group("key").lower().strip()
             value = m1.group("value").strip()
             meta[key].append(value)
-
-        # Finds a doxygen match and classifies        
-        elif m1 := DOXY_META_RE.match(line):
-            key = m1.group("key").lower().strip()
-            value = m1.group("value").strip()
-            meta[key].append(value)
-            
-            
+    
         else:
             if (m2 := META_MORE_RE.match(line)) and key:
                 # Add another line to existing key

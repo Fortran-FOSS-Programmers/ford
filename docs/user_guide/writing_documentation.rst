@@ -392,3 +392,14 @@ adding its name next to the comment symbol:
 .. code:: text
 
    extra_filetypes: inc ! fortran.FortranFixedLexer
+
+Doxygen Documentation
+------------------------
+
+FORD now offers support for doxygen syntax. This allows comments and metadata
+to be written using the doxygen comment system described in `this page 
+<https://portal.eufus.eu/documentation/ITM/html/DoxygenFortran.html>`_. There
+is currently no support for in line parameters and the doxygen metadata which
+doesn't translate to ford metadata is ignored. Doxygen comments follow the ford 
+predocumentation format. 
+

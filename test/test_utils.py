@@ -2,6 +2,7 @@ import pytest
 from textwrap import dedent
 import ford
 from ford.utils import meta_preprocessor
+from test.test_sourceform import parse_fortran_file
 
 
 @pytest.mark.parametrize("string", ["true", "True", "TRUE", "tRuE"])
@@ -47,28 +48,6 @@ def test_meta_preprocessor():
     meta, doc = meta_preprocessor(text)
 
     assert doc == ["no more metadata"]
-    assert meta == {
-        "key1": ["value1"],
-        "key2": ["value2", "value2a"],
-        "key3": ["value3"],
-    }
-
-def test_doxy_meta_preprocessor():
-    text = dedent(
-        """\
-    @key1 value1
-    @key2 value2
-          value2a
-    @key3 value3
-
-    no more metadata
-    @param Parameter
-    """
-    )
-
-    meta, doc = meta_preprocessor(text)
-
-    assert doc == ["no more metadata", "@param Parameter"]
     assert meta == {
         "key1": ["value1"],
         "key2": ["value2", "value2a"],

@@ -55,7 +55,7 @@ from pygments.formatters import HtmlFormatter
 from ford.console import warn
 from ford.reader import FortranReader
 import ford.utils
-from ford.utils import paren_split, strip_paren
+from ford.utils import DOXY_META_RE, paren_split, strip_paren
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
 from ford.settings import ProjectSettings, EntitySettings
@@ -135,7 +135,7 @@ def create_doxy_dict(doxy_dict:dict, line:str) -> dict:
         
 def remove_doxy(source:list) -> List[str]:
     # This function removes doxygen comments with an @ identifier from main comment block.
-    DOXY_RE = re.compile(r"\s?@([\S]*)\s([\S]*)\s([\s\S]*)")
+    DOXY_RE = re.compile(r"\s?@(param)\s([\S]*)\s([\s\S]*)")
     ret_list = []
     for line in source:
         if not (DOXY_RE.match(line)):
@@ -418,29 +418,24 @@ class FortranBase:
         self.meta = EntitySettings.from_project_settings(self.settings)
 
         if len(self.doc_list) > 0:
+
+            #we must translate the doxygen metadata into the ford format
+            #@(meta) (content) ---> (meta): (content)
+            translation_dict = {'details': 'summary'} #this is the only translation for now
+            if len(self.doc_list) >= 1 and "@" in self.doc_list[0]:
+                DOXY_META_RE = re.compile(r"\s?@([\S]*)\s([\S\s]*)")
+                if match := DOXY_META_RE.match(self.doc_list[0]):
+                    meta_type = match.group(1)
+                    meta_content = match.group(2).strip()
+                    if meta_type in translation_dict:
+                        meta_type = translation_dict[meta_type]
+                    if meta_type != "param":
+                        self.doc_list[0] = meta_type +": "+ meta_content
+
             if len(self.doc_list) == 1 and ":" in self.doc_list[0]:
                 words = self.doc_list[0].split(":")[0].strip()
                 field_names = [field.name for field in fields(EntitySettings)]
                 if words.lower() not in field_names:
-                    self.doc_list.insert(0, "")
-
-            if len(self.doc_list) == 1 and "@" in self.doc_list[0]:
-                meta_identifier = ""
-                for word in self.doc_list[0].split():
-                    if '@' in word and word != "@param":
-                       meta_identifier = word[1:]
-                field_names = [field.name for field in fields(EntitySettings)]
-                ret_string = ""
-                translation_dict = {'@details': '@summary'} #this is the only translation for now
-                for word in self.doc_list[0].split():
-                    if word in translation_dict:
-                        ford_identifier = translation_dict[word]
-                        meta_identifier = ford_identifier
-                        ret_string += ford_identifier + " "
-                    else:
-                        ret_string += word + " "
-                self.doc_list[0] = ret_string
-                if meta_identifier.lower() not in field_names:
                     self.doc_list.insert(0, "")
 
             meta, self.doc_list = ford.utils.meta_preprocessor(self.doc_list)

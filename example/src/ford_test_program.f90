@@ -23,17 +23,16 @@ program ford_test_program
   call do_stuff(20)
 
 contains
-!> @deprecated true
+!> @details this is a summary
   subroutine do_foo_stuff(this)
     use test_module, only: increment
     class(foo) :: this
     call increment(this%foo_stuff)
   end subroutine do_foo_stuff
 
+!> @deprecated true
 !> @param repeat This is a doxygen comment for the name variable repeat
   subroutine do_stuff(repeat)
-    !! source: True
-    !!
     !! This is documentation for our subroutine that does stuff and things.
     !! This text is captured by ford
     integer, intent(in) :: repeat
@@ -46,6 +45,7 @@ contains
     end do
   end subroutine do_stuff
 
+!> @deprecated true
   subroutine linalg(A,x,b)
     !! Solve Ax = b with linear algebra magic
     real, intent(in) :: A(:,:)

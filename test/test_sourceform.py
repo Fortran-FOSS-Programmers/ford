@@ -1430,6 +1430,7 @@ def test_markdown_meta_reset(parse_fortran_file):
         integer, intent(in) :: x
         write(*,*) x*x
       end subroutine printSquare
+      !> @author Lucie Forrest
       subroutine printCube(x)
         integer, intent(in) :: x
         write(*,*) x*x*x
@@ -1443,7 +1444,7 @@ def test_markdown_meta_reset(parse_fortran_file):
     module.markdown(md)
     assert module.meta.version == "0.1.0"
     assert module.subroutines[0].meta.author == "Test name"
-    assert module.subroutines[1].meta.author is None
+    assert module.subroutines[1].meta.author == "Lucie Forrest"
 
 
 def test_multiline_attributes(parse_fortran_file):
