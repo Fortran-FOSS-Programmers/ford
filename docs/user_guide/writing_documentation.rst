@@ -401,5 +401,18 @@ to be written using the doxygen comment system described in `this page
 <https://portal.eufus.eu/documentation/ITM/html/DoxygenFortran.html>`_. There
 is currently no support for in line parameters and the doxygen metadata which
 doesn't translate to ford metadata is ignored. Doxygen comments follow the ford 
-predocumentation format. 
+predocumentation format.
+
+In the doxygen format, parameters are refernced by ``@param`` followed by the
+name followed by the comment. Currently there is no implementation to give 
+directions in doxygen parameters, this is handled entierly through fords format
+
+To link to another construct, doxygen uses the ``@see`` command followed by the
+name of the construct to be linked to and then the rest of the comment. In doxygen,
+the name of the link must come first, whereas in ford the name can come anywhere in the comment
+
+In doxygen metadata is refrenced using ``@(meta)`` where meta is the name of the
+metadata to be recorded. An extensive list of metadata is provided in ``settings.py``
+howwever, where appropriate there is translations from doxygen identifiers to ford identifiers
+in the ``read_metadata()`` function.
 
