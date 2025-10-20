@@ -393,26 +393,35 @@ adding its name next to the comment symbol:
 
    extra_filetypes: inc ! fortran.FortranFixedLexer
 
+.. _doxygen-docs:
+
 Doxygen Documentation
 ------------------------
 
-FORD now offers support for doxygen syntax. This allows comments and metadata
-to be written using the doxygen comment system described in `this page 
-<https://portal.eufus.eu/documentation/ITM/html/DoxygenFortran.html>`_. There
-is currently no support for in line parameters and the doxygen metadata which
-doesn't translate to ford metadata is ignored. Doxygen comments follow the ford 
-predocumentation format.
+FORD now offers some support for `Doxygen <https://www.doxygen.nl>`_ syntax,
+including ``@param``, ``@see``, and some metadata such as ``@author``.
 
-In the doxygen format, parameters are refernced by ``@param`` followed by the
-name followed by the comment. Currently there is no implementation to give 
-directions in doxygen parameters, this is handled entierly through fords format
+In the Doxygen format, procedure parameters are documented in the procedure
+doc-comment using ``@param <arg-name> <description>``. While Doxygen also allows
+supplying the argument direction ("in", "out", "in out"), Ford takes this from
+the argument ``intent`` instead.
 
-To link to another construct, doxygen uses the ``@see`` command followed by the
-name of the construct to be linked to and then the rest of the comment. In doxygen,
-the name of the link must come first, whereas in ford the name can come anywhere in the comment
+To link to another construct, Doxygen uses the ``@see`` command followed by the
+name of the construct to be linked to and then the rest of the comment. In
+Doxygen, the name of the link must come first, whereas in ford the name can come
+anywhere in the comment
 
-In doxygen metadata is refrenced using ``@(meta)`` where meta is the name of the
-metadata to be recorded. An extensive list of metadata is provided in ``settings.py``
-howwever, where appropriate there is translations from doxygen identifiers to ford identifiers
-in the ``read_metadata()`` function.
+The other supported Doxygen commands are:
 
+- ``@author``
+- ``@date``
+- ``@deprecated``
+- ``@license``
+- ``@version``
+
+which translate directly to their Ford counterparts (see :ref:`sec-doc-metadata`).
+
+You can also use ``@brief``, which is converted to ``@summary``.
+
+If you encounter problems with parsing Doxygen comments, you can turn this off
+with the :ref:`option-doxygen` setting in your project configuration file.
