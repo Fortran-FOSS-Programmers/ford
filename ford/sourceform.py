@@ -103,7 +103,7 @@ SUBLINK_TYPES = {
     "common": "common",
 }
 
-DOXYGEN_TRANSLATION = {"details": "summary"}
+DOXYGEN_TRANSLATION = {"brief": "summary"}
 PARAM_RE = re.compile(r"\s*@param\s*(?P<name>[\S]*)(?P<comment>\s+.*)")
 SEE_RE = re.compile(r"\s*@see\s*(\S+)\s([\S\s]*)")
 
