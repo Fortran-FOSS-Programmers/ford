@@ -112,7 +112,7 @@ DOXYGEN_PARAM_RE = re.compile(
     """,
     re.VERBOSE,
 )
-DOXYGEN_SEE_RE = re.compile(r"\s*@see\s*(\S+)\s([\S\s]*)")
+DOXYGEN_SEE_RE = re.compile(r"\s*@see\s*(?P<name>\S+)\s*(?P<comment>[\S\s]*)?")
 
 
 def _find_in_list(collection: Iterable, name: str) -> Optional[FortranBase]:
@@ -137,15 +137,14 @@ def read_docstring(source: FortranReader, docmark: str) -> List[str]:
     return docstring
 
 
-def translate_links(arr: list) -> list:
+def translate_links(arr: list[str]) -> list[str]:
     """Translates Doxygen ``@see`` links to Ford's ``[[]]``"""
 
-    for i in range(0, len(arr)):
-        doc = arr[i]
+    for i, doc in enumerate(arr):
         if match := DOXYGEN_SEE_RE.match(doc):
-            name = match.group(1)
-            comment = match.group(2)
-            arr[i] = f"[[{name}]] {comment}"
+            name = match["name"]
+            comment = f" {match['comment']}" or ""
+            arr[i] = f"[[{name}]]{comment}"
     return arr
 
 

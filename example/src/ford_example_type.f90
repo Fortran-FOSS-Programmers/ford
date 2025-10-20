@@ -28,7 +28,7 @@ module ford_example_type_mod
     !!
     !! More documentation
   contains
-  !> @see example_type this is a doxygen link
+    !> @see example_type this is a doxygen link
     procedure :: say_hello => example_type_say
     !! This will document the type-bound procedure *binding*, rather
     !! than the procedure itself. The specific procedure docs will be

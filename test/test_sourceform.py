@@ -2385,3 +2385,17 @@ def test_doxygen_ok_on_source_file(parse_fortran_file):
     """
     fortran_file = parse_fortran_file(data)
     assert fortran_file.meta.summary == "Source file"
+
+
+def test_doxygen_see_link(parse_fortran_file):
+    data = """\
+    !> @see b
+    module a
+    end module a
+    !> @see a with a description
+    module b
+    end module b
+    """
+    fortran_file = parse_fortran_file(data)
+    assert fortran_file.modules[1].doc_list[0].strip() == "[[a]] with a description"
+    assert fortran_file.modules[0].doc_list[0].strip() == "[[b]]"
