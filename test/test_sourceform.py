@@ -2375,3 +2375,13 @@ def test_doxygen_multiple_metadata(parse_fortran_file):
     assert module.meta.author == "Foo Shamaloo"
     assert module.meta.version == "3.14"
     assert module.doc_list == [" Main details"]
+
+
+def test_doxygen_ok_on_source_file(parse_fortran_file):
+    data = """\
+    !! @brief Source file
+    module a
+    end module a
+    """
+    fortran_file = parse_fortran_file(data)
+    assert fortran_file.meta.summary == "Source file"

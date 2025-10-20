@@ -259,7 +259,6 @@ class FortranBase:
     ):
         self.name = "unknown"
         self.visible = False
-        self.doxy_dict: Dict[str, str] = {}
         self.permission = inherited_permission.lower()
         self.strings: List[str] = strings or []
 
@@ -820,6 +819,7 @@ class FortranContainer(FortranBase):
         self.VARIABLE_RE = re.compile(
             self.VARIABLE_STRING.format(typestr), re.IGNORECASE
         )
+        self.doxy_dict: Dict[str, str] = {}
 
         # This is a little bit confusing, because `permission` here is sort of
         # overloaded for "permission for this entity", and "permission for child
