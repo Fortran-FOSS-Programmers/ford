@@ -104,8 +104,15 @@ SUBLINK_TYPES = {
 }
 
 DOXYGEN_TRANSLATION = {"brief": "summary"}
-PARAM_RE = re.compile(r"\s*@param\s*(?P<name>[\S]*)(?P<comment>\s+.*)")
-SEE_RE = re.compile(r"\s*@see\s*(\S+)\s([\S\s]*)")
+DOXYGEN_PARAM_RE = re.compile(
+    r"""\s*@param\s*                 # Required command
+    (?:\[[inout ,]+\]\s*)?           # Optional direction (not properly parsed here!)
+    (?P<name>[\S]*)                  # Required parameter name
+    (?P<comment>\s+.*)               # Description of parameter
+    """,
+    re.VERBOSE,
+)
+DOXYGEN_SEE_RE = re.compile(r"\s*@see\s*(\S+)\s([\S\s]*)")
 
 
 def _find_in_list(collection: Iterable, name: str) -> Optional[FortranBase]:
@@ -135,7 +142,7 @@ def translate_links(arr: list) -> list:
 
     for i in range(0, len(arr)):
         doc = arr[i]
-        if match := SEE_RE.match(doc):
+        if match := DOXYGEN_SEE_RE.match(doc):
             name = match.group(1)
             comment = match.group(2)
             arr[i] = f"[[{name}]] {comment}"
@@ -145,12 +152,12 @@ def translate_links(arr: list) -> list:
 def create_doxy_dict(line: str) -> dict:
     """Create a dictionary of parameters with a name and comment"""
 
-    return {m["name"]: m["comment"] for m in PARAM_RE.finditer(line)}
+    return {m["name"]: m["comment"] for m in DOXYGEN_PARAM_RE.finditer(line)}
 
 
 def remove_doxy(source: list) -> List[str]:
     """Remove doxygen comments with an @ identifier from main comment block."""
-    return [line for line in source if not PARAM_RE.match(line)]
+    return [line for line in source if not DOXYGEN_PARAM_RE.match(line)]
 
 
 def translate_doxy_meta(doc_list: list[str]) -> list[str]:

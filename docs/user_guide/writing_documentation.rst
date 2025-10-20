@@ -398,13 +398,13 @@ adding its name next to the comment symbol:
 Doxygen Documentation
 ------------------------
 
-FORD now offers some support for `Doxygen <https://www.doxygen.nl>`_ syntax,
-including ``@param``, ``@see``, and some metadata such as ``@author``.
+FORD now offers some limited support for `Doxygen <https://www.doxygen.nl>`_
+syntax, including ``@param``, ``@see``, and some metadata such as ``@author``.
 
 In the Doxygen format, procedure parameters are documented in the procedure
 doc-comment using ``@param <arg-name> <description>``. While Doxygen also allows
-supplying the argument direction ("in", "out", "in out"), Ford takes this from
-the argument ``intent`` instead.
+supplying the argument direction (``[in]``, for example), Ford ignores this and
+takes this information from the argument ``intent`` instead.
 
 To link to another construct, Doxygen uses the ``@see`` command followed by the
 name of the construct to be linked to and then the rest of the comment. In
@@ -425,3 +425,15 @@ You can also use ``@brief``, which is converted to ``@summary``.
 
 If you encounter problems with parsing Doxygen comments, you can turn this off
 with the :ref:`option-doxygen` setting in your project configuration file.
+
+.. note:: Doxygen support is intended to be minimal! We don't intend to support
+          anything beyond a limited subset of Doxygen commands. Our parsing of
+          Doxygen commands is also limited, and we expect the command and its
+          argument to be on the same line. For example::
+
+              !> @author Ann Coder
+
+          and not::
+
+              !> @author
+              !> Ann Coder

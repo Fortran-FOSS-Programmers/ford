@@ -2297,8 +2297,8 @@ def test_doxygen_parameters(parse_fortran_file):
     data = """\
     !> @param stuff some comment
     !> Normal Comment
-    !> @param stuff_2 Doxygen comment
-    !> @param stuff_3 Comment should not show
+    !> @param[in] stuff_2 Doxygen comment
+    !> @param     stuff_3 Comment should not show
     module a
       integer, intent(in) :: stuff
       integer, intent(in) :: stuff_2
