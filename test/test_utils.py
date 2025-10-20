@@ -2,7 +2,6 @@ import pytest
 from textwrap import dedent
 import ford
 from ford.utils import meta_preprocessor
-from test.test_sourceform import parse_fortran_file
 
 
 @pytest.mark.parametrize("string", ["true", "True", "TRUE", "tRuE"])
