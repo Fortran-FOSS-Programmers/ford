@@ -2355,3 +2355,20 @@ def test_doxygen_metadata_translation(parse_fortran_file):
     module = fortran_file.modules[0]
     assert module.meta.summary == "summary bit"
     assert module.doc_list == [" Main details"]
+
+
+def test_doxygen_multiple_metadata(parse_fortran_file):
+    data = """\
+    !> @brief summary bit
+    !> @author Foo Shamaloo
+    !> Main details
+    !> @version 3.14
+    module a
+    end module a
+    """
+    fortran_file = parse_fortran_file(data)
+    module = fortran_file.modules[0]
+    assert module.meta.summary == "summary bit"
+    assert module.meta.author == "Foo Shamaloo"
+    assert module.meta.version == "3.14"
+    assert module.doc_list == [" Main details"]

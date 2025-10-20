@@ -153,6 +153,31 @@ def remove_doxy(source: list) -> List[str]:
     return [line for line in source if not PARAM_RE.match(line)]
 
 
+def translate_doxy_meta(doc_list: list[str]) -> list[str]:
+    """Convert doxygen metadata into ford's format"""
+
+    # Doxygen commands can appear anywhere, we must move
+    # to the start of the docstring, and we can't do that
+    # while iterating on the list
+    to_be_moved: list[int] = []
+
+    for line, comment in enumerate(doc_list):
+        if match := DOXY_META_RE.match(comment):
+            meta_type = match["key"]
+            meta_content = match["value"].strip()
+            meta_type = DOXYGEN_TRANSLATION.get(meta_type, meta_type)
+            if meta_type != "param":
+                doc_list[line] = f"{meta_type}: {meta_content}"
+                to_be_moved.append(line)
+
+    for line in to_be_moved:
+        # This is fine because reorder earlier indices
+        # doesn't affect later ones
+        doc_list.insert(0, doc_list.pop(line))
+
+    return doc_list
+
+
 class Associations:
     """
     A class for storing associations. Associations are added and removed in batches, akin
@@ -432,17 +457,8 @@ class FortranBase:
         if len(self.doc_list) > 0:
             # we must translate the doxygen metadata into the ford format
             # @(meta) (content) ---> (meta): (content)
-            if (
-                len(self.doc_list) >= 1
-                and "@" in self.doc_list[0]
-                and self.settings.doxygen
-            ):
-                if match := DOXY_META_RE.match(self.doc_list[0]):
-                    meta_type = match["key"]
-                    meta_content = match["value"].strip()
-                    meta_type = DOXYGEN_TRANSLATION.get(meta_type, meta_type)
-                    if meta_type != "param":
-                        self.doc_list[0] = f"{meta_type}: {meta_content}"
+            if self.settings.doxygen:
+                self.doc_list = translate_doxy_meta(self.doc_list)
 
             if len(self.doc_list) == 1 and ":" in self.doc_list[0]:
                 words = self.doc_list[0].split(":")[0].strip()
