@@ -978,7 +978,7 @@ class FortranGraph:
             try:
                 link = f'<a href="{attribs["URL"]}">{attribs["label"]}</a></td>'
             except KeyError:
-                link = f'{attribs["label"]}</td>'
+                link = f"{attribs['label']}</td>"
 
             node = f'<td rowspan="2" class="node" bgcolor="{attribs["color"]}">{link}'
 

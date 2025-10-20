@@ -262,16 +262,16 @@ def meta_preprocessor(lines: Union[str, List[str]]) -> Tuple[Dict[str, Any], Lis
             key = m1.group("key").lower().strip()
             value = m1.group("value").strip()
             meta[key].append(value)
-    
+
         else:
             if (m2 := META_MORE_RE.match(line)) and key:
                 # Add another line to existing key
                 meta[key].append(m2.group("value").strip())
-            
+
             else:
                 lines.insert(0, line)
                 break  # no meta data - done
-    
+
     return meta, lines
 
 
