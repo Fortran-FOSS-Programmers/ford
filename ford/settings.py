@@ -213,7 +213,7 @@ class ProjectSettings:
     def __post_init__(self):
         self.relative = self.project_url == ""
 
-        field_types = get_type_hints(self)
+        field_types = get_type_hints(ProjectSettings)
 
         for key, value in asdict(self).items():
             default_type = field_types[key]
@@ -270,7 +270,7 @@ class ProjectSettings:
         if directory is None:
             directory = Path.cwd()
         self.directory = Path(directory).absolute()
-        field_types = get_type_hints(self)
+        field_types = get_type_hints(ProjectSettings)
 
         if self.favicon == FAVICON_PATH:
             self.favicon = Path(__file__).parent / FAVICON_PATH
