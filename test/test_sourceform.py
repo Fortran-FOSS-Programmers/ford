@@ -1798,18 +1798,18 @@ def test_url(parse_fortran_file):
     assert module.variables[0].get_dir() is None
     assert module.enums[0].get_dir() is None
 
-    assert program.full_url.endswith("program\\prog_foo.html")
-    assert module.full_url.endswith("module\\mod_foo.html")
-    assert submodule.full_url.endswith("module\\submod_foo.html")
-    assert program.subroutines[0].full_url.endswith("proc\\sub_foo.html")
-    assert program.functions[0].full_url.endswith("proc\\func_foo.html")
-    assert module.subroutines[0].full_url.endswith("proc\\foo1.html")
-    assert module.interfaces[0].full_url.endswith("interface\\inter_foo.html")
+    assert program.full_url.endswith("program/prog_foo.html")
+    assert module.full_url.endswith("module/mod_foo.html")
+    assert submodule.full_url.endswith("module/submod_foo.html")
+    assert program.subroutines[0].full_url.endswith("proc/sub_foo.html")
+    assert program.functions[0].full_url.endswith("proc/func_foo.html")
+    assert module.subroutines[0].full_url.endswith("proc/foo1.html")
+    assert module.interfaces[0].full_url.endswith("interface/inter_foo.html")
     assert program.variables[0].full_url.endswith(
-        "program\\prog_foo.html#variable-int_foo"
+        "program/prog_foo.html#variable-int_foo"
     )
     assert module.variables[0].full_url.endswith(
-        "module\\mod_foo.html#variable-real_foo"
+        "module/mod_foo.html#variable-real_foo"
     )
 
 

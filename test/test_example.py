@@ -360,11 +360,11 @@ def test_private_procedure_links(example_project):
 
 def test_public_procedure_links(example_project):
     path, _ = example_project
-    index = read_html(path / "module\\test_module.html")
+    index = read_html(path / "module/test_module.html")
 
     subroutine_box = index.find(id="proc-increment").parent
     assert subroutine_box.a is not None
-    assert subroutine_box.a["href"] == "..\proc\increment.html"
+    assert subroutine_box.a["href"] == "../proc/increment.html"
 
 
 def test_all_internal_links_resolve(example_project):
@@ -499,7 +499,7 @@ def test_namelist_lists(example_project):
 
     table = namelist_lists.table
     assert table.a.text == "example_namelist"
-    assert table.a["href"] == "..\\namelist\example_namelist.html"
+    assert table.a["href"] == "../namelist/example_namelist.html"
 
 
 def test_namelist_page(example_project):
@@ -520,7 +520,7 @@ def test_linking_to_page_alias_from_nested_page(example_project):
     subsubpage = read_html(path / "page/subdir/subsubpage.html")
 
     link = subsubpage.find("a", string=re.compile("such as"))
-    assert link["href"] == "..\\subpage1.html"
+    assert link["href"] == "../subpage1.html"
 
 
 def test_type_attributes(example_project):
