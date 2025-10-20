@@ -103,6 +103,10 @@ SUBLINK_TYPES = {
     "common": "common",
 }
 
+DOXYGEN_TRANSLATION = {"details": "summary"}
+PARAM_RE = re.compile(r"\s*@param\s*(?P<name>[\S]*)(?P<comment>\s+.*)")
+SEE_RE = re.compile(r"\s*@see\s*(\S+)\s([\S\s]*)")
+
 
 def _find_in_list(collection: Iterable, name: str) -> Optional[FortranBase]:
     for item in collection:
@@ -127,33 +131,26 @@ def read_docstring(source: FortranReader, docmark: str) -> List[str]:
 
 
 def translate_links(arr: list) -> list:
-    SEE_RE = re.compile(r"\s?@see\s(\S+)\s([\S\s]*)")
+    """Translates Doxygen ``@see`` links to Ford's ``[[]]``"""
+
     for i in range(0, len(arr)):
         doc = arr[i]
         if match := SEE_RE.match(doc):
             name = match.group(1)
             comment = match.group(2)
-            arr[i] = "[[" + name + "]]" + " " + comment
+            arr[i] = f"[[{name}]] {comment}"
     return arr
 
 
-def create_doxy_dict(doxy_dict: dict, line: str) -> dict:
-    # This creates a dictionary of parameters with a name and comment
-    PARAM_RE = re.compile(r"\s?@param\s([\S]*)(\s[\s\S]*)")
-    matches = PARAM_RE.finditer(line)
-    for match in matches:
-        doxy_dict[match.group(1)] = match.group(2)
-    return doxy_dict
+def create_doxy_dict(line: str) -> dict:
+    """Create a dictionary of parameters with a name and comment"""
+
+    return {m["name"]: m["comment"] for m in PARAM_RE.finditer(line)}
 
 
 def remove_doxy(source: list) -> List[str]:
-    # This function removes doxygen comments with an @ identifier from main comment block.
-    DOXY_RE = re.compile(r"\s?@(param)\s([\S]*)\s([\s\S]*)")
-    ret_list = []
-    for line in source:
-        if not (DOXY_RE.match(line)):
-            ret_list.append(line)
-    return ret_list
+    """Remove doxygen comments with an @ identifier from main comment block."""
+    return [line for line in source if not PARAM_RE.match(line)]
 
 
 class Associations:
@@ -211,7 +208,6 @@ class FortranBase:
     Fortran data.
     """
 
-    global doxy_list
     IS_SPOOF = False
 
     POINTS_TO_RE = re.compile(r"\s*=>\s*", re.IGNORECASE)
@@ -238,7 +234,7 @@ class FortranBase:
     ):
         self.name = "unknown"
         self.visible = False
-        self.doxy_dict = {}
+        self.doxy_dict: Dict[str, str] = {}
         self.permission = inherited_permission.lower()
         self.strings: List[str] = strings or []
 
@@ -259,9 +255,7 @@ class FortranBase:
         self.base_url = pathlib.Path(self.settings.project_url)
         self.doc_list = read_docstring(source, self.settings.docmark)
         if self.settings.doxygen:
-            self.doc_list = translate_links(
-                self.doc_list
-            )  # Translates Doxygen @ see links to [[]]
+            self.doc_list = translate_links(self.doc_list)
 
         # For line that has been logged in the doc_list we need to check
 
@@ -438,22 +432,17 @@ class FortranBase:
         if len(self.doc_list) > 0:
             # we must translate the doxygen metadata into the ford format
             # @(meta) (content) ---> (meta): (content)
-            translation_dict = {
-                "details": "summary"
-            }  # this is the only translation for now
             if (
                 len(self.doc_list) >= 1
                 and "@" in self.doc_list[0]
                 and self.settings.doxygen
             ):
-                DOXY_META_RE = re.compile(r"\s?@([\S]*)\s([\S\s]*)")
                 if match := DOXY_META_RE.match(self.doc_list[0]):
-                    meta_type = match.group(1)
-                    meta_content = match.group(2).strip()
-                    if meta_type in translation_dict:
-                        meta_type = translation_dict[meta_type]
+                    meta_type = match["key"]
+                    meta_content = match["value"].strip()
+                    meta_type = DOXYGEN_TRANSLATION.get(meta_type, meta_type)
                     if meta_type != "param":
-                        self.doc_list[0] = meta_type + ": " + meta_content
+                        self.doc_list[0] = f"{meta_type}: {meta_content}"
 
             if len(self.doc_list) == 1 and ":" in self.doc_list[0]:
                 words = self.doc_list[0].split(":")[0].strip()
@@ -834,15 +823,13 @@ class FortranContainer(FortranBase):
             if line[0:2] == "!" + self.settings.docmark:
                 self.doc_list.append(line[2:])
                 continue
-            # Check if each comment in the doclist for a given subroutine is a doxygen comment
-            for comment in self.doc_list:
-                if self.settings.doxygen:
-                    self.doxy_dict = create_doxy_dict(
-                        self.doxy_dict, comment
-                    )  # creates the doxygen dictionary entry for a comment
-                    self.doc_list = remove_doxy(
-                        self.doc_list
-                    )  # It then removes all of the doxygen parameters from the block if there are any, so they don't show up under the subroutine
+
+            if self.settings.doxygen:
+                # Parse doxygen commands and remove them from the docstring
+                for comment in self.doc_list:
+                    self.doxy_dict.update(create_doxy_dict(comment))
+                    self.doc_list = remove_doxy(self.doc_list)
+
             if line.strip() != "":
                 self.num_lines += 1
             # Temporarily replace all strings to make the parsing simpler
@@ -3060,18 +3047,11 @@ def line_to_variables(source, line, inherit_permission, parent):
                     string, initial[search_from:], count=1
                 )
                 search_from += QUOTES_RE.search(initial[search_from:]).end(0)
-        doxy_doc = ""
-        # It gets the parent's, e.g what subroutine a doxygen comment is a part of, doxy_dict
-        # It tries to pop the right element, if it can't it returns None
-        if parent.doxy_dict:
-            doxy_doc += parent.doxy_dict.pop(name, None)
-        # reads the comment matching a given name in the doxy_list
-        if len(doc) > 0 and len(doxy_doc) > 0:
-            doc[0] = doc[0] + doxy_doc
-            # adds doxygen comments to normal FORD comments
-        elif len(doc) == 0 and len(doxy_doc) > 0:
+
+        # If the parent has a doxygen `@param` command, add it to any Ford docstring
+        if doxy_doc := parent.doxy_dict.pop(name, None):
             doc.append(doxy_doc)
-            # if there are no FORD comments, the doxygen comment is set as the only comment
+
         varlist.append(
             FortranVariable(
                 name,
