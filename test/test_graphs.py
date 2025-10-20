@@ -463,6 +463,7 @@ def test_graphs(
     assert legend_nodes == expected_legend_nodes + ["This Page's Entity"]
     assert legend.find_all("g", class_="edge") == []
 
+
 @pytest.mark.skipif(not graphviz_installed, reason="Requires graphviz")
 def test_external_module_links(make_project_graphs):
     graphs = make_project_graphs

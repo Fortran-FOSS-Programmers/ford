@@ -1467,12 +1467,12 @@ def test_multiline_attributes(parse_fortran_file):
     prog = fortran_file.programs[0]
 
     for variable in prog.variables:
-        assert "allocatable" in variable.attribs, (
-            f"Missing 'allocatable' in '{variable}' attributes"
-        )
-        assert variable.dimension == "(:)" or "dimension(:)" in variable.attribs, (
-            f"Wrong dimension for '{variable}'"
-        )
+        assert (
+            "allocatable" in variable.attribs
+        ), f"Missing 'allocatable' in '{variable}' attributes"
+        assert (
+            variable.dimension == "(:)" or "dimension(:)" in variable.attribs
+        ), f"Wrong dimension for '{variable}'"
 
 
 def test_markdown_source_meta(parse_fortran_file):
@@ -1696,18 +1696,18 @@ def test_type_component_permissions(parse_fortran_file):
     fortran_file.modules[0].correlate(FakeProject())
 
     for ftype in fortran_file.modules[0].types:
-        assert ftype.variables[0].permission == "public", (
-            f"{ftype.name}::{ftype.variables[0].name}"
-        )
-        assert ftype.variables[1].permission == "private", (
-            f"{ftype.name}::{ftype.variables[1].name}"
-        )
-        assert ftype.boundprocs[0].permission == "public", (
-            f"{ftype.name}::{ftype.boundprocs[0].name}"
-        )
-        assert ftype.boundprocs[1].permission == "private", (
-            f"{ftype.name}::{ftype.boundprocs[1].name}"
-        )
+        assert (
+            ftype.variables[0].permission == "public"
+        ), f"{ftype.name}::{ftype.variables[0].name}"
+        assert (
+            ftype.variables[1].permission == "private"
+        ), f"{ftype.name}::{ftype.variables[1].name}"
+        assert (
+            ftype.boundprocs[0].permission == "public"
+        ), f"{ftype.name}::{ftype.boundprocs[0].name}"
+        assert (
+            ftype.boundprocs[1].permission == "private"
+        ), f"{ftype.name}::{ftype.boundprocs[1].name}"
 
 
 def test_variable_formatting(parse_fortran_file):
