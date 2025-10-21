@@ -55,7 +55,7 @@ from pygments.formatters import HtmlFormatter
 from ford.console import warn
 from ford.reader import FortranReader
 import ford.utils
-from ford.utils import paren_split, strip_paren
+from ford.utils import DOXY_META_RE, paren_split, strip_paren
 from ford.intrinsics import INTRINSICS
 from ford._markdown import MetaMarkdown
 from ford.settings import ProjectSettings, EntitySettings
@@ -103,6 +103,17 @@ SUBLINK_TYPES = {
     "common": "common",
 }
 
+DOXYGEN_TRANSLATION = {"brief": "summary"}
+DOXYGEN_PARAM_RE = re.compile(
+    r"""\s*@param\s*                 # Required command
+    (?:\[[inout ,]+\]\s*)?           # Optional direction (not properly parsed here!)
+    (?P<name>[\S]*)                  # Required parameter name
+    (?P<comment>\s+.*)               # Description of parameter
+    """,
+    re.VERBOSE,
+)
+DOXYGEN_SEE_RE = re.compile(r"\s*@see\s*(?P<name>\S+)\s*(?P<comment>[\S\s]*)?")
+
 
 def _find_in_list(collection: Iterable, name: str) -> Optional[FortranBase]:
     for item in collection:
@@ -124,6 +135,53 @@ def read_docstring(source: FortranReader, docmark: str) -> List[str]:
         docstring.append(line[length:])
     source.pass_back(line)
     return docstring
+
+
+def translate_links(arr: list[str]) -> list[str]:
+    """Translates Doxygen ``@see`` links to Ford's ``[[]]``"""
+
+    for i, doc in enumerate(arr):
+        if match := DOXYGEN_SEE_RE.match(doc):
+            name = match["name"]
+            comment = f" {match['comment']}" or ""
+            arr[i] = f"[[{name}]]{comment}"
+    return arr
+
+
+def create_doxy_dict(line: str) -> dict:
+    """Create a dictionary of parameters with a name and comment"""
+
+    return {m["name"]: m["comment"] for m in DOXYGEN_PARAM_RE.finditer(line)}
+
+
+def remove_doxy(source: list) -> List[str]:
+    """Remove doxygen comments with an @ identifier from main comment block."""
+    return [line for line in source if not DOXYGEN_PARAM_RE.match(line)]
+
+
+def translate_doxy_meta(doc_list: list[str]) -> list[str]:
+    """Convert doxygen metadata into ford's format"""
+
+    # Doxygen commands can appear anywhere, we must move
+    # to the start of the docstring, and we can't do that
+    # while iterating on the list
+    to_be_moved: list[int] = []
+
+    for line, comment in enumerate(doc_list):
+        if match := DOXY_META_RE.match(comment):
+            meta_type = match["key"]
+            meta_content = match["value"].strip()
+            meta_type = DOXYGEN_TRANSLATION.get(meta_type, meta_type)
+            if meta_type != "param":
+                doc_list[line] = f"{meta_type}: {meta_content}"
+                to_be_moved.append(line)
+
+    for line in to_be_moved:
+        # This is fine because reorder earlier indices
+        # doesn't affect later ones
+        doc_list.insert(0, doc_list.pop(line))
+
+    return doc_list
 
 
 class Associations:
@@ -226,6 +284,11 @@ class FortranBase:
 
         self.base_url = pathlib.Path(self.settings.project_url)
         self.doc_list = read_docstring(source, self.settings.docmark)
+        if self.settings.doxygen:
+            self.doc_list = translate_links(self.doc_list)
+
+        # For line that has been logged in the doc_list we need to check
+
         self.hierarchy = self._make_hierarchy()
         self.read_metadata()
 
@@ -397,6 +460,11 @@ class FortranBase:
         self.meta = EntitySettings.from_project_settings(self.settings)
 
         if len(self.doc_list) > 0:
+            # we must translate the doxygen metadata into the ford format
+            # @(meta) (content) ---> (meta): (content)
+            if self.settings.doxygen:
+                self.doc_list = translate_doxy_meta(self.doc_list)
+
             if len(self.doc_list) == 1 and ":" in self.doc_list[0]:
                 words = self.doc_list[0].split(":")[0].strip()
                 field_names = [field.name for field in fields(EntitySettings)]
@@ -733,7 +801,12 @@ class FortranContainer(FortranBase):
     )
 
     def __init__(
-        self, source, first_line, parent=None, inherited_permission="public", strings=[]
+        self,
+        source,
+        first_line,
+        parent=None,
+        inherited_permission="public",
+        strings=[],
     ):
         self.num_lines = 0
         if not isinstance(self, FortranSourceFile):
@@ -752,6 +825,7 @@ class FortranContainer(FortranBase):
         self.VARIABLE_RE = re.compile(
             self.VARIABLE_STRING.format(typestr), re.IGNORECASE
         )
+        self.doxy_dict: Dict[str, str] = {}
 
         # This is a little bit confusing, because `permission` here is sort of
         # overloaded for "permission for this entity", and "permission for child
@@ -767,14 +841,19 @@ class FortranContainer(FortranBase):
 
         blocklevel = 0
         associations = Associations()
-
         for line in source:
             if line[0:2] == "!" + self.settings.docmark:
                 self.doc_list.append(line[2:])
                 continue
+
+            if self.settings.doxygen:
+                # Parse doxygen commands and remove them from the docstring
+                for comment in self.doc_list:
+                    self.doxy_dict.update(create_doxy_dict(comment))
+                    self.doc_list = remove_doxy(self.doc_list)
+
             if line.strip() != "":
                 self.num_lines += 1
-
             # Temporarily replace all strings to make the parsing simpler
             self.strings = []
             search_from = 0
@@ -2990,6 +3069,10 @@ def line_to_variables(source, line, inherit_permission, parent):
                     string, initial[search_from:], count=1
                 )
                 search_from += QUOTES_RE.search(initial[search_from:]).end(0)
+
+        # If the parent has a doxygen `@param` command, add it to any Ford docstring
+        if doxy_doc := parent.doxy_dict.pop(name, None):
+            doc.append(doxy_doc)
 
         varlist.append(
             FortranVariable(

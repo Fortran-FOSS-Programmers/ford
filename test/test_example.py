@@ -337,7 +337,7 @@ def test_variable_lists(example_project):
 
     assert len(varlist("tr")) == 2
     assert varlist.tbody.tr.find(class_="anchor")["id"] == "variable-global_pi"
-    expected_declaration = "real(kind=real64) :: global_pi = acos(-1) a global variable, initialized to the value of pi"
+    expected_declaration = "real(kind=real64) :: global_pi = acos(-1) a global variable, initialized to the value of pi This is a doxygen comment for global pi"
     declaration_no_whitespace = varlist.tbody.text.replace("\n", "").replace(" ", "")
     assert declaration_no_whitespace == expected_declaration.replace(" ", "")
 

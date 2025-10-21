@@ -1258,6 +1258,7 @@ class FakeParent:
     parent = None
     display: List[str] = field(default_factory=list)
     _to_be_markdowned: List[FortranBase] = field(default_factory=list)
+    doxy_dict = {}
 
 
 def _make_list_str() -> List[str]:
@@ -1429,6 +1430,7 @@ def test_markdown_meta_reset(parse_fortran_file):
         integer, intent(in) :: x
         write(*,*) x*x
       end subroutine printSquare
+      !> @author Lucie Forrest
       subroutine printCube(x)
         integer, intent(in) :: x
         write(*,*) x*x*x
@@ -1442,7 +1444,7 @@ def test_markdown_meta_reset(parse_fortran_file):
     module.markdown(md)
     assert module.meta.version == "0.1.0"
     assert module.subroutines[0].meta.author == "Test name"
-    assert module.subroutines[1].meta.author is None
+    assert module.subroutines[1].meta.author == "Lucie Forrest"
 
 
 def test_multiline_attributes(parse_fortran_file):
@@ -2289,3 +2291,111 @@ def test_summary_handling_bug703(parse_fortran_file):
     module.markdown(md)
 
     assert "Lorem ipsum" in module.meta.summary
+
+
+def test_doxygen_parameters(parse_fortran_file):
+    data = """\
+    !> @param stuff some comment
+    !> Normal Comment
+    !> @param[in] stuff_2 Doxygen comment
+    !> @param     stuff_3 Comment should not show
+    module a
+      integer, intent(in) :: stuff
+      integer, intent(in) :: stuff_2
+      !! FORD comment
+    end module a
+    module b
+      integer, intent(in) :: stuff_3
+      !! Should only capture this comment for stuff_3
+    end module a
+    """
+    fortran_file = parse_fortran_file(data)
+    module_a = fortran_file.modules[0]
+    module_b = fortran_file.modules[1]
+    assert module_a.doc_list == [" Normal Comment"]
+    # single doxygen comment
+    assert module_a.variables[0].doc_list == [" some comment"]
+    # doxygen comment and a FORD comment
+    assert module_a.variables[1].doc_list == [" FORD comment", " Doxygen comment"]
+    # doxygen comments are only shown for comments directly above the subroutine
+    assert module_b.variables[0].doc_list == [
+        " Should only capture this comment for stuff_3"
+    ]
+
+
+def test_no_doxygen_parameters(parse_fortran_file):
+    data = """\
+    !> Normal Comment
+    !> @param stuff_2 Doxygen comment
+    module a
+      integer, intent(in) :: stuff
+      integer, intent(in) :: stuff_2
+      !! FORD comment
+    end module a
+    module b
+      integer, intent(in) :: stuff_3
+      !!comment for stuff_3
+    end module a
+    """
+    fortran_file = parse_fortran_file(data, doxygen=False)
+    module_a = fortran_file.modules[0]
+    module_b = fortran_file.modules[1]
+    assert module_a.doc_list == [" Normal Comment", " @param stuff_2 Doxygen comment"]
+    assert module_a.variables[0].doc_list == []
+    assert module_a.variables[1].doc_list == [" FORD comment"]
+    # doxygen comments are only shown for comments directly above the subroutine
+    assert module_b.variables[0].doc_list == ["comment for stuff_3"]
+
+
+def test_doxygen_metadata_translation(parse_fortran_file):
+    data = """\
+    !> @brief summary bit
+    !> Main details
+    module a
+    end module a
+    """
+    fortran_file = parse_fortran_file(data)
+    module = fortran_file.modules[0]
+    assert module.meta.summary == "summary bit"
+    assert module.doc_list == [" Main details"]
+
+
+def test_doxygen_multiple_metadata(parse_fortran_file):
+    data = """\
+    !> @brief summary bit
+    !> @author Foo Shamaloo
+    !> Main details
+    !> @version 3.14
+    module a
+    end module a
+    """
+    fortran_file = parse_fortran_file(data)
+    module = fortran_file.modules[0]
+    assert module.meta.summary == "summary bit"
+    assert module.meta.author == "Foo Shamaloo"
+    assert module.meta.version == "3.14"
+    assert module.doc_list == [" Main details"]
+
+
+def test_doxygen_ok_on_source_file(parse_fortran_file):
+    data = """\
+    !! @brief Source file
+    module a
+    end module a
+    """
+    fortran_file = parse_fortran_file(data)
+    assert fortran_file.meta.summary == "Source file"
+
+
+def test_doxygen_see_link(parse_fortran_file):
+    data = """\
+    !> @see b
+    module a
+    end module a
+    !> @see a with a description
+    module b
+    end module b
+    """
+    fortran_file = parse_fortran_file(data)
+    assert fortran_file.modules[1].doc_list[0].strip() == "[[a]] with a description"
+    assert fortran_file.modules[0].doc_list[0].strip() == "[[b]]"

@@ -847,6 +847,14 @@ displayed). These choice can be overridden for a specific item using the
 `documentation meta data <metadata-display>`, and those settings will be
 inherited by any items they contain. (*default:* ‘public’ and ‘protected’)
 
+.. _option-doxygen:
+
+doxygen
+^^^^^^^
+
+If true, attempt to parse Doxygen-style doc-comments (see
+:ref:`doxygen-docs`). (*default:* ``True``)
+
 .. _option-external:
 
 external
