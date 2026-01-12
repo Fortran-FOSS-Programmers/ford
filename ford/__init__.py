@@ -37,7 +37,7 @@ from typing import Tuple, Optional
 from textwrap import dedent
 
 try:
-    import tomllib
+    import tomllib  # type: ignore[import]
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
 
