@@ -102,8 +102,7 @@ def test_non_utf8_encoding(tmp_path):
 
 
 def test_exclude_ford_dirs(tmp_path, capsys):
-    """Test that we exclude some user-settable directories
-    """
+    """Test that we exclude some user-settable directories"""
 
     with open(tmp_path / "index.md", "w") as f:
         f.write("title: Index")
@@ -112,13 +111,9 @@ def test_exclude_ford_dirs(tmp_path, capsys):
     media_dir.mkdir(parents=True)
 
     md = MetaMarkdown()
-    settings = ProjectSettings(
-        media_dir=media_dir
-    )
+    settings = ProjectSettings(media_dir=media_dir)
     result_dir = tmp_path / "result"
-    get_page_tree(
-        tmp_path, result_dir, tmp_path / "doc", md, settings
-    )
+    get_page_tree(tmp_path, result_dir, tmp_path / "doc", md, settings)
 
     captured = capsys.readouterr().out.replace("\n", " ").replace("  ", " ")
     assert f"'{media_dir / 'index.md'}' does not exist" not in captured
