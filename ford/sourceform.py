@@ -170,6 +170,9 @@ def translate_doxy_meta(doc_list: list[str]) -> list[str]:
     for line, comment in enumerate(doc_list):
         if match := DOXY_META_RE.match(comment):
             meta_type = match["key"]
+            # Don't convert our admonitions
+            if meta_type in {"note", "warning", "todo", "bug", "history"}:
+                continue
             meta_content = match["value"].strip()
             meta_type = DOXYGEN_TRANSLATION.get(meta_type, meta_type)
             if meta_type != "param":

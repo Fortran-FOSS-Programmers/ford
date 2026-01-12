@@ -2399,3 +2399,22 @@ def test_doxygen_see_link(parse_fortran_file):
     fortran_file = parse_fortran_file(data)
     assert fortran_file.modules[1].doc_list[0].strip() == "[[a]] with a description"
     assert fortran_file.modules[0].doc_list[0].strip() == "[[b]]"
+
+
+def test_doxygen_eating_admonitions_bug717(parse_fortran_file):
+    """Ensure the doxygen parser doesn't convert our admonitions"""
+
+    data = """\
+    !> @note this should remain
+    module test
+    end module test
+    """
+
+    fortran_file = parse_fortran_file(data)
+    md = MetaMarkdown()
+
+    module = fortran_file.modules[0]
+    module.markdown(md)
+
+    # This is tied to the format of the admonitions class
+    assert 'div class="alert alert-info"' in module.doc
