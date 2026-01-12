@@ -25,7 +25,7 @@
 import os
 import toposort
 from itertools import chain, product
-from typing import List, Optional, Union, Dict, Set
+from typing import List, Optional, Union, Dict, Set, cast
 from pathlib import Path
 from fnmatch import fnmatch
 
@@ -481,6 +481,7 @@ def find_used_modules(
 
     # Find the ancestor of this submodule (if entity is one)
     if hasattr(entity, "parent_submodule") and entity.parent_submodule:
+        entity = cast(FortranSubmodule, entity)
         parent_submodule_name = entity.parent_submodule.lower()
         for submod in submodules:
             if parent_submodule_name == submod.name.lower():
@@ -488,6 +489,7 @@ def find_used_modules(
                 break
 
     if hasattr(entity, "ancestor_module"):
+        entity = cast(FortranSubmodule, entity)
         ancestor_module_name = entity.ancestor_module.lower()
         for mod in modules:
             if ancestor_module_name == mod.name.lower():

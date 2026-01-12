@@ -275,7 +275,7 @@ class FortranBase:
         if self.obj in ["subroutine", "function", "moduleprocedureimplementation"]:
             self.obj = "proc"
 
-        self.parent = parent
+        self.parent: FortranContainer | None = parent
         if self.parent:
             self.parobj: Optional[str] = self.parent.obj
             self.display: List[str] = self.parent.display
@@ -1260,6 +1260,7 @@ class FortranCodeUnit(FortranContainer):
         self.all_procs: Dict[str, Union[FortranProcedure, FortranInterface]] = {}
         self.public_list: List[str] = []
         self.namelists: List[FortranNamelist] = []
+        self.all_vars: Dict[str, FortranVariable] = []
 
     def _cleanup(self) -> None:
         self.process_attribs()
@@ -2040,6 +2041,7 @@ class FortranNamelist(FortranBase):
         self.visible = True
 
     def correlate(self, project):
+        self.parent = cast(FortranCodeUnit, self.parent)
         all_vars: Dict[str, FortranVariable] = {}
 
         all_vars.update(self.parent.all_vars)
@@ -2096,6 +2098,7 @@ class FortranType(FortranContainer):
                     break
 
     def correlate(self, project):
+        self.parent = cast(FortranCodeUnit, self.parent)
         self.all_absinterfaces = self.parent.all_absinterfaces
         self.all_types = self.parent.all_types
         self.all_procs = self.parent.all_procs
@@ -2262,6 +2265,7 @@ class FortranInterface(FortranContainer):
             self.source_file._to_be_markdowned.remove(self)
 
     def correlate(self, project):
+        self.parent = cast(FortranCodeUnit, self.parent)
         self.all_absinterfaces = self.parent.all_absinterfaces
         self.all_types = self.parent.all_types
         self.all_procs = self.parent.all_procs
@@ -2374,6 +2378,7 @@ class FortranFinalProc(FortranBase):
         self.source_file._to_be_markdowned.append(self)
 
     def correlate(self, project):
+        self.parent = cast(FortranType, self.parent)
         self.all_procs = self.parent.all_procs
         if self.name.lower() in self.all_procs:
             self.procedure = self.all_procs[self.name.lower()]
@@ -2455,6 +2460,7 @@ class FortranVariable(FortranBase):
         if proto_name == "*":
             return
 
+        self.parent = cast(FortranCodeUnit, self.parent)
         if self.vartype in ("type", "class"):
             self.proto[0] = self.parent.all_types.get(proto_name, self.proto[0])
         elif self.vartype == "procedure":
@@ -2576,6 +2582,8 @@ class FortranBoundProcedure(FortranBase):
         return result
 
     def correlate(self, project):
+        self.parent = cast(FortranType, self.parent)
+
         self.all_procs = self.parent.all_procs
 
         if self.proto:
@@ -2769,6 +2777,8 @@ class FortranCommon(FortranBase):
         self.visible = True
 
     def correlate(self, project):
+        self.parent = cast(FortranCodeUnit, self.parent)
+
         for i in range(len(self.variables)):
             if self.variables[i] in self.parent.all_vars:
                 self.variables[i] = self.parent.all_vars[self.variables[i]]
@@ -2802,7 +2812,7 @@ class FortranSpoof:
         self.name = name
         self.parent = parent
         self.obj = obj
-        if self.parent.settings.warn:
+        if self.parent and self.parent.settings.warn:
             warn(
                 f"{self.obj} '{self.name}' in {self.parent.obj} '{self.parent.name}' could not be matched to "
                 f"corresponding item in code (file {self.filename})"
