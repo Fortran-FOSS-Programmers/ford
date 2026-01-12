@@ -1,3 +1,5 @@
+from pathlib import Path
+from ford.settings import ProjectSettings
 from ford.pagetree import get_page_tree
 from ford._markdown import MetaMarkdown
 
@@ -29,8 +31,9 @@ def test_footnotes_on_one_page(tmp_path):
             """))
 
     md = MetaMarkdown()
+    settings = ProjectSettings()
     result_dir = tmp_path / "result"
-    nodes = get_page_tree(tmp_path, result_dir, tmp_path / "doc", md)
+    nodes = get_page_tree(tmp_path, result_dir, tmp_path / "doc", md, settings)
 
     assert len(nodes.subpages) == 2
     assert "This is the footnote on page A" in nodes.subpages[0].contents
@@ -61,8 +64,9 @@ def test_footnotes_on_one_page_parse_failure(tmp_path):
             """))
 
     md = MetaMarkdown()
+    settings = ProjectSettings()
     result_dir = tmp_path / "result"
-    nodes = get_page_tree(tmp_path, result_dir, tmp_path / "doc", md)
+    nodes = get_page_tree(tmp_path, result_dir, tmp_path / "doc", md, settings)
 
     assert len(nodes.subpages) == 1
     assert "This is the footnote on page A" not in nodes.subpages[0].contents
@@ -88,7 +92,33 @@ def test_non_utf8_encoding(tmp_path):
         """).encode(encoding))
 
     md = MetaMarkdown()
+    settings = ProjectSettings()
     result_dir = tmp_path / "result"
-    nodes = get_page_tree(tmp_path, result_dir, tmp_path / "doc", md, encoding=encoding)
+    nodes = get_page_tree(
+        tmp_path, result_dir, tmp_path / "doc", md, settings, encoding=encoding
+    )
 
     assert "本文档是" in nodes.contents
+
+
+def test_exclude_ford_dirs(tmp_path, capsys):
+    """Test that we exclude some user-settable directories
+    """
+
+    with open(tmp_path / "index.md", "w") as f:
+        f.write("title: Index")
+
+    media_dir: Path = tmp_path / "media"
+    media_dir.mkdir(parents=True)
+
+    md = MetaMarkdown()
+    settings = ProjectSettings(
+        media_dir=media_dir
+    )
+    result_dir = tmp_path / "result"
+    get_page_tree(
+        tmp_path, result_dir, tmp_path / "doc", md, settings
+    )
+
+    captured = capsys.readouterr().out.replace("\n", " ").replace("  ", " ")
+    assert f"'{media_dir / 'index.md'}' does not exist" not in captured

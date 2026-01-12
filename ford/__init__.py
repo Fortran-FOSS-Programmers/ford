@@ -479,6 +479,7 @@ def main(proj_data: ProjectSettings, proj_docs: str):
                 proj_data.copy_subdir,
                 proj_data.output_dir,
                 md,
+                settings=proj_data,
                 encoding=proj_data.encoding,
                 progress=progress,
             )

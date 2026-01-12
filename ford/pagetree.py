@@ -30,7 +30,7 @@ from typing import List, Optional, Sequence
 from textwrap import dedent
 from ford.console import warn
 from ford.utils import meta_preprocessor, ProgressBar
-from ford.settings import EntitySettings
+from ford.settings import EntitySettings, ProjectSettings
 from ford._markdown import MetaMarkdown
 
 
@@ -106,11 +106,25 @@ class PageNode:
         return iter(retlist)
 
 
+def is_excluded_dir(path: Path, settings: ProjectSettings) -> bool:
+    """Should `path` be excluded from the pagetree?"""
+    paths_to_exclude: set[Path] = {
+        path
+        for path in [settings.graph_dir, settings.media_dir, settings.output_dir]
+        if path is not None
+    }
+    paths_to_exclude.update(settings.html_template_dir)
+    paths_to_exclude.update(settings.src_dir)
+
+    return path in paths_to_exclude
+
+
 def get_page_tree(
     topdir: Path,
     proj_copy_subdir: Sequence[Path],
     output_dir: Path,
     md: MetaMarkdown,
+    settings: ProjectSettings,
     progress: Optional[ProgressBar] = None,
     parent=None,
     encoding: str = "utf-8",
@@ -119,6 +133,10 @@ def get_page_tree(
     # However, to keep compatibility with older versions I use OrderedDict.
     # I will use this later to remove duplicates from a list in a short way.
     from collections import OrderedDict
+
+    if is_excluded_dir(topdir, settings):
+        # Would be nice to be able to report if directory was excluded and why
+        return None
 
     # look for files within topdir
     index_file = topdir / "index.md"
@@ -164,7 +182,14 @@ def get_page_tree(
                 continue
 
             if subnode := get_page_tree(
-                filename, proj_copy_subdir, output_dir, md, progress, node, encoding
+                filename,
+                proj_copy_subdir,
+                output_dir,
+                md,
+                settings,
+                progress,
+                node,
+                encoding,
             ):
                 node.subpages.append(subnode)
         elif filename.suffix == ".md":
