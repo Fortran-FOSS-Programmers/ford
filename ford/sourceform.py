@@ -2414,7 +2414,7 @@ class FortranVariable(FortranBase):
             self.settings = self.parent.settings
         else:
             self.parobj = None
-            self.settings = None
+            self.settings = ProjectSettings()
         self.base_url = pathlib.Path(
             self.settings.project_url if self.settings else "."
         )
@@ -2648,7 +2648,7 @@ class FortranModuleProcedureReference(FortranBase):
             self.settings = self.parent.settings
         else:
             self.parobj = None
-            self.settings = None
+            self.settings = ProjectSettings()
         self.base_url = pathlib.Path(
             self.settings.project_url if self.settings else "."
         )
