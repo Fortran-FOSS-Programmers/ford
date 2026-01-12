@@ -3253,7 +3253,7 @@ class NameSelector:
         If no name has previously been registered, then generate a new
         one.
         """
-        if not isinstance(item, ford.sourceform.FortranBase):
+        if not isinstance(item, FortranBase):
             raise TypeError(f"'{item}' is not of a type derived from FortranBase")
 
         if item in self._items:
