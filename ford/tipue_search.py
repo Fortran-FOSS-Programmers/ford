@@ -37,7 +37,6 @@ import os
 import pathlib
 import json
 from bs4 import BeautifulSoup, FeatureNotFound, SoupStrainer
-from codecs import open
 from typing import Dict, List
 from urllib.parse import urljoin
 
