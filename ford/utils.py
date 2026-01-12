@@ -315,7 +315,7 @@ class ProgressBar:
         # by setting an env var to disable progress bar entirely
         disable: bool = bool(os.environ.get("FORD_DEBUGGING", False))
 
-        self._iterable = iterable
+        self._iterable: Iterable | None = iterable
         self._progress = Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description:21}"),
@@ -340,8 +340,9 @@ class ProgressBar:
 
     def __iter__(self):
         try:
-            for item in self._iterable:
-                yield item
+            if self._iterable is not None:
+                for item in self._iterable:
+                    yield item
         finally:
             self._progress.__exit__(None, None, None)
 
