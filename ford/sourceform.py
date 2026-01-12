@@ -2963,7 +2963,7 @@ class GenericSource(FortranBase):
                     prevdoc = False
                 docalt = False
 
-    def lines_description(self, total, total_all=0):
+    def lines_description(self, total, total_all=0, obj=None):
         return ""
 
 
