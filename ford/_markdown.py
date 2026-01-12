@@ -4,7 +4,7 @@ from markdown import Markdown, Extension
 from markdown.inlinepatterns import InlineProcessor
 from markdown.treeprocessors import Treeprocessor
 from markdown.preprocessors import Preprocessor
-from typing import Dict, List, Union, Optional, TYPE_CHECKING
+from typing import Dict, List, Union, Optional, TYPE_CHECKING, Sequence
 import re
 from xml.etree.ElementTree import Element
 from contextlib import suppress
@@ -46,7 +46,7 @@ class MetaMarkdown(Markdown):
         self,
         md_base: PathLike = ".",
         base_url: PathLike = ".",
-        extensions: Optional[List[Union[str, Extension]]] = None,
+        extensions: Optional[Sequence[Union[str, Extension]]] = None,
         extension_configs: Optional[Dict[str, Dict]] = None,
         aliases: Optional[Dict[str, str]] = None,
         project: Optional[Project] = None,
@@ -77,7 +77,7 @@ class MetaMarkdown(Markdown):
         default_config.update(extension_configs or {})
 
         super().__init__(
-            extensions=default_extensions + extensions,
+            extensions=default_extensions + list(extensions),
             output_format="html",
             extension_configs=default_config,
         )

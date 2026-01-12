@@ -446,7 +446,7 @@ class Project:
 
 
 def find_used_modules(
-    entity: FortranCodeUnit,
+    entity: Union[FortranCodeUnit, FortranBlockData],
     modules: List[FortranModule],
     submodules: List[FortranSubmodule],
     external_modules: List[ExternalModule],
