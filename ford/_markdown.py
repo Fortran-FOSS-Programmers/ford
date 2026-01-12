@@ -197,7 +197,7 @@ class FordLinkProcessor(InlineProcessor):
         re.VERBOSE | re.UNICODE,
     )
 
-    def __init__(self, md: MetaMarkdown, project: Project):  # type: ignore[overrider]
+    def __init__(self, md: MetaMarkdown, project: Project):
         self.project = project
         self.md: MetaMarkdown = md
 
@@ -287,7 +287,7 @@ class FordLinkExtension(Extension):
         self.config = {"project": [kwargs.get("project", None), "Ford project"]}
         super().__init__(**kwargs)
 
-    def extendMarkdown(self, md: MetaMarkdown):  # type: ignore[override]
+    def extendMarkdown(self, md: MetaMarkdown):
         project = self.getConfig("project")
         md.inlinePatterns.register(
             FordLinkProcessor(md, project=project), "ford_links", 174
@@ -329,5 +329,5 @@ class RelativeLinksExtension(Extension):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def extendMarkdown(self, md: MetaMarkdown):  # type: ignore[override]
+    def extendMarkdown(self, md: MetaMarkdown):
         md.treeprocessors.register(RelativeLinksTreeProcessor(md), "relative_links", 5)

@@ -14,7 +14,7 @@ from typing import (
     get_origin,
     get_type_hints,
 )
-from markdown_include.include import (  # type: ignore[import]
+from markdown_include.include import (
     INC_SYNTAX as MD_INCLUDE_RE,
     MarkdownInclude,
     IncludePreprocessor,
@@ -25,7 +25,7 @@ from ford.console import warn
 from ford.utils import meta_preprocessor, normalise_path, str_to_bool
 
 try:
-    import tomllib
+    import tomllib  # type: ignore[import]
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
 
