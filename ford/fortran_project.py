@@ -325,7 +325,7 @@ class Project:
         # if dependency graphs are to be produced
         if self.settings.graph:
             for entity in chain(self.procedures, self.programs, self.blockdata):
-                entity.deplist = set(filter_modules(entity))
+                entity.deplist = list(set(filter_modules(entity)))
 
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:

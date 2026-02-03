@@ -1846,6 +1846,7 @@ class FortranProcedure(FortranCodeUnit):
 
         self._parse_bind_C(bindC)
         self._common_initialize()
+        self.deplist: List[FortranModule] = []
 
         return attribstr
 
@@ -2025,6 +2026,7 @@ class FortranProgram(FortranCodeUnit):
         if self.name is None:
             self.name = ""
         self._common_initialize()
+        self.deplist: List[FortranModule] = []
 
 
 class FortranNamelist(FortranBase):
@@ -2678,6 +2680,7 @@ class FortranBlockData(FortranContainer):
         self.visible = True
         self.attr_dict = defaultdict(list)
         self.param_dict = {}
+        self.deplist: List[FortranModule] = []
 
     def correlate(self, project):
         # Add procedures, interfaces and types from parent to our lists
