@@ -142,7 +142,7 @@ class ProjectSettings:
         default_factory=lambda: ["f90", "f95", "f03", "f08", "f15"]
     )
     external: Dict[str, str] = field(default_factory=dict)
-    externalize: bool = False
+    externalize: bool = True
     extra_filetypes: Dict[str, ExtraFileType] = field(default_factory=dict)
     extra_mods: Dict[str, str] = field(default_factory=dict)
     extra_vartypes: list = field(default_factory=list)
