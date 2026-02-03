@@ -118,7 +118,7 @@ def dict2obj(project, extDict, url, parent=None, remote: bool = False) -> Fortra
     project_list = getattr(project, extObj._project_list)
     project_list.append(extObj)
 
-    if obj_type == "interface":
+    if type(extObj) is ExternalInterface:
         extObj.proctype = extDict["proctype"]
 
     for key in ATTRIBUTES:
