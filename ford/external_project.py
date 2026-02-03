@@ -176,7 +176,7 @@ def load_external_modules(project):
                     url = project.settings.directory.joinpath(url).resolve()
                 extModules = modules_from_local(url)
         except (URLError, json.JSONDecodeError) as error:
-            extModules = []
+            extModules = {}
             print(f"Could not open external URL '{url}', reason: {error}")
 
         if METADATA_NAME in extModules:
@@ -185,4 +185,4 @@ def load_external_modules(project):
 
         # convert modules defined in the JSON database to module objects
         for extModule in extModules:
-            dict2obj(project, extModule, url, remote=remote)
+            dict2obj(project, extModule, url, remote=bool(remote))
