@@ -38,8 +38,7 @@ def test_settings_type_conversion():
 def test_settings_type_conversion_from_markdown():
     settings, _ = load_markdown_settings(
         ".",
-        dedent(
-            """\
+        dedent("""\
             ---
             project: some project
             src_dir: source
@@ -55,8 +54,7 @@ def test_settings_type_conversion_from_markdown():
                 sh # bash
                 py # python
             ---
-            """
-        ),
+            """),
     )
 
     assert settings.src_dir == ["source"]
@@ -77,8 +75,7 @@ def test_settings_type_conversion_from_markdown():
 
 
 def test_settings_from_toml():
-    text = dedent(
-        '''\
+    text = dedent('''\
     project = "some project"
     src_dir = "source"
     summary = """
@@ -93,8 +90,7 @@ def test_settings_from_toml():
       { extension = "sh", comment = "#", lexer = "bash" },
       { extension = "py", comment = "#", lexer = "python" },
     ]
-    '''
-    )
+    ''')
 
     settings = ProjectSettings(**tomllib.loads(text))
 
@@ -147,8 +143,7 @@ def test_extra_filetype_error():
 
 
 def test_duplicated_fixed_extension():
-    text = dedent(
-        '''\
+    text = dedent('''\
     project = "some project"
     src_dir = "source"
     summary = """
@@ -158,7 +153,6 @@ def test_duplicated_fixed_extension():
     fpp_extensions = ["fpp", "F90"]
     fixed_extensions = ["f"]
     extensions = ["f90", "f"]
-        '''
-    )
+        ''')
     with pytest.raises(ValueError):
         ProjectSettings(**tomllib.loads(text))
