@@ -20,7 +20,6 @@ from ford.sourceform import (
 )
 from ford.version import __version__
 
-
 # attributes of a module object needed for further processing
 ATTRIBUTES = [
     "pub_procs",

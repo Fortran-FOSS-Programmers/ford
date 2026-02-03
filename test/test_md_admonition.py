@@ -17,11 +17,9 @@ def not_title(tag):
 
 
 def test_basic():
-    converted = convert(
-        """
+    converted = convert("""
         @note note text
-        """
-    )
+        """)
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -31,11 +29,9 @@ def test_basic():
 
 
 def test_uppercase():
-    converted = convert(
-        """
+    converted = convert("""
         @NOTE note text
-        """
-    )
+        """)
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -45,11 +41,9 @@ def test_uppercase():
 
 
 def test_endnote():
-    converted = convert(
-        """
+    converted = convert("""
         @note note text @endnote
-        """
-    )
+        """)
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -59,12 +53,10 @@ def test_endnote():
 
 
 def test_paragraph():
-    converted = convert(
-        """
+    converted = convert("""
         @note note text
         some following text
-        """
-    )
+        """)
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -74,11 +66,9 @@ def test_paragraph():
 
 
 def test_paragraph_end_line():
-    converted = convert(
-        """
+    converted = convert("""
         @note note text
-        some following text"""
-    )
+        some following text""")
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -88,16 +78,14 @@ def test_paragraph_end_line():
 
 
 def test_explicit_end():
-    converted = convert(
-        """
+    converted = convert("""
         @note note text
         some blank lines
 
 
         before the end
         @endnote
-        """
-    )
+        """)
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -107,15 +95,13 @@ def test_explicit_end():
 
 
 def test_explicit_end_no_newline():
-    converted = convert(
-        """
+    converted = convert("""
         @note note text
         some blank lines
 
 
         before the end
-        @endnote"""
-    )
+        @endnote""")
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -125,11 +111,9 @@ def test_explicit_end_no_newline():
 
 
 def test_warning():
-    converted = convert(
-        """
+    converted = convert("""
         @warning note text
-        """
-    )
+        """)
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -139,15 +123,13 @@ def test_warning():
 
 
 def test_in_list():
-    converted = convert(
-        """
+    converted = convert("""
         - item 1
 
             @note note text
 
         - item 2
-        """
-    )
+        """)
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -157,8 +139,7 @@ def test_in_list():
 
 
 def test_in_list_with_paragraph():
-    converted = convert(
-        """
+    converted = convert("""
         - item 1
 
             @note note text
@@ -167,8 +148,7 @@ def test_in_list_with_paragraph():
             but not this one
 
         - item 2
-        """
-    )
+        """)
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -178,8 +158,7 @@ def test_in_list_with_paragraph():
 
 
 def test_in_list_with_paragraph_and_end():
-    converted = convert(
-        """
+    converted = convert("""
         - item 1
 
             @note note text
@@ -189,8 +168,7 @@ def test_in_list_with_paragraph_and_end():
             @endnote
 
         - item 2
-        """
-    )
+        """)
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -201,8 +179,7 @@ def test_in_list_with_paragraph_and_end():
 
 
 def test_in_list_with_list():
-    converted = convert(
-        """
+    converted = convert("""
         - item 1
 
             @note note text
@@ -213,8 +190,7 @@ def test_in_list_with_list():
             @endnote
 
         - item 2
-        """
-    )
+        """)
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1
@@ -258,13 +234,11 @@ def test_in_list_with_list():
 
 
 def test_midparagraph():
-    converted = convert(
-        """
+    converted = convert("""
         @Bug start text
 
         end text @endbug post text
-        """
-    )
+        """)
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 3
@@ -278,11 +252,9 @@ def test_midparagraph():
 
 
 def test_title():
-    converted = convert(
-        """
+    converted = convert("""
         @warning some "title" text
-        over multiple lines"""
-    )
+        over multiple lines""")
 
     soup = BeautifulSoup(converted, features="html.parser")
     assert len(soup) == 1

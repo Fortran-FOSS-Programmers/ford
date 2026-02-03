@@ -57,7 +57,6 @@ from ford.settings import (
     convert_types_from_commandarguments,
 )
 
-
 __appname__ = "FORD"
 __author__ = "Chris MacMackin"
 __credits__ = [
@@ -395,16 +394,12 @@ def parse_arguments(
             subprocess.run(command, check=True, capture_output=True, text=True)
         except (subprocess.CalledProcessError, OSError) as ex:
             project_file = command_line_args["project_file"].name
-            exit(
-                dedent(
-                    f"""\
+            exit(dedent(f"""\
                     Error: Testing preprocessor command (`{" ".join(command)}`) failed with error:
                         {ex.stderr.strip() if isinstance(ex, subprocess.CalledProcessError) else ex}
 
                     If you need to preprocess files, please fix the 'preprocessor' option in '{project_file}'.
-                    Otherwise, please set 'preprocess: False' in '{project_file}'"""
-                )
-            )
+                    Otherwise, please set 'preprocess: False' in '{project_file}'"""))
     else:
         proj_data.fpp_extensions = []
 

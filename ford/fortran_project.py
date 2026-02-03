@@ -58,7 +58,6 @@ from ford.sourceform import (
 from ford.settings import ProjectSettings
 from ford._typing import PathLike
 
-
 LINK_TYPES = {
     "module": "modules",
     "submodule": "submodules",

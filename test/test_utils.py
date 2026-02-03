@@ -34,15 +34,13 @@ def test_strip_paren(string, level, expected):
 
 
 def test_meta_preprocessor():
-    text = dedent(
-        """\
+    text = dedent("""\
     key1: value1
     key2: value2
           value2a
     key3: value3
 
-    no more metadata"""
-    )
+    no more metadata""")
 
     meta, doc = meta_preprocessor(text)
 
