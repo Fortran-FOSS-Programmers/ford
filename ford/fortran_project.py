@@ -482,7 +482,7 @@ def find_used_modules(
     # Find the ancestor of this submodule (if entity is one)
     if hasattr(entity, "parent_submodule") and entity.parent_submodule:
         entity = cast(FortranSubmodule, entity)
-        parent_submodule_name = entity.parent_submodule.lower()
+        parent_submodule_name = cast(str, entity.parent_submodule).lower()
         for submod in submodules:
             if parent_submodule_name == submod.name.lower():
                 entity.parent_submodule = submod
@@ -490,7 +490,7 @@ def find_used_modules(
 
     if hasattr(entity, "ancestor_module"):
         entity = cast(FortranSubmodule, entity)
-        ancestor_module_name = entity.ancestor_module.lower()
+        ancestor_module_name = cast(str, entity.ancestor_module).lower()
         for mod in modules:
             if ancestor_module_name == mod.name.lower():
                 entity.ancestor_module = mod
