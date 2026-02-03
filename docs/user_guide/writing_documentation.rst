@@ -352,6 +352,42 @@ constructor.
    ``my_subroutine``, while now it will be left as: ``call
    [[my_subroutine]]``.
 
+.. _external_projects:
+
+Linking to External Projects
+----------------------------
+
+FORD can look up references to modules, routines, and types in other projects if
+they also use FORD for documentation.
+This works in two steps:
+
+- the external project exports the information about each entity, including
+  links, to a ``modules.json`` file, which is hosted along with the rest of the
+  documentation.
+
+  .. versionchanged:: 7.0.13
+     Prior to 7.0.13, the external project has to set `externalize = True
+     <option-externalize>` in order to create the ``modules.json`` file. In
+     7.0.13, this is now the default behaviour.
+
+- the downstream project imports the external project using the `external
+  <option-external>` setting, specifying the name of the project and (usually)
+  the top-level URL of the project's documentation. For example, if the front
+  page of your FORD docs is at ``project.github.io``, you would set:
+
+.. tab:: fpm.toml
+
+   .. code:: toml
+
+      [extra.ford.external]
+      name = "https://project.github.io"
+
+.. tab:: Markdown metadata
+
+   .. code:: yaml
+
+      external: name=https://project.github.io
+
 .. _non-fortran-source-files:
 
 Non-Fortran Source Files

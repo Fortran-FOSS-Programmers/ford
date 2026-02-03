@@ -271,13 +271,30 @@ def get_command_line_arguments() -> argparse.Namespace:
         help="list of directories to be searched for ``include`` files",
     )
     parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Any other FORD options as a semicolon-separated TOML string. "
+        "Options set through this have lower precedence than other command line options",
+    )
+
+    external_group = parser.add_argument_group("external projects")
+    externalize_group = external_group.add_mutually_exclusive_group()
+    externalize_group.add_argument(
         "--externalize",
         action="store_true",
-        default=None,
-        help="provide information about Fortran objects in a json database for "
-        "other FORD projects to refer to.",
+        default=True,
+        help="export information about Fortran objects to JSON file for "
+        "other FORD projects to use (default: True)",
     )
-    parser.add_argument(
+    externalize_group.add_argument(
+        "--no-externalize",
+        action="store_false",
+        dest="externalize",
+        help="don't export information to JSON file",
+    )
+
+    external_group.add_argument(
         "-L",
         "--external_links",
         dest="external",
@@ -289,13 +306,6 @@ def get_command_line_arguments() -> argparse.Namespace:
         this entity is referred to.
         FORD will look in the provided paths for a modules.json file.
         """,
-    )
-    parser.add_argument(
-        "--config",
-        type=str,
-        default=None,
-        help="Any other FORD options as a semicolon-separated TOML string. "
-        "Options set through this have lower precedence than other command line options",
     )
 
     return parser.parse_args()
