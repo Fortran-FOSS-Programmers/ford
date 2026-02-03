@@ -177,6 +177,6 @@ def get_page_tree(
                 warn(f"Error parsing '{filename}'.\n\t{e.args[0]}")
                 continue
         else:
-            node.files.append(name)
+            node.files.append(Path(name))
 
     return node
