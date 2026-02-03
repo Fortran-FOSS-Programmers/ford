@@ -44,13 +44,13 @@ class PageNode:
         md: MetaMarkdown,
         path: Path,
         output_dir: Path,
-        proj_copy_subdir: Sequence[os.PathLike],
+        proj_copy_subdir: Sequence[Path],
         parent: Optional[PageNode],
         encoding: str = "utf-8",
     ):
-        meta, text = meta_preprocessor(dedent(Path(path).read_text(encoding)))
+        meta, text = meta_preprocessor(dedent(path.read_text(encoding)))
         self.meta = EntitySettings.from_markdown_metadata(meta, path.stem)
-        self.base_url = Path(md.base_url)
+        self.base_url = md.base_url
 
         if self.meta.title is None:
             raise ValueError(f"Page '{path}' has no title metadata")
@@ -72,7 +72,7 @@ class PageNode:
         self.copy_subdir = self.meta.copy_subdir or proj_copy_subdir
         self.parent = parent
         self.subpages: List[PageNode] = []
-        self.files: List[os.PathLike] = []
+        self.files: List[Path] = []
         self.filename = Path(path.stem)
         if self.parent:
             self.hierarchy: List[PageNode] = self.parent.hierarchy + [self.parent]
@@ -107,8 +107,8 @@ class PageNode:
 
 
 def get_page_tree(
-    topdir: os.PathLike,
-    proj_copy_subdir: Sequence[os.PathLike],
+    topdir: Path,
+    proj_copy_subdir: Sequence[Path],
     output_dir: Path,
     md: MetaMarkdown,
     progress: Optional[ProgressBar] = None,
@@ -119,8 +119,6 @@ def get_page_tree(
     # However, to keep compatibility with older versions I use OrderedDict.
     # I will use this later to remove duplicates from a list in a short way.
     from collections import OrderedDict
-
-    topdir = Path(topdir)
 
     # look for files within topdir
     index_file = topdir / "index.md"
@@ -179,6 +177,6 @@ def get_page_tree(
                 warn(f"Error parsing '{filename}'.\n\t{e.args[0]}")
                 continue
         else:
-            node.files.append(name)
+            node.files.append(Path(name))
 
     return node

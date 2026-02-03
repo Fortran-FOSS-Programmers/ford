@@ -31,14 +31,12 @@ def test_sub_alias_with_equals():
 
 
 def test_sub_alias_in_table():
-    text = dedent(
-        """
+    text = dedent("""
         |Table Col 1| Table Col 2 |
         |-----------| ----------- |
         |normal| entry |
         | [link](|page|/subpage2.html) | |other| |
-        """
-    )
+        """)
 
     result = MetaMarkdown(
         aliases={"page": "/home/page", "other": "some alias"}

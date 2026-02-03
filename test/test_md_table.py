@@ -11,16 +11,14 @@ def test_zebra_table():
         output_format="html5",
     )
 
-    text = textwrap.dedent(
-        """
+    text = textwrap.dedent("""
         | Header1    | Header2     |
         | ---------- | ----------- |
         | some text  | some text   |
         | some text  | some text   |
         | some text  | some text   |
         | some text  | some text   |
-        """
-    )
+        """)
 
     html = md.convert(text)
     soup = BeautifulSoup(html, features="html.parser")
@@ -37,8 +35,7 @@ def test_no_clobber_html_table():
         output_format="html5",
     )
 
-    text = textwrap.dedent(
-        """
+    text = textwrap.dedent("""
         <table class="dont-touch">
         <thead>
         <tr>
@@ -65,8 +62,7 @@ def test_no_clobber_html_table():
         </tr>
         </tbody>
         </table>
-        """
-    )
+        """)
 
     html = md.convert(text)
     soup = BeautifulSoup(html, features="html.parser")

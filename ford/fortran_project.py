@@ -25,7 +25,7 @@
 import os
 import toposort
 from itertools import chain, product
-from typing import List, Optional, Union, Dict, Set
+from typing import List, Optional, Union, Dict, Set, cast
 from pathlib import Path
 from fnmatch import fnmatch
 
@@ -57,7 +57,6 @@ from ford.sourceform import (
 )
 from ford.settings import ProjectSettings
 from ford._typing import PathLike
-
 
 LINK_TYPES = {
     "module": "modules",
@@ -325,7 +324,7 @@ class Project:
         # if dependency graphs are to be produced
         if self.settings.graph:
             for entity in chain(self.procedures, self.programs, self.blockdata):
-                entity.deplist = set(filter_modules(entity))
+                entity.deplist = list(set(filter_modules(entity)))
 
         ranklist = toposort.toposort_flatten(deplist)
         for proc in self.procedures:
@@ -446,7 +445,7 @@ class Project:
 
 
 def find_used_modules(
-    entity: FortranCodeUnit,
+    entity: Union[FortranCodeUnit, FortranBlockData],
     modules: List[FortranModule],
     submodules: List[FortranSubmodule],
     external_modules: List[ExternalModule],
@@ -481,14 +480,16 @@ def find_used_modules(
 
     # Find the ancestor of this submodule (if entity is one)
     if hasattr(entity, "parent_submodule") and entity.parent_submodule:
-        parent_submodule_name = entity.parent_submodule.lower()
+        entity = cast(FortranSubmodule, entity)
+        parent_submodule_name = cast(str, entity.parent_submodule).lower()
         for submod in submodules:
             if parent_submodule_name == submod.name.lower():
                 entity.parent_submodule = submod
                 break
 
     if hasattr(entity, "ancestor_module"):
-        ancestor_module_name = entity.ancestor_module.lower()
+        entity = cast(FortranSubmodule, entity)
+        ancestor_module_name = cast(str, entity.ancestor_module).lower()
         for mod in modules:
             if ancestor_module_name == mod.name.lower():
                 entity.ancestor_module = mod

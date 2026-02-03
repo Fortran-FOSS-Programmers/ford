@@ -12,7 +12,6 @@ import pytest
 
 from conftest import chdir
 
-
 pytestmark = pytest.mark.filterwarnings("ignore::bs4.MarkupResemblesLocatorWarning")
 
 HEADINGS = re.compile(r"h[1-4]")

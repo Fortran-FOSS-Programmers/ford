@@ -13,28 +13,20 @@ def test_footnotes_on_one_page(tmp_path):
         f.write("title: Index")
 
     with open(tmp_path / "a.md", "w") as f:
-        f.write(
-            dedent(
-                """\
+        f.write(dedent("""\
             title: Page A
 
             This has a footnote[^1] that should only appear on this page
 
             [^1]: This is the footnote on page A
-            """
-            )
-        )
+            """))
 
     with open(tmp_path / "b.md", "w") as f:
-        f.write(
-            dedent(
-                """\
+        f.write(dedent("""\
             title: Page B
 
             This page should not have any footnotes
-            """
-            )
-        )
+            """))
 
     md = MetaMarkdown()
     result_dir = tmp_path / "result"
@@ -53,28 +45,20 @@ def test_footnotes_on_one_page_parse_failure(tmp_path):
         f.write("title: Index")
 
     with open(tmp_path / "a.md", "w") as f:
-        f.write(
-            dedent(
-                """\
+        f.write(dedent("""\
             This page is missing a title and so expected not to be parsed
 
             This has a footnote[^1] that should only appear on this page
 
             [^1]: This is the footnote on page A
-            """
-            )
-        )
+            """))
 
     with open(tmp_path / "b.md", "w") as f:
-        f.write(
-            dedent(
-                """\
+        f.write(dedent("""\
             title: Page B
 
             This page should not have any footnotes
-            """
-            )
-        )
+            """))
 
     md = MetaMarkdown()
     result_dir = tmp_path / "result"
@@ -94,18 +78,14 @@ def test_non_utf8_encoding(tmp_path):
     encoding = "gbk" if getpreferredencoding().lower() == "utf-8" else "utf-8"
 
     with open(tmp_path / "index.md", "wb") as f:
-        f.write(
-            dedent(
-                """\
+        f.write(dedent("""\
         ---
         title: Specification
         ---
 
         @warning
         本文档是一个简易的规范文档，仅供参考
-        """
-            ).encode(encoding)
-        )
+        """).encode(encoding))
 
     md = MetaMarkdown()
     result_dir = tmp_path / "result"

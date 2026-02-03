@@ -37,7 +37,7 @@ from typing import Tuple, Optional
 from textwrap import dedent
 
 try:
-    import tomllib
+    import tomllib  # type: ignore[import]
 except ModuleNotFoundError:
     import tomli as tomllib  # type: ignore[no-redef]
 
@@ -56,7 +56,6 @@ from ford.settings import (
     load_toml_settings,
     convert_types_from_commandarguments,
 )
-
 
 __appname__ = "FORD"
 __author__ = "Chris MacMackin"
@@ -385,16 +384,12 @@ def parse_arguments(
             subprocess.run(command, check=True, capture_output=True, text=True)
         except (subprocess.CalledProcessError, OSError) as ex:
             project_file = command_line_args["project_file"].name
-            exit(
-                dedent(
-                    f"""\
+            exit(dedent(f"""\
                     Error: Testing preprocessor command (`{" ".join(command)}`) failed with error:
                         {ex.stderr.strip() if isinstance(ex, subprocess.CalledProcessError) else ex}
 
                     If you need to preprocess files, please fix the 'preprocessor' option in '{project_file}'.
-                    Otherwise, please set 'preprocess: False' in '{project_file}'"""
-                )
-            )
+                    Otherwise, please set 'preprocess: False' in '{project_file}'"""))
     else:
         proj_data.fpp_extensions = []
 

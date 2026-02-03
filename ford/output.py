@@ -384,7 +384,7 @@ class BasePage:
             globals=dict(page_url=self.outfile, project_url=self.project_url),
         )
 
-    def render(self, data, proj, obj):
+    def render(self, data, project, object):
         """
         Get the HTML for the page. This method must be overridden. Arguments
         are proj_data, project object, and item in the code which the
@@ -398,8 +398,8 @@ class ListTopPage(BasePage):
     def outfile(self):
         return self.out_dir / self.template_path
 
-    def render(self, data, proj, obj):
-        return self.template.render(data, project=proj, proj_docs=obj)
+    def render(self, data, project, object):
+        return self.template.render(data, project=project, proj_docs=object)
 
 
 class IndexPage(ListTopPage):
@@ -419,8 +419,8 @@ class ListPage(BasePage):
     def outfile(self):
         return self.out_dir / "lists" / self.out_page
 
-    def render(self, data, proj, obj):
-        return self.template.render(data, project=proj)
+    def render(self, data, project, object):
+        return self.template.render(data, project=project)
 
 
 class ProcList(ListPage):
@@ -564,8 +564,10 @@ class PagetreePage(BasePage):
     def outfile(self):
         return self.page_dir / self.obj.path
 
-    def render(self, data, proj, obj):
-        return self.template.render(data, page=obj, project=proj, topnode=obj.topnode)
+    def render(self, data, project, object):
+        return self.template.render(
+            data, page=object, project=project, topnode=object.topnode
+        )
 
     def writeout(self):
         if self.obj.filename.stem == "index":
