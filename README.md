@@ -69,6 +69,10 @@ a terminal:
 If you would like to install the latest development (master) branch from github,
 simply add the `--HEAD` flag: `brew install --HEAD FORD`
 
+FORD is also available through several system package managers:
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/ford.svg)](https://repology.org/project/ford/versions)
+
 ## Documentation
 More complete documentation can be found in the [docs](https://forddocs.readthedocs.io).
 
