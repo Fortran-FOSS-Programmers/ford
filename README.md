@@ -1,7 +1,6 @@
 # FORD
 [![Latest Version](https://img.shields.io/pypi/v/ford.svg)](https://pypi.python.org/pypi/FORD)
 [![Latest homebrew version](https://img.shields.io/homebrew/v/ford.svg?maxAge=2592000)](http://braumeister.org/formula/ford)
-[![Latest spack version](https://img.shields.io/spack/v/py-ford)](https://packages.spack.io/package.html?name=py-ford)
 [![PyPI Total Downloads](https://static.pepy.tech/badge/ford)](https://pepy.tech/project/ford)
 [![GitHub license](https://img.shields.io/badge/license-GPL_v3-blue.svg)](./LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1422473.svg)](https://doi.org/10.5281/zenodo.1422473)
@@ -70,11 +69,9 @@ a terminal:
 If you would like to install the latest development (master) branch from github,
 simply add the `--HEAD` flag: `brew install --HEAD FORD`
 
-FORD is also available through the
-[spack](https://spack.readthedocs.io/en/latest/) package manager by running the
-following command:
+FORD is also available through several system package managers:
 
-    spack install py-ford
+[![Packaging status](https://repology.org/badge/vertical-allrepos/ford.svg)](https://repology.org/project/ford/versions)
 
 ## Documentation
 More complete documentation can be found in the [docs](https://forddocs.readthedocs.io).
