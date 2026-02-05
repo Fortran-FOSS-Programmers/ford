@@ -263,8 +263,8 @@ You can define additional custom aliases with the `alias
 
 
 .. note::
-   An alias can be escaped with a prepended baskslash, such that `|foo|` will
-   be replaced with its alias, while `\|foo|` will be rendered as `|foo|`.
+   An alias can be escaped with a prepended baskslash, such that ``|foo|`` will
+   be replaced with its alias, while ``\|foo|`` will be rendered as ``|foo|``.
 
 
 .. _writing-links:
