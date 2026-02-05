@@ -109,9 +109,9 @@ class PageNode:
 def is_excluded_dir(path: Path, settings: ProjectSettings) -> bool:
     """Should `path` be excluded from the pagetree?"""
     paths_to_exclude: set[Path] = {
-        path
-        for path in [settings.graph_dir, settings.media_dir, settings.output_dir]
-        if path is not None
+        dir
+        for dir in [settings.graph_dir, settings.media_dir, settings.output_dir]
+        if dir is not None
     }
     paths_to_exclude.update(settings.html_template_dir)
     paths_to_exclude.update(settings.src_dir)
@@ -134,15 +134,15 @@ def get_page_tree(
     # I will use this later to remove duplicates from a list in a short way.
     from collections import OrderedDict
 
-    if is_excluded_dir(topdir, settings):
-        # Would be nice to be able to report if directory was excluded and why
-        return None
-
     # look for files within topdir
     index_file = topdir / "index.md"
 
     if not index_file.exists():
-        warn(f"'{index_file}' does not exist")
+        # Don't warn if this is a Ford input directory (media_dir, graph_dir, etc)
+        if not is_excluded_dir(topdir, settings):
+            warn(
+                f"Skipping creating page for '{topdir}' becase it does not contain 'index.md'"
+            )
         return None
 
     if progress is not None:
