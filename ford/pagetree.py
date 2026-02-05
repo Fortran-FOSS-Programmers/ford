@@ -30,7 +30,7 @@ from typing import List, Optional, Sequence
 from textwrap import dedent
 from ford.console import warn
 from ford.utils import meta_preprocessor, ProgressBar
-from ford.settings import EntitySettings
+from ford.settings import EntitySettings, ProjectSettings
 from ford._markdown import MetaMarkdown
 
 
@@ -106,11 +106,25 @@ class PageNode:
         return iter(retlist)
 
 
+def is_excluded_dir(path: Path, settings: ProjectSettings) -> bool:
+    """Should `path` be excluded from the pagetree?"""
+    paths_to_exclude: set[Path] = {
+        dir
+        for dir in [settings.graph_dir, settings.media_dir, settings.output_dir]
+        if dir is not None
+    }
+    paths_to_exclude.update(settings.html_template_dir)
+    paths_to_exclude.update(settings.src_dir)
+
+    return path in paths_to_exclude
+
+
 def get_page_tree(
     topdir: Path,
     proj_copy_subdir: Sequence[Path],
     output_dir: Path,
     md: MetaMarkdown,
+    settings: ProjectSettings,
     progress: Optional[ProgressBar] = None,
     parent=None,
     encoding: str = "utf-8",
@@ -124,7 +138,11 @@ def get_page_tree(
     index_file = topdir / "index.md"
 
     if not index_file.exists():
-        warn(f"'{index_file}' does not exist")
+        # Don't warn if this is a Ford input directory (media_dir, graph_dir, etc)
+        if not is_excluded_dir(topdir, settings):
+            warn(
+                f"Skipping creating page for '{topdir}' becase it does not contain 'index.md'"
+            )
         return None
 
     if progress is not None:
@@ -164,7 +182,14 @@ def get_page_tree(
                 continue
 
             if subnode := get_page_tree(
-                filename, proj_copy_subdir, output_dir, md, progress, node, encoding
+                filename,
+                proj_copy_subdir,
+                output_dir,
+                md,
+                settings,
+                progress,
+                node,
+                encoding,
             ):
                 node.subpages.append(subnode)
         elif filename.suffix == ".md":
