@@ -1,8 +1,8 @@
 [build-system]
 requires = [
-    "setuptools >= 65",
+    "setuptools >= 77.0",
     "setuptools_scm[toml] >= 7.0.0",
-    "wheel >= 0.29.0",
+    "wheel >= 0.34.0",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -14,7 +14,7 @@ authors = [
         {name = "Chris MacMackin", email = "cmacmackin@gmail.com"},
         {name = "Peter Hill", email = "peter.hill@york.ac.uk"}
 ]
-license = {text = "GPLv3"}
+license = "GPL-3.0-only"
 keywords = ["Markdown", "Fortran", "documentation", "comments"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -23,13 +23,15 @@ classifiers = [
     "Topic :: Text Processing :: Markup :: HTML",
     "Topic :: Documentation",
     "Topic :: Utilities",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 requires-python = ">=3.8"
 dependencies = [
