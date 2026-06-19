@@ -14,13 +14,13 @@ def test_sub_alias():
 def test_sub_alias_escape():
     def_alias = {"a": "b"}
 
-    result = MetaMarkdown(aliases=def_alias).convert("\|a|")
+    result = MetaMarkdown(aliases=def_alias).convert(r"\|a|")
     assert result == "<p>|a|</p>"
 
     result = MetaMarkdown(aliases=def_alias).convert("*|a|")
     assert result == "<p>*b</p>"
 
-    result = MetaMarkdown(aliases=def_alias).convert("\|undefined|")
+    result = MetaMarkdown(aliases=def_alias).convert(r"\|undefined|")
     assert result == "<p>|undefined|</p>"
 
 
