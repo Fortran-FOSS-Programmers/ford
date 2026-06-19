@@ -814,7 +814,7 @@ class FortranContainer(FortranBase):
         self.num_lines = 0
         if not isinstance(self, FortranSourceFile):
             self.num_lines += 1
-        if type(self) != FortranSourceFile:
+        if type(self) is not FortranSourceFile:
             FortranBase.__init__(
                 self, source, first_line, parent, inherited_permission, strings
             )
@@ -888,7 +888,7 @@ class FortranContainer(FortranBase):
                 if not isinstance(self, FortranType):
                     self.permission = line_lower
             elif line_lower == "sequence":
-                if type(self) == FortranType:
+                if type(self) is FortranType:
                     self.sequence = True
             elif self.FORMAT_RE.match(line):
                 # There's nothing interesting for us in a format statement
