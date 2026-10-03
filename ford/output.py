@@ -136,7 +136,6 @@ class Documentation:
         self.lists: List[ListPage] = []
         self.docs = []
         self.njobs = settings.parallel
-        self.parallel = self.njobs > 0
 
         self.index = IndexPage(self.data, project, proj_docs)
         self.search = SearchPage(self.data, project)
@@ -227,7 +226,7 @@ class Documentation:
                 for item in entity_list:
                     self.graphs.register(item)
 
-            self.graphs.graph_all()
+            self.graphs.graph_all(self.njobs)
             project.callgraph = self.graphs.callgraph
             project.typegraph = self.graphs.typegraph
             project.usegraph = self.graphs.usegraph

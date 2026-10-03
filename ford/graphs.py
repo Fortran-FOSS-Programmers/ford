@@ -30,11 +30,22 @@ import itertools
 import os
 import pathlib
 import re
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Type, Union, cast
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 from graphviz import Digraph, ExecutableNotFound
 from graphviz import version as graphviz_version
-from tqdm.contrib.concurrent import process_map
 
 from ford.console import warn
 from ford.utils import traverse, ProgressBar
@@ -829,22 +840,43 @@ class FortranGraph:
         # add nodes and edges depending on the root nodes to the graph
         self.add_nodes(self.root)
 
-        if graphviz_installed:
-            self.svg_src = self.dot.pipe().decode("utf-8")
-            self.svg_src = self.svg_src.replace(
-                "<svg ", '<svg id="' + re.sub(r"[^\w]", "", self.ident) + '" '
-            )
-            if match := WIDTH_RE.search(self.svg_src):
-                width = int(match.group(1))
-            else:
-                width = 0
-            if isinstance(self, (ModuleGraph, CallGraph, TypeGraph)):
-                self.scaled = width >= 855
-            else:
-                self.scaled = width >= 641
+        # Rendering is deferred so that it can be done in parallel,
+        # see `GraphManager.graph_all`
+        self._svg_src: Optional[str] = None
+        self._scaled = False
+
+    def render(self):
+        """Run graphviz to produce the SVG source for this graph"""
+        if not graphviz_installed:
+            self._svg_src = ""
+            self._scaled = False
+            return
+
+        svg_src = self.dot.pipe().decode("utf-8")
+        svg_src = svg_src.replace(
+            "<svg ", '<svg id="' + re.sub(r"[^\w]", "", self.ident) + '" '
+        )
+        if match := WIDTH_RE.search(svg_src):
+            width = int(match.group(1))
         else:
-            self.svg_src = ""
-            self.scaled = False
+            width = 0
+        if isinstance(self, (ModuleGraph, CallGraph, TypeGraph)):
+            self._scaled = width >= 855
+        else:
+            self._scaled = width >= 641
+        self._svg_src = svg_src
+
+    @property
+    def svg_src(self) -> str:
+        if self._svg_src is None:
+            self.render()
+        return cast(str, self._svg_src)
+
+    @property
+    def scaled(self) -> bool:
+        if self._svg_src is None:
+            self.render()
+        return self._scaled
 
     def add_to_graph(self, nodes, edges, nesting):
         """
@@ -1299,14 +1331,27 @@ class BadType(Exception):
         return repr(self.value)
 
 
-def outputFuncWrap(args):
-    """Wrapper function for output graphs -- needed to allow multiprocessing to
-    pickle the function (must be at top level)"""
+def _run_in_threads(
+    description: str, func: Callable, graphs: List[FortranGraph], njobs: int
+):
+    """Call ``func`` on each of ``graphs``, using up to ``njobs`` threads.
 
-    for f in args[0:-1]:
-        f.create_svg(args[-1])
+    The expensive part of graph work is running graphviz, which happens
+    in a subprocess, so threads give us real parallelism without
+    having to pickle the graphs to send them to other processes.
+    """
+    with ProgressBar(description, total=len(graphs)) as bar:
+        if njobs <= 1:
+            for graph in graphs:
+                func(graph)
+                bar.set_current(graph.ident)
+            return
 
-    return None
+        with ThreadPoolExecutor(max_workers=njobs) as executor:
+            futures = {executor.submit(func, graph): graph for graph in graphs}
+            for future in as_completed(futures):
+                future.result()
+                bar.set_current(futures[future].ident)
 
 
 class GraphManager:
@@ -1366,8 +1411,8 @@ class GraphManager:
             self.data.register(obj)
             self.graph_objs.append(obj)
 
-    def graph_all(self):
-        """Create all graphs"""
+    def graph_all(self, njobs: int = 0):
+        """Create all graphs, rendering them using up to ``njobs`` threads"""
 
         for obj in (bar := ProgressBar("Generating graphs", sorted(self.graph_objs))):
             bar.set_current(obj.name)
@@ -1430,6 +1475,39 @@ class GraphManager:
         self.callgraph = CallGraph(callnodes, self.data, "call~~graph")
         self.filegraph = FileGraph(self.sourcefiles, self.data, "file~~graph")
 
+        # Running graphviz is by far the slowest part, so do it in parallel
+        _run_in_threads(
+            "Rendering graphs",
+            FortranGraph.render,
+            self._entity_graphs() + self._project_graphs(),
+            njobs,
+        )
+
+    def _entity_graphs(self) -> List[FortranGraph]:
+        """All the graphs belonging to individual entities"""
+        graphs: List[FortranGraph] = []
+        for m in self.modules:
+            graphs.extend([m.usesgraph, m.usedbygraph])
+        for t in self.types:
+            graphs.extend([t.inhergraph, t.inherbygraph])
+        for p in self.procedures:
+            graphs.extend([p.callsgraph, p.calledbygraph, p.usesgraph])
+        for p in self.programs:
+            graphs.extend([p.callsgraph, p.usesgraph])
+        for f in self.sourcefiles:
+            graphs.extend([f.afferentgraph, f.efferentgraph])
+        for b in self.blockdata:
+            graphs.append(b.usesgraph)
+        return graphs
+
+    def _project_graphs(self) -> List[FortranGraph]:
+        """The project-wide graphs"""
+        return [
+            graph
+            for graph in (self.usegraph, self.typegraph, self.callgraph, self.filegraph)
+            if graph is not None
+        ]
+
     def output_graphs(self, njobs=0):
         """Save graphs to file"""
 
@@ -1438,62 +1516,12 @@ class GraphManager:
 
         self.graphdir.mkdir(exist_ok=True, parents=True, mode=0o755)
 
-        if njobs == 0:
-            for m in self.modules:
-                m.usesgraph.create_svg(self.graphdir)
-                m.usedbygraph.create_svg(self.graphdir)
-            for t in self.types:
-                t.inhergraph.create_svg(self.graphdir)
-                t.inherbygraph.create_svg(self.graphdir)
-            for p in self.procedures:
-                p.callsgraph.create_svg(self.graphdir)
-                p.calledbygraph.create_svg(self.graphdir)
-            for p in self.programs:
-                p.callsgraph.create_svg(self.graphdir)
-                p.usesgraph.create_svg(self.graphdir)
-            for f in self.sourcefiles:
-                f.afferentgraph.create_svg(self.graphdir)
-                f.efferentgraph.create_svg(self.graphdir)
-            for b in self.blockdata:
-                b.usesgraph.create_svg(self.graphdir)
-        else:
-            args = []
-            # Note we generate all graphs for a given object in one wrapper call
-            # this is to try to ensure we don't get name collisions not present
-            # in the serial version (e.g. due to calling usesgraph and usedbygraph on
-            # a particular module in two different processes). May not actually be needed
-            # commented block above allows testing of one graph per call approach.
-            args.extend(
-                [(m.usesgraph, m.usedbygraph, self.graphdir) for m in self.modules]
-            )
-            args.extend(
-                [(m.inhergraph, m.inherbygraph, self.graphdir) for m in self.types]
-            )
-            args.extend(
-                [
-                    (m.callsgraph, m.calledbygraph, self.graphdir)
-                    for m in self.procedures
-                ]
-            )
-            args.extend(
-                [(m.callsgraph, m.usesgraph, self.graphdir) for m in self.programs]
-            )
-            args.extend(
-                [
-                    (m.afferentgraph, m.efferentgraph, self.graphdir)
-                    for m in self.sourcefiles
-                ]
-            )
-            args.extend([(m.usesgraph, self.graphdir) for m in self.blockdata])
-
-            process_map(
-                outputFuncWrap,
-                args,
-                max_workers=njobs,
-                desc="Writing graphs",
-                chunksize=1,
-            )
-
-        for graph in [self.usegraph, self.typegraph, self.callgraph, self.filegraph]:
-            if graph:
-                graph.create_svg(self.graphdir)
+        graphs = self._entity_graphs() + [
+            graph for graph in self._project_graphs() if graph
+        ]
+        _run_in_threads(
+            "Writing graphs",
+            lambda graph: graph.create_svg(self.graphdir),
+            graphs,
+            njobs,
+        )
